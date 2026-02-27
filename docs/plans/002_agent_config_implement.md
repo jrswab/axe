@@ -112,11 +112,11 @@ Write tests first (red), then implement (green):
 
 ## Phase 7: `axe agents` Parent Command (Spec §2.7)
 
-- [ ] Create `cmd/agents.go`
-- [ ] Define `agentsCmd` cobra command with `Use: "agents"`, `Short: "Manage agent configurations"`
-- [ ] Register `agentsCmd` on `rootCmd` in `init()`
-- [ ] Write `TestAgentsCommand_ShowsHelp` — `axe agents` with no subcommand displays help
-- [ ] Run test — passes
+- [x] Create `cmd/agents.go`
+- [x] Define `agentsCmd` cobra command with `Use: "agents"`, `Short: "Manage agent configurations"`
+- [x] Register `agentsCmd` on `rootCmd` in `init()`
+- [x] Write `TestAgentsCommand_ShowsHelp` — `axe agents` with no subcommand displays help
+- [x] Run test — passes
 
 ---
 
@@ -124,18 +124,18 @@ Write tests first (red), then implement (green):
 
 Write tests first (red), then implement (green):
 
-- [ ] Write `TestAgentsList_Empty` — empty agents dir, no output, exit code 0
-- [ ] Write `TestAgentsList_WithAgents` — output contains agent names
-- [ ] Write `TestAgentsList_AlphabeticalOrder` — agents `zebra`, `alpha`, `mid` output in alpha order
-- [ ] Write `TestAgentsList_WithDescription` — output format is `name - description`
-- [ ] Write `TestAgentsList_WithoutDescription` — output format is `name` only
-- [ ] Implement `agentsListCmd` in `cmd/agents.go`:
-  - [ ] Call `agent.List()`
-  - [ ] Sort results alphabetically by `Name`
-  - [ ] Print each agent: `<name> - <description>` or `<name>` if no description
-  - [ ] Output to `cmd.OutOrStdout()`
-  - [ ] Register on `agentsCmd` in `init()`
-- [ ] Run tests — all agents list tests pass
+- [x] Write `TestAgentsList_Empty` — empty agents dir, no output, exit code 0
+- [x] Write `TestAgentsList_WithAgents` — output contains agent names
+- [x] Write `TestAgentsList_AlphabeticalOrder` — agents `zebra`, `alpha`, `mid` output in alpha order
+- [x] Write `TestAgentsList_WithDescription` — output format is `name - description`
+- [x] Write `TestAgentsList_WithoutDescription` — output format is `name` only
+- [x] Implement `agentsListCmd` in `cmd/agents.go`:
+  - [x] Call `agent.List()`
+  - [x] Sort results alphabetically by `Name`
+  - [x] Print each agent: `<name> - <description>` or `<name>` if no description
+  - [x] Output to `cmd.OutOrStdout()`
+  - [x] Register on `agentsCmd` in `init()`
+- [x] Run tests — all agents list tests pass
 
 ---
 
@@ -143,19 +143,19 @@ Write tests first (red), then implement (green):
 
 Write tests first (red), then implement (green):
 
-- [ ] Write `TestAgentsShow_ValidAgent` — full agent, verify all non-zero fields in key-value output
-- [ ] Write `TestAgentsShow_MinimalAgent` — only `Name` and `Model` printed
-- [ ] Write `TestAgentsShow_MissingAgent` — error output for nonexistent agent
-- [ ] Write `TestAgentsShow_NoArgs` — usage error with no arguments
-- [ ] Implement `agentsShowCmd` in `cmd/agents.go`:
-  - [ ] Use `cobra.ExactArgs(1)` for argument validation
-  - [ ] Call `agent.Load(args[0])`
-  - [ ] On error, return error (exit code 2 for config errors)
-  - [ ] Print key-value pairs with aligned labels; only print non-zero fields
-  - [ ] For slice fields, join with `, ` separator
-  - [ ] Output to `cmd.OutOrStdout()`
-  - [ ] Register on `agentsCmd` in `init()`
-- [ ] Run tests — all agents show tests pass
+- [x] Write `TestAgentsShow_ValidAgent` — full agent, verify all non-zero fields in key-value output
+- [x] Write `TestAgentsShow_MinimalAgent` — only `Name` and `Model` printed
+- [x] Write `TestAgentsShow_MissingAgent` — error output for nonexistent agent
+- [x] Write `TestAgentsShow_NoArgs` — usage error with no arguments
+- [x] Implement `agentsShowCmd` in `cmd/agents.go`:
+  - [x] Use `cobra.ExactArgs(1)` for argument validation
+  - [x] Call `agent.Load(args[0])`
+  - [x] On error, return error (exit code 2 for config errors)
+  - [x] Print key-value pairs with aligned labels; only print non-zero fields
+  - [x] For slice fields, join with `, ` separator
+  - [x] Output to `cmd.OutOrStdout()`
+  - [x] Register on `agentsCmd` in `init()`
+- [x] Run tests — all agents show tests pass
 
 ---
 
@@ -163,21 +163,21 @@ Write tests first (red), then implement (green):
 
 Write tests first (red), then implement (green):
 
-- [ ] Write `TestAgentsInit_CreatesFile` — file created at correct path with scaffold content
-- [ ] Write `TestAgentsInit_RefusesOverwrite` — error when file already exists
-- [ ] Write `TestAgentsInit_CreatesAgentsDir` — `agents/` dir created if missing
-- [ ] Write `TestAgentsInit_OutputIsPath` — stdout output is full file path
-- [ ] Write `TestAgentsInit_NoArgs` — usage error with no arguments
-- [ ] Implement `agentsInitCmd` in `cmd/agents.go`:
-  - [ ] Use `cobra.ExactArgs(1)` for argument validation
-  - [ ] Resolve path: `<config_dir>/agents/<name>.toml`
-  - [ ] Check if file exists; if yes, return error `agent config already exists: <path>` (exit code 2)
-  - [ ] Create `agents/` directory with `os.MkdirAll` and `0755` if it does not exist
-  - [ ] Call `agent.Scaffold(name)` to get template content
-  - [ ] Write file with `os.WriteFile` and permissions `0644`
-  - [ ] Print full file path to `cmd.OutOrStdout()`
-  - [ ] Register on `agentsCmd` in `init()`
-- [ ] Run tests — all agents init tests pass
+- [x] Write `TestAgentsInit_CreatesFile` — file created at correct path with scaffold content
+- [x] Write `TestAgentsInit_RefusesOverwrite` — error when file already exists
+- [x] Write `TestAgentsInit_CreatesAgentsDir` — `agents/` dir created if missing
+- [x] Write `TestAgentsInit_OutputIsPath` — stdout output is full file path
+- [x] Write `TestAgentsInit_NoArgs` — usage error with no arguments
+- [x] Implement `agentsInitCmd` in `cmd/agents.go`:
+  - [x] Use `cobra.ExactArgs(1)` for argument validation
+  - [x] Resolve path: `<config_dir>/agents/<name>.toml`
+  - [x] Check if file exists; if yes, return error `agent config already exists: <path>` (exit code 2)
+  - [x] Create `agents/` directory with `os.MkdirAll` and `0755` if it does not exist
+  - [x] Call `agent.Scaffold(name)` to get template content
+  - [x] Write file with `os.WriteFile` and permissions `0644`
+  - [x] Print full file path to `cmd.OutOrStdout()`
+  - [x] Register on `agentsCmd` in `init()`
+- [x] Run tests — all agents init tests pass
 
 ---
 
@@ -185,26 +185,26 @@ Write tests first (red), then implement (green):
 
 Write tests first (red), then implement (green):
 
-- [ ] Write `TestAgentsEdit_MissingEditor` — error when `$EDITOR` is unset
-- [ ] Write `TestAgentsEdit_MissingAgent` — error when agent file does not exist
-- [ ] Write `TestAgentsEdit_NoArgs` — usage error with no arguments
-- [ ] Implement `agentsEditCmd` in `cmd/agents.go`:
-  - [ ] Use `cobra.ExactArgs(1)` for argument validation
-  - [ ] Read `EDITOR` env var; if empty, return error `$EDITOR environment variable is not set` (exit code 1)
-  - [ ] Resolve path: `<config_dir>/agents/<name>.toml`
-  - [ ] Check if file exists; if not, return error `agent config not found: <name>` (exit code 2)
-  - [ ] Execute editor via `exec.Command` with stdin/stdout/stderr connected to parent process
-  - [ ] Propagate editor exit code on failure
-  - [ ] Register on `agentsCmd` in `init()`
-- [ ] Run tests — all agents edit tests pass
+- [x] Write `TestAgentsEdit_MissingEditor` — error when `$EDITOR` is unset
+- [x] Write `TestAgentsEdit_MissingAgent` — error when agent file does not exist
+- [x] Write `TestAgentsEdit_NoArgs` — usage error with no arguments
+- [x] Implement `agentsEditCmd` in `cmd/agents.go`:
+  - [x] Use `cobra.ExactArgs(1)` for argument validation
+  - [x] Read `EDITOR` env var; if empty, return error `$EDITOR environment variable is not set` (exit code 1)
+  - [x] Resolve path: `<config_dir>/agents/<name>.toml`
+  - [x] Check if file exists; if not, return error `agent config not found: <name>` (exit code 2)
+  - [x] Execute editor via `exec.Command` with stdin/stdout/stderr connected to parent process
+  - [x] Propagate editor exit code on failure
+  - [x] Register on `agentsCmd` in `init()`
+- [x] Run tests — all agents edit tests pass
 
 ---
 
 ## Phase 12: Full Test Suite
 
-- [ ] Run `go test ./...` — all tests pass with 0 failures
-- [ ] Run `go vet ./...` — no issues
-- [ ] Run `go build` — binary compiles without errors
+- [x] Run `go test ./...` — all tests pass with 0 failures
+- [x] Run `go vet ./...` — no issues
+- [x] Run `go build` — binary compiles without errors
 
 ---
 
