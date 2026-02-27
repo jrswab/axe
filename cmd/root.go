@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -21,10 +22,19 @@ your agent workspace.`,
   axe config init      Initialize the configuration directory`,
 }
 
-// Execute runs the root command and exits with code 1 on error.
+// exitCodeFromError extracts the exit code from an ExitError, defaulting to 1.
+func exitCodeFromError(err error) int {
+	var exitErr *ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.Code
+	}
+	return 1
+}
+
+// Execute runs the root command and exits with the appropriate exit code on error.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(exitCodeFromError(err))
 	}
 }

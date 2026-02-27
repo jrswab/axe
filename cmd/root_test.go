@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -56,5 +57,21 @@ func TestRootCommand_Description(t *testing.T) {
 	}
 	if rootCmd.Long == "" {
 		t.Error("root command missing long description")
+	}
+}
+
+func TestExitCodeFromError_ExitError(t *testing.T) {
+	err := &ExitError{Code: 2, Err: errors.New("config error")}
+	got := exitCodeFromError(err)
+	if got != 2 {
+		t.Errorf("exitCodeFromError(ExitError{Code:2}) = %d, want 2", got)
+	}
+}
+
+func TestExitCodeFromError_DefaultExitCode(t *testing.T) {
+	err := errors.New("generic error")
+	got := exitCodeFromError(err)
+	if got != 1 {
+		t.Errorf("exitCodeFromError(generic) = %d, want 1", got)
 	}
 }
