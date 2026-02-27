@@ -159,30 +159,30 @@
 
 ## Phase 9: Context Resolution - Stdin (`internal/resolve/resolve.go`) (Spec SS2.4, Reqs 4.10-4.11)
 
-- [ ] Write `TestStdin_NotPiped` -- document that this test may need skipping in some CI environments
-- [ ] Implement `Stdin() (string, error)`:
-  - [ ] Check `os.Stdin.Stat()` for `ModeCharDevice` NOT set
-  - [ ] If pipe, read all stdin and return as string
-  - [ ] If terminal, return `""`, `nil`
-  - [ ] If read fails, return error
-- [ ] Run tests -- Stdin tests pass
+- [x] Write `TestStdin_NotPiped` -- document that this test may need skipping in some CI environments
+- [x] Implement `Stdin() (string, error)`:
+  - [x] Check `os.Stdin.Stat()` for `ModeCharDevice` NOT set
+  - [x] If pipe, read all stdin and return as string
+  - [x] If terminal, return `""`, `nil`
+  - [x] If read fails, return error
+- [x] Run tests -- Stdin tests pass
 
 ---
 
 ## Phase 10: Context Resolution - BuildSystemPrompt (`internal/resolve/resolve.go`) (Spec SS2.4, Reqs 4.12-4.15)
 
-- [ ] Write `TestBuildSystemPrompt_AllSections` -- system prompt, skill, and files all present; verify correct assembly with delimiters
-- [ ] Write `TestBuildSystemPrompt_SystemPromptOnly` -- only system prompt; verify no extraneous delimiters
-- [ ] Write `TestBuildSystemPrompt_AllEmpty` -- all inputs empty; returns empty string
-- [ ] Write `TestBuildSystemPrompt_SkillOnly` -- only skill content present; verify section delimiter
-- [ ] Write `TestBuildSystemPrompt_FilesOnly` -- only files present; verify section delimiter and file formatting
-- [ ] Implement `BuildSystemPrompt(systemPrompt, skillContent string, files []FileContent) string`:
-  - [ ] Concatenate non-empty sections with specified delimiters
-  - [ ] System prompt included as-is
-  - [ ] Skill prefixed with `\n\n---\n\n## Skill\n\n`
-  - [ ] Files prefixed with `\n\n---\n\n## Context Files\n\n`, each file as `### <path>` + fenced code block with extension
-  - [ ] Return empty string if all sections empty
-- [ ] Run tests -- all BuildSystemPrompt tests pass
+- [x] Write `TestBuildSystemPrompt_AllSections` -- system prompt, skill, and files all present; verify correct assembly with delimiters
+- [x] Write `TestBuildSystemPrompt_SystemPromptOnly` -- only system prompt; verify no extraneous delimiters
+- [x] Write `TestBuildSystemPrompt_AllEmpty` -- all inputs empty; returns empty string
+- [x] Write `TestBuildSystemPrompt_SkillOnly` -- only skill content present; verify section delimiter
+- [x] Write `TestBuildSystemPrompt_FilesOnly` -- only files present; verify section delimiter and file formatting
+- [x] Implement `BuildSystemPrompt(systemPrompt, skillContent string, files []FileContent) string`:
+  - [x] Concatenate non-empty sections with specified delimiters
+  - [x] System prompt included as-is
+  - [x] Skill prefixed with `\n\n---\n\n## Skill\n\n`
+  - [x] Files prefixed with `\n\n---\n\n## Context Files\n\n`, each file as `### <path>` + fenced code block with extension
+  - [x] Return empty string if all sections empty
+- [x] Run tests -- all BuildSystemPrompt tests pass
 
 ---
 
@@ -190,95 +190,95 @@
 
 ### 11a: Command Registration and Flags
 
-- [ ] Write `TestRun_NoArgs` -- `axe run` with no args; verify usage error
-- [ ] Create `cmd/run.go` with `runCmd` cobra command
-  - [ ] Set `Use: "run"`, `Short: "Run an agent"`, `Long` description, `Args: cobra.ExactArgs(1)`
-  - [ ] Register flags: `--skill`, `--workdir`, `--model`, `--timeout` (default 120), `--dry-run`, `--verbose` (`-v`), `--json`
-  - [ ] Register `runCmd` on `rootCmd` in `init()`
-- [ ] Update `rootCmd.Example` in `cmd/root.go` to include `axe run pr-reviewer` example
-- [ ] Run test -- NoArgs test passes
+- [x] Write `TestRun_NoArgs` -- `axe run` with no args; verify usage error
+- [x] Create `cmd/run.go` with `runCmd` cobra command
+  - [x] Set `Use: "run"`, `Short: "Run an agent"`, `Long` description, `Args: cobra.ExactArgs(1)`
+  - [x] Register flags: `--skill`, `--workdir`, `--model`, `--timeout` (default 120), `--dry-run`, `--verbose` (`-v`), `--json`
+  - [x] Register `runCmd` on `rootCmd` in `init()`
+- [x] Update `rootCmd.Example` in `cmd/root.go` to include `axe run pr-reviewer` example
+- [x] Run test -- NoArgs test passes
 
 ### 11b: Model Parsing and Provider Validation
 
-- [ ] Write `TestRun_InvalidModelFormat` -- agent with `model = "noprefix"`; verify error about invalid model format
-- [ ] Write `TestRun_UnsupportedProvider` -- agent with `model = "openai/gpt-4"`; verify error about unsupported provider
-- [ ] Implement model string parsing in `RunE`:
-  - [ ] Split on first `/` only
-  - [ ] Error if no `/`: `invalid model format "<model>": expected provider/model-name`
-  - [ ] Error if empty provider: `invalid model format "<model>": empty provider`
-  - [ ] Error if empty model name: `invalid model format "<model>": empty model name`
-  - [ ] Error if provider is not `"anthropic"`: `unsupported provider "<provider>": only "anthropic" is supported in this version`
-- [ ] Run tests -- model parsing tests pass
+- [x] Write `TestRun_InvalidModelFormat` -- agent with `model = "noprefix"`; verify error about invalid model format
+- [x] Write `TestRun_UnsupportedProvider` -- agent with `model = "openai/gpt-4"`; verify error about unsupported provider
+- [x] Implement model string parsing in `RunE`:
+  - [x] Split on first `/` only
+  - [x] Error if no `/`: `invalid model format "<model>": expected provider/model-name`
+  - [x] Error if empty provider: `invalid model format "<model>": empty provider`
+  - [x] Error if empty model name: `invalid model format "<model>": empty model name`
+  - [x] Error if provider is not `"anthropic"`: `unsupported provider "<provider>": only "anthropic" is supported in this version`
+- [x] Run tests -- model parsing tests pass
 
 ### 11c: Config Loading and Overrides
 
-- [ ] Write `TestRun_MissingAgent` -- `axe run nonexistent` with temp XDG dir; verify error and exit code 2
-- [ ] Write `TestRun_MissingAPIKey` -- valid agent, unset `ANTHROPIC_API_KEY`; verify error and exit code 3
-- [ ] Implement `RunE` steps 1-13:
-  - [ ] Load agent config via `agent.Load(args[0])`; wrap error with exit code 2
-  - [ ] Apply `--model` override if non-empty
-  - [ ] Apply `--skill` override if non-empty
-  - [ ] Parse model string (from 11b)
-  - [ ] Validate provider is `"anthropic"`
-  - [ ] Resolve workdir, files, skill, stdin
-  - [ ] Build system prompt
-  - [ ] Check `ANTHROPIC_API_KEY`; wrap error with exit code 3
-- [ ] Run tests -- config loading tests pass
+- [x] Write `TestRun_MissingAgent` -- `axe run nonexistent` with temp XDG dir; verify error and exit code 2
+- [x] Write `TestRun_MissingAPIKey` -- valid agent, unset `ANTHROPIC_API_KEY`; verify error and exit code 3
+- [x] Implement `RunE` steps 1-13:
+  - [x] Load agent config via `agent.Load(args[0])`; wrap error with exit code 2
+  - [x] Apply `--model` override if non-empty
+  - [x] Apply `--skill` override if non-empty
+  - [x] Parse model string (from 11b)
+  - [x] Validate provider is `"anthropic"`
+  - [x] Resolve workdir, files, skill, stdin
+  - [x] Build system prompt
+  - [x] Check `ANTHROPIC_API_KEY`; wrap error with exit code 3
+- [x] Run tests -- config loading tests pass
 
 ### 11d: Dry-Run Mode
 
-- [ ] Write `TestRun_DryRun` -- agent with system prompt, skill, files; run with `--dry-run`; verify output contains all resolved context sections
-- [ ] Write `TestRun_DryRunNoFiles` -- agent with no files; run with `--dry-run`; verify `(none)` in files section
-- [ ] Implement `--dry-run` output (Spec Req 5.8):
-  - [ ] Print formatted dry-run output to `cmd.OutOrStdout()`
-  - [ ] Return `nil` (exit code 0) without calling LLM
-- [ ] Run tests -- dry-run tests pass
+- [x] Write `TestRun_DryRun` -- agent with system prompt, skill, files; run with `--dry-run`; verify output contains all resolved context sections
+- [x] Write `TestRun_DryRunNoFiles` -- agent with no files; run with `--dry-run`; verify `(none)` in files section
+- [x] Implement `--dry-run` output (Spec Req 5.8):
+  - [x] Print formatted dry-run output to `cmd.OutOrStdout()`
+  - [x] Return `nil` (exit code 0) without calling LLM
+- [x] Run tests -- dry-run tests pass
 
 ### 11e: LLM Call and Default Output
 
-- [ ] Write `TestRun_Success` -- agent + `ANTHROPIC_API_KEY` + `httptest.NewServer` mock; verify response content printed to stdout
-- [ ] Write `TestRun_StdinPiped` -- use `cmd.SetIn()` to provide stdin content; verify it is used as user message
-- [ ] Write `TestRun_ModelOverride` -- run with `--model anthropic/claude-haiku-3-20240307`; verify overridden model in API request
-- [ ] Write `TestRun_SkillOverride` -- run with `--skill <path>`; verify overridden skill content in prompt
-- [ ] Write `TestRun_WorkdirOverride` -- run with `--workdir <path>`; verify files resolved from overridden directory
-- [ ] Implement `RunE` steps 14-20:
-  - [ ] Create provider via `provider.NewAnthropic(apiKey)`
-  - [ ] Build user message (stdin content or default string)
-  - [ ] Build `provider.Request`
-  - [ ] Create `context.WithTimeout` from `--timeout` flag
-  - [ ] Call `provider.Send(ctx, req)`
-  - [ ] Print `Response.Content` to `cmd.OutOrStdout()`
-- [ ] Run tests -- success path tests pass
+- [x] Write `TestRun_Success` -- agent + `ANTHROPIC_API_KEY` + `httptest.NewServer` mock; verify response content printed to stdout
+- [x] Write `TestRun_StdinPiped` -- use `cmd.SetIn()` to provide stdin content; verify it is used as user message
+- [x] Write `TestRun_ModelOverride` -- run with `--model anthropic/claude-haiku-3-20240307`; verify overridden model in API request
+- [x] Write `TestRun_SkillOverride` -- run with `--skill <path>`; verify overridden skill content in prompt
+- [x] Write `TestRun_WorkdirOverride` -- run with `--workdir <path>`; verify files resolved from overridden directory
+- [x] Implement `RunE` steps 14-20:
+  - [x] Create provider via `provider.NewAnthropic(apiKey)`
+  - [x] Build user message (stdin content or default string)
+  - [x] Build `provider.Request`
+  - [x] Create `context.WithTimeout` from `--timeout` flag
+  - [x] Call `provider.Send(ctx, req)`
+  - [x] Print `Response.Content` to `cmd.OutOrStdout()`
+- [x] Run tests -- success path tests pass
 
 ### 11f: JSON Output Mode
 
-- [ ] Write `TestRun_JSONOutput` -- same as success test with `--json`; verify valid JSON with all expected fields
-- [ ] Implement `--json` output (Spec Req 5.9):
-  - [ ] Build JSON object with `model`, `content`, `input_tokens`, `output_tokens`, `stop_reason`, `duration_ms`
-  - [ ] Print compact JSON to `cmd.OutOrStdout()`
-- [ ] Run tests -- JSON output test passes
+- [x] Write `TestRun_JSONOutput` -- same as success test with `--json`; verify valid JSON with all expected fields
+- [x] Implement `--json` output (Spec Req 5.9):
+  - [x] Build JSON object with `model`, `content`, `input_tokens`, `output_tokens`, `stop_reason`, `duration_ms`
+  - [x] Print compact JSON to `cmd.OutOrStdout()`
+- [x] Run tests -- JSON output test passes
 
 ### 11g: Verbose Output Mode
 
-- [ ] Write `TestRun_VerboseOutput` -- same as success test with `--verbose`; verify debug info on stderr, response on stdout
-- [ ] Implement `--verbose` output (Spec Req 5.7):
-  - [ ] Print pre-call debug info to `cmd.ErrOrStderr()`: Model, Workdir, Skill, Files count, Stdin, Timeout, Params
-  - [ ] Print post-call debug info to `cmd.ErrOrStderr()`: Duration, Tokens, Stop reason
-- [ ] Run tests -- verbose output test passes
+- [x] Write `TestRun_VerboseOutput` -- same as success test with `--verbose`; verify debug info on stderr, response on stdout
+- [x] Implement `--verbose` output (Spec Req 5.7):
+  - [x] Print pre-call debug info to `cmd.ErrOrStderr()`: Model, Workdir, Skill, Files count, Stdin, Timeout, Params
+  - [x] Print post-call debug info to `cmd.ErrOrStderr()`: Duration, Tokens, Stop reason
+- [x] Run tests -- verbose output test passes
 
 ### 11h: Error Exit Code Mapping
 
-- [ ] Write `TestRun_TimeoutExceeded` -- slow `httptest.NewServer`, run with `--timeout 1`; verify exit code 3
-- [ ] Write `TestRun_APIError` -- `httptest.NewServer` returning 500; verify exit code 3
-- [ ] Implement exit code mapping for all provider errors (Spec Req 6.6):
-  - [ ] `ProviderError` Auth/RateLimit/Timeout/Overloaded/Server -> exit code 3
-  - [ ] `ProviderError` BadRequest -> exit code 1
-  - [ ] `agent.Load` errors -> exit code 2
-  - [ ] `resolve.Skill` errors -> exit code 2
-  - [ ] `resolve.Files` errors (invalid pattern) -> exit code 2
-  - [ ] Model format / unsupported provider errors -> exit code 1
-  - [ ] Missing API key -> exit code 3
-- [ ] Run tests -- all exit code tests pass
+- [x] Write `TestRun_TimeoutExceeded` -- slow `httptest.NewServer`, run with `--timeout 1`; verify exit code 3
+- [x] Write `TestRun_APIError` -- `httptest.NewServer` returning 500; verify exit code 3
+- [x] Implement exit code mapping for all provider errors (Spec Req 6.6):
+  - [x] `ProviderError` Auth/RateLimit/Timeout/Overloaded/Server -> exit code 3
+  - [x] `ProviderError` BadRequest -> exit code 1
+  - [x] `agent.Load` errors -> exit code 2
+  - [x] `resolve.Skill` errors -> exit code 2
+  - [x] `resolve.Files` errors (invalid pattern) -> exit code 2
+  - [x] Model format / unsupported provider errors -> exit code 1
+  - [x] Missing API key -> exit code 3
+- [x] Run tests -- all exit code tests pass
 
 ---
 

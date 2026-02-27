@@ -2,6 +2,7 @@ package resolve
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -225,6 +226,61 @@ func readTextFile(path string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+// Stdin reads stdin content if it is piped (not a terminal).
+// Returns empty string if stdin is a terminal (interactive).
+func Stdin() (string, error) {
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return "", fmt.Errorf("failed to stat stdin: %w", err)
+	}
+
+	// If ModeCharDevice is set, stdin is a terminal (not piped)
+	if info.Mode()&os.ModeCharDevice != 0 {
+		return "", nil
+	}
+
+	data, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return "", fmt.Errorf("failed to read stdin: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// BuildSystemPrompt assembles a single system prompt string from non-empty sections.
+// Sections are: system prompt (as-is), skill (with delimiter), files (with delimiter and code blocks).
+func BuildSystemPrompt(systemPrompt, skillContent string, files []FileContent) string {
+	var b strings.Builder
+
+	if systemPrompt != "" {
+		b.WriteString(systemPrompt)
+	}
+
+	if skillContent != "" {
+		b.WriteString("\n\n---\n\n## Skill\n\n")
+		b.WriteString(skillContent)
+	}
+
+	if len(files) > 0 {
+		b.WriteString("\n\n---\n\n## Context Files\n\n")
+		for i, f := range files {
+			if i > 0 {
+				b.WriteString("\n\n")
+			}
+			ext := strings.TrimPrefix(filepath.Ext(f.Path), ".")
+			b.WriteString("### ")
+			b.WriteString(f.Path)
+			b.WriteString("\n```")
+			b.WriteString(ext)
+			b.WriteString("\n")
+			b.WriteString(f.Content)
+			b.WriteString("\n```")
+		}
+	}
+
+	return b.String()
 }
 
 // Skill loads skill content from a file path.

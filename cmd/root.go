@@ -19,7 +19,8 @@ and configuration. It provides tools for setting up and organizing
 your agent workspace.`,
 	Example: `  axe version          Show the current version
   axe config path      Print the configuration directory path
-  axe config init      Initialize the configuration directory`,
+  axe config init      Initialize the configuration directory
+  axe run pr-reviewer   Run the pr-reviewer agent`,
 }
 
 // exitCodeFromError extracts the exit code from an ExitError, defaulting to 1.

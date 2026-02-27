@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -257,5 +258,88 @@ func TestSkill_NotFound(t *testing.T) {
 	expected := "skill not found: /nonexistent/SKILL.md"
 	if err.Error() != expected {
 		t.Errorf("expected error %q, got %q", expected, err.Error())
+	}
+}
+
+// --- Stdin Tests ---
+
+func TestStdin_NotPiped(t *testing.T) {
+	// When running under `go test`, stdin is typically a terminal (not piped).
+	// This test may need to be skipped in CI environments where stdin behavior differs.
+	result, err := Stdin()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "" {
+		t.Errorf("expected empty string when stdin is not piped, got %q", result)
+	}
+}
+
+// --- BuildSystemPrompt Tests ---
+
+func TestBuildSystemPrompt_AllSections(t *testing.T) {
+	files := []FileContent{
+		{Path: "main.go", Content: "package main"},
+		{Path: "util.go", Content: "package util"},
+	}
+	result := BuildSystemPrompt("You are helpful.", "Do the task.", files)
+
+	// Check system prompt is at the start
+	if !strings.HasPrefix(result, "You are helpful.") {
+		t.Errorf("expected system prompt at start, got %q", result[:50])
+	}
+	// Check skill section
+	if !strings.Contains(result, "\n\n---\n\n## Skill\n\nDo the task.") {
+		t.Error("expected skill section with delimiter")
+	}
+	// Check files section
+	if !strings.Contains(result, "\n\n---\n\n## Context Files\n\n") {
+		t.Error("expected context files section with delimiter")
+	}
+	// Check file formatting
+	if !strings.Contains(result, "### main.go\n```go\npackage main\n```") {
+		t.Error("expected main.go formatted with fenced code block")
+	}
+	if !strings.Contains(result, "### util.go\n```go\npackage util\n```") {
+		t.Error("expected util.go formatted with fenced code block")
+	}
+}
+
+func TestBuildSystemPrompt_SystemPromptOnly(t *testing.T) {
+	result := BuildSystemPrompt("You are helpful.", "", nil)
+	if result != "You are helpful." {
+		t.Errorf("expected just system prompt, got %q", result)
+	}
+	// Should NOT contain any delimiters
+	if strings.Contains(result, "---") {
+		t.Error("should not contain section delimiters when only system prompt is present")
+	}
+}
+
+func TestBuildSystemPrompt_AllEmpty(t *testing.T) {
+	result := BuildSystemPrompt("", "", nil)
+	if result != "" {
+		t.Errorf("expected empty string, got %q", result)
+	}
+}
+
+func TestBuildSystemPrompt_SkillOnly(t *testing.T) {
+	result := BuildSystemPrompt("", "Do the task.", nil)
+	expected := "\n\n---\n\n## Skill\n\nDo the task."
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
+	}
+}
+
+func TestBuildSystemPrompt_FilesOnly(t *testing.T) {
+	files := []FileContent{
+		{Path: "readme.md", Content: "# Hello"},
+	}
+	result := BuildSystemPrompt("", "", files)
+	if !strings.HasPrefix(result, "\n\n---\n\n## Context Files\n\n") {
+		t.Errorf("expected context files section at start, got %q", result)
+	}
+	if !strings.Contains(result, "### readme.md\n```md\n# Hello\n```") {
+		t.Errorf("expected readme.md formatted with fenced code block, got %q", result)
 	}
 }
