@@ -106,54 +106,54 @@
 
 ## Phase 6: Context Resolution - Workdir (`internal/resolve/resolve.go`) (Spec SS2.4, Req 4.1)
 
-- [ ] Write `TestWorkdir_FlagOverride` -- flag value non-empty; verify it is returned regardless of TOML value
-- [ ] Write `TestWorkdir_TOMLFallback` -- flag empty, TOML non-empty; verify TOML value returned
-- [ ] Write `TestWorkdir_CWDFallback` -- both flag and TOML empty; verify current working directory returned
-- [ ] Implement `Workdir(flagValue, tomlValue string) string` in `internal/resolve/resolve.go`
-  - [ ] Return `flagValue` if non-empty
-  - [ ] Return `tomlValue` if non-empty
-  - [ ] Return `os.Getwd()` result; on error return `"."`
-- [ ] Run tests -- all Workdir tests pass
+- [x] Write `TestWorkdir_FlagOverride` -- flag value non-empty; verify it is returned regardless of TOML value
+- [x] Write `TestWorkdir_TOMLFallback` -- flag empty, TOML non-empty; verify TOML value returned
+- [x] Write `TestWorkdir_CWDFallback` -- both flag and TOML empty; verify current working directory returned
+- [x] Implement `Workdir(flagValue, tomlValue string) string` in `internal/resolve/resolve.go`
+  - [x] Return `flagValue` if non-empty
+  - [x] Return `tomlValue` if non-empty
+  - [x] Return `os.Getwd()` result; on error return `"."`
+- [x] Run tests -- all Workdir tests pass
 
 ---
 
 ## Phase 7: Context Resolution - Files (`internal/resolve/resolve.go`) (Spec SS2.4, Reqs 4.2-4.7)
 
-- [ ] Write `TestFiles_EmptyPatterns` -- nil/empty patterns returns empty slice, no error
-- [ ] Write `TestFiles_SimpleGlob` -- create temp files matching `*.txt`; verify correct files returned with contents
-- [ ] Write `TestFiles_DoubleStarGlob` -- create nested dirs; use `**/*.go` pattern; verify recursive matching
-- [ ] Write `TestFiles_InvalidPattern` -- malformed glob returns error
-- [ ] Write `TestFiles_NoMatches` -- valid pattern matching no files returns empty slice, no error
-- [ ] Write `TestFiles_Deduplication` -- two patterns matching same file; verify only one entry in result
-- [ ] Write `TestFiles_SortedOutput` -- multiple matched files; verify alphabetical ordering by path
-- [ ] Write `TestFiles_SkipsBinaryFiles` -- file with null bytes in first 512 bytes; verify it is skipped
-- [ ] Write `TestFiles_SymlinkOutsideWorkdir` -- symlink pointing outside workdir; verify it is skipped
-- [ ] Define `FileContent` struct with `Path string` and `Content string`
-- [ ] Implement `Files(patterns []string, workdir string) ([]FileContent, error)`:
-  - [ ] Return empty slice for nil/empty patterns
-  - [ ] Return error for malformed glob syntax
-  - [ ] For patterns without `**`, use `filepath.Glob` relative to workdir
-  - [ ] For patterns with `**`, use `filepath.WalkDir` for recursive matching
-  - [ ] Read file contents; skip binary files (null byte in first 512 bytes)
-  - [ ] Skip symlinks that resolve outside workdir
-  - [ ] Deduplicate by path (first occurrence wins)
-  - [ ] Sort results by path
-- [ ] Run tests -- all Files tests pass
+- [x] Write `TestFiles_EmptyPatterns` -- nil/empty patterns returns empty slice, no error
+- [x] Write `TestFiles_SimpleGlob` -- create temp files matching `*.txt`; verify correct files returned with contents
+- [x] Write `TestFiles_DoubleStarGlob` -- create nested dirs; use `**/*.go` pattern; verify recursive matching
+- [x] Write `TestFiles_InvalidPattern` -- malformed glob returns error
+- [x] Write `TestFiles_NoMatches` -- valid pattern matching no files returns empty slice, no error
+- [x] Write `TestFiles_Deduplication` -- two patterns matching same file; verify only one entry in result
+- [x] Write `TestFiles_SortedOutput` -- multiple matched files; verify alphabetical ordering by path
+- [x] Write `TestFiles_SkipsBinaryFiles` -- file with null bytes in first 512 bytes; verify it is skipped
+- [x] Write `TestFiles_SymlinkOutsideWorkdir` -- symlink pointing outside workdir; verify it is skipped
+- [x] Define `FileContent` struct with `Path string` and `Content string`
+- [x] Implement `Files(patterns []string, workdir string) ([]FileContent, error)`:
+  - [x] Return empty slice for nil/empty patterns
+  - [x] Return error for malformed glob syntax
+  - [x] For patterns without `**`, use `filepath.Glob` relative to workdir
+  - [x] For patterns with `**`, use `filepath.WalkDir` for recursive matching
+  - [x] Read file contents; skip binary files (null byte in first 512 bytes)
+  - [x] Skip symlinks that resolve outside workdir
+  - [x] Deduplicate by path (first occurrence wins)
+  - [x] Sort results by path
+- [x] Run tests -- all Files tests pass
 
 ---
 
 ## Phase 8: Context Resolution - Skill (`internal/resolve/resolve.go`) (Spec SS2.4, Reqs 4.8-4.9)
 
-- [ ] Write `TestSkill_EmptyPath` -- empty path returns empty string, no error
-- [ ] Write `TestSkill_AbsolutePath` -- absolute path to existing file returns contents
-- [ ] Write `TestSkill_RelativePath` -- relative path resolved against configDir returns contents
-- [ ] Write `TestSkill_NotFound` -- non-existent path returns error with `skill not found: <path>`
-- [ ] Implement `Skill(skillPath, configDir string) (string, error)`:
-  - [ ] If `skillPath` empty, return `""`, `nil`
-  - [ ] If absolute path, read file directly
-  - [ ] If relative path, resolve relative to `configDir`
-  - [ ] Return file contents or appropriate error
-- [ ] Run tests -- all Skill tests pass
+- [x] Write `TestSkill_EmptyPath` -- empty path returns empty string, no error
+- [x] Write `TestSkill_AbsolutePath` -- absolute path to existing file returns contents
+- [x] Write `TestSkill_RelativePath` -- relative path resolved against configDir returns contents
+- [x] Write `TestSkill_NotFound` -- non-existent path returns error with `skill not found: <path>`
+- [x] Implement `Skill(skillPath, configDir string) (string, error)`:
+  - [x] If `skillPath` empty, return `""`, `nil`
+  - [x] If absolute path, read file directly
+  - [x] If relative path, resolve relative to `configDir`
+  - [x] Return file contents or appropriate error
+- [x] Run tests -- all Skill tests pass
 
 ---
 
