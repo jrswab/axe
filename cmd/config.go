@@ -73,6 +73,33 @@ var configInitCmd = &cobra.Command{
 			}
 		}
 
+		// Scaffold config.toml if it doesn't exist
+		configTOMLPath := filepath.Join(configDir, "config.toml")
+		if _, err := os.Stat(configTOMLPath); os.IsNotExist(err) {
+			configTOMLContent := `# Axe global configuration
+# API keys and base URL overrides for LLM providers.
+# Environment variables take precedence over values set here.
+#
+# Env var convention:
+#   API key:  <PROVIDER_UPPER>_API_KEY  (e.g. ANTHROPIC_API_KEY)
+#   Base URL: AXE_<PROVIDER_UPPER>_BASE_URL  (e.g. AXE_ANTHROPIC_BASE_URL)
+
+# [providers.anthropic]
+# api_key = ""
+# base_url = ""
+
+# [providers.openai]
+# api_key = ""
+# base_url = ""
+
+# [providers.ollama]
+# base_url = "http://localhost:11434"
+`
+			if err := os.WriteFile(configTOMLPath, []byte(configTOMLContent), 0600); err != nil {
+				return fmt.Errorf("failed to write config.toml: %w", err)
+			}
+		}
+
 		fmt.Fprintln(cmd.OutOrStdout(), configDir)
 		return nil
 	},

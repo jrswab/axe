@@ -105,22 +105,25 @@ model = "noprefix"
 
 func TestRun_UnsupportedProvider(t *testing.T) {
 	resetRunCmd(t)
-	setupRunTestAgent(t, "openai-agent", `name = "openai-agent"
-model = "openai/gpt-4"
+	setupRunTestAgent(t, "fakeprov-agent", `name = "fakeprov-agent"
+model = "fakeprovider/some-model"
 `)
 
 	buf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetErr(errBuf)
-	rootCmd.SetArgs([]string{"run", "openai-agent"})
+	rootCmd.SetArgs([]string{"run", "fakeprov-agent"})
 
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for unsupported provider, got nil")
 	}
-	if !strings.Contains(err.Error(), "unsupported provider") {
+	if !strings.Contains(err.Error(), `unsupported provider "fakeprovider"`) {
 		t.Errorf("expected 'unsupported provider' error, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "anthropic, openai, ollama") {
+		t.Errorf("expected supported providers list, got: %v", err)
 	}
 }
 
@@ -178,8 +181,8 @@ model = "anthropic/claude-sonnet-4-20250514"
 	if exitErr.Code != 3 {
 		t.Errorf("expected exit code 3, got %d", exitErr.Code)
 	}
-	if !strings.Contains(err.Error(), "ANTHROPIC_API_KEY") {
-		t.Errorf("expected error about ANTHROPIC_API_KEY, got: %v", err)
+	if !strings.Contains(err.Error(), "ANTHROPIC_API_KEY") && !strings.Contains(err.Error(), "API key for provider") {
+		t.Errorf("expected error about API key, got: %v", err)
 	}
 }
 
@@ -599,5 +602,233 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 	if exitErr.Code != 3 {
 		t.Errorf("expected exit code 3, got %d", exitErr.Code)
+	}
+}
+
+// --- M4: Multi-Provider Tests ---
+
+func startMockOpenAIServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"model": "gpt-4o",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"content": "Hello from OpenAI mock"}, "finish_reason": "stop"},
+			},
+			"usage": map[string]int{"prompt_tokens": 10, "completion_tokens": 5},
+		})
+	}))
+}
+
+func startMockOllamaServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":             "llama3",
+			"message":           map[string]string{"content": "Hello from Ollama mock"},
+			"done_reason":       "stop",
+			"prompt_eval_count": 8,
+			"eval_count":        12,
+		})
+	}))
+}
+
+func TestRun_OpenAIProviderSuccess(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockOpenAIServer(t)
+	defer server.Close()
+
+	setupRunTestAgent(t, "openai-agent", `name = "openai-agent"
+model = "openai/gpt-4o"
+`)
+	t.Setenv("OPENAI_API_KEY", "test-key")
+	t.Setenv("AXE_OPENAI_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "openai-agent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Hello from OpenAI mock") {
+		t.Errorf("expected 'Hello from OpenAI mock', got %q", buf.String())
+	}
+}
+
+func TestRun_OllamaProviderSuccess(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockOllamaServer(t)
+	defer server.Close()
+
+	setupRunTestAgent(t, "ollama-agent", `name = "ollama-agent"
+model = "ollama/llama3"
+`)
+	t.Setenv("AXE_OLLAMA_BASE_URL", server.URL)
+	// Ensure no API key is needed
+	t.Setenv("OLLAMA_API_KEY", "")
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "ollama-agent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Hello from Ollama mock") {
+		t.Errorf("expected 'Hello from Ollama mock', got %q", buf.String())
+	}
+}
+
+func TestRun_MissingAPIKeyOpenAI(t *testing.T) {
+	resetRunCmd(t)
+	setupRunTestAgent(t, "openai-nokey", `name = "openai-nokey"
+model = "openai/gpt-4o"
+`)
+	t.Setenv("OPENAI_API_KEY", "")
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "openai-nokey"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for missing API key")
+	}
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T", err)
+	}
+	if exitErr.Code != 3 {
+		t.Errorf("expected exit code 3, got %d", exitErr.Code)
+	}
+}
+
+func TestRun_OllamaNoAPIKeyRequired(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockOllamaServer(t)
+	defer server.Close()
+
+	setupRunTestAgent(t, "ollama-nokey", `name = "ollama-nokey"
+model = "ollama/llama3"
+`)
+	t.Setenv("AXE_OLLAMA_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "ollama-nokey"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRun_APIKeyFromConfigFile(t *testing.T) {
+	resetRunCmd(t)
+	var receivedAuth string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedAuth = r.Header.Get("x-api-key")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"id": "msg_test", "type": "message", "role": "assistant",
+			"content": [{"type": "text", "text": "ok"}],
+			"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "config-key-agent", `name = "config-key-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	// Write config.toml with API key
+	configDir := filepath.Join(tmpDir, "axe")
+	os.WriteFile(filepath.Join(configDir, "config.toml"), []byte(`
+[providers.anthropic]
+api_key = "from-config-file"
+`), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "config-key-agent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if receivedAuth != "from-config-file" {
+		t.Errorf("expected API key 'from-config-file' in request, got %q", receivedAuth)
+	}
+}
+
+func TestRun_MalformedGlobalConfig(t *testing.T) {
+	resetRunCmd(t)
+	tmpDir := setupRunTestAgent(t, "malformed-cfg-agent", `name = "malformed-cfg-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	// Write invalid config.toml
+	configDir := filepath.Join(tmpDir, "axe")
+	os.WriteFile(filepath.Join(configDir, "config.toml"), []byte("[invalid toml\nblah"), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "malformed-cfg-agent"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for malformed config")
+	}
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T", err)
+	}
+	if exitErr.Code != 2 {
+		t.Errorf("expected exit code 2, got %d", exitErr.Code)
+	}
+}
+
+func TestRun_DryRun_NonAnthropicProvider(t *testing.T) {
+	resetRunCmd(t)
+	setupRunTestAgent(t, "dryrun-openai", `name = "dryrun-openai"
+model = "openai/gpt-4o"
+`)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "dryrun-openai", "--dry-run"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "openai/gpt-4o") {
+		t.Errorf("expected 'openai/gpt-4o' in dry-run output, got %q", output)
 	}
 }

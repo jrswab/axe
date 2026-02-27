@@ -223,6 +223,120 @@ func TestConfigInitCommand_PermissionError(t *testing.T) {
 	}
 }
 
+// --- M4: config.toml tests ---
+
+func TestConfigInit_CreatesConfigTOML(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	SetSkillsFS(testSkillsFS(t))
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"config", "init"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	configTOML := filepath.Join(tmpDir, "axe", "config.toml")
+	if _, err := os.Stat(configTOML); err != nil {
+		t.Fatalf("config.toml not created: %v", err)
+	}
+}
+
+func TestConfigInit_ConfigTOMLPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission test not reliable on Windows")
+	}
+
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	SetSkillsFS(testSkillsFS(t))
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"config", "init"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	configTOML := filepath.Join(tmpDir, "axe", "config.toml")
+	info, err := os.Stat(configTOML)
+	if err != nil {
+		t.Fatalf("failed to stat config.toml: %v", err)
+	}
+	perm := info.Mode().Perm()
+	if perm != 0600 {
+		t.Errorf("expected permissions 0600, got %04o", perm)
+	}
+}
+
+func TestConfigInit_ConfigTOMLContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	SetSkillsFS(testSkillsFS(t))
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"config", "init"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	configTOML := filepath.Join(tmpDir, "axe", "config.toml")
+	data, err := os.ReadFile(configTOML)
+	if err != nil {
+		t.Fatalf("failed to read config.toml: %v", err)
+	}
+	content := string(data)
+	for _, expected := range []string{"providers.anthropic", "providers.openai", "providers.ollama"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("config.toml missing %q", expected)
+		}
+	}
+}
+
+func TestConfigInit_DoesNotOverwriteConfigTOML(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	SetSkillsFS(testSkillsFS(t))
+
+	// Create a custom config.toml first
+	configDir := filepath.Join(tmpDir, "axe")
+	os.MkdirAll(configDir, 0755)
+	customContent := `[providers.anthropic]
+api_key = "my-secret-key"
+`
+	os.WriteFile(filepath.Join(configDir, "config.toml"), []byte(customContent), 0600)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"config", "init"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify not overwritten
+	data, err := os.ReadFile(filepath.Join(configDir, "config.toml"))
+	if err != nil {
+		t.Fatalf("failed to read config.toml: %v", err)
+	}
+	if string(data) != customContent {
+		t.Errorf("config.toml was overwritten: got %q", string(data))
+	}
+}
+
 func TestConfigInitCommand_CopiesSkillContent(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", tmpDir)
