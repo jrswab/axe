@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -191,5 +193,70 @@ func TestConfigInitCommand_DoesNotOverwriteExisting(t *testing.T) {
 	}
 	if string(data) != "custom content" {
 		t.Errorf("SKILL.md was overwritten: got %q", string(data))
+	}
+}
+
+func TestConfigInitCommand_PermissionError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission test not reliable on Windows")
+	}
+
+	// Create a read-only directory so MkdirAll fails
+	tmpDir := t.TempDir()
+	readOnlyDir := filepath.Join(tmpDir, "readonly")
+	if err := os.MkdirAll(readOnlyDir, 0555); err != nil {
+		t.Fatalf("failed to create read-only dir: %v", err)
+	}
+	t.Setenv("XDG_CONFIG_HOME", readOnlyDir)
+
+	SetSkillsFS(testSkillsFS(t))
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"config", "init"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for permission denied, got nil")
+	}
+}
+
+func TestConfigInitCommand_CopiesSkillContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+
+	SetSkillsFS(testSkillsFS(t))
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"config", "init"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	skillFile := filepath.Join(tmpDir, "axe", "skills", "sample", "SKILL.md")
+	data, err := os.ReadFile(skillFile)
+	if err != nil {
+		t.Fatalf("failed to read SKILL.md: %v", err)
+	}
+
+	content := string(data)
+	// Verify the template contains the required sections per spec
+	if !strings.Contains(content, "# Sample Skill") {
+		t.Error("SKILL.md missing title header")
+	}
+	if !strings.Contains(content, "## Purpose") {
+		t.Error("SKILL.md missing Purpose section")
+	}
+	if !strings.Contains(content, "## Instructions") {
+		t.Error("SKILL.md missing Instructions section")
+	}
+	if !strings.Contains(content, "## Output Format") {
+		t.Error("SKILL.md missing Output Format section")
 	}
 }

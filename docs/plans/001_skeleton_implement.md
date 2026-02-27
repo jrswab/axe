@@ -76,54 +76,54 @@
 
 ## Phase 5: Testing
 
-- [ ] Verify `go build` produces binary without errors
-- [ ] Test `axe version`:
-  - [ ] Output matches exactly "axe version 0.1.0"
-  - [ ] Exit code is 0
-- [ ] Test `axe help`:
-  - [ ] Displays available commands
-  - [ ] Displays usage examples
-  - [ ] Exit code is 0
-- [ ] Test `axe config path`:
-  - [ ] Prints valid path for current platform
-  - [ ] Works when XDG_CONFIG_HOME is set
-  - [ ] Works when XDG_CONFIG_HOME is unset
-  - [ ] Exit code is 0
-- [ ] Test `axe config init`:
-  - [ ] Creates `agents/` directory
-  - [ ] Creates `skills/sample/` directory
-  - [ ] Copies SKILL.md template
-  - [ ] Idempotent: running twice succeeds silently
-  - [ ] Does not overwrite existing files
-  - [ ] Exit code is 0 on success
-  - [ ] Exit code is 1 on permission errors
-- [ ] Verify exit codes:
-  - [ ] All successful commands return 0
-  - [ ] All error conditions return 1
+- [x] Verify `go build` produces binary without errors
+- [x] Test `axe version`:
+  - [x] Output matches exactly "axe version 0.1.0"
+  - [x] Exit code is 0
+- [x] Test `axe help`:
+  - [x] Displays available commands
+  - [x] Displays usage examples
+  - [x] Exit code is 0
+- [x] Test `axe config path`:
+  - [x] Prints valid path for current platform
+  - [x] Works when XDG_CONFIG_HOME is set
+  - [x] Works when XDG_CONFIG_HOME is unset
+  - [x] Exit code is 0
+- [x] Test `axe config init`:
+  - [x] Creates `agents/` directory
+  - [x] Creates `skills/sample/` directory
+  - [x] Copies SKILL.md template
+  - [x] Idempotent: running twice succeeds silently
+  - [x] Does not overwrite existing files
+  - [x] Exit code is 0 on success
+  - [x] Exit code is 1 on permission errors
+- [x] Verify exit codes:
+  - [x] All successful commands return 0
+  - [x] All error conditions return 1
 
 ---
 
 ## Phase 6: Verification
 
-- [ ] Run `go mod tidy` to clean dependencies
-- [ ] Verify only Cobra is in go.mod (plus stdlib)
-- [ ] Check go.sum is generated
-- [ ] Verify all files compile on:
-  - [ ] Linux
-  - [ ] macOS (if available)
-  - [ ] Windows cross-compilation check (optional)
-- [ ] Final binary test:
-  - [ ] Binary runs from any directory
-  - [ ] All commands work as specified
-  - [ ] No hardcoded paths
-  - [ ] Proper XDG path resolution
+- [x] Run `go mod tidy` to clean dependencies
+- [x] Verify only Cobra is in go.mod (plus stdlib)
+- [x] Check go.sum is generated
+- [x] Verify all files compile on:
+  - [x] Linux
+  - [x] macOS (if available)
+  - [x] Windows cross-compilation check (optional)
+- [x] Final binary test:
+  - [x] Binary runs from any directory
+  - [x] All commands work as specified
+  - [x] No hardcoded paths
+  - [x] Proper XDG path resolution
 
 ---
 
 ## Definition of Done
 
-- [ ] All checkboxes in Phase 1-6 are completed
-- [ ] All acceptance criteria from 001_skeleton_spec.md are met
-- [ ] Binary builds successfully with `go build`
-- [ ] All tests pass (manual verification)
-- [ ] Ready for M2: Agent Config implementation
+- [x] All checkboxes in Phase 1-6 are completed
+- [x] All acceptance criteria from 001_skeleton_spec.md are met
+- [x] Binary builds successfully with `go build`
+- [x] All tests pass (manual verification)
+- [x] Ready for M2: Agent Config implementation
