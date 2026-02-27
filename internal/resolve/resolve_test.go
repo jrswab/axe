@@ -224,6 +224,69 @@ func TestFiles_SymlinkOutsideWorkdir(t *testing.T) {
 	}
 }
 
+func TestFiles_PathTraversalBlocked(t *testing.T) {
+	// A pattern like "../*" must not return files outside the workdir.
+	dir := t.TempDir()
+	subDir := filepath.Join(dir, "project")
+	os.MkdirAll(subDir, 0755)
+
+	// Create a file in the parent directory (outside workdir)
+	os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("secret data"), 0644)
+	// Create a file inside the workdir
+	os.WriteFile(filepath.Join(subDir, "local.txt"), []byte("local data"), 0644)
+
+	result, err := Files([]string{"../*"}, subDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Must not include files from the parent directory
+	for _, f := range result {
+		if strings.Contains(f.Path, "..") {
+			t.Errorf("path traversal not blocked: got file with path %q", f.Path)
+		}
+		if strings.Contains(f.Content, "secret") {
+			t.Errorf("path traversal not blocked: read content from outside workdir")
+		}
+	}
+	if len(result) != 0 {
+		t.Errorf("expected 0 files from ../* pattern, got %d", len(result))
+	}
+}
+
+func TestFiles_SymlinkInsideWorkdir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink tests unreliable on Windows")
+	}
+	dir := t.TempDir()
+
+	// Create a real file and a symlink to it within workdir
+	os.WriteFile(filepath.Join(dir, "real.txt"), []byte("real content"), 0644)
+	os.Symlink(filepath.Join(dir, "real.txt"), filepath.Join(dir, "link.txt"))
+
+	result, err := Files([]string{"*.txt"}, dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// The symlink points inside workdir, so both files should be returned
+	// (real.txt directly, link.txt as a valid intra-workdir symlink)
+	paths := make([]string, len(result))
+	for i, f := range result {
+		paths[i] = f.Path
+	}
+
+	found := false
+	for _, p := range paths {
+		if p == "link.txt" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected intra-workdir symlink 'link.txt' to be included, got paths: %v", paths)
+	}
+}
+
 // --- Skill Tests ---
 
 func TestSkill_EmptyPath(t *testing.T) {

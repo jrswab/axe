@@ -294,25 +294,25 @@
 
 ## Phase 13: Verification
 
-- [ ] Manual test: `axe run nonexistent` -- error about missing agent config, exit code 2
-- [ ] Manual test: Create agent with invalid model format, `axe run <agent>` -- error about model format
-- [ ] Manual test: Create agent with `model = "openai/gpt-4"`, `axe run <agent>` -- unsupported provider error
-- [ ] Manual test: Create valid agent, unset `ANTHROPIC_API_KEY`, `axe run <agent>` -- missing API key error, exit code 3
-- [ ] Manual test: Create valid agent, set `ANTHROPIC_API_KEY`, `axe run <agent> --dry-run` -- shows resolved context
-- [ ] Manual test: `echo "hello" | axe run <agent> --dry-run` -- stdin appears in output
-- [ ] Manual test: `axe run <agent> --verbose --dry-run` -- verbose info on stderr
-- [ ] Manual test: `axe run <agent>` with valid API key -- receives LLM response on stdout
-- [ ] Manual test: `axe run <agent> --json` -- JSON output with metadata
-- [ ] Manual test: `axe run <agent> --model anthropic/claude-haiku-3-20240307` -- model override works
-- [ ] Manual test: `axe run <agent> --timeout 1` with slow response -- timeout error, exit code 3
+- [x] Manual test: `axe run nonexistent` -- error about missing agent config, exit code 2
+- [x] Manual test: Create agent with invalid model format, `axe run <agent>` -- error about model format
+- [x] Manual test: Create agent with `model = "openai/gpt-4"`, `axe run <agent>` -- unsupported provider error
+- [x] Manual test: Create valid agent, unset `ANTHROPIC_API_KEY`, `axe run <agent>` -- missing API key error, exit code 3
+- [x] Manual test: Create valid agent, set `ANTHROPIC_API_KEY`, `axe run <agent> --dry-run` -- shows resolved context
+- [x] Manual test: `echo "hello" | axe run <agent> --dry-run` -- stdin appears in output
+- [x] Manual test: `axe run <agent> --verbose --dry-run` -- verbose info on stderr
+- [x] Manual test: `axe run <agent>` with valid API key -- receives LLM response on stdout
+- [x] Manual test: `axe run <agent> --json` -- JSON output with metadata
+- [x] Manual test: `axe run <agent> --model anthropic/claude-haiku-3-20240307` -- model override works
+- [x] Manual test: `axe run <agent> --timeout 1` with slow response -- timeout error, exit code 3
 
 ---
 
 ## Definition of Done
 
-- [ ] All checkboxes in Phases 1-13 are completed
-- [ ] All acceptance criteria from 003_single_agent_run_spec.md are met
-- [ ] Binary builds successfully with `go build`
-- [ ] All tests pass with `go test ./...`
-- [ ] No new external dependencies added to `go.mod`
-- [ ] Ready for M4: Multi-Provider Support
+- [x] All checkboxes in Phases 1-13 are completed
+- [x] All acceptance criteria from 003_single_agent_run_spec.md are met
+- [x] Binary builds successfully with `go build`
+- [x] All tests pass with `go test ./...`
+- [x] No new external dependencies added to `go.mod`
+- [x] Ready for M4: Multi-Provider Support

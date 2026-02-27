@@ -43,6 +43,13 @@ func Files(patterns []string, workdir string) ([]FileContent, error) {
 		return nil, fmt.Errorf("failed to resolve workdir: %w", err)
 	}
 
+	// Resolve symlinks in workdir so containment checks work when the
+	// workdir path itself traverses symlinks (e.g. /tmp -> /private/tmp on macOS).
+	absWorkdir, err = filepath.EvalSymlinks(absWorkdir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve workdir symlinks: %w", err)
+	}
+
 	seen := make(map[string]bool)
 	var results []FileContent
 
@@ -63,6 +70,11 @@ func Files(patterns []string, workdir string) ([]FileContent, error) {
 		for _, absPath := range matches {
 			relPath, err := filepath.Rel(absWorkdir, absPath)
 			if err != nil {
+				continue
+			}
+
+			// Block path traversal: skip any match that resolves outside the workdir.
+			if strings.HasPrefix(relPath, "..") {
 				continue
 			}
 
@@ -218,24 +230,33 @@ func isSymlinkOutside(path, absWorkdir string) bool {
 
 // readTextFile reads a file and returns its content, or an error if it's binary.
 // Binary detection: if any null byte exists in the first 512 bytes, it's binary.
+// Only the header is read initially to avoid loading large binary files into memory.
 func readTextFile(path string) (string, error) {
-	data, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
+	defer f.Close()
 
-	// Check first 512 bytes for null bytes (binary detection)
-	checkLen := 512
-	if len(data) < checkLen {
-		checkLen = len(data)
+	// Read only the first 512 bytes for binary detection.
+	header := make([]byte, 512)
+	n, err := f.Read(header)
+	if err != nil && err != io.EOF {
+		return "", err
 	}
-	for i := 0; i < checkLen; i++ {
-		if data[i] == 0 {
+	for i := 0; i < n; i++ {
+		if header[i] == 0 {
 			return "", fmt.Errorf("binary file detected: %s", path)
 		}
 	}
 
-	return string(data), nil
+	// File is text; read the remainder and combine with the header.
+	rest, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+
+	return string(header[:n]) + string(rest), nil
 }
 
 // Stdin reads stdin content if it is piped (not a terminal).
