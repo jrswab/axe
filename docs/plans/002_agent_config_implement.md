@@ -1,7 +1,7 @@
 # Implementation Checklist: M2 - Agent Config
 
 **Based on:** 002_agent_config_spec.md
-**Status:** In Progress
+**Status:** Complete
 **Created:** 2026-02-27
 
 ---
@@ -210,24 +210,24 @@ Write tests first (red), then implement (green):
 
 ## Phase 13: Verification
 
-- [ ] Manual test: `axe agents list` with no agents — no output, exit 0
-- [ ] Manual test: `axe agents init test-agent` — creates TOML file, prints path
-- [ ] Manual test: `axe agents list` — shows `test-agent`
-- [ ] Manual test: `axe agents show test-agent` — shows Name and Model fields
-- [ ] Manual test: `axe agents init test-agent` again — error about existing file
-- [ ] Manual test: Edit the TOML to set a real model, re-run `axe agents show test-agent` — displays updated model
-- [ ] Manual test: `axe agents edit test-agent` with `$EDITOR` set — opens editor
-- [ ] Manual test: `axe agents edit test-agent` with `$EDITOR` unset — error message
-- [ ] Manual test: `axe agents show nonexistent` — error message
-- [ ] Verify `go.mod` only contains `spf13/cobra` and `BurntSushi/toml` as direct dependencies
-- [ ] Run `go mod tidy` — no changes
+- [x] Manual test: `axe agents list` with no agents — no output, exit 0
+- [x] Manual test: `axe agents init test-agent` — creates TOML file, prints path
+- [x] Manual test: `axe agents list` — shows `test-agent`
+- [x] Manual test: `axe agents show test-agent` — shows Name and Model fields
+- [x] Manual test: `axe agents init test-agent` again — error about existing file
+- [x] Manual test: Edit the TOML to set a real model, re-run `axe agents show test-agent` — displays updated model
+- [x] Manual test: `axe agents edit test-agent` with `$EDITOR` set — opens editor
+- [x] Manual test: `axe agents edit test-agent` with `$EDITOR` unset — error message
+- [x] Manual test: `axe agents show nonexistent` — error message
+- [x] Verify `go.mod` only contains `spf13/cobra` and `BurntSushi/toml` as direct dependencies
+- [x] Run `go mod tidy` — no changes
 
 ---
 
 ## Definition of Done
 
-- [ ] All checkboxes in Phases 1-13 are completed
-- [ ] All acceptance criteria from 002_agent_config_spec.md are met
-- [ ] Binary builds successfully with `go build`
-- [ ] All tests pass with `go test ./...`
-- [ ] Ready for M3: Single Agent Run implementation
+- [x] All checkboxes in Phases 1-13 are completed
+- [x] All acceptance criteria from 002_agent_config_spec.md are met
+- [x] Binary builds successfully with `go build`
+- [x] All tests pass with `go test ./...`
+- [x] Ready for M3: Single Agent Run implementation
