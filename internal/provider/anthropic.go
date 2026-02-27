@@ -104,10 +104,7 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 		Model:     req.Model,
 		MaxTokens: maxTokens,
 		Messages:  req.Messages,
-	}
-
-	if req.System != "" {
-		body.System = req.System
+		System:    req.System,
 	}
 
 	if req.Temperature != 0 {

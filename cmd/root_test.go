@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -57,6 +59,65 @@ func TestRootCommand_Description(t *testing.T) {
 	}
 	if rootCmd.Long == "" {
 		t.Error("root command missing long description")
+	}
+}
+
+func TestRunE_ErrorDoesNotPrintUsage(t *testing.T) {
+	resetRunCmd(t)
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.MkdirAll(agentsDir, 0755)
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"args_validation_error", []string{"run"}},
+		{"runE_error", []string{"run", "nonexistent"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resetRunCmd(t)
+			errBuf := new(bytes.Buffer)
+			rootCmd.SetOut(new(bytes.Buffer))
+			rootCmd.SetErr(errBuf)
+			rootCmd.SetArgs(tc.args)
+
+			err := rootCmd.Execute()
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			stderr := errBuf.String()
+			// Cobra should NOT print usage/help text to stderr on errors
+			if strings.Contains(stderr, "Usage:") {
+				t.Errorf("stderr should not contain usage text, got:\n%s", stderr)
+			}
+			if strings.Contains(stderr, "Available Commands:") {
+				t.Errorf("stderr should not contain available commands, got:\n%s", stderr)
+			}
+		})
+	}
+}
+
+func TestRunE_ErrorNotPrintedByCobra(t *testing.T) {
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(new(bytes.Buffer))
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run"}) // missing required arg
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for missing args, got nil")
+	}
+
+	stderr := errBuf.String()
+	// With SilenceErrors, Cobra must not write the error to stderr itself.
+	// The error string from ExactArgs would contain "accepts 1 arg(s)".
+	if strings.Contains(stderr, "accepts 1 arg(s)") {
+		t.Errorf("Cobra should not print the error to stderr (duplicate); got:\n%s", stderr)
 	}
 }
 

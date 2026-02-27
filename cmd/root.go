@@ -21,6 +21,8 @@ your agent workspace.`,
   axe config path      Print the configuration directory path
   axe config init      Initialize the configuration directory
   axe run pr-reviewer   Run the pr-reviewer agent`,
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 // exitCodeFromError extracts the exit code from an ExitError, defaulting to 1.

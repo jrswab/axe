@@ -108,6 +108,16 @@ func simpleGlob(pattern, absWorkdir string) ([]string, error) {
 
 // doubleStarGlob resolves a ** glob pattern by walking the directory tree.
 func doubleStarGlob(pattern, absWorkdir string) ([]string, error) {
+	// Validate each non-** segment of the pattern before walking.
+	for _, part := range strings.Split(pattern, "/") {
+		if part == "**" {
+			continue
+		}
+		if _, err := filepath.Match(part, ""); err != nil {
+			return nil, fmt.Errorf("invalid glob pattern %q: %w", pattern, err)
+		}
+	}
+
 	// Split the pattern on ** segments and match via WalkDir
 	var matches []string
 

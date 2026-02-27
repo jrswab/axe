@@ -21,6 +21,23 @@ func TestExitError_ErrorInterface(t *testing.T) {
 	}
 }
 
+func TestExitError_NilErr(t *testing.T) {
+	exitErr := &ExitError{Code: 1, Err: nil}
+
+	// Must not panic when Err is nil
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("ExitError.Error() panicked with nil Err: %v", r)
+		}
+	}()
+
+	got := exitErr.Error()
+	want := "exit code 1"
+	if got != want {
+		t.Errorf("ExitError.Error() = %q, want %q", got, want)
+	}
+}
+
 func TestExitError_Unwrap(t *testing.T) {
 	inner := errors.New("original error")
 	exitErr := &ExitError{Code: 3, Err: inner}

@@ -1,6 +1,7 @@
 package resolve
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -122,6 +123,20 @@ func TestFiles_InvalidPattern(t *testing.T) {
 	}
 }
 
+func TestFiles_InvalidDoubleStarPattern(t *testing.T) {
+	dir := t.TempDir()
+	// Create a file so the directory isn't empty
+	os.WriteFile(filepath.Join(dir, "file.txt"), []byte("content"), 0644)
+
+	_, err := Files([]string{"**/["}, dir)
+	if err == nil {
+		t.Fatal("expected error for invalid ** pattern '**/[', got nil")
+	}
+	if !strings.Contains(err.Error(), "invalid glob pattern") {
+		t.Errorf("expected error to contain 'invalid glob pattern', got %q", err.Error())
+	}
+}
+
 func TestFiles_NoMatches(t *testing.T) {
 	dir := t.TempDir()
 	result, err := Files([]string{"*.xyz"}, dir)
@@ -167,7 +182,7 @@ func TestFiles_SortedOutput(t *testing.T) {
 func TestFiles_SkipsBinaryFiles(t *testing.T) {
 	dir := t.TempDir()
 	// Create a file with null bytes in the first 512 bytes
-	binaryContent := make([]byte, 100)
+	binaryContent := bytes.Repeat([]byte("A"), 100)
 	binaryContent[50] = 0x00
 	os.WriteFile(filepath.Join(dir, "binary.dat"), binaryContent, 0644)
 	os.WriteFile(filepath.Join(dir, "text.dat"), []byte("hello world"), 0644)
