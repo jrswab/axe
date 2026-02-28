@@ -71,9 +71,9 @@ type ollamaResponse struct {
 	Message struct {
 		Content string `json:"content"`
 	} `json:"message"`
-	DoneReason    string `json:"done_reason"`
-	PromptEvalCnt int    `json:"prompt_eval_count"`
-	EvalCnt       int    `json:"eval_count"`
+	DoneReason      string `json:"done_reason"`
+	PromptEvalCount int    `json:"prompt_eval_count"`
+	EvalCount       int    `json:"eval_count"`
 }
 
 // ollamaErrorResponse represents an Ollama API error response.
@@ -177,12 +177,13 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 	return &Response{
 		Content:      apiResp.Message.Content,
 		Model:        apiResp.Model,
-		InputTokens:  apiResp.PromptEvalCnt,
-		OutputTokens: apiResp.EvalCnt,
+		InputTokens:  apiResp.PromptEvalCount,
+		OutputTokens: apiResp.EvalCount,
 		StopReason:   apiResp.DoneReason,
 	}, nil
 }
 
+// handleErrorResponse maps HTTP error responses to ProviderError.
 func (o *Ollama) handleErrorResponse(status int, body []byte) *ProviderError {
 	message := http.StatusText(status)
 	var errResp ollamaErrorResponse
@@ -197,11 +198,10 @@ func (o *Ollama) handleErrorResponse(status int, body []byte) *ProviderError {
 	}
 }
 
+// mapStatusToCategory maps HTTP status codes to error categories.
 func (o *Ollama) mapStatusToCategory(status int) ErrorCategory {
 	switch status {
-	case 400:
-		return ErrCategoryBadRequest
-	case 404:
+	case 400, 404:
 		return ErrCategoryBadRequest
 	case 500:
 		return ErrCategoryServer

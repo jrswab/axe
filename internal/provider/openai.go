@@ -173,6 +173,7 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	}, nil
 }
 
+// handleErrorResponse maps HTTP error responses to ProviderError.
 func (o *OpenAI) handleErrorResponse(status int, body []byte) *ProviderError {
 	message := http.StatusText(status)
 	var errResp openaiErrorResponse
@@ -187,15 +188,12 @@ func (o *OpenAI) handleErrorResponse(status int, body []byte) *ProviderError {
 	}
 }
 
+// mapStatusToCategory maps HTTP status codes to error categories.
 func (o *OpenAI) mapStatusToCategory(status int) ErrorCategory {
 	switch status {
-	case 401:
+	case 401, 403:
 		return ErrCategoryAuth
-	case 403:
-		return ErrCategoryAuth
-	case 400:
-		return ErrCategoryBadRequest
-	case 404:
+	case 400, 404:
 		return ErrCategoryBadRequest
 	case 429:
 		return ErrCategoryRateLimit

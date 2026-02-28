@@ -147,19 +147,20 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent)
 	}
 
-	// Step 12-14: Resolve API key and create provider
+	// Step 12-13: Resolve API key and validate
 	apiKey := globalCfg.ResolveAPIKey(provName)
 	baseURL := globalCfg.ResolveBaseURL(provName)
 
-	// Validate provider is supported before checking API key
+	// Check for missing API key only for supported providers that require one.
+	// Unsupported providers fall through to provider.New() which returns a clear error.
+	if provider.Supported(provName) && provName != "ollama" && apiKey == "" {
+		envVar := config.APIKeyEnvVar(provName)
+		return &ExitError{Code: 3, Err: fmt.Errorf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar)}
+	}
+
+	// Step 14: Create provider
 	prov, err := provider.New(provName, apiKey, baseURL)
 	if err != nil {
-		// Check if this is an API key issue (empty key for providers that require it)
-		if apiKey == "" && provName != "ollama" && !strings.Contains(err.Error(), "unsupported provider") {
-			envVar := strings.ToUpper(provName) + "_API_KEY"
-			return &ExitError{Code: 3, Err: fmt.Errorf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar)}
-		}
-		// Unsupported provider or other constructor error
 		return &ExitError{Code: 1, Err: err}
 	}
 

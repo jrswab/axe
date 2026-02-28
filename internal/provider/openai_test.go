@@ -77,39 +77,33 @@ func TestOpenAI_Send_Success(t *testing.T) {
 }
 
 func TestOpenAI_Send_RequestFormat(t *testing.T) {
+	var gotMethod, gotPath, gotAuth, gotCT, gotModel string
+	var gotMsgCount int
+	var gotFirstRole, gotSecondRole string
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-		if r.URL.Path != "/v1/chat/completions" {
-			t.Errorf("expected /v1/chat/completions, got %s", r.URL.Path)
-		}
-		if auth := r.Header.Get("Authorization"); auth != "Bearer test-key" {
-			t.Errorf("expected 'Bearer test-key', got %q", auth)
-		}
-		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
-			t.Errorf("expected 'application/json', got %q", ct)
-		}
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		gotCT = r.Header.Get("Content-Type")
 
 		body, _ := io.ReadAll(r.Body)
 		var req map[string]interface{}
 		json.Unmarshal(body, &req)
 
-		if req["model"] != "gpt-4o" {
-			t.Errorf("expected model 'gpt-4o', got %v", req["model"])
-		}
-
-		msgs, ok := req["messages"].([]interface{})
-		if !ok || len(msgs) != 2 {
-			t.Fatalf("expected 2 messages, got %v", req["messages"])
-		}
-		first := msgs[0].(map[string]interface{})
-		if first["role"] != "system" {
-			t.Errorf("expected first message role 'system', got %v", first["role"])
-		}
-		second := msgs[1].(map[string]interface{})
-		if second["role"] != "user" {
-			t.Errorf("expected second message role 'user', got %v", second["role"])
+		gotModel, _ = req["model"].(string)
+		if msgs, ok := req["messages"].([]interface{}); ok {
+			gotMsgCount = len(msgs)
+			if len(msgs) >= 1 {
+				if first, ok := msgs[0].(map[string]interface{}); ok {
+					gotFirstRole, _ = first["role"].(string)
+				}
+			}
+			if len(msgs) >= 2 {
+				if second, ok := msgs[1].(map[string]interface{}); ok {
+					gotSecondRole, _ = second["role"].(string)
+				}
+			}
 		}
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -121,26 +115,57 @@ func TestOpenAI_Send_RequestFormat(t *testing.T) {
 	defer server.Close()
 
 	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
-	o.Send(context.Background(), &Request{
+	_, err := o.Send(context.Background(), &Request{
 		Model:    "gpt-4o",
 		System:   "Be helpful",
 		Messages: []Message{{Role: "user", Content: "Hi"}},
 	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if gotMethod != "POST" {
+		t.Errorf("expected POST, got %s", gotMethod)
+	}
+	if gotPath != "/v1/chat/completions" {
+		t.Errorf("expected /v1/chat/completions, got %s", gotPath)
+	}
+	if gotAuth != "Bearer test-key" {
+		t.Errorf("expected 'Bearer test-key', got %q", gotAuth)
+	}
+	if gotCT != "application/json" {
+		t.Errorf("expected 'application/json', got %q", gotCT)
+	}
+	if gotModel != "gpt-4o" {
+		t.Errorf("expected model 'gpt-4o', got %v", gotModel)
+	}
+	if gotMsgCount != 2 {
+		t.Fatalf("expected 2 messages, got %d", gotMsgCount)
+	}
+	if gotFirstRole != "system" {
+		t.Errorf("expected first message role 'system', got %v", gotFirstRole)
+	}
+	if gotSecondRole != "user" {
+		t.Errorf("expected second message role 'user', got %v", gotSecondRole)
+	}
 }
 
 func TestOpenAI_Send_OmitsEmptySystem(t *testing.T) {
+	var gotMsgCount int
+	var gotFirstRole string
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req map[string]interface{}
 		json.Unmarshal(body, &req)
 
-		msgs := req["messages"].([]interface{})
-		if len(msgs) != 1 {
-			t.Errorf("expected 1 message (no system), got %d", len(msgs))
-		}
-		first := msgs[0].(map[string]interface{})
-		if first["role"] != "user" {
-			t.Errorf("expected role 'user', got %v", first["role"])
+		if msgs, ok := req["messages"].([]interface{}); ok {
+			gotMsgCount = len(msgs)
+			if len(msgs) >= 1 {
+				if first, ok := msgs[0].(map[string]interface{}); ok {
+					gotFirstRole, _ = first["role"].(string)
+				}
+			}
 		}
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -152,21 +177,30 @@ func TestOpenAI_Send_OmitsEmptySystem(t *testing.T) {
 	defer server.Close()
 
 	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
-	o.Send(context.Background(), &Request{
+	_, err := o.Send(context.Background(), &Request{
 		Model:    "gpt-4o",
 		Messages: []Message{{Role: "user", Content: "Hi"}},
 	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if gotMsgCount != 1 {
+		t.Errorf("expected 1 message (no system), got %d", gotMsgCount)
+	}
+	if gotFirstRole != "user" {
+		t.Errorf("expected role 'user', got %v", gotFirstRole)
+	}
 }
 
 func TestOpenAI_Send_OmitsZeroTemperature(t *testing.T) {
+	var hasTemperature bool
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var raw map[string]json.RawMessage
 		json.Unmarshal(body, &raw)
-
-		if _, ok := raw["temperature"]; ok {
-			t.Error("expected temperature to be omitted when 0")
-		}
+		_, hasTemperature = raw["temperature"]
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"model":   "gpt-4o",
@@ -177,22 +211,27 @@ func TestOpenAI_Send_OmitsZeroTemperature(t *testing.T) {
 	defer server.Close()
 
 	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
-	o.Send(context.Background(), &Request{
+	_, err := o.Send(context.Background(), &Request{
 		Model:       "gpt-4o",
 		Messages:    []Message{{Role: "user", Content: "Hi"}},
 		Temperature: 0,
 	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if hasTemperature {
+		t.Error("expected temperature to be omitted when 0")
+	}
 }
 
 func TestOpenAI_Send_OmitsZeroMaxTokens(t *testing.T) {
+	var hasMaxTokens bool
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var raw map[string]json.RawMessage
 		json.Unmarshal(body, &raw)
-
-		if _, ok := raw["max_tokens"]; ok {
-			t.Error("expected max_tokens to be omitted when 0")
-		}
+		_, hasMaxTokens = raw["max_tokens"]
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"model":   "gpt-4o",
@@ -203,22 +242,27 @@ func TestOpenAI_Send_OmitsZeroMaxTokens(t *testing.T) {
 	defer server.Close()
 
 	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
-	o.Send(context.Background(), &Request{
+	_, err := o.Send(context.Background(), &Request{
 		Model:     "gpt-4o",
 		Messages:  []Message{{Role: "user", Content: "Hi"}},
 		MaxTokens: 0,
 	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if hasMaxTokens {
+		t.Error("expected max_tokens to be omitted when 0")
+	}
 }
 
 func TestOpenAI_Send_IncludesMaxTokens(t *testing.T) {
+	var hasMaxTokens bool
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var raw map[string]json.RawMessage
 		json.Unmarshal(body, &raw)
-
-		if _, ok := raw["max_tokens"]; !ok {
-			t.Error("expected max_tokens to be present")
-		}
+		_, hasMaxTokens = raw["max_tokens"]
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"model":   "gpt-4o",
@@ -229,11 +273,17 @@ func TestOpenAI_Send_IncludesMaxTokens(t *testing.T) {
 	defer server.Close()
 
 	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
-	o.Send(context.Background(), &Request{
+	_, err := o.Send(context.Background(), &Request{
 		Model:     "gpt-4o",
 		Messages:  []Message{{Role: "user", Content: "Hi"}},
 		MaxTokens: 1024,
 	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !hasMaxTokens {
+		t.Error("expected max_tokens to be present")
+	}
 }
 
 func TestOpenAI_Send_AuthError(t *testing.T) {

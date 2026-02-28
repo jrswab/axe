@@ -51,19 +51,26 @@ func Load() (*GlobalConfig, error) {
 	return &cfg, nil
 }
 
-// canonicalAPIKeyEnvVar returns the environment variable name for a provider's API key.
+// knownAPIKeyEnvVars maps provider names to their canonical API key environment variables.
 var knownAPIKeyEnvVars = map[string]string{
 	"anthropic": "ANTHROPIC_API_KEY",
 	"openai":    "OPENAI_API_KEY",
 }
 
+// APIKeyEnvVar returns the environment variable name used to resolve the API key
+// for the given provider. Known providers use canonical names; unknown providers
+// use the convention <PROVIDER_UPPER>_API_KEY.
+func APIKeyEnvVar(providerName string) string {
+	if v, ok := knownAPIKeyEnvVars[providerName]; ok {
+		return v
+	}
+	return strings.ToUpper(providerName) + "_API_KEY"
+}
+
 // ResolveAPIKey returns the API key for the given provider.
 // Resolution order: env var > config file > empty string.
 func (c *GlobalConfig) ResolveAPIKey(providerName string) string {
-	envVar, ok := knownAPIKeyEnvVars[providerName]
-	if !ok {
-		envVar = strings.ToUpper(providerName) + "_API_KEY"
-	}
+	envVar := APIKeyEnvVar(providerName)
 
 	if v := os.Getenv(envVar); v != "" {
 		return v

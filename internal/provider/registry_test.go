@@ -98,3 +98,23 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 		t.Errorf("expected 'API key is required', got %q", err.Error())
 	}
 }
+
+func TestSupported_KnownProviders(t *testing.T) {
+	for _, name := range []string{"anthropic", "openai", "ollama"} {
+		if !Supported(name) {
+			t.Errorf("expected %q to be supported", name)
+		}
+	}
+}
+
+func TestSupported_UnknownProvider(t *testing.T) {
+	if Supported("groq") {
+		t.Error("expected 'groq' to not be supported")
+	}
+	if Supported("") {
+		t.Error("expected empty string to not be supported")
+	}
+	if Supported("Anthropic") {
+		t.Error("expected 'Anthropic' (mixed case) to not be supported")
+	}
+}

@@ -23,13 +23,24 @@ func TestLoad_FileNotFound(t *testing.T) {
 	}
 }
 
+// writeConfigTOML is a test helper that creates the axe config directory and writes
+// a config.toml with the given content. It calls t.Fatal on any filesystem error.
+func writeConfigTOML(t *testing.T, tmpDir, content string) {
+	t.Helper()
+	axeDir := filepath.Join(tmpDir, "axe")
+	if err := os.MkdirAll(axeDir, 0755); err != nil {
+		t.Fatalf("failed to create config dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(axeDir, "config.toml"), []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config.toml: %v", err)
+	}
+}
+
 func TestLoad_EmptyFile(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", tmp)
 
-	axeDir := filepath.Join(tmp, "axe")
-	os.MkdirAll(axeDir, 0755)
-	os.WriteFile(filepath.Join(axeDir, "config.toml"), []byte(""), 0644)
+	writeConfigTOML(t, tmp, "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -44,10 +55,7 @@ func TestLoad_ValidConfig(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", tmp)
 
-	axeDir := filepath.Join(tmp, "axe")
-	os.MkdirAll(axeDir, 0755)
-
-	content := `
+	writeConfigTOML(t, tmp, `
 [providers.anthropic]
 api_key = "sk-ant-test"
 base_url = "https://custom.anthropic.com"
@@ -57,8 +65,7 @@ api_key = "sk-openai-test"
 
 [providers.ollama]
 base_url = "http://myhost:11434"
-`
-	os.WriteFile(filepath.Join(axeDir, "config.toml"), []byte(content), 0644)
+`)
 
 	cfg, err := Load()
 	if err != nil {
@@ -85,9 +92,7 @@ func TestLoad_MalformedTOML(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", tmp)
 
-	axeDir := filepath.Join(tmp, "axe")
-	os.MkdirAll(axeDir, 0755)
-	os.WriteFile(filepath.Join(axeDir, "config.toml"), []byte("[invalid toml\nblah blah"), 0644)
+	writeConfigTOML(t, tmp, "[invalid toml\nblah blah")
 
 	_, err := Load()
 	if err == nil {
@@ -102,12 +107,10 @@ func TestLoad_PartialConfig(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", tmp)
 
-	axeDir := filepath.Join(tmp, "axe")
-	os.MkdirAll(axeDir, 0755)
-	os.WriteFile(filepath.Join(axeDir, "config.toml"), []byte(`
+	writeConfigTOML(t, tmp, `
 [providers.openai]
 api_key = "sk-partial"
-`), 0644)
+`)
 
 	cfg, err := Load()
 	if err != nil {
@@ -216,4 +219,37 @@ func TestResolveBaseURL_NeitherSet(t *testing.T) {
 	}
 }
 
+func TestResolveBaseURL_NilProvidersMap(t *testing.T) {
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", "http://from-env")
+	cfg := &GlobalConfig{Providers: nil}
+	if got := cfg.ResolveBaseURL("anthropic"); got != "http://from-env" {
+		t.Errorf("expected 'http://from-env', got %q", got)
+	}
+}
 
+func TestResolveBaseURL_EmptyEnvVar(t *testing.T) {
+	t.Setenv("AXE_OPENAI_BASE_URL", "")
+	cfg := &GlobalConfig{
+		Providers: map[string]ProviderConfig{
+			"openai": {BaseURL: "http://from-config"},
+		},
+	}
+	if got := cfg.ResolveBaseURL("openai"); got != "http://from-config" {
+		t.Errorf("expected 'http://from-config', got %q", got)
+	}
+}
+
+func TestAPIKeyEnvVar_KnownProvider(t *testing.T) {
+	if got := APIKeyEnvVar("anthropic"); got != "ANTHROPIC_API_KEY" {
+		t.Errorf("expected ANTHROPIC_API_KEY, got %q", got)
+	}
+	if got := APIKeyEnvVar("openai"); got != "OPENAI_API_KEY" {
+		t.Errorf("expected OPENAI_API_KEY, got %q", got)
+	}
+}
+
+func TestAPIKeyEnvVar_UnknownProvider(t *testing.T) {
+	if got := APIKeyEnvVar("groq"); got != "GROQ_API_KEY" {
+		t.Errorf("expected GROQ_API_KEY, got %q", got)
+	}
+}

@@ -2,6 +2,18 @@ package provider
 
 import "fmt"
 
+// supportedProviders lists all provider names accepted by New.
+var supportedProviders = map[string]bool{
+	"anthropic": true,
+	"openai":    true,
+	"ollama":    true,
+}
+
+// Supported reports whether providerName is a known provider.
+func Supported(providerName string) bool {
+	return supportedProviders[providerName]
+}
+
 // New creates a Provider by dispatching to the correct constructor based on providerName.
 func New(providerName, apiKey, baseURL string) (Provider, error) {
 	switch providerName {

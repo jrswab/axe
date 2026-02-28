@@ -181,8 +181,11 @@ model = "anthropic/claude-sonnet-4-20250514"
 	if exitErr.Code != 3 {
 		t.Errorf("expected exit code 3, got %d", exitErr.Code)
 	}
-	if !strings.Contains(err.Error(), "ANTHROPIC_API_KEY") && !strings.Contains(err.Error(), "API key for provider") {
-		t.Errorf("expected error about API key, got: %v", err)
+	if !strings.Contains(err.Error(), "ANTHROPIC_API_KEY") {
+		t.Errorf("expected error mentioning ANTHROPIC_API_KEY, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "config.toml") {
+		t.Errorf("expected error mentioning config.toml hint, got: %v", err)
 	}
 }
 
