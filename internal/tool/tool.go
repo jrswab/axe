@@ -9,6 +9,7 @@ import (
 
 	"github.com/jrswab/axe/internal/agent"
 	"github.com/jrswab/axe/internal/config"
+	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/resolve"
 	"github.com/jrswab/axe/internal/xdg"
@@ -156,6 +157,25 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 
 	systemPrompt := resolve.BuildSystemPrompt(cfg.SystemPrompt, skillContent, files)
 
+	// Step 8b: Memory — load entries into system prompt
+	if cfg.Memory.Enabled {
+		memPath, memErr := memory.FilePath(agentName, cfg.Memory.Path)
+		if memErr != nil {
+			if opts.Verbose && opts.Stderr != nil {
+				fmt.Fprintf(opts.Stderr, "[sub-agent] Warning: failed to load memory for %q: %v\n", agentName, memErr)
+			}
+		} else {
+			entries, memErr := memory.LoadEntries(memPath, cfg.Memory.LastN)
+			if memErr != nil {
+				if opts.Verbose && opts.Stderr != nil {
+					fmt.Fprintf(opts.Stderr, "[sub-agent] Warning: failed to load memory for %q: %v\n", agentName, memErr)
+				}
+			} else if entries != "" {
+				systemPrompt += "\n\n---\n\n## Memory\n\n" + entries
+			}
+		}
+	}
+
 	// Step 9: Resolve API key and base URL
 	globalCfg := opts.GlobalConfig
 	if globalCfg == nil {
@@ -218,6 +238,22 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		}
 		_ = durationMs
 		return errorResult(call.ID, agentName, err.Error(), opts)
+	}
+
+	// Step 14b: Memory — append entry after successful response
+	if cfg.Memory.Enabled {
+		appendPath, appendErr := memory.FilePath(agentName, cfg.Memory.Path)
+		if appendErr != nil {
+			if opts.Verbose && opts.Stderr != nil {
+				fmt.Fprintf(opts.Stderr, "[sub-agent] Warning: failed to save memory for %q: %v\n", agentName, appendErr)
+			}
+		} else {
+			if appendErr = memory.AppendEntry(appendPath, userMessage, resp.Content); appendErr != nil {
+				if opts.Verbose && opts.Stderr != nil {
+					fmt.Fprintf(opts.Stderr, "[sub-agent] Warning: failed to save memory for %q: %v\n", agentName, appendErr)
+				}
+			}
+		}
 	}
 
 	// Step 15: Return result

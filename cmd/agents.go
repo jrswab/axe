@@ -91,6 +91,12 @@ var agentsShowCmd = &cobra.Command{
 		if cfg.Memory.Path != "" {
 			fmt.Fprintf(w, "%-16s%s\n", "Memory Path:", cfg.Memory.Path)
 		}
+		if cfg.Memory.LastN != 0 {
+			fmt.Fprintf(w, "%-16s%d\n", "Memory LastN:", cfg.Memory.LastN)
+		}
+		if cfg.Memory.MaxEntries != 0 {
+			fmt.Fprintf(w, "%-16s%d\n", "Memory MaxEntries:", cfg.Memory.MaxEntries)
+		}
 		if cfg.Params.Temperature != 0 {
 			fmt.Fprintf(w, "%-16s%g\n", "Temperature:", cfg.Params.Temperature)
 		}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jrswab/axe/internal/config"
+	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
 )
 
@@ -562,5 +563,274 @@ func TestExecuteCallAgent_Timeout(t *testing.T) {
 	}
 	if !strings.Contains(result.Content, "sub-agent") {
 		t.Errorf("Content = %q, want to contain 'sub-agent'", result.Content)
+	}
+}
+
+// --- Phase 5a: Sub-Agent Memory Integration tests ---
+
+func TestExecuteCallAgent_MemoryEnabled_LoadsIntoPrompt(t *testing.T) {
+	agentsDir := setupToolTestAgentsDir(t)
+
+	// Set up XDG_DATA_HOME for memory file
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
+	// Pre-populate the sub-agent's memory file
+	memDir := filepath.Join(dataDir, "axe", "memory")
+	if err := os.MkdirAll(memDir, 0755); err != nil {
+		t.Fatalf("failed to create memory dir: %v", err)
+	}
+	memContent := "## 2026-02-28T10:00:00Z\n**Task:** previous task\n**Result:** previous result\n\n"
+	memPath := filepath.Join(memDir, "helper.md")
+	if err := os.WriteFile(memPath, []byte(memContent), 0644); err != nil {
+		t.Fatalf("failed to write memory file: %v", err)
+	}
+
+	// Mock provider that captures the system prompt from the request body
+	var receivedBody map[string]interface{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&receivedBody)
+		resp := map[string]interface{}{
+			"id":    "msg_mem",
+			"type":  "message",
+			"model": "claude-sonnet-4-20250514",
+			"role":  "assistant",
+			"content": []map[string]interface{}{
+				{"type": "text", "text": "done"},
+			},
+			"stop_reason": "end_turn",
+			"usage":       map[string]int{"input_tokens": 10, "output_tokens": 5},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Write sub-agent config with memory enabled
+	toml := `name = "helper"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "You are a helper."
+
+[memory]
+enabled = true
+`
+	writeToolTestAgent(t, agentsDir, "helper", toml)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	call := provider.ToolCall{
+		ID:        "test-mem-load",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "helper", "task": "do something"},
+	}
+	opts := ExecuteOptions{
+		AllowedAgents: []string{"helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+	}
+	result := ExecuteCallAgent(context.Background(), call, opts)
+	if result.IsError {
+		t.Fatalf("expected IsError=false, got error: %s", result.Content)
+	}
+
+	// Verify system prompt contains the memory section
+	system, ok := receivedBody["system"].(string)
+	if !ok {
+		t.Fatal("no 'system' field in request body")
+	}
+	if !strings.Contains(system, "## Memory") {
+		t.Errorf("system prompt missing '## Memory' section: %q", system)
+	}
+	if !strings.Contains(system, "previous task") {
+		t.Errorf("system prompt missing memory entry content: %q", system)
+	}
+	if !strings.Contains(system, "previous result") {
+		t.Errorf("system prompt missing memory entry result: %q", system)
+	}
+}
+
+func TestExecuteCallAgent_MemoryEnabled_AppendsEntry(t *testing.T) {
+	agentsDir := setupToolTestAgentsDir(t)
+
+	// Set up XDG_DATA_HOME for memory file
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
+	// Override Now for deterministic timestamps
+	origNow := memory.Now
+	memory.Now = func() time.Time {
+		return time.Date(2026, 2, 28, 12, 0, 0, 0, time.UTC)
+	}
+	defer func() { memory.Now = origNow }()
+
+	// Mock provider returning a known response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"id":    "msg_append",
+			"type":  "message",
+			"model": "claude-sonnet-4-20250514",
+			"role":  "assistant",
+			"content": []map[string]interface{}{
+				{"type": "text", "text": "Sub-agent completed the task"},
+			},
+			"stop_reason": "end_turn",
+			"usage":       map[string]int{"input_tokens": 10, "output_tokens": 5},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Write sub-agent config with memory enabled
+	toml := `name = "helper"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "You are a helper."
+
+[memory]
+enabled = true
+`
+	writeToolTestAgent(t, agentsDir, "helper", toml)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	call := provider.ToolCall{
+		ID:        "test-mem-append",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "helper", "task": "do the thing"},
+	}
+	opts := ExecuteOptions{
+		AllowedAgents: []string{"helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+	}
+	result := ExecuteCallAgent(context.Background(), call, opts)
+	if result.IsError {
+		t.Fatalf("expected IsError=false, got error: %s", result.Content)
+	}
+
+	// Verify memory file was created with the correct entry
+	memPath := filepath.Join(dataDir, "axe", "memory", "helper.md")
+	data, err := os.ReadFile(memPath)
+	if err != nil {
+		t.Fatalf("failed to read memory file: %v", err)
+	}
+	content := string(data)
+
+	if !strings.Contains(content, "## 2026-02-28T12:00:00Z") {
+		t.Errorf("memory file missing timestamp: %q", content)
+	}
+	if !strings.Contains(content, "**Task:** Task: do the thing") {
+		t.Errorf("memory file missing task: %q", content)
+	}
+	if !strings.Contains(content, "**Result:** Sub-agent completed the task") {
+		t.Errorf("memory file missing result: %q", content)
+	}
+}
+
+func TestExecuteCallAgent_MemoryDisabled_NoFileCreated(t *testing.T) {
+	agentsDir := setupToolTestAgentsDir(t)
+
+	// Set up XDG_DATA_HOME for memory file
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
+	// Mock provider
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"id":    "msg_nomem",
+			"type":  "message",
+			"model": "claude-sonnet-4-20250514",
+			"role":  "assistant",
+			"content": []map[string]interface{}{
+				{"type": "text", "text": "done"},
+			},
+			"stop_reason": "end_turn",
+			"usage":       map[string]int{"input_tokens": 10, "output_tokens": 5},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Write sub-agent config with memory DISABLED (default)
+	toml := `name = "helper"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "You are a helper."
+`
+	writeToolTestAgent(t, agentsDir, "helper", toml)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	call := provider.ToolCall{
+		ID:        "test-mem-disabled",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "helper", "task": "do something"},
+	}
+	opts := ExecuteOptions{
+		AllowedAgents: []string{"helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+	}
+	result := ExecuteCallAgent(context.Background(), call, opts)
+	if result.IsError {
+		t.Fatalf("expected IsError=false, got error: %s", result.Content)
+	}
+
+	// Verify no memory file was created
+	memPath := filepath.Join(dataDir, "axe", "memory", "helper.md")
+	if _, err := os.Stat(memPath); err == nil {
+		t.Errorf("expected no memory file at %s, but it exists", memPath)
+	}
+}
+
+func TestExecuteCallAgent_MemoryEnabled_Error_NoEntryAppended(t *testing.T) {
+	agentsDir := setupToolTestAgentsDir(t)
+
+	// Set up XDG_DATA_HOME for memory file
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
+	// Mock provider that returns an error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"type":"error","error":{"type":"server_error","message":"Internal server error"}}`))
+	}))
+	defer server.Close()
+
+	// Write sub-agent config with memory enabled
+	toml := `name = "helper"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "You are a helper."
+
+[memory]
+enabled = true
+`
+	writeToolTestAgent(t, agentsDir, "helper", toml)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	call := provider.ToolCall{
+		ID:        "test-mem-error",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "helper", "task": "do something"},
+	}
+	opts := ExecuteOptions{
+		AllowedAgents: []string{"helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+	}
+	result := ExecuteCallAgent(context.Background(), call, opts)
+	if !result.IsError {
+		t.Fatal("expected IsError=true for API error")
+	}
+
+	// Verify no memory file was created (error should prevent memory append)
+	memPath := filepath.Join(dataDir, "axe", "memory", "helper.md")
+	if _, err := os.Stat(memPath); err == nil {
+		t.Errorf("expected no memory file at %s after error, but it exists", memPath)
 	}
 }

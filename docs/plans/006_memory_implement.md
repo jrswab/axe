@@ -210,20 +210,20 @@
 
 ### 5a: Sub-Agent Memory Tests (Red)
 
-- [ ] Write `TestExecuteCallAgent_MemoryEnabled_LoadsIntoPrompt` — sub-agent with `memory.enabled = true`; pre-populated memory file; mock provider captures request; verify `## Memory` section in system prompt (Req 5.1)
-- [ ] Write `TestExecuteCallAgent_MemoryEnabled_AppendsEntry` — sub-agent with `memory.enabled = true`; mock provider; verify memory entry in sub-agent's memory file (Req 5.2)
-- [ ] Write `TestExecuteCallAgent_MemoryDisabled_NoFileCreated` — sub-agent with `memory.enabled = false`; verify no memory file created (Req 5.1)
-- [ ] Write `TestExecuteCallAgent_MemoryEnabled_Error_NoEntryAppended` — sub-agent with `memory.enabled = true`; mock provider returns error; verify no memory entry appended (Req 5.4)
-- [ ] Run tests — confirm all fail (red)
+- [x] Write `TestExecuteCallAgent_MemoryEnabled_LoadsIntoPrompt` — sub-agent with `memory.enabled = true`; pre-populated memory file; mock provider captures request; verify `## Memory` section in system prompt (Req 5.1)
+- [x] Write `TestExecuteCallAgent_MemoryEnabled_AppendsEntry` — sub-agent with `memory.enabled = true`; mock provider; verify memory entry in sub-agent's memory file (Req 5.2)
+- [x] Write `TestExecuteCallAgent_MemoryDisabled_NoFileCreated` — sub-agent with `memory.enabled = false`; verify no memory file created (Req 5.1)
+- [x] Write `TestExecuteCallAgent_MemoryEnabled_Error_NoEntryAppended` — sub-agent with `memory.enabled = true`; mock provider returns error; verify no memory entry appended (Req 5.4)
+- [x] Run tests — confirm all fail (red)
 
 ### 5b: Implement Sub-Agent Memory (Green)
 
-- [ ] In `ExecuteCallAgent`: after `BuildSystemPrompt` and before request build, if sub-agent's `cfg.Memory.Enabled`, load entries into system prompt (Req 5.1)
-- [ ] In `ExecuteCallAgent`: after successful conversation loop and before returning `ToolResult`, if sub-agent's `cfg.Memory.Enabled`, append memory entry (Req 5.2)
-- [ ] Handle memory errors gracefully: log warnings to `opts.Stderr` if `opts.Verbose`, never fail execution (Req 5.3)
-- [ ] No memory append on sub-agent error (Req 5.4)
-- [ ] Run tests — all sub-agent memory tests pass (green)
-- [ ] Run `make test` — all existing tests still pass
+- [x] In `ExecuteCallAgent`: after `BuildSystemPrompt` and before request build, if sub-agent's `cfg.Memory.Enabled`, load entries into system prompt (Req 5.1)
+- [x] In `ExecuteCallAgent`: after successful conversation loop and before returning `ToolResult`, if sub-agent's `cfg.Memory.Enabled`, append memory entry (Req 5.2)
+- [x] Handle memory errors gracefully: log warnings to `opts.Stderr` if `opts.Verbose`, never fail execution (Req 5.3)
+- [x] No memory append on sub-agent error (Req 5.4)
+- [x] Run tests — all sub-agent memory tests pass (green)
+- [x] Run `make test` — all existing tests still pass
 
 ---
 
@@ -231,15 +231,15 @@
 
 ### 6a: Agents Show Tests (Red)
 
-- [ ] Write `TestAgentsShow_MemoryAllFields` — agent with all memory fields set; verify output contains `Memory LastN:` and `Memory MaxEntries:` lines (Req 2.5)
-- [ ] Write `TestAgentsShow_MemoryDefaults` — agent without `[memory]` section; verify memory fields not displayed (Req 2.5)
-- [ ] Run tests — confirm fail (red)
+- [x] Write `TestAgentsShow_MemoryAllFields` — agent with all memory fields set; verify output contains `Memory LastN:` and `Memory MaxEntries:` lines (Req 2.5)
+- [x] Write `TestAgentsShow_MemoryDefaults` — agent without `[memory]` section; verify memory fields not displayed (Req 2.5)
+- [x] Run tests — confirm fail (red)
 
 ### 6b: Implement Agents Show Update (Green)
 
-- [ ] Update `agents show` to display `Memory LastN` and `Memory MaxEntries` alongside existing fields when any memory field has non-zero value (Req 2.5)
-- [ ] Run tests — agents show tests pass (green)
-- [ ] Run `make test` — all existing tests still pass
+- [x] Update `agents show` to display `Memory LastN` and `Memory MaxEntries` alongside existing fields when any memory field has non-zero value (Req 2.5)
+- [x] Run tests — agents show tests pass (green)
+- [x] Run `make test` — all existing tests still pass
 
 ---
 

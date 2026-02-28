@@ -314,7 +314,7 @@ func TestAgentsShow_MinimalAgent(t *testing.T) {
 		t.Error("show output missing Model field")
 	}
 	// Optional fields should NOT appear
-	for _, absent := range []string{"Description:", "System Prompt:", "Skill:", "Files:", "Workdir:", "Sub-Agents:", "Memory Enabled:", "Memory Path:", "Temperature:", "Max Tokens:"} {
+	for _, absent := range []string{"Description:", "System Prompt:", "Skill:", "Files:", "Workdir:", "Sub-Agents:", "Memory Enabled:", "Memory Path:", "Memory LastN:", "Memory MaxEntries:", "Temperature:", "Max Tokens:"} {
 		if strings.Contains(output, absent) {
 			t.Errorf("show output should not contain %q for minimal agent\nfull output:\n%s", absent, output)
 		}
@@ -507,5 +507,76 @@ func TestAgentsEdit_NoArgs(t *testing.T) {
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing args, got nil")
+	}
+}
+
+// --- Phase 6a: Agents Show Memory Fields tests ---
+
+func TestAgentsShow_MemoryAllFields(t *testing.T) {
+	agentsDir := setupTestAgentsDir(t)
+
+	toml := `name = "mymem"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+path = "/custom/memory.md"
+last_n = 5
+max_entries = 50
+`
+	writeTestAgent(t, agentsDir, "mymem", toml)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"agents", "show", "mymem"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	checks := []string{
+		"Memory Enabled:",
+		"true",
+		"Memory Path:",
+		"/custom/memory.md",
+		"Memory LastN:",
+		"5",
+		"Memory MaxEntries:",
+		"50",
+	}
+	for _, check := range checks {
+		if !strings.Contains(output, check) {
+			t.Errorf("show output missing %q\nfull output:\n%s", check, output)
+		}
+	}
+}
+
+func TestAgentsShow_MemoryDefaults(t *testing.T) {
+	agentsDir := setupTestAgentsDir(t)
+
+	toml := `name = "nomem"
+model = "anthropic/claude-sonnet-4-20250514"
+`
+	writeTestAgent(t, agentsDir, "nomem", toml)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"agents", "show", "nomem"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	// None of the memory fields should be displayed when all are zero values
+	for _, absent := range []string{"Memory Enabled:", "Memory Path:", "Memory LastN:", "Memory MaxEntries:"} {
+		if strings.Contains(output, absent) {
+			t.Errorf("show output should not contain %q when memory is default\nfull output:\n%s", absent, output)
+		}
 	}
 }
