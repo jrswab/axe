@@ -411,7 +411,144 @@ func TestList_IgnoresSubdirectories(t *testing.T) {
 	}
 }
 
+// --- Phase 5 (M5): SubAgentsConfig tests ---
+
+func TestLoad_SubAgentsConfig(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["helper", "runner"]
+
+[sub_agents_config]
+max_depth = 4
+parallel = true
+timeout = 120
+`
+	writeAgentFile(t, agentsDir, "parent", tomlContent)
+
+	cfg, err := Load("parent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.SubAgentsConf.MaxDepth != 4 {
+		t.Errorf("SubAgentsConf.MaxDepth = %d, want 4", cfg.SubAgentsConf.MaxDepth)
+	}
+	if cfg.SubAgentsConf.Parallel != true {
+		t.Errorf("SubAgentsConf.Parallel = %v, want true", cfg.SubAgentsConf.Parallel)
+	}
+	if cfg.SubAgentsConf.Timeout != 120 {
+		t.Errorf("SubAgentsConf.Timeout = %d, want 120", cfg.SubAgentsConf.Timeout)
+	}
+}
+
+func TestValidate_SubAgentsConfigDefaults(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "minimal-parent"
+model = "openai/gpt-4o"
+sub_agents = ["helper"]
+`
+	writeAgentFile(t, agentsDir, "minimal-parent", tomlContent)
+
+	cfg, err := Load("minimal-parent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.SubAgentsConf.MaxDepth != 0 {
+		t.Errorf("SubAgentsConf.MaxDepth = %d, want 0", cfg.SubAgentsConf.MaxDepth)
+	}
+	if cfg.SubAgentsConf.Parallel != false {
+		t.Errorf("SubAgentsConf.Parallel = %v, want false (Go zero value)", cfg.SubAgentsConf.Parallel)
+	}
+	if cfg.SubAgentsConf.Timeout != 0 {
+		t.Errorf("SubAgentsConf.Timeout = %d, want 0", cfg.SubAgentsConf.Timeout)
+	}
+}
+
+func TestValidate_MaxDepthTooHigh(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:          "test",
+		Model:         "openai/gpt-4o",
+		SubAgentsConf: SubAgentsConfig{MaxDepth: 6},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for max_depth=6, got nil")
+	}
+	want := "sub_agents_config.max_depth cannot exceed 5"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_MaxDepthNegative(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:          "test",
+		Model:         "openai/gpt-4o",
+		SubAgentsConf: SubAgentsConfig{MaxDepth: -1},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for max_depth=-1, got nil")
+	}
+	want := "sub_agents_config.max_depth must be non-negative"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_TimeoutNegative(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:          "test",
+		Model:         "openai/gpt-4o",
+		SubAgentsConf: SubAgentsConfig{Timeout: -1},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for timeout=-1, got nil")
+	}
+	want := "sub_agents_config.timeout must be non-negative"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_MaxDepthValid(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:          "test",
+		Model:         "openai/gpt-4o",
+		SubAgentsConf: SubAgentsConfig{MaxDepth: 5},
+	}
+	err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("expected no error for max_depth=5, got %v", err)
+	}
+}
+
 // --- Phase 6: Scaffold tests ---
+
+func TestScaffold_IncludesSubAgentsConfig(t *testing.T) {
+	out, err := Scaffold("my-agent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	checks := []string{
+		"# [sub_agents_config]",
+		"# max_depth = 3",
+		"# parallel = true",
+		"# timeout = 120",
+	}
+	for _, check := range checks {
+		if !strings.Contains(out, check) {
+			t.Errorf("scaffold output missing %q\nfull output:\n%s", check, out)
+		}
+	}
+}
 
 func TestScaffold_ContainsName(t *testing.T) {
 	out, err := Scaffold("my-agent")

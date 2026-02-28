@@ -23,18 +23,26 @@ type ParamsConfig struct {
 	MaxTokens   int     `toml:"max_tokens"`
 }
 
+// SubAgentsConfig holds sub-agent execution configuration for an agent.
+type SubAgentsConfig struct {
+	MaxDepth int  `toml:"max_depth"`
+	Parallel bool `toml:"parallel"`
+	Timeout  int  `toml:"timeout"`
+}
+
 // AgentConfig represents a parsed agent TOML configuration file.
 type AgentConfig struct {
-	Name         string       `toml:"name"`
-	Description  string       `toml:"description"`
-	Model        string       `toml:"model"`
-	SystemPrompt string       `toml:"system_prompt"`
-	Skill        string       `toml:"skill"`
-	Files        []string     `toml:"files"`
-	Workdir      string       `toml:"workdir"`
-	SubAgents    []string     `toml:"sub_agents"`
-	Memory       MemoryConfig `toml:"memory"`
-	Params       ParamsConfig `toml:"params"`
+	Name          string          `toml:"name"`
+	Description   string          `toml:"description"`
+	Model         string          `toml:"model"`
+	SystemPrompt  string          `toml:"system_prompt"`
+	Skill         string          `toml:"skill"`
+	Files         []string        `toml:"files"`
+	Workdir       string          `toml:"workdir"`
+	SubAgents     []string        `toml:"sub_agents"`
+	SubAgentsConf SubAgentsConfig `toml:"sub_agents_config"`
+	Memory        MemoryConfig    `toml:"memory"`
+	Params        ParamsConfig    `toml:"params"`
 }
 
 // Validate checks that required fields are present in the agent configuration.
@@ -46,6 +54,15 @@ func Validate(cfg *AgentConfig) error {
 	}
 	if strings.TrimSpace(cfg.Model) == "" {
 		return errors.New("agent config missing required field: model")
+	}
+	if cfg.SubAgentsConf.MaxDepth < 0 {
+		return errors.New("sub_agents_config.max_depth must be non-negative")
+	}
+	if cfg.SubAgentsConf.MaxDepth > 5 {
+		return errors.New("sub_agents_config.max_depth cannot exceed 5")
+	}
+	if cfg.SubAgentsConf.Timeout < 0 {
+		return errors.New("sub_agents_config.timeout must be non-negative")
 	}
 	return nil
 }
@@ -142,6 +159,11 @@ model = "provider/model-name"
 
 # Sub-agents this agent can invoke (optional)
 # sub_agents = []
+
+# [sub_agents_config]
+# max_depth = 3
+# parallel = true
+# timeout = 120
 
 # [memory]
 # enabled = false

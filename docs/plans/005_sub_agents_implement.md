@@ -120,39 +120,39 @@
 
 ### 5a: SubAgentsConfig Struct and Parsing
 
-- [ ] Write `TestLoad_SubAgentsConfig` — TOML with `[sub_agents_config]` section; verify fields parsed correctly (Req 5.1, 5.2)
-- [ ] Write `TestValidate_SubAgentsConfigDefaults` — load agent with no `[sub_agents_config]`; verify zero values (Req 5.1)
-- [ ] Define `SubAgentsConfig` struct with `MaxDepth int`, `Parallel bool`, `Timeout int` (TOML tags: `max_depth`, `parallel`, `timeout`) (Req 5.1)
-- [ ] Add `SubAgentsConf SubAgentsConfig` field to `AgentConfig` (TOML tag: `sub_agents_config`) (Req 5.2)
-- [ ] Run tests — parsing tests pass
+- [x] Write `TestLoad_SubAgentsConfig` — TOML with `[sub_agents_config]` section; verify fields parsed correctly (Req 5.1, 5.2)
+- [x] Write `TestValidate_SubAgentsConfigDefaults` — load agent with no `[sub_agents_config]`; verify zero values (Req 5.1)
+- [x] Define `SubAgentsConfig` struct with `MaxDepth int`, `Parallel bool`, `Timeout int` (TOML tags: `max_depth`, `parallel`, `timeout`) (Req 5.1)
+- [x] Add `SubAgentsConf SubAgentsConfig` field to `AgentConfig` (TOML tag: `sub_agents_config`) (Req 5.2)
+- [x] Run tests — parsing tests pass
 
 ### 5b: Validation
 
-- [ ] Write `TestValidate_MaxDepthTooHigh` — `MaxDepth = 6`; verify error `sub_agents_config.max_depth cannot exceed 5` (Req 5.4)
-- [ ] Write `TestValidate_MaxDepthNegative` — `MaxDepth = -1`; verify error `sub_agents_config.max_depth must be non-negative` (Req 5.4)
-- [ ] Write `TestValidate_TimeoutNegative` — `Timeout = -1`; verify error `sub_agents_config.timeout must be non-negative` (Req 5.5)
-- [ ] Write `TestValidate_MaxDepthValid` — `MaxDepth = 5`; verify no error (Req 5.4)
-- [ ] Implement validation rules in `Validate`: check `MaxDepth` bounds (non-negative, ≤5) and `Timeout` non-negative (Req 5.4, 5.5)
-- [ ] Run tests — all validation tests pass
+- [x] Write `TestValidate_MaxDepthTooHigh` — `MaxDepth = 6`; verify error `sub_agents_config.max_depth cannot exceed 5` (Req 5.4)
+- [x] Write `TestValidate_MaxDepthNegative` — `MaxDepth = -1`; verify error `sub_agents_config.max_depth must be non-negative` (Req 5.4)
+- [x] Write `TestValidate_TimeoutNegative` — `Timeout = -1`; verify error `sub_agents_config.timeout must be non-negative` (Req 5.5)
+- [x] Write `TestValidate_MaxDepthValid` — `MaxDepth = 5`; verify no error (Req 5.4)
+- [x] Implement validation rules in `Validate`: check `MaxDepth` bounds (non-negative, ≤5) and `Timeout` non-negative (Req 5.4, 5.5)
+- [x] Run tests — all validation tests pass
 
 ### 5c: Scaffold and Show
 
-- [ ] Write `TestScaffold_IncludesSubAgentsConfig` — verify scaffold output contains commented `[sub_agents_config]` section (Req 5.6)
-- [ ] Update `Scaffold` function to include commented-out `[sub_agents_config]` section (Req 5.6)
-- [ ] Update `agents show` command to display `SubAgentsConfig` fields when `SubAgents` is non-empty (Req 5.7)
-- [ ] Run tests — scaffold and show tests pass
-- [ ] Run `make test` — verify all existing agent tests still pass
+- [x] Write `TestScaffold_IncludesSubAgentsConfig` — verify scaffold output contains commented `[sub_agents_config]` section (Req 5.6)
+- [x] Update `Scaffold` function to include commented-out `[sub_agents_config]` section (Req 5.6)
+- [x] Update `agents show` command to display `SubAgentsConfig` fields when `SubAgents` is non-empty (Req 5.7)
+- [x] Run tests — scaffold and show tests pass
+- [x] Run `make test` — verify all existing agent tests still pass
 
 ---
 
 ## Phase 6: `call_agent` Tool Definition (`internal/tool/`) (Spec §3.6)
 
-- [ ] Create `internal/tool/` directory
-- [ ] Write `TestCallAgentTool_Definition` — `CallAgentTool([]string{"helper", "runner"})`; verify `Name`, `Description` with agent names, three parameters with correct types and required flags (Req 6.2, 6.3, 6.4)
-- [ ] Write `TestCallAgentTool_EmptyAgents` — `CallAgentTool([]string{})`; verify valid structure with empty agent list in description (Req 6.4)
-- [ ] Define `const CallAgentToolName = "call_agent"` (Req 6.2)
-- [ ] Implement `CallAgentTool(allowedAgents []string) provider.Tool` — returns tool definition with dynamic agent names in description and parameter descriptions (Req 6.3, 6.4)
-- [ ] Run tests — tool definition tests pass
+- [x] Create `internal/tool/` directory
+- [x] Write `TestCallAgentTool_Definition` — `CallAgentTool([]string{"helper", "runner"})`; verify `Name`, `Description` with agent names, three parameters with correct types and required flags (Req 6.2, 6.3, 6.4)
+- [x] Write `TestCallAgentTool_EmptyAgents` — `CallAgentTool([]string{})`; verify valid structure with empty agent list in description (Req 6.4)
+- [x] Define `const CallAgentToolName = "call_agent"` (Req 6.2)
+- [x] Implement `CallAgentTool(allowedAgents []string) provider.Tool` — returns tool definition with dynamic agent names in description and parameter descriptions (Req 6.3, 6.4)
+- [x] Run tests — tool definition tests pass
 
 ---
 
@@ -160,32 +160,32 @@
 
 ### 7a: ExecuteOptions and Argument Validation
 
-- [ ] Write `TestExecuteCallAgent_EmptyAgentName` — empty `agent` argument; verify `ToolResult` with `IsError: true` (Req 7.3 step 2)
-- [ ] Write `TestExecuteCallAgent_EmptyTask` — empty `task` argument; verify `ToolResult` with `IsError: true` (Req 7.3 step 3)
-- [ ] Write `TestExecuteCallAgent_AgentNotAllowed` — agent not in `AllowedAgents`; verify `ToolResult` with `IsError: true` and correct message (Req 7.3 step 4)
-- [ ] Write `TestExecuteCallAgent_DepthLimitReached` — `Depth >= MaxDepth`; verify `ToolResult` with `IsError: true` and depth message (Req 7.3 step 5)
-- [ ] Define `ExecuteOptions` struct with all fields (Req 7.2)
-- [ ] Implement `ExecuteCallAgent` argument extraction and validation (steps 1–5 of Req 7.3)
-- [ ] Run tests — validation tests pass
+- [x] Write `TestExecuteCallAgent_EmptyAgentName` — empty `agent` argument; verify `ToolResult` with `IsError: true` (Req 7.3 step 2)
+- [x] Write `TestExecuteCallAgent_EmptyTask` — empty `task` argument; verify `ToolResult` with `IsError: true` (Req 7.3 step 3)
+- [x] Write `TestExecuteCallAgent_AgentNotAllowed` — agent not in `AllowedAgents`; verify `ToolResult` with `IsError: true` and correct message (Req 7.3 step 4)
+- [x] Write `TestExecuteCallAgent_DepthLimitReached` — `Depth >= MaxDepth`; verify `ToolResult` with `IsError: true` and depth message (Req 7.3 step 5)
+- [x] Define `ExecuteOptions` struct with all fields (Req 7.2)
+- [x] Implement `ExecuteCallAgent` argument extraction and validation (steps 1–5 of Req 7.3)
+- [x] Run tests — validation tests pass
 
 ### 7b: Sub-Agent Loading and Execution
 
-- [ ] Write `TestExecuteCallAgent_AgentNotFound` — agent TOML does not exist; verify `ToolResult` with `IsError: true` and load error (Req 7.3 step 6)
-- [ ] Write `TestExecuteCallAgent_Success` — temp agent TOML + `httptest.NewServer`; verify `ToolResult` with `IsError: false` and correct content (Req 7.3 steps 6–15)
-- [ ] Write `TestExecuteCallAgent_WithContext` — non-empty `context` argument; verify user message contains task + context (Req 7.3 step 11)
-- [ ] Write `TestExecuteCallAgent_WithoutContext` — empty `context`; verify user message contains only task (Req 7.3 step 11)
-- [ ] Implement sub-agent loading, provider creation, request building, and execution (Req 7.3 steps 6–15)
-- [ ] Run tests — success path tests pass
+- [x] Write `TestExecuteCallAgent_AgentNotFound` — agent TOML does not exist; verify `ToolResult` with `IsError: true` and load error (Req 7.3 step 6)
+- [x] Write `TestExecuteCallAgent_Success` — temp agent TOML + `httptest.NewServer`; verify `ToolResult` with `IsError: false` and correct content (Req 7.3 steps 6–15)
+- [x] Write `TestExecuteCallAgent_WithContext` — non-empty `context` argument; verify user message contains task + context (Req 7.3 step 11)
+- [x] Write `TestExecuteCallAgent_WithoutContext` — empty `context`; verify user message contains only task (Req 7.3 step 11)
+- [x] Implement sub-agent loading, provider creation, request building, and execution (Req 7.3 steps 6–15)
+- [x] Run tests — success path tests pass
 
 ### 7c: Error Handling and Verbose Output
 
-- [ ] Write `TestExecuteCallAgent_APIError` — `httptest.NewServer` returning 500; verify `ToolResult` with `IsError: true` and error message (Req 7.4)
-- [ ] Write `TestExecuteCallAgent_Timeout` — slow `httptest.NewServer` + short timeout; verify `ToolResult` with `IsError: true` and timeout message (Req 7.4, Req 12.3)
-- [ ] Implement error handling: catch all errors, return as `ToolResult` with `IsError: true` (Req 7.4, 13.1–13.4)
-- [ ] Implement verbose output: log before/after sub-agent calls to stderr (Req 7.5)
-- [ ] Implement timeout handling: `context.WithTimeout` when `Timeout > 0`, otherwise inherit parent context (Req 12.1–12.3)
-- [ ] Run tests — error handling and timeout tests pass
-- [ ] Run `make test` — all tests pass
+- [x] Write `TestExecuteCallAgent_APIError` — `httptest.NewServer` returning 500; verify `ToolResult` with `IsError: true` and error message (Req 7.4)
+- [x] Write `TestExecuteCallAgent_Timeout` — slow `httptest.NewServer` + short timeout; verify `ToolResult` with `IsError: true` and timeout message (Req 7.4, Req 12.3)
+- [x] Implement error handling: catch all errors, return as `ToolResult` with `IsError: true` (Req 7.4, 13.1–13.4)
+- [x] Implement verbose output: log before/after sub-agent calls to stderr (Req 7.5)
+- [x] Implement timeout handling: `context.WithTimeout` when `Timeout > 0`, otherwise inherit parent context (Req 12.1–12.3)
+- [x] Run tests — error handling and timeout tests pass
+- [x] Run `make test` — all tests pass
 
 ---
 

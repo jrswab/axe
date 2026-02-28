@@ -77,6 +77,9 @@ var agentsShowCmd = &cobra.Command{
 		}
 		if len(cfg.SubAgents) > 0 {
 			fmt.Fprintf(w, "%-16s%s\n", "Sub-Agents:", strings.Join(cfg.SubAgents, ", "))
+			fmt.Fprintf(w, "%-16s%d\n", "Max Depth:", cfg.SubAgentsConf.MaxDepth)
+			fmt.Fprintf(w, "%-16s%v\n", "Parallel:", cfg.SubAgentsConf.Parallel)
+			fmt.Fprintf(w, "%-16s%d\n", "Timeout:", cfg.SubAgentsConf.Timeout)
 		}
 		if cfg.Memory.Enabled {
 			fmt.Fprintf(w, "%-16s%v\n", "Memory Enabled:", cfg.Memory.Enabled)

@@ -228,6 +228,70 @@ max_tokens = 4096
 	}
 }
 
+func TestAgentsShow_SubAgentsConfig(t *testing.T) {
+	agentsDir := setupTestAgentsDir(t)
+
+	toml := `name = "parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["helper", "runner"]
+
+[sub_agents_config]
+max_depth = 4
+parallel = true
+timeout = 120
+`
+	writeTestAgent(t, agentsDir, "parent", toml)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"agents", "show", "parent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	checks := []string{
+		"Sub-Agents:",
+		"helper, runner",
+		"Max Depth:",
+		"4",
+		"Parallel:",
+		"true",
+		"Timeout:",
+		"120",
+	}
+	for _, check := range checks {
+		if !strings.Contains(output, check) {
+			t.Errorf("show output missing %q\nfull output:\n%s", check, output)
+		}
+	}
+}
+
+func TestAgentsShow_NoSubAgentsConfig(t *testing.T) {
+	agentsDir := setupTestAgentsDir(t)
+	writeTestAgent(t, agentsDir, "nosubagents", "name = \"nosubagents\"\nmodel = \"openai/gpt-4o\"")
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"agents", "show", "nosubagents"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	for _, absent := range []string{"Max Depth:", "Parallel:", "Timeout:"} {
+		if strings.Contains(output, absent) {
+			t.Errorf("show output should not contain %q when sub_agents is empty\nfull output:\n%s", absent, output)
+		}
+	}
+}
+
 func TestAgentsShow_MinimalAgent(t *testing.T) {
 	agentsDir := setupTestAgentsDir(t)
 	writeTestAgent(t, agentsDir, "minimal", "name = \"minimal\"\nmodel = \"openai/gpt-4o\"")
