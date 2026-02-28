@@ -57,14 +57,14 @@ Support any provider/model from models.dev.
 
 Parent agents can delegate to child agents.
 
-- [ ] Inject `call_agent` tool when `sub_agents` is defined
-- [ ] Intercept tool call, load sub-agent config
-- [ ] Pass task + context to sub-agent
-- [ ] Return result text as tool response to parent
-- [ ] Depth tracking and limiting (default 3, max 5)
-- [ ] Parallel execution for concurrent tool calls
-- [ ] Timeout per sub-agent
-- [ ] Error handling (fail gracefully, don't crash parent)
+- [X] Inject `call_agent` tool when `sub_agents` is defined
+- [X] Intercept tool call, load sub-agent config
+- [X] Pass task + context to sub-agent
+- [X] Return result text as tool response to parent
+- [X] Depth tracking and limiting (default 3, max 5)
+- [X] Parallel execution for concurrent tool calls
+- [X] Timeout per sub-agent
+- [X] Error handling (fail gracefully, don't crash parent)
 
 ## M6: Memory
 

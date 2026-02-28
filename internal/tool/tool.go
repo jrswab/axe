@@ -173,6 +173,17 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 			} else if entries != "" {
 				systemPrompt += "\n\n---\n\n## Memory\n\n" + entries
 			}
+
+			memCount, memErr := memory.CountEntries(memPath)
+			if memErr != nil {
+				if opts.Verbose && opts.Stderr != nil {
+					fmt.Fprintf(opts.Stderr, "[sub-agent] Warning: failed to count memory entries for %q: %v\n", agentName, memErr)
+				}
+			} else if cfg.Memory.MaxEntries > 0 && memCount >= cfg.Memory.MaxEntries {
+				if opts.Verbose && opts.Stderr != nil {
+					fmt.Fprintf(opts.Stderr, "[sub-agent] Warning: agent %q memory has %d entries (max_entries: %d). Run 'axe gc %s' to trim.\n", agentName, memCount, cfg.Memory.MaxEntries, agentName)
+				}
+			}
 		}
 	}
 
