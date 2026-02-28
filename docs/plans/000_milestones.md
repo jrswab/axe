@@ -70,10 +70,10 @@ Parent agents can delegate to child agents.
 
 Append-only run log with context loading.
 
-- [ ] Append timestamped entry after each run
-- [ ] Load last N entries into context on run
-- [ ] `[memory]` config (enabled, last_n, max_entries)
-- [ ] Memory file at `$XDG_DATA_HOME/axe/memory/<agent>.md`
+- [X] Append timestamped entry after each run
+- [X] Load last N entries into context on run
+- [X] `[memory]` config (enabled, last_n, max_entries)
+- [X] Memory file at `$XDG_DATA_HOME/axe/memory/<agent>.md`
 
 ## M7: Garbage Collection
 

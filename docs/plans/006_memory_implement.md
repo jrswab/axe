@@ -1,7 +1,7 @@
 # Implementation Checklist: M6 - Memory
 
 **Based on:** 006_memory_spec.md
-**Status:** Not Started
+**Status:** Complete
 **Created:** 2026-02-28
 
 ---
@@ -245,14 +245,14 @@
 
 ## Phase 7: Final Verification
 
-- [ ] Run `make test` — all tests pass with 0 failures
-- [ ] Verify `go.mod` still contains only `spf13/cobra` and `BurntSushi/toml` as direct dependencies (Constraint 1)
-- [ ] Verify `Provider` interface signature is unchanged (Constraint 8)
-- [ ] Verify `BuildSystemPrompt` function signature is unchanged (Constraint 9)
-- [ ] Verify no `internal/memory/` external dependencies — stdlib only (Constraint 1, Decision 14)
-- [ ] Verify memory failures never cause run to fail or change exit code (Constraint 6)
-- [ ] Verify `--dry-run` displays memory but does not append entries (Req 4.5, 4.6)
-- [ ] Verify `--verbose` displays memory loading info (Req 4.7)
-- [ ] Verify max_entries warning prints to stderr (Req 4.1)
-- [ ] Verify sub-agents independently load/append their own memory files (Req 5.1, 5.2)
-- [ ] Verify all existing M1-M5 tests still pass unchanged
+- [x] Run `make test` — all tests pass with 0 failures
+- [x] Verify `go.mod` still contains only `spf13/cobra` and `BurntSushi/toml` as direct dependencies (Constraint 1)
+- [x] Verify `Provider` interface signature is unchanged (Constraint 8)
+- [x] Verify `BuildSystemPrompt` function signature is unchanged (Constraint 9)
+- [x] Verify no `internal/memory/` external dependencies — stdlib only (Constraint 1, Decision 14)
+- [x] Verify memory failures never cause run to fail or change exit code (Constraint 6)
+- [x] Verify `--dry-run` displays memory but does not append entries (Req 4.5, 4.6)
+- [x] Verify `--verbose` displays memory loading info (Req 4.7)
+- [x] Verify max_entries warning prints to stderr (Req 4.1)
+- [x] Verify sub-agents independently load/append their own memory files (Req 5.1, 5.2)
+- [x] Verify all existing M1-M5 tests still pass unchanged
