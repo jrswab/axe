@@ -99,21 +99,21 @@
 
 ### 5a: Tests (Red)
 
-- [ ] Write `TestGC_DryRun` — agent with `last_n=3`, 10 entries; mock LLM; run `axe gc <agent> --dry-run`; verify analysis printed, "Dry run: no entries trimmed." printed, memory file still has 10 entries (Req 3.10)
-- [ ] Write `TestGC_AnalyzeAndTrim` — agent with `last_n=3`, 10 entries; mock LLM; run `axe gc <agent>`; verify analysis printed, "Trimmed: 7 entries removed, 3 entries kept.", memory file has exactly 3 entries (Req 3.11, 3.12)
-- [ ] Write `TestGC_NoTrimTarget` — agent with `last_n=0`, `max_entries=0`, 10 entries; mock LLM; run `axe gc <agent>`; verify analysis printed, "No trim target configured", memory file unchanged (Req 3.11)
-- [ ] Write `TestGC_FallbackToMaxEntries` — agent with `last_n=0`, `max_entries=5`, 10 entries; mock LLM; run `axe gc <agent>`; verify "Trimmed: 5 entries removed, 5 entries kept.", memory file has 5 entries (Req 3.11, 3.12)
-- [ ] Write `TestGC_NothingToTrim` — agent with `last_n=10`, 3 entries; mock LLM; run `axe gc <agent>`; verify "No trimming needed: 3 entries within limit (10)." (Req 3.12)
-- [ ] Run tests — confirm all fail (red)
+- [x] Write `TestGC_DryRun` — agent with `last_n=3`, 10 entries; mock LLM; run `axe gc <agent> --dry-run`; verify analysis printed, "Dry run: no entries trimmed." printed, memory file still has 10 entries (Req 3.10)
+- [x] Write `TestGC_AnalyzeAndTrim` — agent with `last_n=3`, 10 entries; mock LLM; run `axe gc <agent>`; verify analysis printed, "Trimmed: 7 entries removed, 3 entries kept.", memory file has exactly 3 entries (Req 3.11, 3.12)
+- [x] Write `TestGC_NoTrimTarget` — agent with `last_n=0`, `max_entries=0`, 10 entries; mock LLM; run `axe gc <agent>`; verify analysis printed, "No trim target configured", memory file unchanged (Req 3.11)
+- [x] Write `TestGC_FallbackToMaxEntries` — agent with `last_n=0`, `max_entries=5`, 10 entries; mock LLM; run `axe gc <agent>`; verify "Trimmed: 5 entries removed, 5 entries kept.", memory file has 5 entries (Req 3.11, 3.12)
+- [x] Write `TestGC_NothingToTrim` — agent with `last_n=10`, 3 entries; mock LLM; run `axe gc <agent>`; verify "No trimming needed: 3 entries within limit (10)." (Req 3.12)
+- [x] Run tests — confirm all fail (red)
 
 ### 5b: Implementation (Green)
 
-- [ ] Implement dry-run check: if `--dry-run`, print "Dry run: no entries trimmed." and return nil (Req 3.10)
-- [ ] Implement trim target resolution: `cfg.Memory.LastN > 0` → use it, else `cfg.Memory.MaxEntries > 0` → use it, else skip trimming with message (Req 3.11)
-- [ ] Call `memory.TrimEntries(path, trimTarget)` and print appropriate message based on `removed` count (Req 3.12)
-- [ ] Handle `TrimEntries` error: print to stderr, return `ExitError{Code: 1}` (Req 3.13)
-- [ ] Run tests — dry-run/trim tests pass (green)
-- [ ] Run `make test` — all existing tests still pass
+- [x] Implement dry-run check: if `--dry-run`, print "Dry run: no entries trimmed." and return nil (Req 3.10)
+- [x] Implement trim target resolution: `cfg.Memory.LastN > 0` → use it, else `cfg.Memory.MaxEntries > 0` → use it, else skip trimming with message (Req 3.11)
+- [x] Call `memory.TrimEntries(path, trimTarget)` and print appropriate message based on `removed` count (Req 3.12)
+- [x] Handle `TrimEntries` error: print to stderr, return `ExitError{Code: 1}` (Req 3.13)
+- [x] Run tests — dry-run/trim tests pass (green)
+- [x] Run `make test` — all existing tests still pass
 
 ---
 
@@ -121,21 +121,21 @@
 
 ### 6a: Tests (Red)
 
-- [ ] Write `TestGC_AllFlag_NoMemoryAgents` — 2 agents both with `memory.enabled = false`; run `axe gc --all`; verify "No agents with memory enabled.", exit code 0 (Req 5.1, 5.2)
-- [ ] Write `TestGC_AllFlag_MultipleAgents` — 3 agents: agent-a (memory enabled, 10 entries), agent-b (memory disabled), agent-c (memory enabled, 5 entries); mock LLM; run `axe gc --all`; verify agent-a and agent-c processed with separators, agent-b skipped, exit code 0 (Req 5.1–5.4, 5.7)
-- [ ] Write `TestGC_AllFlag_PartialFailure` — 2 agents with memory; agent-b has unreadable memory file; mock LLM; run `axe gc --all`; verify stderr has error for agent-b, agent-a processed, exit code 1 with summary (Req 5.5, 5.6)
-- [ ] Write `TestGC_AllFlag_WithDryRun` — 2 agents with memory; mock LLM; run `axe gc --all --dry-run`; verify analysis shown for both, no trimming, memory files unchanged (Req 5.3)
-- [ ] Run tests — confirm all fail (red)
+- [x] Write `TestGC_AllFlag_NoMemoryAgents` — 2 agents both with `memory.enabled = false`; run `axe gc --all`; verify "No agents with memory enabled.", exit code 0 (Req 5.1, 5.2)
+- [x] Write `TestGC_AllFlag_MultipleAgents` — 3 agents: agent-a (memory enabled, 10 entries), agent-b (memory disabled), agent-c (memory enabled, 5 entries); mock LLM; run `axe gc --all`; verify agent-a and agent-c processed with separators, agent-b skipped, exit code 0 (Req 5.1–5.4, 5.7)
+- [x] Write `TestGC_AllFlag_PartialFailure` — 2 agents with memory; agent-b has unreadable memory file; mock LLM; run `axe gc --all`; verify stderr has error for agent-b, agent-a processed, exit code 1 with summary (Req 5.5, 5.6)
+- [x] Write `TestGC_AllFlag_WithDryRun` — 2 agents with memory; mock LLM; run `axe gc --all --dry-run`; verify analysis shown for both, no trimming, memory files unchanged (Req 5.3)
+- [x] Run tests — confirm all fail (red)
 
 ### 6b: Implementation (Green)
 
-- [ ] Implement `--all` flow: call `agent.List()`, filter to `Memory.Enabled == true` (Req 5.1, 5.2)
-- [ ] Print "No agents with memory enabled." if none qualify (Req 5.2)
-- [ ] Process each agent sequentially with `=== GC: <agentName> ===` separator (Req 5.3, 5.4)
-- [ ] On per-agent failure: print error to stderr, continue processing (Req 5.5)
-- [ ] After all agents: if any failed, return `ExitError{Code: 1}` with summary `"gc completed with errors: <N> of <total> agents failed"` (Req 5.6)
-- [ ] Run tests — all-agents tests pass (green)
-- [ ] Run `make test` — all existing tests still pass
+- [x] Implement `--all` flow: call `agent.List()`, filter to `Memory.Enabled == true` (Req 5.1, 5.2)
+- [x] Print "No agents with memory enabled." if none qualify (Req 5.2)
+- [x] Process each agent sequentially with `=== GC: <agentName> ===` separator (Req 5.3, 5.4)
+- [x] On per-agent failure: print error to stderr, continue processing (Req 5.5)
+- [x] After all agents: if any failed, return `ExitError{Code: 1}` with summary `"gc completed with errors: <N> of <total> agents failed"` (Req 5.6)
+- [x] Run tests — all-agents tests pass (green)
+- [x] Run `make test` — all existing tests still pass
 
 ---
 

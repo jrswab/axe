@@ -54,8 +54,7 @@ func runGC(cmd *cobra.Command, args []string) error {
 	}
 
 	if allFlag {
-		// TODO: implement --all flow in Phase 6
-		return nil
+		return runAllAgentsGC(cmd)
 	}
 
 	// Single-agent GC flow
@@ -152,6 +151,79 @@ func runSingleAgentGC(cmd *cobra.Command, agentName string) error {
 	// Step 10: Print analysis (Req 3.9)
 	fmt.Fprintf(cmd.OutOrStdout(), "--- Analysis ---\n%s\n", resp.Content)
 
-	// TODO: dry-run and trim (Phase 5)
+	// Step 11: Dry-run check (Req 3.10)
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	if dryRun {
+		fmt.Fprintf(cmd.OutOrStdout(), "Dry run: no entries trimmed.\n")
+		return nil
+	}
+
+	// Step 12: Determine trim target (Req 3.11)
+	var trimTarget int
+	if cfg.Memory.LastN > 0 {
+		trimTarget = cfg.Memory.LastN
+	} else if cfg.Memory.MaxEntries > 0 {
+		trimTarget = cfg.Memory.MaxEntries
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(), "No trim target configured (last_n and max_entries are both 0). Skipping trim.\n")
+		return nil
+	}
+
+	// Step 13: Trim entries (Req 3.12, 3.13)
+	removed, err := memory.TrimEntries(memPath, trimTarget)
+	if err != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %v\n", err)
+		return &ExitError{Code: 1, Err: err}
+	}
+
+	if removed == 0 {
+		fmt.Fprintf(cmd.OutOrStdout(), "No trimming needed: %d entries within limit (%d).\n", count, trimTarget)
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(), "Trimmed: %d entries removed, %d entries kept.\n", removed, trimTarget)
+	}
+
+	return nil
+}
+
+func runAllAgentsGC(cmd *cobra.Command) error {
+	// Step 1: List all agents (Req 5.1)
+	agents, err := agent.List()
+	if err != nil {
+		return &ExitError{Code: 2, Err: err}
+	}
+
+	// Step 2: Filter to memory-enabled agents (Req 5.2)
+	var memoryAgents []agent.AgentConfig
+	for _, cfg := range agents {
+		if cfg.Memory.Enabled {
+			memoryAgents = append(memoryAgents, cfg)
+		}
+	}
+
+	if len(memoryAgents) == 0 {
+		fmt.Fprintf(cmd.OutOrStdout(), "No agents with memory enabled.\n")
+		return nil
+	}
+
+	// Step 3: Process each agent sequentially (Req 5.3, 5.4)
+	failCount := 0
+	for _, cfg := range memoryAgents {
+		fmt.Fprintf(cmd.OutOrStdout(), "=== GC: %s ===\n", cfg.Name)
+
+		if err := runSingleAgentGC(cmd, cfg.Name); err != nil {
+			// Per-agent failure: print error, continue (Req 5.5)
+			fmt.Fprintf(cmd.ErrOrStderr(), "Error: gc failed for agent %q: %v\n", cfg.Name, err)
+			failCount++
+		}
+	}
+
+	// Step 4: Report summary (Req 5.6, 5.7)
+	if failCount > 0 {
+		return &ExitError{
+			Code: 1,
+			Err:  fmt.Errorf("gc completed with errors: %d of %d agents failed", failCount, len(memoryAgents)),
+		}
+	}
+
 	return nil
 }
