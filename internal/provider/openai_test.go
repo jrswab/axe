@@ -464,3 +464,502 @@ func TestOpenAI_Send_UnparseableErrorBody(t *testing.T) {
 		t.Errorf("expected 'Bad Request', got %q", provErr.Message)
 	}
 }
+
+// --- Phase 3a: Tool definitions in request ---
+
+func TestOpenAI_Send_WithTools(t *testing.T) {
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotBody)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"model": "gpt-4o",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"},
+			},
+			"usage": map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{
+				Name:        "call_agent",
+				Description: "Delegate a task to a sub-agent.",
+				Parameters: map[string]ToolParameter{
+					"agent":   {Type: "string", Description: "Agent name", Required: true},
+					"task":    {Type: "string", Description: "Task description", Required: true},
+					"context": {Type: "string", Description: "Additional context", Required: false},
+				},
+			},
+		},
+	})
+
+	// Verify tools key exists in request body
+	if _, ok := gotBody["tools"]; !ok {
+		t.Fatal("request body does not contain 'tools' key")
+	}
+
+	// Parse the tools array
+	var tools []map[string]json.RawMessage
+	if err := json.Unmarshal(gotBody["tools"], &tools); err != nil {
+		t.Fatalf("failed to parse tools: %v", err)
+	}
+	if len(tools) != 1 {
+		t.Fatalf("len(tools) = %d, want 1", len(tools))
+	}
+
+	// Verify type: "function" wrapper
+	var toolType string
+	json.Unmarshal(tools[0]["type"], &toolType)
+	if toolType != "function" {
+		t.Errorf("tools[0].type = %q, want %q", toolType, "function")
+	}
+
+	// Verify function object
+	var fn map[string]json.RawMessage
+	json.Unmarshal(tools[0]["function"], &fn)
+
+	var name string
+	json.Unmarshal(fn["name"], &name)
+	if name != "call_agent" {
+		t.Errorf("tools[0].function.name = %q, want %q", name, "call_agent")
+	}
+
+	var desc string
+	json.Unmarshal(fn["description"], &desc)
+	if desc != "Delegate a task to a sub-agent." {
+		t.Errorf("tools[0].function.description = %q, want %q", desc, "Delegate a task to a sub-agent.")
+	}
+
+	// Verify parameters (JSON Schema)
+	var params map[string]json.RawMessage
+	json.Unmarshal(fn["parameters"], &params)
+
+	var paramsType string
+	json.Unmarshal(params["type"], &paramsType)
+	if paramsType != "object" {
+		t.Errorf("parameters.type = %q, want %q", paramsType, "object")
+	}
+
+	var props map[string]map[string]interface{}
+	json.Unmarshal(params["properties"], &props)
+	if _, ok := props["agent"]; !ok {
+		t.Error("parameters.properties missing 'agent'")
+	}
+	if _, ok := props["task"]; !ok {
+		t.Error("parameters.properties missing 'task'")
+	}
+	if _, ok := props["context"]; !ok {
+		t.Error("parameters.properties missing 'context'")
+	}
+
+	// Verify required array
+	var required []string
+	json.Unmarshal(params["required"], &required)
+	requiredMap := make(map[string]bool)
+	for _, r := range required {
+		requiredMap[r] = true
+	}
+	if !requiredMap["agent"] {
+		t.Error("required does not include 'agent'")
+	}
+	if !requiredMap["task"] {
+		t.Error("required does not include 'task'")
+	}
+	if requiredMap["context"] {
+		t.Error("required should not include 'context'")
+	}
+}
+
+func TestOpenAI_Send_WithoutTools(t *testing.T) {
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotBody)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"model": "gpt-4o",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"},
+			},
+			"usage": map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools:    nil,
+	})
+
+	if _, ok := gotBody["tools"]; ok {
+		t.Error("request body should NOT contain 'tools' key when Tools is nil")
+	}
+}
+
+// --- Phase 3b: Tool-call response parsing ---
+
+func TestOpenAI_Send_ToolCallResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := `{
+			"model": "gpt-4o",
+			"choices": [{
+				"message": {
+					"role": "assistant",
+					"content": null,
+					"tool_calls": [
+						{
+							"id": "call_abc123",
+							"type": "function",
+							"function": {
+								"name": "call_agent",
+								"arguments": "{\"agent\": \"helper\", \"task\": \"run tests\"}"
+							}
+						}
+					]
+				},
+				"finish_reason": "tool_calls"
+			}],
+			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+		}`
+		w.Write([]byte(resp))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	resp, err := o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{Name: "call_agent", Description: "test", Parameters: map[string]ToolParameter{
+				"agent": {Type: "string", Description: "agent", Required: true},
+				"task":  {Type: "string", Description: "task", Required: true},
+			}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(resp.ToolCalls) != 1 {
+		t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+	}
+	if resp.ToolCalls[0].ID != "call_abc123" {
+		t.Errorf("ToolCalls[0].ID = %q, want %q", resp.ToolCalls[0].ID, "call_abc123")
+	}
+	if resp.ToolCalls[0].Name != "call_agent" {
+		t.Errorf("ToolCalls[0].Name = %q, want %q", resp.ToolCalls[0].Name, "call_agent")
+	}
+	if resp.ToolCalls[0].Arguments["agent"] != "helper" {
+		t.Errorf("ToolCalls[0].Arguments[agent] = %q, want %q", resp.ToolCalls[0].Arguments["agent"], "helper")
+	}
+	if resp.ToolCalls[0].Arguments["task"] != "run tests" {
+		t.Errorf("ToolCalls[0].Arguments[task] = %q, want %q", resp.ToolCalls[0].Arguments["task"], "run tests")
+	}
+}
+
+func TestOpenAI_Send_ToolCallNullContent(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := `{
+			"model": "gpt-4o",
+			"choices": [{
+				"message": {
+					"role": "assistant",
+					"content": null,
+					"tool_calls": [
+						{
+							"id": "call_1",
+							"type": "function",
+							"function": {
+								"name": "call_agent",
+								"arguments": "{\"agent\": \"a\", \"task\": \"b\"}"
+							}
+						}
+					]
+				},
+				"finish_reason": "tool_calls"
+			}],
+			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+		}`
+		w.Write([]byte(resp))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	resp, err := o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{Name: "call_agent", Description: "test", Parameters: map[string]ToolParameter{}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.Content != "" {
+		t.Errorf("Content = %q, want empty string", resp.Content)
+	}
+	if len(resp.ToolCalls) != 1 {
+		t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+	}
+}
+
+func TestOpenAI_Send_InvalidToolCallArguments(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := `{
+			"model": "gpt-4o",
+			"choices": [{
+				"message": {
+					"role": "assistant",
+					"content": null,
+					"tool_calls": [
+						{
+							"id": "call_bad",
+							"type": "function",
+							"function": {
+								"name": "call_agent",
+								"arguments": "not valid json"
+							}
+						}
+					]
+				},
+				"finish_reason": "tool_calls"
+			}],
+			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+		}`
+		w.Write([]byte(resp))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	resp, err := o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{Name: "call_agent", Description: "test", Parameters: map[string]ToolParameter{}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(resp.ToolCalls) != 1 {
+		t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+	}
+	if resp.ToolCalls[0].Name != "call_agent" {
+		t.Errorf("ToolCalls[0].Name = %q, want %q", resp.ToolCalls[0].Name, "call_agent")
+	}
+	if len(resp.ToolCalls[0].Arguments) != 0 {
+		t.Errorf("ToolCalls[0].Arguments = %v, want empty map", resp.ToolCalls[0].Arguments)
+	}
+}
+
+func TestOpenAI_Send_ToolsStopReason(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := `{
+			"model": "gpt-4o",
+			"choices": [{
+				"message": {
+					"role": "assistant",
+					"content": null,
+					"tool_calls": [
+						{
+							"id": "call_1",
+							"type": "function",
+							"function": {
+								"name": "call_agent",
+								"arguments": "{\"agent\": \"a\", \"task\": \"b\"}"
+							}
+						}
+					]
+				},
+				"finish_reason": "tool_calls"
+			}],
+			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+		}`
+		w.Write([]byte(resp))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	resp, err := o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{Name: "call_agent", Description: "test", Parameters: map[string]ToolParameter{}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.StopReason != "tool_calls" {
+		t.Errorf("StopReason = %q, want %q", resp.StopReason, "tool_calls")
+	}
+}
+
+// --- Phase 3c: Tool-result and assistant tool-call messages ---
+
+func TestOpenAI_Send_ToolResultMessage(t *testing.T) {
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotBody)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"model": "gpt-4o",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"},
+			},
+			"usage": map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	o.Send(context.Background(), &Request{
+		Model: "gpt-4o",
+		Messages: []Message{
+			{Role: "user", Content: "Hi"},
+			{Role: "assistant", Content: "", ToolCalls: []ToolCall{
+				{ID: "call_1", Name: "call_agent", Arguments: map[string]string{"agent": "helper"}},
+			}},
+			{Role: "tool", ToolResults: []ToolResult{
+				{CallID: "call_1", Content: "result text", IsError: false},
+			}},
+		},
+	})
+
+	var messages []json.RawMessage
+	json.Unmarshal(gotBody["messages"], &messages)
+
+	// Messages: system (if present) + user + assistant + tool result(s)
+	// Find the tool messages - they should be role "tool" with tool_call_id
+	// The tool result message should expand to one message per ToolResult
+	found := false
+	for _, raw := range messages {
+		var msg map[string]interface{}
+		json.Unmarshal(raw, &msg)
+		if msg["role"] == "tool" {
+			found = true
+			if msg["tool_call_id"] != "call_1" {
+				t.Errorf("tool message tool_call_id = %v, want %q", msg["tool_call_id"], "call_1")
+			}
+			if msg["content"] != "result text" {
+				t.Errorf("tool message content = %v, want %q", msg["content"], "result text")
+			}
+		}
+	}
+	if !found {
+		t.Error("no tool result message found in request")
+	}
+}
+
+func TestOpenAI_Send_AssistantToolCallMessage(t *testing.T) {
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotBody)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"model": "gpt-4o",
+			"choices": []map[string]interface{}{
+				{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"},
+			},
+			"usage": map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	o.Send(context.Background(), &Request{
+		Model: "gpt-4o",
+		Messages: []Message{
+			{Role: "user", Content: "Hi"},
+			{Role: "assistant", Content: "I'll help", ToolCalls: []ToolCall{
+				{ID: "call_1", Name: "call_agent", Arguments: map[string]string{"agent": "helper", "task": "work"}},
+			}},
+			{Role: "tool", ToolResults: []ToolResult{
+				{CallID: "call_1", Content: "done", IsError: false},
+			}},
+		},
+	})
+
+	var messages []json.RawMessage
+	json.Unmarshal(gotBody["messages"], &messages)
+
+	// Find assistant message with tool_calls
+	found := false
+	for _, raw := range messages {
+		var msg map[string]json.RawMessage
+		json.Unmarshal(raw, &msg)
+
+		var role string
+		json.Unmarshal(msg["role"], &role)
+
+		if role == "assistant" {
+			if _, ok := msg["tool_calls"]; !ok {
+				t.Error("assistant message missing 'tool_calls' field")
+				continue
+			}
+			found = true
+
+			var toolCalls []map[string]json.RawMessage
+			json.Unmarshal(msg["tool_calls"], &toolCalls)
+			if len(toolCalls) != 1 {
+				t.Fatalf("len(tool_calls) = %d, want 1", len(toolCalls))
+			}
+
+			var id string
+			json.Unmarshal(toolCalls[0]["id"], &id)
+			if id != "call_1" {
+				t.Errorf("tool_calls[0].id = %q, want %q", id, "call_1")
+			}
+
+			var tcType string
+			json.Unmarshal(toolCalls[0]["type"], &tcType)
+			if tcType != "function" {
+				t.Errorf("tool_calls[0].type = %q, want %q", tcType, "function")
+			}
+
+			var fn map[string]json.RawMessage
+			json.Unmarshal(toolCalls[0]["function"], &fn)
+
+			var fnName string
+			json.Unmarshal(fn["name"], &fnName)
+			if fnName != "call_agent" {
+				t.Errorf("tool_calls[0].function.name = %q, want %q", fnName, "call_agent")
+			}
+
+			// Arguments should be a JSON string
+			var argsStr string
+			json.Unmarshal(fn["arguments"], &argsStr)
+			var args map[string]interface{}
+			if err := json.Unmarshal([]byte(argsStr), &args); err != nil {
+				t.Fatalf("failed to parse function.arguments: %v", err)
+			}
+			if args["agent"] != "helper" {
+				t.Errorf("arguments.agent = %v, want %q", args["agent"], "helper")
+			}
+			if args["task"] != "work" {
+				t.Errorf("arguments.task = %v, want %q", args["task"], "work")
+			}
+		}
+	}
+	if !found {
+		t.Error("no assistant message with tool_calls found in request")
+	}
+}

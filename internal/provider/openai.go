@@ -56,10 +56,45 @@ func NewOpenAI(apiKey string, opts ...OpenAIOption) (*OpenAI, error) {
 
 // openaiRequest is the JSON body sent to the OpenAI Chat Completions API.
 type openaiRequest struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	Temperature *float64  `json:"temperature,omitempty"`
-	MaxTokens   *int      `json:"max_tokens,omitempty"`
+	Model       string          `json:"model"`
+	Messages    []openaiMessage `json:"messages"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	MaxTokens   *int            `json:"max_tokens,omitempty"`
+	Tools       []openaiToolDef `json:"tools,omitempty"`
+}
+
+// openaiMessage is the wire format for a message in the OpenAI API.
+type openaiMessage struct {
+	Role       string               `json:"role"`
+	Content    *string              `json:"content"`                // nullable for assistant tool-call messages
+	ToolCallID string               `json:"tool_call_id,omitempty"` // for role "tool" messages
+	ToolCalls  []openaiToolCallWire `json:"tool_calls,omitempty"`   // for assistant messages with tool calls
+}
+
+// openaiToolDef is the wire format for a tool definition in the OpenAI API.
+type openaiToolDef struct {
+	Type     string             `json:"type"`
+	Function openaiToolFunction `json:"function"`
+}
+
+// openaiToolFunction is the function definition inside an OpenAI tool.
+type openaiToolFunction struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Parameters  map[string]interface{} `json:"parameters"`
+}
+
+// openaiToolCallWire is the wire format for a tool call in OpenAI request/response.
+type openaiToolCallWire struct {
+	ID       string                     `json:"id"`
+	Type     string                     `json:"type"`
+	Function openaiToolCallFunctionWire `json:"function"`
+}
+
+// openaiToolCallFunctionWire is the function info inside a tool call.
+type openaiToolCallFunctionWire struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 // openaiResponse represents the JSON response from the OpenAI Chat Completions API.
@@ -67,7 +102,8 @@ type openaiResponse struct {
 	Model   string `json:"model"`
 	Choices []struct {
 		Message struct {
-			Content string `json:"content"`
+			Content   *string              `json:"content"`
+			ToolCalls []openaiToolCallWire `json:"tool_calls"`
 		} `json:"message"`
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
@@ -86,6 +122,96 @@ type openaiErrorResponse struct {
 	} `json:"error"`
 }
 
+// convertToOpenAIMessages converts provider Messages to the OpenAI wire format.
+func convertToOpenAIMessages(msgs []Message) []openaiMessage {
+	var result []openaiMessage
+	for _, msg := range msgs {
+		if msg.Role == "tool" && len(msg.ToolResults) > 0 {
+			// Each ToolResult becomes a separate "tool" message
+			for _, tr := range msg.ToolResults {
+				content := tr.Content
+				result = append(result, openaiMessage{
+					Role:       "tool",
+					Content:    &content,
+					ToolCallID: tr.CallID,
+				})
+			}
+		} else if msg.Role == "assistant" && len(msg.ToolCalls) > 0 {
+			// Assistant message with tool calls
+			var toolCalls []openaiToolCallWire
+			for _, tc := range msg.ToolCalls {
+				// Encode arguments as JSON string
+				argsMap := make(map[string]interface{})
+				for k, v := range tc.Arguments {
+					argsMap[k] = v
+				}
+				argsJSON, _ := json.Marshal(argsMap)
+				toolCalls = append(toolCalls, openaiToolCallWire{
+					ID:   tc.ID,
+					Type: "function",
+					Function: openaiToolCallFunctionWire{
+						Name:      tc.Name,
+						Arguments: string(argsJSON),
+					},
+				})
+			}
+			var contentPtr *string
+			if msg.Content != "" {
+				contentPtr = &msg.Content
+			}
+			result = append(result, openaiMessage{
+				Role:      "assistant",
+				Content:   contentPtr,
+				ToolCalls: toolCalls,
+			})
+		} else {
+			// Standard text message
+			content := msg.Content
+			result = append(result, openaiMessage{
+				Role:    msg.Role,
+				Content: &content,
+			})
+		}
+	}
+	return result
+}
+
+// convertToOpenAITools converts provider Tools to the OpenAI wire format.
+func convertToOpenAITools(tools []Tool) []openaiToolDef {
+	var result []openaiToolDef
+	for _, tool := range tools {
+		properties := make(map[string]interface{})
+		var required []string
+		for name, param := range tool.Parameters {
+			properties[name] = map[string]interface{}{
+				"type":        param.Type,
+				"description": param.Description,
+			}
+			if param.Required {
+				required = append(required, name)
+			}
+		}
+
+		params := map[string]interface{}{
+			"type":       "object",
+			"properties": properties,
+		}
+		if len(required) > 0 {
+			params["required"] = required
+		}
+
+		result = append(result, openaiToolDef{
+			Type: "function",
+			Function: openaiToolFunction{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  params,
+			},
+		})
+	}
+	return result
+}
+
 // Send makes a completion request to the OpenAI Chat Completions API.
 func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	var messages []Message
@@ -96,7 +222,7 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 
 	body := openaiRequest{
 		Model:    req.Model,
-		Messages: messages,
+		Messages: convertToOpenAIMessages(messages),
 	}
 
 	if req.Temperature != 0 {
@@ -107,6 +233,10 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	if req.MaxTokens != 0 {
 		mt := req.MaxTokens
 		body.MaxTokens = &mt
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToOpenAITools(req.Tools)
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -164,12 +294,36 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 		}
 	}
 
+	// Parse content (may be null for tool-call responses)
+	var content string
+	if apiResp.Choices[0].Message.Content != nil {
+		content = *apiResp.Choices[0].Message.Content
+	}
+
+	// Parse tool calls from response
+	var toolCalls []ToolCall
+	for _, tc := range apiResp.Choices[0].Message.ToolCalls {
+		args := make(map[string]string)
+		var rawArgs map[string]interface{}
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &rawArgs); err == nil {
+			for k, v := range rawArgs {
+				args[k] = fmt.Sprintf("%v", v)
+			}
+		}
+		toolCalls = append(toolCalls, ToolCall{
+			ID:        tc.ID,
+			Name:      tc.Function.Name,
+			Arguments: args,
+		})
+	}
+
 	return &Response{
-		Content:      apiResp.Choices[0].Message.Content,
+		Content:      content,
 		Model:        apiResp.Model,
 		InputTokens:  apiResp.Usage.PromptTokens,
 		OutputTokens: apiResp.Usage.CompletionTokens,
 		StopReason:   apiResp.Choices[0].FinishReason,
+		ToolCalls:    toolCalls,
 	}, nil
 }
 

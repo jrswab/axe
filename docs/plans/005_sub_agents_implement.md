@@ -66,27 +66,27 @@
 
 ### 3a: Tool Definitions in Request
 
-- [ ] Write `TestOpenAI_Send_WithTools` — inspect request body for `tools` array with OpenAI format (`type: "function"`, `function.name`, `function.description`, `function.parameters`) (Req 3.1)
-- [ ] Write `TestOpenAI_Send_WithoutTools` — `Tools: nil`; verify no `tools` key in request body (Req 3.2)
-- [ ] Implement tools serialization in OpenAI `Send`: build `tools` array with `type: "function"` wrapper; omit when nil/empty (Req 3.1, 3.2)
-- [ ] Run tests — tool definition request tests pass
+- [x] Write `TestOpenAI_Send_WithTools` — inspect request body for `tools` array with OpenAI format (`type: "function"`, `function.name`, `function.description`, `function.parameters`) (Req 3.1)
+- [x] Write `TestOpenAI_Send_WithoutTools` — `Tools: nil`; verify no `tools` key in request body (Req 3.2)
+- [x] Implement tools serialization in OpenAI `Send`: build `tools` array with `type: "function"` wrapper; omit when nil/empty (Req 3.1, 3.2)
+- [x] Run tests — tool definition request tests pass
 
 ### 3b: Tool-Call Response Parsing
 
-- [ ] Write `TestOpenAI_Send_ToolCallResponse` — server returns `tool_calls` in choice message; verify `Response.ToolCalls` with correct `ID`, `Name`, `Arguments` (Req 3.3)
-- [ ] Write `TestOpenAI_Send_ToolCallNullContent` — server returns tool calls with `content: null`; verify `Response.Content` is empty (Req 3.5)
-- [ ] Write `TestOpenAI_Send_InvalidToolCallArguments` — server returns invalid JSON in `function.arguments`; verify `ToolCall` with empty `Arguments` (Req 3.4)
-- [ ] Write `TestOpenAI_Send_ToolsStopReason` — server returns `finish_reason: "tool_calls"`; verify `Response.StopReason` is `"tool_calls"` (Req 1.9)
-- [ ] Implement response parsing: handle `tool_calls` array in choice message; parse `function.arguments` as JSON; handle invalid JSON gracefully (Req 3.3–3.5)
-- [ ] Run tests — tool-call response parsing tests pass
+- [x] Write `TestOpenAI_Send_ToolCallResponse` — server returns `tool_calls` in choice message; verify `Response.ToolCalls` with correct `ID`, `Name`, `Arguments` (Req 3.3)
+- [x] Write `TestOpenAI_Send_ToolCallNullContent` — server returns tool calls with `content: null`; verify `Response.Content` is empty (Req 3.5)
+- [x] Write `TestOpenAI_Send_InvalidToolCallArguments` — server returns invalid JSON in `function.arguments`; verify `ToolCall` with empty `Arguments` (Req 3.4)
+- [x] Write `TestOpenAI_Send_ToolsStopReason` — server returns `finish_reason: "tool_calls"`; verify `Response.StopReason` is `"tool_calls"` (Req 1.9)
+- [x] Implement response parsing: handle `tool_calls` array in choice message; parse `function.arguments` as JSON; handle invalid JSON gracefully (Req 3.3–3.5)
+- [x] Run tests — tool-call response parsing tests pass
 
 ### 3c: Tool-Result and Assistant Tool-Call Messages
 
-- [ ] Write `TestOpenAI_Send_ToolResultMessage` — message with `ToolResults`; verify each becomes separate `role: "tool"` message with `tool_call_id` (Req 3.6)
-- [ ] Write `TestOpenAI_Send_AssistantToolCallMessage` — message with `ToolCalls`; verify `tool_calls` array with `id`, `type: "function"`, `function` fields (Req 3.7)
-- [ ] Implement message serialization: handle `Message.ToolResults` as individual `tool` messages; handle `Message.ToolCalls` as `assistant` message with `tool_calls` array (Req 3.6, 3.7)
-- [ ] Run tests — all OpenAI tool-calling tests pass
-- [ ] Run `make test` — verify all existing OpenAI tests still pass
+- [x] Write `TestOpenAI_Send_ToolResultMessage` — message with `ToolResults`; verify each becomes separate `role: "tool"` message with `tool_call_id` (Req 3.6)
+- [x] Write `TestOpenAI_Send_AssistantToolCallMessage` — message with `ToolCalls`; verify `tool_calls` array with `id`, `type: "function"`, `function` fields (Req 3.7)
+- [x] Implement message serialization: handle `Message.ToolResults` as individual `tool` messages; handle `Message.ToolCalls` as `assistant` message with `tool_calls` array (Req 3.6, 3.7)
+- [x] Run tests — all OpenAI tool-calling tests pass
+- [x] Run `make test` — verify all existing OpenAI tests still pass
 
 ---
 
