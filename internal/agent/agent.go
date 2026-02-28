@@ -13,8 +13,10 @@ import (
 
 // MemoryConfig holds memory sub-configuration for an agent.
 type MemoryConfig struct {
-	Enabled bool   `toml:"enabled"`
-	Path    string `toml:"path"`
+	Enabled    bool   `toml:"enabled"`
+	Path       string `toml:"path"`
+	LastN      int    `toml:"last_n"`
+	MaxEntries int    `toml:"max_entries"`
 }
 
 // ParamsConfig holds model parameter overrides for an agent.
@@ -63,6 +65,12 @@ func Validate(cfg *AgentConfig) error {
 	}
 	if cfg.SubAgentsConf.Timeout < 0 {
 		return errors.New("sub_agents_config.timeout must be non-negative")
+	}
+	if cfg.Memory.LastN < 0 {
+		return errors.New("memory.last_n must be non-negative")
+	}
+	if cfg.Memory.MaxEntries < 0 {
+		return errors.New("memory.max_entries must be non-negative")
 	}
 	return nil
 }
@@ -168,6 +176,8 @@ model = "provider/model-name"
 # [memory]
 # enabled = false
 # path = ""
+# last_n = 10
+# max_entries = 100
 
 # [params]
 # temperature = 0.3

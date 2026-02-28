@@ -6,6 +6,23 @@ import (
 	"path/filepath"
 )
 
+// GetDataDir returns the Axe data directory path following the XDG Base
+// Directory specification. It resolves to $XDG_DATA_HOME/axe if the
+// environment variable is set and non-empty. Otherwise it falls back to
+// $HOME/.local/share/axe. It does NOT create the directory.
+func GetDataDir() (string, error) {
+	if xdgData := os.Getenv("XDG_DATA_HOME"); xdgData != "" {
+		return filepath.Join(xdgData, "axe"), nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("unable to determine data directory: %w", err)
+	}
+
+	return filepath.Join(homeDir, ".local", "share", "axe"), nil
+}
+
 // GetConfigDir returns the Axe configuration directory path following
 // the XDG Base Directory specification. It resolves to $XDG_CONFIG_HOME/axe
 // if the environment variable is set, otherwise falls back to

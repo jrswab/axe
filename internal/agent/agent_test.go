@@ -530,6 +530,146 @@ func TestValidate_MaxDepthValid(t *testing.T) {
 	}
 }
 
+// --- Phase 6 (M6): Memory Config tests ---
+
+func TestLoad_MemoryConfig_AllFields(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "mem-agent"
+model = "openai/gpt-4o"
+
+[memory]
+enabled = true
+path = "/tmp/mem.md"
+last_n = 5
+max_entries = 50
+`
+	writeAgentFile(t, agentsDir, "mem-agent", tomlContent)
+
+	cfg, err := Load("mem-agent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !cfg.Memory.Enabled {
+		t.Error("Memory.Enabled = false, want true")
+	}
+	if cfg.Memory.Path != "/tmp/mem.md" {
+		t.Errorf("Memory.Path = %q, want %q", cfg.Memory.Path, "/tmp/mem.md")
+	}
+	if cfg.Memory.LastN != 5 {
+		t.Errorf("Memory.LastN = %d, want 5", cfg.Memory.LastN)
+	}
+	if cfg.Memory.MaxEntries != 50 {
+		t.Errorf("Memory.MaxEntries = %d, want 50", cfg.Memory.MaxEntries)
+	}
+}
+
+func TestLoad_MemoryConfig_Defaults(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "no-mem"
+model = "openai/gpt-4o"
+`
+	writeAgentFile(t, agentsDir, "no-mem", tomlContent)
+
+	cfg, err := Load("no-mem")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Memory.Enabled {
+		t.Error("Memory.Enabled = true, want false")
+	}
+	if cfg.Memory.Path != "" {
+		t.Errorf("Memory.Path = %q, want empty", cfg.Memory.Path)
+	}
+	if cfg.Memory.LastN != 0 {
+		t.Errorf("Memory.LastN = %d, want 0", cfg.Memory.LastN)
+	}
+	if cfg.Memory.MaxEntries != 0 {
+		t.Errorf("Memory.MaxEntries = %d, want 0", cfg.Memory.MaxEntries)
+	}
+}
+
+func TestValidate_MemoryLastN_Negative(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Memory: MemoryConfig{LastN: -1},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for last_n=-1, got nil")
+	}
+	want := "memory.last_n must be non-negative"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_MemoryMaxEntries_Negative(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Memory: MemoryConfig{MaxEntries: -1},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for max_entries=-1, got nil")
+	}
+	want := "memory.max_entries must be non-negative"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_MemoryLastN_Zero(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Memory: MemoryConfig{LastN: 0},
+	}
+	err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("expected no error for last_n=0, got %v", err)
+	}
+}
+
+func TestValidate_MemoryMaxEntries_Zero(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Memory: MemoryConfig{MaxEntries: 0},
+	}
+	err := Validate(cfg)
+	if err != nil {
+		t.Fatalf("expected no error for max_entries=0, got %v", err)
+	}
+}
+
+func TestScaffold_IncludesMemoryLastN(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "# last_n = 10") {
+		t.Errorf("scaffold output missing '# last_n = 10'\nfull output:\n%s", out)
+	}
+}
+
+func TestScaffold_IncludesMemoryMaxEntries(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "# max_entries = 100") {
+		t.Errorf("scaffold output missing '# max_entries = 100'\nfull output:\n%s", out)
+	}
+}
+
 // --- Phase 6: Scaffold tests ---
 
 func TestScaffold_IncludesSubAgentsConfig(t *testing.T) {
