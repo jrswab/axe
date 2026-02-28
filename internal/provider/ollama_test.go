@@ -511,3 +511,378 @@ func TestOllama_Send_ZeroTokenCounts(t *testing.T) {
 		t.Errorf("expected 0 output tokens, got %d", resp.OutputTokens)
 	}
 }
+
+// --- Phase 4a: Tool Definitions in Request ---
+
+func TestOllama_Send_WithTools(t *testing.T) {
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotBody)
+		json.NewEncoder(w).Encode(ollamaSuccessResponse())
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{
+				Name:        "call_agent",
+				Description: "Delegate a task to a sub-agent.",
+				Parameters: map[string]ToolParameter{
+					"agent": {Type: "string", Description: "Agent name", Required: true},
+					"task":  {Type: "string", Description: "What to do", Required: true},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify tools key is present
+	toolsRaw, ok := gotBody["tools"]
+	if !ok {
+		t.Fatal("expected 'tools' key in request body")
+	}
+
+	var tools []map[string]interface{}
+	if err := json.Unmarshal(toolsRaw, &tools); err != nil {
+		t.Fatalf("failed to unmarshal tools: %v", err)
+	}
+
+	if len(tools) != 1 {
+		t.Fatalf("expected 1 tool, got %d", len(tools))
+	}
+
+	tool := tools[0]
+	if tool["type"] != "function" {
+		t.Errorf("expected tool type 'function', got %v", tool["type"])
+	}
+
+	fn, ok := tool["function"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected 'function' to be an object")
+	}
+
+	if fn["name"] != "call_agent" {
+		t.Errorf("expected function name 'call_agent', got %v", fn["name"])
+	}
+	if fn["description"] != "Delegate a task to a sub-agent." {
+		t.Errorf("expected description 'Delegate a task to a sub-agent.', got %v", fn["description"])
+	}
+
+	params, ok := fn["parameters"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected 'parameters' to be an object")
+	}
+	if params["type"] != "object" {
+		t.Errorf("expected parameters type 'object', got %v", params["type"])
+	}
+
+	props, ok := params["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected 'properties' to be an object")
+	}
+	if _, ok := props["agent"]; !ok {
+		t.Error("expected 'agent' property")
+	}
+	if _, ok := props["task"]; !ok {
+		t.Error("expected 'task' property")
+	}
+
+	// Check required array
+	req, ok := params["required"].([]interface{})
+	if !ok {
+		t.Fatal("expected 'required' to be an array")
+	}
+	reqSet := make(map[string]bool)
+	for _, r := range req {
+		reqSet[r.(string)] = true
+	}
+	if !reqSet["agent"] {
+		t.Error("expected 'agent' in required list")
+	}
+	if !reqSet["task"] {
+		t.Error("expected 'task' in required list")
+	}
+}
+
+func TestOllama_Send_WithoutTools(t *testing.T) {
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotBody)
+		json.NewEncoder(w).Encode(ollamaSuccessResponse())
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, ok := gotBody["tools"]; ok {
+		t.Error("expected no 'tools' key in request body when Tools is nil")
+	}
+}
+
+// --- Phase 4b: Tool-Call Response Parsing ---
+
+func TestOllama_Send_ToolCallResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"model": "llama3",
+			"message": map[string]interface{}{
+				"role":    "assistant",
+				"content": "",
+				"tool_calls": []map[string]interface{}{
+					{
+						"function": map[string]interface{}{
+							"name": "call_agent",
+							"arguments": map[string]interface{}{
+								"agent": "test-runner",
+								"task":  "run tests",
+							},
+						},
+					},
+					{
+						"function": map[string]interface{}{
+							"name": "call_agent",
+							"arguments": map[string]interface{}{
+								"agent": "linter",
+								"task":  "lint code",
+							},
+						},
+					},
+				},
+			},
+			"done_reason":       "stop",
+			"prompt_eval_count": 10,
+			"eval_count":        5,
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	resp, err := o.Send(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{Name: "call_agent", Description: "test", Parameters: map[string]ToolParameter{}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(resp.ToolCalls) != 2 {
+		t.Fatalf("expected 2 tool calls, got %d", len(resp.ToolCalls))
+	}
+
+	// Verify generated IDs follow "ollama_<index>" format
+	if resp.ToolCalls[0].ID != "ollama_0" {
+		t.Errorf("expected ID 'ollama_0', got %q", resp.ToolCalls[0].ID)
+	}
+	if resp.ToolCalls[1].ID != "ollama_1" {
+		t.Errorf("expected ID 'ollama_1', got %q", resp.ToolCalls[1].ID)
+	}
+
+	// Verify first tool call
+	if resp.ToolCalls[0].Name != "call_agent" {
+		t.Errorf("expected name 'call_agent', got %q", resp.ToolCalls[0].Name)
+	}
+	if resp.ToolCalls[0].Arguments["agent"] != "test-runner" {
+		t.Errorf("expected agent 'test-runner', got %q", resp.ToolCalls[0].Arguments["agent"])
+	}
+	if resp.ToolCalls[0].Arguments["task"] != "run tests" {
+		t.Errorf("expected task 'run tests', got %q", resp.ToolCalls[0].Arguments["task"])
+	}
+
+	// Verify second tool call
+	if resp.ToolCalls[1].Name != "call_agent" {
+		t.Errorf("expected name 'call_agent', got %q", resp.ToolCalls[1].Name)
+	}
+	if resp.ToolCalls[1].Arguments["agent"] != "linter" {
+		t.Errorf("expected agent 'linter', got %q", resp.ToolCalls[1].Arguments["agent"])
+	}
+}
+
+func TestOllama_Send_NoToolCallsWithTools(t *testing.T) {
+	// Model ignores tools and returns a normal text response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(ollamaSuccessResponse())
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	resp, err := o.Send(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Tools: []Tool{
+			{Name: "call_agent", Description: "test", Parameters: map[string]ToolParameter{}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(resp.ToolCalls) != 0 {
+		t.Errorf("expected 0 tool calls, got %d", len(resp.ToolCalls))
+	}
+	if resp.Content != "Hello from Ollama" {
+		t.Errorf("expected 'Hello from Ollama', got %q", resp.Content)
+	}
+}
+
+// --- Phase 4c: Tool-Result and Assistant Tool-Call Messages ---
+
+func TestOllama_Send_ToolResultMessage(t *testing.T) {
+	var gotBody []byte
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotBody, _ = io.ReadAll(r.Body)
+		json.NewEncoder(w).Encode(ollamaSuccessResponse())
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model: "llama3",
+		Messages: []Message{
+			{Role: "user", Content: "Hi"},
+			{
+				Role: "assistant",
+				ToolCalls: []ToolCall{
+					{ID: "ollama_0", Name: "call_agent", Arguments: map[string]string{"agent": "helper", "task": "do it"}},
+				},
+			},
+			{
+				Role: "tool",
+				ToolResults: []ToolResult{
+					{CallID: "ollama_0", Content: "Result from helper", IsError: false},
+					{CallID: "ollama_1", Content: "Another result", IsError: true},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var req struct {
+		Messages []json.RawMessage `json:"messages"`
+	}
+	if err := json.Unmarshal(gotBody, &req); err != nil {
+		t.Fatalf("failed to unmarshal request: %v", err)
+	}
+
+	// Messages: system(if any), user, assistant(tool_calls), tool, tool
+	// With no system prompt, we expect: user, assistant, tool, tool = 4 messages
+	if len(req.Messages) != 4 {
+		t.Fatalf("expected 4 messages, got %d", len(req.Messages))
+	}
+
+	// Verify tool result messages (indices 2 and 3)
+	for i, idx := range []int{2, 3} {
+		var msg map[string]interface{}
+		json.Unmarshal(req.Messages[idx], &msg)
+		if msg["role"] != "tool" {
+			t.Errorf("message %d: expected role 'tool', got %v", idx, msg["role"])
+		}
+		if i == 0 {
+			if msg["content"] != "Result from helper" {
+				t.Errorf("expected content 'Result from helper', got %v", msg["content"])
+			}
+		} else {
+			if msg["content"] != "Another result" {
+				t.Errorf("expected content 'Another result', got %v", msg["content"])
+			}
+		}
+	}
+}
+
+func TestOllama_Send_AssistantToolCallMessage(t *testing.T) {
+	var gotBody []byte
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotBody, _ = io.ReadAll(r.Body)
+		json.NewEncoder(w).Encode(ollamaSuccessResponse())
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model: "llama3",
+		Messages: []Message{
+			{Role: "user", Content: "Hi"},
+			{
+				Role:    "assistant",
+				Content: "I'll help you",
+				ToolCalls: []ToolCall{
+					{ID: "ollama_0", Name: "call_agent", Arguments: map[string]string{"agent": "helper", "task": "do it"}},
+				},
+			},
+			{
+				Role: "tool",
+				ToolResults: []ToolResult{
+					{CallID: "ollama_0", Content: "Done", IsError: false},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var req struct {
+		Messages []json.RawMessage `json:"messages"`
+	}
+	if err := json.Unmarshal(gotBody, &req); err != nil {
+		t.Fatalf("failed to unmarshal request: %v", err)
+	}
+
+	// Messages: user, assistant(with tool_calls), tool = 3 messages
+	if len(req.Messages) != 3 {
+		t.Fatalf("expected 3 messages, got %d", len(req.Messages))
+	}
+
+	// Verify assistant message with tool_calls (index 1)
+	var assistantMsg map[string]interface{}
+	json.Unmarshal(req.Messages[1], &assistantMsg)
+
+	if assistantMsg["role"] != "assistant" {
+		t.Errorf("expected role 'assistant', got %v", assistantMsg["role"])
+	}
+
+	toolCalls, ok := assistantMsg["tool_calls"].([]interface{})
+	if !ok {
+		t.Fatal("expected 'tool_calls' to be an array")
+	}
+	if len(toolCalls) != 1 {
+		t.Fatalf("expected 1 tool call, got %d", len(toolCalls))
+	}
+
+	tc := toolCalls[0].(map[string]interface{})
+	fn := tc["function"].(map[string]interface{})
+	if fn["name"] != "call_agent" {
+		t.Errorf("expected function name 'call_agent', got %v", fn["name"])
+	}
+
+	args := fn["arguments"].(map[string]interface{})
+	if args["agent"] != "helper" {
+		t.Errorf("expected agent 'helper', got %v", args["agent"])
+	}
+	if args["task"] != "do it" {
+		t.Errorf("expected task 'do it', got %v", args["task"])
+	}
+}

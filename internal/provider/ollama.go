@@ -59,17 +59,50 @@ type ollamaOptions struct {
 
 // ollamaRequest is the JSON body sent to the Ollama Chat API.
 type ollamaRequest struct {
-	Model    string         `json:"model"`
-	Messages []Message      `json:"messages"`
-	Stream   bool           `json:"stream"`
-	Options  *ollamaOptions `json:"options,omitempty"`
+	Model    string          `json:"model"`
+	Messages []ollamaMessage `json:"messages"`
+	Stream   bool            `json:"stream"`
+	Options  *ollamaOptions  `json:"options,omitempty"`
+	Tools    []ollamaToolDef `json:"tools,omitempty"`
+}
+
+// ollamaMessage is the wire format for a message in the Ollama API.
+type ollamaMessage struct {
+	Role      string               `json:"role"`
+	Content   string               `json:"content"`
+	ToolCalls []ollamaToolCallWire `json:"tool_calls,omitempty"`
+}
+
+// ollamaToolDef is the wire format for a tool definition in the Ollama API.
+type ollamaToolDef struct {
+	Type     string             `json:"type"`
+	Function ollamaToolFunction `json:"function"`
+}
+
+// ollamaToolFunction is the function definition inside an Ollama tool.
+type ollamaToolFunction struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Parameters  map[string]interface{} `json:"parameters"`
+}
+
+// ollamaToolCallWire is the wire format for a tool call in Ollama responses.
+type ollamaToolCallWire struct {
+	Function ollamaToolCallFunctionWire `json:"function"`
+}
+
+// ollamaToolCallFunctionWire is the function info inside an Ollama tool call.
+type ollamaToolCallFunctionWire struct {
+	Name      string                 `json:"name"`
+	Arguments map[string]interface{} `json:"arguments"`
 }
 
 // ollamaResponse represents the JSON response from the Ollama Chat API.
 type ollamaResponse struct {
 	Model   string `json:"model"`
 	Message struct {
-		Content string `json:"content"`
+		Content   string               `json:"content"`
+		ToolCalls []ollamaToolCallWire `json:"tool_calls"`
 	} `json:"message"`
 	DoneReason      string `json:"done_reason"`
 	PromptEvalCount int    `json:"prompt_eval_count"`
@@ -79,6 +112,86 @@ type ollamaResponse struct {
 // ollamaErrorResponse represents an Ollama API error response.
 type ollamaErrorResponse struct {
 	Error string `json:"error"`
+}
+
+// convertToOllamaMessages converts provider Messages to the Ollama wire format.
+func convertToOllamaMessages(msgs []Message) []ollamaMessage {
+	var result []ollamaMessage
+	for _, msg := range msgs {
+		if msg.Role == "tool" && len(msg.ToolResults) > 0 {
+			// Each ToolResult becomes a separate "tool" message.
+			// Ollama does not support tool_call_id in tool messages.
+			for _, tr := range msg.ToolResults {
+				result = append(result, ollamaMessage{
+					Role:    "tool",
+					Content: tr.Content,
+				})
+			}
+		} else if msg.Role == "assistant" && len(msg.ToolCalls) > 0 {
+			// Assistant message with tool calls
+			var toolCalls []ollamaToolCallWire
+			for _, tc := range msg.ToolCalls {
+				args := make(map[string]interface{})
+				for k, v := range tc.Arguments {
+					args[k] = v
+				}
+				toolCalls = append(toolCalls, ollamaToolCallWire{
+					Function: ollamaToolCallFunctionWire{
+						Name:      tc.Name,
+						Arguments: args,
+					},
+				})
+			}
+			result = append(result, ollamaMessage{
+				Role:      "assistant",
+				Content:   msg.Content,
+				ToolCalls: toolCalls,
+			})
+		} else {
+			// Standard text message
+			result = append(result, ollamaMessage{
+				Role:    msg.Role,
+				Content: msg.Content,
+			})
+		}
+	}
+	return result
+}
+
+// convertToOllamaTools converts provider Tools to the Ollama wire format.
+func convertToOllamaTools(tools []Tool) []ollamaToolDef {
+	var result []ollamaToolDef
+	for _, tool := range tools {
+		properties := make(map[string]interface{})
+		var required []string
+		for name, param := range tool.Parameters {
+			properties[name] = map[string]interface{}{
+				"type":        param.Type,
+				"description": param.Description,
+			}
+			if param.Required {
+				required = append(required, name)
+			}
+		}
+
+		params := map[string]interface{}{
+			"type":       "object",
+			"properties": properties,
+		}
+		if len(required) > 0 {
+			params["required"] = required
+		}
+
+		result = append(result, ollamaToolDef{
+			Type: "function",
+			Function: ollamaToolFunction{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  params,
+			},
+		})
+	}
+	return result
 }
 
 // Send makes a completion request to the Ollama Chat API.
@@ -91,7 +204,7 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 
 	body := ollamaRequest{
 		Model:    req.Model,
-		Messages: messages,
+		Messages: convertToOllamaMessages(messages),
 		Stream:   false,
 	}
 
@@ -110,6 +223,10 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 	if hasOpts {
 		body.Options = &opts
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToOllamaTools(req.Tools)
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -167,6 +284,33 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 		}
 	}
 
+	// Parse tool calls from response
+	var toolCalls []ToolCall
+	for i, tc := range apiResp.Message.ToolCalls {
+		args := make(map[string]string)
+		for k, v := range tc.Function.Arguments {
+			args[k] = fmt.Sprintf("%v", v)
+		}
+		toolCalls = append(toolCalls, ToolCall{
+			ID:        fmt.Sprintf("ollama_%d", i),
+			Name:      tc.Function.Name,
+			Arguments: args,
+		})
+	}
+
+	// If there are tool calls, return them (content may be empty)
+	if len(toolCalls) > 0 {
+		return &Response{
+			Content:      apiResp.Message.Content,
+			Model:        apiResp.Model,
+			InputTokens:  apiResp.PromptEvalCount,
+			OutputTokens: apiResp.EvalCount,
+			StopReason:   apiResp.DoneReason,
+			ToolCalls:    toolCalls,
+		}, nil
+	}
+
+	// No tool calls: standard text response
 	if apiResp.Message.Content == "" {
 		return nil, &ProviderError{
 			Category: ErrCategoryServer,

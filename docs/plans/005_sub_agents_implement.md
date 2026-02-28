@@ -94,25 +94,25 @@
 
 ### 4a: Tool Definitions in Request
 
-- [ ] Write `TestOllama_Send_WithTools` — inspect request body for `tools` array (Req 4.1)
-- [ ] Write `TestOllama_Send_WithoutTools` — `Tools: nil`; verify no `tools` key (Req 4.2)
-- [ ] Implement tools serialization in Ollama `Send`: build `tools` array with `type: "function"` wrapper; omit when nil/empty (Req 4.1, 4.2)
-- [ ] Run tests — tool definition request tests pass
+- [x] Write `TestOllama_Send_WithTools` — inspect request body for `tools` array (Req 4.1)
+- [x] Write `TestOllama_Send_WithoutTools` — `Tools: nil`; verify no `tools` key (Req 4.2)
+- [x] Implement tools serialization in Ollama `Send`: build `tools` array with `type: "function"` wrapper; omit when nil/empty (Req 4.1, 4.2)
+- [x] Run tests — tool definition request tests pass
 
 ### 4b: Tool-Call Response Parsing
 
-- [ ] Write `TestOllama_Send_ToolCallResponse` — server returns `tool_calls` in message; verify `Response.ToolCalls` with generated `"ollama_<index>"` IDs (Req 4.3)
-- [ ] Write `TestOllama_Send_NoToolCallsWithTools` — request has tools but server returns text-only response; verify `Response.ToolCalls` is empty, `Response.Content` populated (Req 4.6)
-- [ ] Implement response parsing: handle `tool_calls` array; generate `"ollama_<index>"` IDs; graceful fallback for models that ignore tools (Req 4.3, 4.6)
-- [ ] Run tests — tool-call response parsing tests pass
+- [x] Write `TestOllama_Send_ToolCallResponse` — server returns `tool_calls` in message; verify `Response.ToolCalls` with generated `"ollama_<index>"` IDs (Req 4.3)
+- [x] Write `TestOllama_Send_NoToolCallsWithTools` — request has tools but server returns text-only response; verify `Response.ToolCalls` is empty, `Response.Content` populated (Req 4.6)
+- [x] Implement response parsing: handle `tool_calls` array; generate `"ollama_<index>"` IDs; graceful fallback for models that ignore tools (Req 4.3, 4.6)
+- [x] Run tests — tool-call response parsing tests pass
 
 ### 4c: Tool-Result and Assistant Tool-Call Messages
 
-- [ ] Write `TestOllama_Send_ToolResultMessage` — message with `ToolResults`; verify each becomes `role: "tool"` message (Req 4.4)
-- [ ] Write `TestOllama_Send_AssistantToolCallMessage` — message with `ToolCalls`; verify `tool_calls` array in assistant message (Req 4.5)
-- [ ] Implement message serialization: handle `Message.ToolResults` as individual `tool` messages; handle `Message.ToolCalls` as `assistant` message with `tool_calls` (Req 4.4, 4.5)
-- [ ] Run tests — all Ollama tool-calling tests pass
-- [ ] Run `make test` — verify all existing Ollama tests still pass
+- [x] Write `TestOllama_Send_ToolResultMessage` — message with `ToolResults`; verify each becomes `role: "tool"` message (Req 4.4)
+- [x] Write `TestOllama_Send_AssistantToolCallMessage` — message with `ToolCalls`; verify `tool_calls` array in assistant message (Req 4.5)
+- [x] Implement message serialization: handle `Message.ToolResults` as individual `tool` messages; handle `Message.ToolCalls` as `assistant` message with `tool_calls` (Req 4.4, 4.5)
+- [x] Run tests — all Ollama tool-calling tests pass
+- [x] Run `make test` — verify all existing Ollama tests still pass
 
 ---
 
