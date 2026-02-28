@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -456,6 +457,67 @@ func TestExecuteCallAgent_APIError(t *testing.T) {
 	}
 	if !strings.Contains(result.Content, "You may retry or proceed without this result") {
 		t.Errorf("Content missing retry suggestion: %q", result.Content)
+	}
+}
+
+// TestExecuteCallAgent_DepthLimitNoTools verifies that a sub-agent at the depth limit
+// runs without tools injected, even when the sub-agent has sub_agents configured.
+// This tests Req 10.3: tools are only injected when newDepth < MaxDepth.
+func TestExecuteCallAgent_DepthLimitNoTools(t *testing.T) {
+	agentsDir := setupToolTestAgentsDir(t)
+
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bodyBytes, _ := io.ReadAll(r.Body)
+		receivedBody = string(bodyBytes)
+		resp := map[string]interface{}{
+			"id":    "msg_depth",
+			"type":  "message",
+			"model": "claude-sonnet-4-20250514",
+			"role":  "assistant",
+			"content": []map[string]interface{}{
+				{"type": "text", "text": "depth-limited result"},
+			},
+			"stop_reason": "end_turn",
+			"usage":       map[string]int{"input_tokens": 10, "output_tokens": 5},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Sub-agent has sub_agents configured, but depth should prevent tool injection
+	writeToolTestAgent(t, agentsDir, "deep-helper", `name = "deep-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["another-agent"]
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	call := provider.ToolCall{
+		ID:        "test-depth-tools",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "deep-helper", "task": "do something"},
+	}
+
+	// Depth=2, MaxDepth=3: newDepth will be 3, which is NOT < 3, so no tools should be injected
+	opts := ExecuteOptions{
+		AllowedAgents: []string{"deep-helper"},
+		MaxDepth:      3,
+		Depth:         2,
+		GlobalConfig:  &config.GlobalConfig{},
+	}
+	result := ExecuteCallAgent(context.Background(), call, opts)
+	if result.IsError {
+		t.Fatalf("expected IsError=false, got error: %s", result.Content)
+	}
+	if result.Content != "depth-limited result" {
+		t.Errorf("Content = %q, want %q", result.Content, "depth-limited result")
+	}
+
+	// The request sent to the mock server should NOT contain tools
+	if strings.Contains(receivedBody, `"tools"`) {
+		t.Errorf("expected no 'tools' in request body when at depth limit, but found tools in: %s", receivedBody)
 	}
 }
 

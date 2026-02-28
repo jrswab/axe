@@ -233,19 +233,19 @@
 
 ## Phase 9: Depth Tracking (Spec §3.10)
 
-- [ ] Verify depth starts at 0 for top-level `axe run` invocation (Req 10.1, 9.4)
-- [ ] Verify `ExecuteCallAgent` passes `Depth + 1` to sub-agent (Req 10.2)
-- [ ] Verify sub-agents at depth limit run without tools (Req 10.3, 10.4)
-- [ ] Run `make test` — all depth-related tests pass (covered by Phase 7 and 8 tests)
+- [x] Verify depth starts at 0 for top-level `axe run` invocation (Req 10.1, 9.4)
+- [x] Verify `ExecuteCallAgent` passes `Depth + 1` to sub-agent (Req 10.2)
+- [x] Verify sub-agents at depth limit run without tools (Req 10.3, 10.4) — added `TestExecuteCallAgent_DepthLimitNoTools`
+- [x] Run `make test` — all depth-related tests pass (covered by Phase 7 and 8 tests)
 
 ---
 
 ## Phase 10: Final Verification
 
-- [ ] Run `make test` — all tests pass with 0 failures
-- [ ] Verify `go.mod` still contains only `spf13/cobra` and `BurntSushi/toml` as direct dependencies (Constraint 1)
-- [ ] Verify `Provider` interface signature is unchanged: `Send(ctx context.Context, req *Request) (*Response, error)` (Constraint 7)
-- [ ] Verify all existing M4 tests still pass unchanged (Req 1.8)
-- [ ] Verify exit codes match spec table — sub-agent errors don't affect parent exit code (§8)
-- [ ] Verify no real HTTP requests in tests — all use `httptest.NewServer` (§7.9)
-- [ ] Verify `--dry-run`, `--json`, `--verbose` flags all work with and without sub-agents
+- [x] Run `make test` — all tests pass with 0 failures
+- [x] Verify `go.mod` still contains only `spf13/cobra` and `BurntSushi/toml` as direct dependencies (Constraint 1)
+- [x] Verify `Provider` interface signature is unchanged: `Send(ctx context.Context, req *Request) (*Response, error)` (Constraint 7)
+- [x] Verify all existing M4 tests still pass unchanged (Req 1.8)
+- [x] Verify exit codes match spec table — sub-agent errors don't affect parent exit code (§8)
+- [x] Verify no real HTTP requests in tests — all use `httptest.NewServer` (§7.9)
+- [x] Verify `--dry-run`, `--json`, `--verbose` flags all work with and without sub-agents
