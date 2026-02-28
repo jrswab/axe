@@ -790,6 +790,43 @@ func TestTrimEntries_OriginalUnmodifiedOnWriteError(t *testing.T) {
 	}
 }
 
+func TestTrimEntries_PreservesFilePermissions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	content := generateEntries(5)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	// Verify initial permissions
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("failed to stat file: %v", err)
+	}
+	origPerm := info.Mode().Perm()
+	if origPerm != 0644 {
+		t.Fatalf("unexpected initial permissions: %o", origPerm)
+	}
+
+	removed, err := TrimEntries(path, 2)
+	if err != nil {
+		t.Fatalf("TrimEntries() error = %v", err)
+	}
+	if removed != 3 {
+		t.Errorf("TrimEntries() removed = %d, want 3", removed)
+	}
+
+	// Verify file permissions are preserved
+	info, err = os.Stat(path)
+	if err != nil {
+		t.Fatalf("failed to stat file after trim: %v", err)
+	}
+	newPerm := info.Mode().Perm()
+	if newPerm != origPerm {
+		t.Errorf("file permissions changed after trim: got %o, want %o", newPerm, origPerm)
+	}
+}
+
 // --- CountEntries tests ---
 
 func TestCountEntries_FileDoesNotExist(t *testing.T) {

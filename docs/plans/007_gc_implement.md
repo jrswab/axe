@@ -1,7 +1,7 @@
 # Implementation Checklist: M7 - Garbage Collection
 
 **Based on:** 007_gc_spec.md
-**Status:** Pending
+**Status:** Complete
 **Created:** 2026-02-28
 
 ---
@@ -141,15 +141,15 @@
 
 ## Phase 7: Final Verification
 
-- [ ] Run `make test` — all tests pass with 0 failures
-- [ ] Verify `go.mod` has no new direct dependencies (Constraint 1)
-- [ ] Verify `TrimEntries` uses atomic write-temp-then-rename (Constraint 8)
-- [ ] Verify pattern detection prompt is hard-coded, not in TOML config (Constraint 7)
-- [ ] Verify GC makes exactly one LLM call per agent, no tool calls (Constraint 3)
-- [ ] Verify no interactive prompts or confirmations (Constraint 2)
-- [ ] Verify GC does not append memory entries for its own operations (Constraint 9)
-- [ ] Verify exit codes: 0 (success/skip/dry-run), 1 (agent error), 2 (config error), 3 (API error) (Req 6.1)
-- [ ] Verify `--all` processes agents sequentially, not in parallel (Constraint 4)
-- [ ] Verify agents with `memory.enabled = false` are warned/skipped correctly (Design Decision 6)
-- [ ] Verify trim target resolution: `last_n` → `max_entries` → no trim (Design Decision 3)
-- [ ] Update implementation file status to **Complete**
+- [x] Run `make test` — all tests pass with 0 failures
+- [x] Verify `go.mod` has no new direct dependencies (Constraint 1)
+- [x] Verify `TrimEntries` uses atomic write-temp-then-rename (Constraint 8)
+- [x] Verify pattern detection prompt is hard-coded, not in TOML config (Constraint 7)
+- [x] Verify GC makes exactly one LLM call per agent, no tool calls (Constraint 3)
+- [x] Verify no interactive prompts or confirmations (Constraint 2)
+- [x] Verify GC does not append memory entries for its own operations (Constraint 9)
+- [x] Verify exit codes: 0 (success/skip/dry-run), 1 (agent error), 2 (config error), 3 (API error) (Req 6.1)
+- [x] Verify `--all` processes agents sequentially, not in parallel (Constraint 4)
+- [x] Verify agents with `memory.enabled = false` are warned/skipped correctly (Design Decision 6)
+- [x] Verify trim target resolution: `last_n` → `max_entries` → no trim (Design Decision 3)
+- [x] Update implementation file status to **Complete**

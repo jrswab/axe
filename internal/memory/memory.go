@@ -182,6 +182,12 @@ func TrimEntries(path string, keepN int) (int, error) {
 		result.WriteString(lines[i])
 	}
 
+	// Preserve original file permissions for the atomic replace.
+	origInfo, err := os.Stat(path)
+	if err != nil {
+		return 0, fmt.Errorf("failed to stat original file: %w", err)
+	}
+
 	// Atomic write: temp file in same directory, then rename
 	dir := filepath.Dir(path)
 	tmpFile, err := os.CreateTemp(dir, ".axe-trim-*.tmp")
@@ -189,6 +195,12 @@ func TrimEntries(path string, keepN int) (int, error) {
 		return 0, fmt.Errorf("failed to create temp file: %w", err)
 	}
 	tmpPath := tmpFile.Name()
+
+	if err := tmpFile.Chmod(origInfo.Mode().Perm()); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpPath)
+		return 0, fmt.Errorf("failed to set temp file permissions: %w", err)
+	}
 
 	if _, err := tmpFile.WriteString(result.String()); err != nil {
 		tmpFile.Close()
