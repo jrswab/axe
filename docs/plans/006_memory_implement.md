@@ -137,72 +137,72 @@
 
 ### 4a: Memory Load into System Prompt Tests (Red)
 
-- [ ] Write `TestRun_MemoryDisabled_NoFileCreated` — agent with `memory.enabled = false`; mock provider; verify no memory file after run (Req 4.1)
-- [ ] Write `TestRun_MemoryEnabled_LoadsIntoPrompt` — pre-populated memory file; mock provider captures system prompt; verify `## Memory` section present (Req 4.1)
-- [ ] Write `TestRun_MemoryEnabled_LastN` — `last_n = 2`, 5 entries; verify only last 2 in system prompt (Req 4.1)
-- [ ] Run tests — confirm fail (red)
+- [x] Write `TestRun_MemoryDisabled_NoFileCreated` — agent with `memory.enabled = false`; mock provider; verify no memory file after run (Req 4.1)
+- [x] Write `TestRun_MemoryEnabled_LoadsIntoPrompt` — pre-populated memory file; mock provider captures system prompt; verify `## Memory` section present (Req 4.1)
+- [x] Write `TestRun_MemoryEnabled_LastN` — `last_n = 2`, 5 entries; verify only last 2 in system prompt (Req 4.1)
+- [x] Run tests — confirm fail (red)
 
 ### 4b: Implement Memory Load (Green)
 
-- [ ] After `BuildSystemPrompt` (line 141) and before dry-run check: if `cfg.Memory.Enabled`, resolve path, load entries, append `\n\n---\n\n## Memory\n\n<entries>` to `systemPrompt` (Req 4.1, 6.1, 6.2)
-- [ ] Handle load errors: print warning to stderr, continue without memory (Req 4.2)
-- [ ] Run tests — memory load tests pass (green)
+- [x] After `BuildSystemPrompt` (line 141) and before dry-run check: if `cfg.Memory.Enabled`, resolve path, load entries, append `\n\n---\n\n## Memory\n\n<entries>` to `systemPrompt` (Req 4.1, 6.1, 6.2)
+- [x] Handle load errors: print warning to stderr, continue without memory (Req 4.2)
+- [x] Run tests — memory load tests pass (green)
 
 ### 4c: Max Entries Warning Tests (Red)
 
-- [ ] Write `TestRun_MemoryEnabled_MaxEntriesWarning` — `max_entries = 3`, 3 entries; verify stderr contains warning (Req 4.1)
-- [ ] Write `TestRun_MemoryEnabled_MaxEntriesNoWarningWhenBelow` — `max_entries = 10`, 3 entries; verify no warning (Req 4.1)
-- [ ] Run tests — confirm fail (red)
+- [x] Write `TestRun_MemoryEnabled_MaxEntriesWarning` — `max_entries = 3`, 3 entries; verify stderr contains warning (Req 4.1)
+- [x] Write `TestRun_MemoryEnabled_MaxEntriesNoWarningWhenBelow` — `max_entries = 10`, 3 entries; verify no warning (Req 4.1)
+- [x] Run tests — confirm fail (red)
 
 ### 4d: Implement Max Entries Warning (Green)
 
-- [ ] After loading entries: if `MaxEntries > 0` and count `>= MaxEntries`, print warning to stderr (Req 4.1)
-- [ ] Run tests — warning tests pass (green)
+- [x] After loading entries: if `MaxEntries > 0` and count `>= MaxEntries`, print warning to stderr (Req 4.1)
+- [x] Run tests — warning tests pass (green)
 
 ### 4e: Memory Append After Response Tests (Red)
 
-- [ ] Write `TestRun_MemoryEnabled_AppendsEntry` — `memory.enabled = true`; mock provider; verify memory file created with correct entry (Req 4.3)
-- [ ] Write `TestRun_MemoryEnabled_APIError_NoEntryAppended` — mock provider returns 500; verify no memory file (Req 4.4)
-- [ ] Run tests — confirm fail (red)
+- [x] Write `TestRun_MemoryEnabled_AppendsEntry` — `memory.enabled = true`; mock provider; verify memory file created with correct entry (Req 4.3)
+- [x] Write `TestRun_MemoryEnabled_APIError_NoEntryAppended` — mock provider returns 500; verify no memory file (Req 4.4)
+- [x] Run tests — confirm fail (red)
 
 ### 4f: Implement Memory Append (Green)
 
-- [ ] After successful LLM response and output: if `cfg.Memory.Enabled` and no error, resolve path and call `AppendEntry` (Req 4.3)
-- [ ] If `AppendEntry` errors, print warning to stderr; do not change exit code (Req 4.3)
-- [ ] Ensure no append on LLM error (Req 4.4)
-- [ ] Run tests — append tests pass (green)
+- [x] After successful LLM response and output: if `cfg.Memory.Enabled` and no error, resolve path and call `AppendEntry` (Req 4.3)
+- [x] If `AppendEntry` errors, print warning to stderr; do not change exit code (Req 4.3)
+- [x] Ensure no append on LLM error (Req 4.4)
+- [x] Run tests — append tests pass (green)
 
 ### 4g: Dry-Run Memory Display Tests (Red)
 
-- [ ] Write `TestRun_MemoryEnabled_DryRun` — pre-populated memory; `--dry-run`; verify `--- Memory ---` section with entries; no new entry appended (Req 4.5, 4.6)
-- [ ] Write `TestRun_MemoryEnabled_DryRun_NoMemoryFile` — no memory file; `--dry-run`; verify `--- Memory ---` section with `(none)` (Req 4.5)
-- [ ] Run tests — confirm fail (red)
+- [x] Write `TestRun_MemoryEnabled_DryRun` — pre-populated memory; `--dry-run`; verify `--- Memory ---` section with entries; no new entry appended (Req 4.5, 4.6)
+- [x] Write `TestRun_MemoryEnabled_DryRun_NoMemoryFile` — no memory file; `--dry-run`; verify `--- Memory ---` section with `(none)` (Req 4.5)
+- [x] Run tests — confirm fail (red)
 
 ### 4h: Implement Dry-Run Memory Display (Green)
 
-- [ ] In `printDryRun`: if `cfg.Memory.Enabled`, display `--- Memory ---` section between Stdin and Sub-Agents; show entries or `(none)` or `(error: <msg>)` (Req 4.5, 4.6)
-- [ ] Run tests — dry-run memory tests pass (green)
+- [x] In `printDryRun`: if `cfg.Memory.Enabled`, display `--- Memory ---` section between Stdin and Sub-Agents; show entries or `(none)` or `(error: <msg>)` (Req 4.5, 4.6)
+- [x] Run tests — dry-run memory tests pass (green)
 
 ### 4i: Verbose Memory Output Tests (Red)
 
-- [ ] Write `TestRun_MemoryEnabled_Verbose` — 3 entries; `--verbose`; verify stderr contains `Memory:   <N> entries loaded from <path>` (Req 4.7)
-- [ ] Run tests — confirm fail (red)
+- [x] Write `TestRun_MemoryEnabled_Verbose` — 3 entries; `--verbose`; verify stderr contains `Memory:   <N> entries loaded from <path>` (Req 4.7)
+- [x] Run tests — confirm fail (red)
 
 ### 4j: Implement Verbose Memory Output (Green)
 
-- [ ] In verbose output block: if `cfg.Memory.Enabled`, print entry count and path to stderr (Req 4.7)
-- [ ] Handle case with no memory file: print `Memory:   0 entries (no memory file)` (Req 4.7)
-- [ ] Run tests — verbose tests pass (green)
+- [x] In verbose output block: if `cfg.Memory.Enabled`, print entry count and path to stderr (Req 4.7)
+- [x] Handle case with no memory file: print `Memory:   0 entries (no memory file)` (Req 4.7)
+- [x] Run tests — verbose tests pass (green)
 
 ### 4k: Custom Path Test (Red)
 
-- [ ] Write `TestRun_MemoryEnabled_CustomPath` — `memory.path = "<tempDir>/custom.md"`; verify custom path used for both read and write (Req 4.1, 4.3)
-- [ ] Run tests — confirm fail (red)
+- [x] Write `TestRun_MemoryEnabled_CustomPath` — `memory.path = "<tempDir>/custom.md"`; verify custom path used for both read and write (Req 4.1, 4.3)
+- [x] Run tests — confirm fail (red)
 
 ### 4l: Verify Custom Path (Green)
 
-- [ ] Run tests — custom path test should pass with existing implementation (green)
-- [ ] Run `make test` — all existing tests still pass
+- [x] Run tests — custom path test should pass with existing implementation (green)
+- [x] Run `make test` — all existing tests still pass
 
 ---
 

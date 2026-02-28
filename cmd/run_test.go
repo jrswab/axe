@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1679,6 +1680,528 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 	if !subAgentCalls["b"] {
 		t.Error("expected sub-agent 'b' to be called with default parallel=true")
+	}
+}
+
+// --- Phase M6-4a: Memory Load into System Prompt ---
+
+// startMockAnthropicServerCapture starts a mock Anthropic server that captures
+// the request body and returns a configurable response.
+func startMockAnthropicServerCapture(t *testing.T, capturedBody *string, mu *sync.Mutex, responseText string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		mu.Lock()
+		*capturedBody = body.String()
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`{
+			"id": "msg_test",
+			"type": "message",
+			"role": "assistant",
+			"content": [{"type": "text", "text": "` + responseText + `"}],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+}
+
+func TestRun_MemoryDisabled_NoFileCreated(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockAnthropicServer(t)
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-disabled", `name = "mem-disabled"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = false
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-disabled"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify no memory file was created
+	memoryDir := filepath.Join(tmpDir, "data", "axe", "memory")
+	if _, err := os.Stat(memoryDir); !os.IsNotExist(err) {
+		t.Errorf("expected memory directory to not exist, but it does (or other error): %v", err)
+	}
+}
+
+func TestRun_MemoryEnabled_LoadsIntoPrompt(t *testing.T) {
+	resetRunCmd(t)
+	var capturedBody string
+	var mu sync.Mutex
+	server := startMockAnthropicServerCapture(t, &capturedBody, &mu, "memory response")
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-load", `name = "mem-load"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	// Pre-populate a memory file
+	memoryDir := filepath.Join(tmpDir, "data", "axe", "memory")
+	os.MkdirAll(memoryDir, 0755)
+	memoryContent := "## 2026-02-28T10:00:00Z\n**Task:** previous task\n**Result:** previous result\n\n"
+	os.WriteFile(filepath.Join(memoryDir, "mem-load.md"), []byte(memoryContent), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-load"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	mu.Lock()
+	body := capturedBody
+	mu.Unlock()
+
+	// Verify the system prompt contains a Memory section with the pre-populated entries
+	if !strings.Contains(body, "## Memory") {
+		t.Errorf("expected '## Memory' in request body (system prompt), got %q", body)
+	}
+	if !strings.Contains(body, "previous task") {
+		t.Errorf("expected 'previous task' in request body, got %q", body)
+	}
+	if !strings.Contains(body, "previous result") {
+		t.Errorf("expected 'previous result' in request body, got %q", body)
+	}
+}
+
+func TestRun_MemoryEnabled_LastN(t *testing.T) {
+	resetRunCmd(t)
+	var capturedBody string
+	var mu sync.Mutex
+	server := startMockAnthropicServerCapture(t, &capturedBody, &mu, "lastn response")
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-lastn", `name = "mem-lastn"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+last_n = 2
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	// Pre-populate a memory file with 5 entries
+	memoryDir := filepath.Join(tmpDir, "data", "axe", "memory")
+	os.MkdirAll(memoryDir, 0755)
+	var memContent strings.Builder
+	for i := 1; i <= 5; i++ {
+		memContent.WriteString(fmt.Sprintf("## 2026-02-28T10:0%d:00Z\n**Task:** task %d\n**Result:** result %d\n\n", i, i, i))
+	}
+	os.WriteFile(filepath.Join(memoryDir, "mem-lastn.md"), []byte(memContent.String()), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-lastn"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	mu.Lock()
+	body := capturedBody
+	mu.Unlock()
+
+	// Only the last 2 entries (task 4 and task 5) should be in the system prompt
+	if !strings.Contains(body, "task 4") {
+		t.Errorf("expected 'task 4' in request body, got %q", body)
+	}
+	if !strings.Contains(body, "task 5") {
+		t.Errorf("expected 'task 5' in request body, got %q", body)
+	}
+	// Earlier entries should NOT be present
+	if strings.Contains(body, "task 1") {
+		t.Errorf("did not expect 'task 1' in request body (last_n=2), got %q", body)
+	}
+	if strings.Contains(body, "task 2") {
+		t.Errorf("did not expect 'task 2' in request body (last_n=2), got %q", body)
+	}
+	if strings.Contains(body, "task 3") {
+		t.Errorf("did not expect 'task 3' in request body (last_n=2), got %q", body)
+	}
+}
+
+// --- Phase M6-4c: Max Entries Warning ---
+
+func TestRun_MemoryEnabled_MaxEntriesWarning(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockAnthropicServer(t)
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-maxwarn", `name = "mem-maxwarn"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+max_entries = 3
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	// Pre-populate memory file with 3 entries (meets max_entries)
+	memoryDir := filepath.Join(tmpDir, "data", "axe", "memory")
+	os.MkdirAll(memoryDir, 0755)
+	var memContent strings.Builder
+	for i := 1; i <= 3; i++ {
+		memContent.WriteString(fmt.Sprintf("## 2026-02-28T10:0%d:00Z\n**Task:** task %d\n**Result:** result %d\n\n", i, i, i))
+	}
+	os.WriteFile(filepath.Join(memoryDir, "mem-maxwarn.md"), []byte(memContent.String()), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-maxwarn"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stderr := errBuf.String()
+	if !strings.Contains(stderr, "Warning:") {
+		t.Errorf("expected warning in stderr, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "mem-maxwarn") {
+		t.Errorf("expected agent name in warning, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "3 entries") {
+		t.Errorf("expected entry count in warning, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "max_entries: 3") {
+		t.Errorf("expected max_entries value in warning, got %q", stderr)
+	}
+}
+
+func TestRun_MemoryEnabled_MaxEntriesNoWarningWhenBelow(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockAnthropicServer(t)
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-nowarn", `name = "mem-nowarn"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+max_entries = 10
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	// Pre-populate memory file with 3 entries (below max_entries=10)
+	memoryDir := filepath.Join(tmpDir, "data", "axe", "memory")
+	os.MkdirAll(memoryDir, 0755)
+	var memContent strings.Builder
+	for i := 1; i <= 3; i++ {
+		memContent.WriteString(fmt.Sprintf("## 2026-02-28T10:0%d:00Z\n**Task:** task %d\n**Result:** result %d\n\n", i, i, i))
+	}
+	os.WriteFile(filepath.Join(memoryDir, "mem-nowarn.md"), []byte(memContent.String()), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-nowarn"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stderr := errBuf.String()
+	if strings.Contains(stderr, "Warning:") {
+		t.Errorf("did not expect warning in stderr when below max_entries, got %q", stderr)
+	}
+}
+
+// --- Phase M6-4e: Memory Append After Response ---
+
+func TestRun_MemoryEnabled_AppendsEntry(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockAnthropicServer(t)
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-append", `name = "mem-append"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-append"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the memory file was created with an entry
+	memoryFile := filepath.Join(tmpDir, "data", "axe", "memory", "mem-append.md")
+	data, err := os.ReadFile(memoryFile)
+	if err != nil {
+		t.Fatalf("expected memory file to exist: %v", err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "## ") {
+		t.Errorf("expected entry header in memory file, got %q", content)
+	}
+	if !strings.Contains(content, "**Task:**") {
+		t.Errorf("expected Task line in memory file, got %q", content)
+	}
+	if !strings.Contains(content, "**Result:**") {
+		t.Errorf("expected Result line in memory file, got %q", content)
+	}
+	if !strings.Contains(content, "Hello from mock") {
+		t.Errorf("expected LLM response in memory file result, got %q", content)
+	}
+}
+
+func TestRun_MemoryEnabled_APIError_NoEntryAppended(t *testing.T) {
+	resetRunCmd(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		w.Write([]byte(`{"type": "error", "error": {"type": "server_error", "message": "Internal server error"}}`))
+	}))
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-err", `name = "mem-err"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-err"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for server error, got nil")
+	}
+
+	// Verify no memory file was created
+	memoryFile := filepath.Join(tmpDir, "data", "axe", "memory", "mem-err.md")
+	if _, err := os.Stat(memoryFile); !os.IsNotExist(err) {
+		t.Errorf("expected no memory file after API error, but file exists or other error: %v", err)
+	}
+}
+
+// --- Phase M6-4g: Dry-Run Memory Display ---
+
+func TestRun_MemoryEnabled_DryRun(t *testing.T) {
+	resetRunCmd(t)
+
+	tmpDir := setupRunTestAgent(t, "mem-dryrun", `name = "mem-dryrun"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	// Pre-populate memory file
+	memoryDir := filepath.Join(tmpDir, "data", "axe", "memory")
+	os.MkdirAll(memoryDir, 0755)
+	memoryContent := "## 2026-02-28T10:00:00Z\n**Task:** dry run task\n**Result:** dry run result\n\n"
+	os.WriteFile(filepath.Join(memoryDir, "mem-dryrun.md"), []byte(memoryContent), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-dryrun", "--dry-run"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "--- Memory ---") {
+		t.Errorf("expected '--- Memory ---' section in dry-run output, got %q", output)
+	}
+	if !strings.Contains(output, "dry run task") {
+		t.Errorf("expected memory entry content in dry-run output, got %q", output)
+	}
+	if !strings.Contains(output, "dry run result") {
+		t.Errorf("expected memory entry result in dry-run output, got %q", output)
+	}
+
+	// Verify no new entry was appended
+	data, _ := os.ReadFile(filepath.Join(memoryDir, "mem-dryrun.md"))
+	if string(data) != memoryContent {
+		t.Errorf("dry-run should not modify memory file; original=%q, got=%q", memoryContent, string(data))
+	}
+}
+
+func TestRun_MemoryEnabled_DryRun_NoMemoryFile(t *testing.T) {
+	resetRunCmd(t)
+
+	tmpDir := setupRunTestAgent(t, "mem-dryrun-none", `name = "mem-dryrun-none"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-dryrun-none", "--dry-run"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "--- Memory ---") {
+		t.Errorf("expected '--- Memory ---' section in dry-run output, got %q", output)
+	}
+	if !strings.Contains(output, "(none)") {
+		t.Errorf("expected '(none)' for empty memory in dry-run output, got %q", output)
+	}
+}
+
+// --- Phase M6-4i: Verbose Memory Output ---
+
+func TestRun_MemoryEnabled_Verbose(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockAnthropicServer(t)
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "mem-verbose", `name = "mem-verbose"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	// Pre-populate memory file with 3 entries
+	memoryDir := filepath.Join(tmpDir, "data", "axe", "memory")
+	os.MkdirAll(memoryDir, 0755)
+	var memContent strings.Builder
+	for i := 1; i <= 3; i++ {
+		memContent.WriteString(fmt.Sprintf("## 2026-02-28T10:0%d:00Z\n**Task:** task %d\n**Result:** result %d\n\n", i, i, i))
+	}
+	os.WriteFile(filepath.Join(memoryDir, "mem-verbose.md"), []byte(memContent.String()), 0644)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-verbose", "--verbose"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stderr := errBuf.String()
+	if !strings.Contains(stderr, "Memory:") {
+		t.Errorf("expected 'Memory:' in verbose stderr, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "3 entries") {
+		t.Errorf("expected '3 entries' in verbose stderr, got %q", stderr)
+	}
+}
+
+// --- Phase M6-4k: Custom Path ---
+
+func TestRun_MemoryEnabled_CustomPath(t *testing.T) {
+	resetRunCmd(t)
+	server := startMockAnthropicServer(t)
+	defer server.Close()
+
+	customDir := t.TempDir()
+	customPath := filepath.Join(customDir, "custom-memory.md")
+
+	setupRunTestAgent(t, "mem-custom", `name = "mem-custom"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+path = "`+customPath+`"
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "mem-custom"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the custom path was used for writing
+	data, err := os.ReadFile(customPath)
+	if err != nil {
+		t.Fatalf("expected memory file at custom path: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "**Task:**") {
+		t.Errorf("expected Task line in memory file at custom path, got %q", content)
+	}
+	if !strings.Contains(content, "Hello from mock") {
+		t.Errorf("expected LLM response in memory file at custom path, got %q", content)
 	}
 }
 

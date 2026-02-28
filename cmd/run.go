@@ -12,6 +12,7 @@ import (
 
 	"github.com/jrswab/axe/internal/agent"
 	"github.com/jrswab/axe/internal/config"
+	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/resolve"
 	"github.com/jrswab/axe/internal/tool"
@@ -140,6 +141,32 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	// Step 10: Build system prompt
 	systemPrompt := resolve.BuildSystemPrompt(cfg.SystemPrompt, skillContent, files)
 
+	// Step 10b: Memory — load entries into system prompt
+	var memoryEntries string
+	var memoryPath string
+	var memoryCount int
+	if cfg.Memory.Enabled {
+		var memErr error
+		memoryPath, memErr = memory.FilePath(agentName, cfg.Memory.Path)
+		if memErr != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to load memory for %q: %v\n", agentName, memErr)
+		} else {
+			memoryEntries, memErr = memory.LoadEntries(memoryPath, cfg.Memory.LastN)
+			if memErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to load memory for %q: %v\n", agentName, memErr)
+			} else if memoryEntries != "" {
+				systemPrompt += "\n\n---\n\n## Memory\n\n" + memoryEntries
+			}
+
+			memoryCount, memErr = memory.CountEntries(memoryPath)
+			if memErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to load memory for %q: %v\n", agentName, memErr)
+			} else if cfg.Memory.MaxEntries > 0 && memoryCount >= cfg.Memory.MaxEntries {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: agent %q memory has %d entries (max_entries: %d). Run 'axe gc %s' to trim.\n", agentName, memoryCount, cfg.Memory.MaxEntries, agentName)
+			}
+		}
+	}
+
 	// Flags
 	timeout, _ := cmd.Flags().GetInt("timeout")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -148,7 +175,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 
 	// Step 11: Dry-run mode
 	if dryRun {
-		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent)
+		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent, memoryEntries)
 	}
 
 	// Step 12-13: Resolve API key and validate
@@ -211,6 +238,13 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(cmd.ErrOrStderr(), "Stdin:    %s\n", stdinDisplay)
 		fmt.Fprintf(cmd.ErrOrStderr(), "Timeout:  %ds\n", timeout)
 		fmt.Fprintf(cmd.ErrOrStderr(), "Params:   temperature=%g, max_tokens=%d\n", cfg.Params.Temperature, cfg.Params.MaxTokens)
+		if cfg.Memory.Enabled {
+			if memoryCount > 0 {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Memory:   %d entries loaded from %s\n", memoryCount, memoryPath)
+			} else {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Memory:   0 entries (no memory file)\n")
+			}
+		}
 	}
 
 	// Step 17: Create context with timeout
@@ -337,15 +371,27 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			return &ExitError{Code: 1, Err: fmt.Errorf("failed to marshal JSON output: %w", err)}
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(data))
-		return nil
+	} else {
+		// Step 20: Default output
+		fmt.Fprint(cmd.OutOrStdout(), resp.Content)
 	}
 
-	// Step 20: Default output
-	fmt.Fprint(cmd.OutOrStdout(), resp.Content)
+	// Step 21: Append memory entry after successful response
+	if cfg.Memory.Enabled {
+		appendPath, appendErr := memory.FilePath(agentName, cfg.Memory.Path)
+		if appendErr != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save memory for %q: %v\n", agentName, appendErr)
+		} else {
+			if appendErr = memory.AppendEntry(appendPath, userMessage, resp.Content); appendErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save memory for %q: %v\n", agentName, appendErr)
+			}
+		}
+	}
+
 	return nil
 }
 
-func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, systemPrompt, skillContent string, files []resolve.FileContent, stdinContent string) error {
+func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, systemPrompt, skillContent string, files []resolve.FileContent, stdinContent string, memoryEntries string) error {
 	out := cmd.OutOrStdout()
 
 	fmt.Fprintln(out, "=== Dry Run ===")
@@ -383,6 +429,16 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 		fmt.Fprintln(out, stdinContent)
 	} else {
 		fmt.Fprintln(out, "(none)")
+	}
+
+	if cfg.Memory.Enabled {
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, "--- Memory ---")
+		if memoryEntries != "" {
+			fmt.Fprintln(out, memoryEntries)
+		} else {
+			fmt.Fprintln(out, "(none)")
+		}
 	}
 
 	fmt.Fprintln(out)
