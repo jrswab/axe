@@ -54,21 +54,21 @@
 
 ### 3a: Tests (Red)
 
-- [ ] Write `TestGC_AgentNotFound` — run `axe gc nonexistent`; verify exit code 2 (Req 3.1)
-- [ ] Write `TestGC_MemoryDisabled` — create agent with `memory.enabled = false`; run `axe gc <agent>`; verify stderr has warning, exit code 0 (Req 3.2)
-- [ ] Write `TestGC_NoMemoryFile` — create agent with `memory.enabled = true`, no memory file; verify stdout has "No memory entries", exit code 0 (Req 3.5)
-- [ ] Write `TestGC_EmptyMemoryFile` — create agent with `memory.enabled = true`, empty memory file; verify stdout has "No memory entries", exit code 0 (Req 3.5)
-- [ ] Run tests — confirm all fail (red)
+- [x] Write `TestGC_AgentNotFound` — run `axe gc nonexistent`; verify exit code 2 (Req 3.1)
+- [x] Write `TestGC_MemoryDisabled` — create agent with `memory.enabled = false`; run `axe gc <agent>`; verify stderr has warning, exit code 0 (Req 3.2)
+- [x] Write `TestGC_NoMemoryFile` — create agent with `memory.enabled = true`, no memory file; verify stdout has "No memory entries", exit code 0 (Req 3.5)
+- [x] Write `TestGC_EmptyMemoryFile` — create agent with `memory.enabled = true`, empty memory file; verify stdout has "No memory entries", exit code 0 (Req 3.5)
+- [x] Run tests — confirm all fail (red)
 
 ### 3b: Implementation (Green)
 
-- [ ] Implement agent config loading via `agent.Load(agentName)`, return `ExitError{Code: 2}` on failure (Req 3.1)
-- [ ] Implement memory-disabled check: print warning to stderr, return nil (Req 3.2)
-- [ ] Implement memory file path resolution via `memory.FilePath(agentName, cfg.Memory.Path)` (Req 3.4)
-- [ ] Implement load-all-entries check: if `LoadEntries(path, 0)` returns empty string, print "No memory entries" and return nil (Req 3.5)
-- [ ] Implement entry count display: `CountEntries(path)` and print `Agent: <name>`, `Entries: <count>` (Req 3.6)
-- [ ] Run tests — config/memory-check tests pass (green)
-- [ ] Run `make test` — all existing tests still pass
+- [x] Implement agent config loading via `agent.Load(agentName)`, return `ExitError{Code: 2}` on failure (Req 3.1)
+- [x] Implement memory-disabled check: print warning to stderr, return nil (Req 3.2)
+- [x] Implement memory file path resolution via `memory.FilePath(agentName, cfg.Memory.Path)` (Req 3.4)
+- [x] Implement load-all-entries check: if `LoadEntries(path, 0)` returns empty string, print "No memory entries" and return nil (Req 3.5)
+- [x] Implement entry count display: `CountEntries(path)` and print `Agent: <name>`, `Entries: <count>` (Req 3.6)
+- [x] Run tests — config/memory-check tests pass (green)
+- [x] Run `make test` — all existing tests still pass
 
 ---
 
@@ -76,22 +76,22 @@
 
 ### 4a: Tests (Red)
 
-- [ ] Write `TestGC_PatternDetectionPrompt` — create agent with memory; start mock LLM server capturing request body; run `axe gc <agent>`; verify system prompt matches exact text from Req 4.1, user message is full memory content, temperature is `0.3`, max_tokens is `4096`, tools is empty (Req 3.7, 4.1, 4.2)
-- [ ] Write `TestGC_LLMError` — create agent with memory; mock LLM returns HTTP 500; verify exit code 3 and memory file unchanged (Req 3.7)
-- [ ] Write `TestGC_ModelOverride` — create agent with model `anthropic/claude-3`; start mock LLM; run `axe gc <agent> --model ollama/llama3`; verify LLM request uses `llama3` not `claude-3` (Req 3.3)
-- [ ] Run tests — confirm all fail (red)
+- [x] Write `TestGC_PatternDetectionPrompt` — create agent with memory; start mock LLM server capturing request body; run `axe gc <agent>`; verify system prompt matches exact text from Req 4.1, user message is full memory content, temperature is `0.3`, max_tokens is `4096`, tools is empty (Req 3.7, 4.1, 4.2)
+- [x] Write `TestGC_LLMError` — create agent with memory; mock LLM returns HTTP 500; verify exit code 3 and memory file unchanged (Req 3.7)
+- [x] Write `TestGC_ModelOverride` — create agent with model `anthropic/claude-3`; start mock LLM; run `axe gc <agent> --model ollama/llama3`; verify LLM request uses `llama3` not `claude-3` (Req 3.3)
+- [x] Run tests — confirm all fail (red)
 
 ### 4b: Implementation (Green)
 
-- [ ] Define the pattern detection prompt as a hard-coded `const` in `cmd/gc.go` (Req 4.1, 4.2)
-- [ ] Implement `--model` override: if flag set, use it; else use `cfg.Model` (Req 3.3)
-- [ ] Load global config via `config.Load()` and resolve API key/base URL for the provider (Req 3.8)
-- [ ] Build `provider.Request` with system prompt, user message (memory content), temperature `0.3`, max_tokens `4096`, no tools (Req 3.7)
-- [ ] Create provider via `provider.New()` and call `Send()` (Req 3.7)
-- [ ] Print analysis to stdout: `--- Analysis ---\n<response>` (Req 3.9)
-- [ ] Return `ExitError{Code: 3}` on LLM/API errors (Req 3.8)
-- [ ] Run tests — LLM integration tests pass (green)
-- [ ] Run `make test` — all existing tests still pass
+- [x] Define the pattern detection prompt as a hard-coded `const` in `cmd/gc.go` (Req 4.1, 4.2)
+- [x] Implement `--model` override: if flag set, use it; else use `cfg.Model` (Req 3.3)
+- [x] Load global config via `config.Load()` and resolve API key/base URL for the provider (Req 3.8)
+- [x] Build `provider.Request` with system prompt, user message (memory content), temperature `0.3`, max_tokens `4096`, no tools (Req 3.7)
+- [x] Create provider via `provider.New()` and call `Send()` (Req 3.7)
+- [x] Print analysis to stdout: `--- Analysis ---\n<response>` (Req 3.9)
+- [x] Return `ExitError{Code: 3}` on LLM/API errors (Req 3.8)
+- [x] Run tests — LLM integration tests pass (green)
+- [x] Run `make test` — all existing tests still pass
 
 ---
 
