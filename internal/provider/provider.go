@@ -23,10 +23,40 @@ const (
 	ErrCategoryServer ErrorCategory = "server"
 )
 
+// ToolParameter describes a single parameter of a tool definition.
+type ToolParameter struct {
+	Type        string
+	Description string
+	Required    bool
+}
+
+// Tool represents a tool definition sent to the LLM.
+type Tool struct {
+	Name        string
+	Description string
+	Parameters  map[string]ToolParameter
+}
+
+// ToolCall represents a tool invocation requested by the LLM.
+type ToolCall struct {
+	ID        string
+	Name      string
+	Arguments map[string]string
+}
+
+// ToolResult represents the result of a tool execution.
+type ToolResult struct {
+	CallID  string
+	Content string
+	IsError bool
+}
+
 // Message represents a single message in the conversation.
 type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role        string       `json:"role"`
+	Content     string       `json:"content"`
+	ToolCalls   []ToolCall   // Tool calls in an assistant message (non-nil when LLM called tools)
+	ToolResults []ToolResult // Tool results in a tool-result message (non-nil when role is "tool")
 }
 
 // Request represents an LLM completion request.
@@ -36,6 +66,7 @@ type Request struct {
 	Messages    []Message
 	Temperature float64
 	MaxTokens   int
+	Tools       []Tool // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
 }
 
 // Response represents an LLM completion response.
@@ -45,6 +76,7 @@ type Response struct {
 	InputTokens  int
 	OutputTokens int
 	StopReason   string
+	ToolCalls    []ToolCall // Tool calls requested by the LLM. Empty if no tools called.
 }
 
 // Provider defines the interface for LLM providers.

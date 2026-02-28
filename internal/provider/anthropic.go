@@ -63,18 +63,49 @@ func NewAnthropic(apiKey string, opts ...AnthropicOption) (*Anthropic, error) {
 
 // anthropicRequest is the JSON body sent to the Anthropic Messages API.
 type anthropicRequest struct {
-	Model       string    `json:"model"`
-	MaxTokens   int       `json:"max_tokens"`
-	Messages    []Message `json:"messages"`
-	System      string    `json:"system,omitempty"`
-	Temperature *float64  `json:"temperature,omitempty"`
+	Model       string             `json:"model"`
+	MaxTokens   int                `json:"max_tokens"`
+	Messages    []anthropicMessage `json:"messages"`
+	System      string             `json:"system,omitempty"`
+	Temperature *float64           `json:"temperature,omitempty"`
+	Tools       []anthropicToolDef `json:"tools,omitempty"`
+}
+
+// anthropicMessage is the wire format for a message in the Anthropic API.
+type anthropicMessage struct {
+	Role    string      `json:"role"`
+	Content interface{} `json:"content"` // string or []anthropicContentBlock
+}
+
+// anthropicContentBlock is a content block in an Anthropic message.
+// Note: We use pointers/interfaces for optional fields so that omitempty works
+// correctly. For tool_result blocks, is_error must always be present.
+type anthropicContentBlock struct {
+	Type      string                 `json:"type"`
+	Text      string                 `json:"text,omitempty"`
+	ID        string                 `json:"id,omitempty"`
+	Name      string                 `json:"name,omitempty"`
+	Input     map[string]interface{} `json:"input,omitempty"`
+	ToolUseID string                 `json:"tool_use_id,omitempty"`
+	Content   string                 `json:"content,omitempty"`
+	IsError   *bool                  `json:"is_error,omitempty"`
+}
+
+// anthropicToolDef is the wire format for a tool definition in the Anthropic API.
+type anthropicToolDef struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	InputSchema map[string]interface{} `json:"input_schema"`
 }
 
 // anthropicResponse represents the JSON response from the Anthropic Messages API.
 type anthropicResponse struct {
 	Content []struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
+		Type  string                 `json:"type"`
+		Text  string                 `json:"text"`
+		ID    string                 `json:"id"`
+		Name  string                 `json:"name"`
+		Input map[string]interface{} `json:"input"`
 	} `json:"content"`
 	Model      string `json:"model"`
 	StopReason string `json:"stop_reason"`
@@ -93,6 +124,91 @@ type anthropicErrorResponse struct {
 	} `json:"error"`
 }
 
+// convertToAnthropicMessages converts provider Messages to the Anthropic wire format.
+func convertToAnthropicMessages(msgs []Message) []anthropicMessage {
+	var result []anthropicMessage
+	for _, msg := range msgs {
+		am := anthropicMessage{Role: msg.Role}
+
+		if msg.Role == "tool" && len(msg.ToolResults) > 0 {
+			// Tool result messages are sent as role "user" with tool_result content blocks
+			am.Role = "user"
+			var blocks []anthropicContentBlock
+			for _, tr := range msg.ToolResults {
+				isErr := tr.IsError
+				blocks = append(blocks, anthropicContentBlock{
+					Type:      "tool_result",
+					ToolUseID: tr.CallID,
+					Content:   tr.Content,
+					IsError:   &isErr,
+				})
+			}
+			am.Content = blocks
+		} else if msg.Role == "assistant" && len(msg.ToolCalls) > 0 {
+			// Assistant messages with tool calls need content blocks
+			var blocks []anthropicContentBlock
+			if msg.Content != "" {
+				blocks = append(blocks, anthropicContentBlock{
+					Type: "text",
+					Text: msg.Content,
+				})
+			}
+			for _, tc := range msg.ToolCalls {
+				input := make(map[string]interface{})
+				for k, v := range tc.Arguments {
+					input[k] = v
+				}
+				blocks = append(blocks, anthropicContentBlock{
+					Type:  "tool_use",
+					ID:    tc.ID,
+					Name:  tc.Name,
+					Input: input,
+				})
+			}
+			am.Content = blocks
+		} else {
+			// Standard text message
+			am.Content = msg.Content
+		}
+
+		result = append(result, am)
+	}
+	return result
+}
+
+// convertToAnthropicTools converts provider Tools to the Anthropic wire format.
+func convertToAnthropicTools(tools []Tool) []anthropicToolDef {
+	var result []anthropicToolDef
+	for _, tool := range tools {
+		properties := make(map[string]interface{})
+		var required []string
+		for name, param := range tool.Parameters {
+			properties[name] = map[string]interface{}{
+				"type":        param.Type,
+				"description": param.Description,
+			}
+			if param.Required {
+				required = append(required, name)
+			}
+		}
+
+		schema := map[string]interface{}{
+			"type":       "object",
+			"properties": properties,
+		}
+		if len(required) > 0 {
+			schema["required"] = required
+		}
+
+		result = append(result, anthropicToolDef{
+			Name:        tool.Name,
+			Description: tool.Description,
+			InputSchema: schema,
+		})
+	}
+	return result
+}
+
 // Send makes a completion request to the Anthropic Messages API.
 func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 	maxTokens := req.MaxTokens
@@ -103,13 +219,17 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 	body := anthropicRequest{
 		Model:     req.Model,
 		MaxTokens: maxTokens,
-		Messages:  req.Messages,
+		Messages:  convertToAnthropicMessages(req.Messages),
 		System:    req.System,
 	}
 
 	if req.Temperature != 0 {
 		temp := req.Temperature
 		body.Temperature = &temp
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToAnthropicTools(req.Tools)
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -172,12 +292,33 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 		}
 	}
 
+	// Parse response content blocks
+	var textContent string
+	var toolCalls []ToolCall
+	for _, block := range apiResp.Content {
+		switch block.Type {
+		case "text":
+			textContent += block.Text
+		case "tool_use":
+			args := make(map[string]string)
+			for k, v := range block.Input {
+				args[k] = fmt.Sprintf("%v", v)
+			}
+			toolCalls = append(toolCalls, ToolCall{
+				ID:        block.ID,
+				Name:      block.Name,
+				Arguments: args,
+			})
+		}
+	}
+
 	return &Response{
-		Content:      apiResp.Content[0].Text,
+		Content:      textContent,
 		Model:        apiResp.Model,
 		InputTokens:  apiResp.Usage.InputTokens,
 		OutputTokens: apiResp.Usage.OutputTokens,
 		StopReason:   apiResp.StopReason,
+		ToolCalls:    toolCalls,
 	}, nil
 }
 

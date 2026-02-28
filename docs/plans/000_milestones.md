@@ -4,54 +4,54 @@
 
 Get the binary building and the CLI framework wired up.
 
-- [ ] Init Go module (`github.com/jrswab/axe`)
-- [ ] CLI framework (cobra or similar)
-- [ ] `axe version`
-- [ ] `axe help`
-- [ ] `axe config path` — print XDG config dir
-- [ ] `axe config init` — scaffold config directory
+- [X] Init Go module (`github.com/jrswab/axe`)
+- [X] CLI framework (cobra or similar)
+- [X] `axe version`
+- [X] `axe help`
+- [X] `axe config path` — print XDG config dir
+- [X] `axe config init` — scaffold config directory
 
 ## M2: Agent Config
 
 Load and validate agent TOML files.
 
-- [ ] TOML parser (BurntSushi/toml or pelletier/go-toml)
-- [ ] Load agent config from `$XDG_CONFIG_HOME/axe/agents/<name>.toml`
-- [ ] Validate required fields (name, model)
-- [ ] `axe agents list`
-- [ ] `axe agents show <agent>`
-- [ ] `axe agents init <agent>` — scaffold a new TOML
-- [ ] `axe agents edit <agent>` — open in $EDITOR
+- [X] TOML parser (BurntSushi/toml or pelletier/go-toml)
+- [X] Load agent config from `$XDG_CONFIG_HOME/axe/agents/<name>.toml`
+- [X] Validate required fields (name, model)
+- [X] `axe agents list`
+- [X] `axe agents show <agent>`
+- [X] `axe agents init <agent>` — scaffold a new TOML
+- [X] `axe agents edit <agent>` — open in $EDITOR
 
 ## M3: Single Agent Run
 
 The core loop — load config, build prompt, call LLM, print result.
 
-- [ ] Resolve `workdir` (flag → TOML → cwd)
-- [ ] Resolve file globs from workdir
-- [ ] Load SKILL.md contents
-- [ ] Build system prompt + context payload
-- [ ] Read stdin when piped
-- [ ] LLM provider integration (start with one: Anthropic or OpenAI)
-- [ ] Print response to stdout
-- [ ] `--model` flag override
-- [ ] `--skill` flag override
-- [ ] `--workdir` flag override
-- [ ] `--timeout` flag
-- [ ] `--dry-run` — show resolved context without calling LLM
-- [ ] `--verbose` — debug info to stderr
-- [ ] `--json` — wrapped output with metadata
-- [ ] Exit codes (0 success, 1 agent error, 2 config error, 3 API error)
+- [X] Resolve `workdir` (flag → TOML → cwd)
+- [X] Resolve file globs from workdir
+- [X] Load SKILL.md contents
+- [X] Build system prompt + context payload
+- [X] Read stdin when piped
+- [X] LLM provider integration (start with one: Anthropic or OpenAI)
+- [X] Print response to stdout
+- [X] `--model` flag override
+- [X] `--skill` flag override
+- [X] `--workdir` flag override
+- [X] `--timeout` flag
+- [X] `--dry-run` — show resolved context without calling LLM
+- [X] `--verbose` — debug info to stderr
+- [X] `--json` — wrapped output with metadata
+- [X] Exit codes (0 success, 1 agent error, 2 config error, 3 API error)
 
 ## M4: Multi-Provider Support
 
 Support any provider/model from models.dev.
 
-- [ ] Provider abstraction interface
-- [ ] Anthropic provider
-- [ ] OpenAI provider
-- [ ] Ollama / local provider
-- [ ] API key config (env vars, config file, or both)
+- [X] Provider abstraction interface
+- [X] Anthropic provider
+- [X] OpenAI provider
+- [X] Ollama / local provider
+- [X] API key config (env vars, config file, or both)
 
 ## M5: Sub-Agents
 
