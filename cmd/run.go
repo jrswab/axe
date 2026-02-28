@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jrswab/axe/internal/agent"
+	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/resolve"
 	"github.com/jrswab/axe/internal/xdg"
@@ -87,8 +88,10 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		return &ExitError{Code: 1, Err: err}
 	}
 
-	if provName != "anthropic" {
-		return &ExitError{Code: 1, Err: fmt.Errorf("unsupported provider %q: only \"anthropic\" is supported in this version", provName)}
+	// Step 5b: Load global config
+	globalCfg, err := config.Load()
+	if err != nil {
+		return &ExitError{Code: 2, Err: err}
 	}
 
 	// Step 6: Resolve working directory
@@ -144,20 +147,21 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent)
 	}
 
-	// Step 12-13: Resolve API key
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		return &ExitError{Code: 3, Err: fmt.Errorf("ANTHROPIC_API_KEY environment variable is not set")}
+	// Step 12-13: Resolve API key and validate
+	apiKey := globalCfg.ResolveAPIKey(provName)
+	baseURL := globalCfg.ResolveBaseURL(provName)
+
+	// Check for missing API key only for supported providers that require one.
+	// Unsupported providers fall through to provider.New() which returns a clear error.
+	if provider.Supported(provName) && provName != "ollama" && apiKey == "" {
+		envVar := config.APIKeyEnvVar(provName)
+		return &ExitError{Code: 3, Err: fmt.Errorf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar)}
 	}
 
 	// Step 14: Create provider
-	var opts []provider.AnthropicOption
-	if baseURL := os.Getenv("AXE_ANTHROPIC_BASE_URL"); baseURL != "" {
-		opts = append(opts, provider.WithBaseURL(baseURL))
-	}
-	prov, err := provider.NewAnthropic(apiKey, opts...)
+	prov, err := provider.New(provName, apiKey, baseURL)
 	if err != nil {
-		return &ExitError{Code: 3, Err: err}
+		return &ExitError{Code: 1, Err: err}
 	}
 
 	// Step 15: Build user message
