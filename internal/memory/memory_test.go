@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -498,6 +499,294 @@ func TestLoadEntries_ContentBeforeFirstEntry(t *testing.T) {
 	}
 	if got0 != content {
 		t.Errorf("lastN=0 should return all content:\ngot:\n%q\nwant:\n%q", got0, content)
+	}
+}
+
+// --- TrimEntries tests ---
+
+// helper: generate N memory entries as a string.
+func generateEntries(n int) string {
+	var b strings.Builder
+	for i := 1; i <= n; i++ {
+		fmt.Fprintf(&b, "## 2026-01-%02dT00:00:00Z\n**Task:** task%d\n**Result:** result%d\n\n", i, i, i)
+	}
+	return b.String()
+}
+
+func TestTrimEntries_FileDoesNotExist(t *testing.T) {
+	removed, err := TrimEntries("/nonexistent/path/agent.md", 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 0 {
+		t.Errorf("TrimEntries() removed = %d, want 0", removed)
+	}
+}
+
+func TestTrimEntries_EmptyFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 0 {
+		t.Errorf("TrimEntries() removed = %d, want 0", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if len(data) != 0 {
+		t.Errorf("expected empty file, got %q", string(data))
+	}
+}
+
+func TestTrimEntries_KeepNZero(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	content := generateEntries(5)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 0 {
+		t.Errorf("TrimEntries() removed = %d, want 0", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("file should be unchanged:\ngot:\n%q\nwant:\n%q", string(data), content)
+	}
+}
+
+func TestTrimEntries_KeepNNegative(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+
+	_, err := TrimEntries(path, -1)
+	if err == nil {
+		t.Fatal("expected error for negative keepN, got nil")
+	}
+	if !strings.Contains(err.Error(), "keepN must be non-negative") {
+		t.Errorf("expected 'keepN must be non-negative' error, got: %v", err)
+	}
+}
+
+func TestTrimEntries_EntriesWithinLimit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	content := generateEntries(3)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 0 {
+		t.Errorf("TrimEntries() removed = %d, want 0", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("file should be unchanged:\ngot:\n%q\nwant:\n%q", string(data), content)
+	}
+}
+
+func TestTrimEntries_EntriesEqualToLimit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	content := generateEntries(5)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 0 {
+		t.Errorf("TrimEntries() removed = %d, want 0", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("file should be unchanged:\ngot:\n%q\nwant:\n%q", string(data), content)
+	}
+}
+
+func TestTrimEntries_TrimsOldEntries(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	content := generateEntries(10)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	// Get what LoadEntries would return for the last 3 before trimming
+	expected, err := LoadEntries(path, 3)
+	if err != nil {
+		t.Fatalf("failed to load entries: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 7 {
+		t.Errorf("TrimEntries() removed = %d, want 7", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(data) != expected {
+		t.Errorf("trimmed file not byte-identical to LoadEntries(path, 3):\ngot:\n%q\nwant:\n%q", string(data), expected)
+	}
+}
+
+func TestTrimEntries_PreservesEntryFormat(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+
+	// Multi-line entries with varied formatting
+	content := "## 2026-01-01T00:00:00Z\n**Task:** task1\n**Result:** line1\nline2\nline3\n\n" +
+		"## 2026-01-02T00:00:00Z\n**Task:** task2\n**Result:** result with   extra   spaces\n\n" +
+		"## 2026-01-03T00:00:00Z\n**Task:** task3\n**Result:** result3\n\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	expected, err := LoadEntries(path, 2)
+	if err != nil {
+		t.Fatalf("failed to load entries: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 2)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 1 {
+		t.Errorf("TrimEntries() removed = %d, want 1", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(data) != expected {
+		t.Errorf("format not preserved:\ngot:\n%q\nwant:\n%q", string(data), expected)
+	}
+}
+
+func TestTrimEntries_DiscardsPreHeaderContent(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+
+	content := "Some preamble text\nAnother line\n\n" + generateEntries(5)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 2 {
+		t.Errorf("TrimEntries() removed = %d, want 2", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	result := string(data)
+
+	if strings.Contains(result, "preamble") {
+		t.Errorf("pre-header content should be discarded, got:\n%s", result)
+	}
+	if !strings.Contains(result, "task3") || !strings.Contains(result, "task4") || !strings.Contains(result, "task5") {
+		t.Errorf("expected last 3 entries, got:\n%s", result)
+	}
+	if strings.Contains(result, "task1") || strings.Contains(result, "task2") {
+		t.Errorf("should not contain trimmed entries, got:\n%s", result)
+	}
+}
+
+func TestTrimEntries_SingleEntryKeepOne(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	content := generateEntries(1)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	removed, err := TrimEntries(path, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if removed != 0 {
+		t.Errorf("TrimEntries() removed = %d, want 0", removed)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("file should be unchanged:\ngot:\n%q\nwant:\n%q", string(data), content)
+	}
+}
+
+func TestTrimEntries_OriginalUnmodifiedOnWriteError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agent.md")
+	content := generateEntries(5)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	// Make directory read-only to prevent temp file creation
+	if err := os.Chmod(dir, 0555); err != nil {
+		t.Fatalf("failed to chmod dir: %v", err)
+	}
+	defer os.Chmod(dir, 0755) // restore for cleanup
+
+	_, err := TrimEntries(path, 2)
+	if err == nil {
+		t.Fatal("expected error when directory is read-only, got nil")
+	}
+
+	// Restore permissions to read the file
+	os.Chmod(dir, 0755)
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("original file should be unmodified:\ngot:\n%q\nwant:\n%q", string(data), content)
 	}
 }
 
