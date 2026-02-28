@@ -25,9 +25,9 @@ type ParamsConfig struct {
 
 // SubAgentsConfig holds sub-agent execution configuration for an agent.
 type SubAgentsConfig struct {
-	MaxDepth int  `toml:"max_depth"`
-	Parallel bool `toml:"parallel"`
-	Timeout  int  `toml:"timeout"`
+	MaxDepth int   `toml:"max_depth"`
+	Parallel *bool `toml:"parallel"`
+	Timeout  int   `toml:"timeout"`
 }
 
 // AgentConfig represents a parsed agent TOML configuration file.

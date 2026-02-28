@@ -193,41 +193,41 @@
 
 ### 8a: Tool Injection
 
-- [ ] Write `TestRun_SubAgentToolInjection` — parent with `sub_agents = ["helper"]`; verify `tools` array in request (Req 9.1)
-- [ ] Write `TestRun_NoSubAgents_NoTools` — agent without `sub_agents`; verify no `tools` key (Req 9.2)
-- [ ] Implement tool injection: check `cfg.SubAgents`, compute effective max depth, call `tool.CallAgentTool()`, set `Request.Tools` (Req 9.1–9.4)
-- [ ] Run tests — tool injection tests pass
+- [x] Write `TestRun_SubAgentToolInjection` — parent with `sub_agents = ["helper"]`; verify `tools` array in request (Req 9.1)
+- [x] Write `TestRun_NoSubAgents_NoTools` — agent without `sub_agents`; verify no `tools` key (Req 9.2)
+- [x] Implement tool injection: check `cfg.SubAgents`, compute effective max depth, call `tool.CallAgentTool()`, set `Request.Tools` (Req 9.1–9.4)
+- [x] Run tests — tool injection tests pass
 
 ### 8b: Conversation Loop Core
 
-- [ ] Write `TestRun_ConversationLoop_ToolCall` — parent + helper agents; parent provider returns tool call then text; helper provider returns text; verify final output (Req 8.1)
-- [ ] Write `TestRun_ConversationLoop_MaxTurns` — server always returns tool calls; verify error about exceeding 50 turns (Req 8.3)
-- [ ] Write `TestRun_SubAgent_Error_PropagatesAsToolResult` — parent calls nonexistent sub-agent; verify conversation continues with error tool result (Req 13.1, 13.4)
-- [ ] Implement conversation loop: replace single-shot `prov.Send` with loop that handles tool calls, appends messages, re-sends (Req 8.1–8.4)
-- [ ] Implement tool call dispatch: route by tool name, handle unknown tools (Req 8.2)
-- [ ] Implement 50-turn safety limit (Req 8.3)
-- [ ] Ensure single-shot behavior preserved when `Request.Tools` is nil (Req 8.4)
-- [ ] Run tests — conversation loop tests pass
+- [x] Write `TestRun_ConversationLoop_ToolCall` — parent + helper agents; parent provider returns tool call then text; helper provider returns text; verify final output (Req 8.1)
+- [x] Write `TestRun_ConversationLoop_MaxTurns` — server always returns tool calls; verify error about exceeding 50 turns (Req 8.3)
+- [x] Write `TestRun_SubAgent_Error_PropagatesAsToolResult` — parent calls nonexistent sub-agent; verify conversation continues with error tool result (Req 13.1, 13.4)
+- [x] Implement conversation loop: replace single-shot `prov.Send` with loop that handles tool calls, appends messages, re-sends (Req 8.1–8.4)
+- [x] Implement tool call dispatch: route by tool name, handle unknown tools (Req 8.2)
+- [x] Implement 50-turn safety limit (Req 8.3)
+- [x] Ensure single-shot behavior preserved when `Request.Tools` is nil (Req 8.4)
+- [x] Run tests — conversation loop tests pass
 
 ### 8c: Parallel and Sequential Execution
 
-- [ ] Write `TestRun_ParallelToolCalls` — parent with `parallel = true`, two concurrent tool calls; verify both called and results returned (Req 11.1–11.4)
-- [ ] Write `TestRun_SequentialToolCalls` — parent with `parallel = false`, two tool calls; verify sequential execution (Req 11.5)
-- [ ] Implement parallel execution: goroutines for concurrent tool calls when `Parallel` is true and multiple calls (Req 11.1–11.4)
-- [ ] Implement sequential execution: iterate in order when `Parallel` is false (Req 11.5)
-- [ ] Handle single tool call optimization: no goroutine for single call (Edge case §5.5)
-- [ ] Run tests — parallel and sequential tests pass
+- [x] Write `TestRun_ParallelToolCalls` — parent with `parallel = true`, two concurrent tool calls; verify both called and results returned (Req 11.1–11.4)
+- [x] Write `TestRun_SequentialToolCalls` — parent with `parallel = false`, two tool calls; verify sequential execution (Req 11.5)
+- [x] Implement parallel execution: goroutines for concurrent tool calls when `Parallel` is true and multiple calls (Req 11.1–11.4)
+- [x] Implement sequential execution: iterate in order when `Parallel` is false (Req 11.5)
+- [x] Handle single tool call optimization: no goroutine for single call (Edge case §5.5)
+- [x] Run tests — parallel and sequential tests pass
 
 ### 8d: Output Extensions (Dry-Run, JSON, Verbose)
 
-- [ ] Write `TestRun_DryRun_ShowsSubAgents` — agent with `sub_agents`; verify `--dry-run` output contains Sub-Agents section (Req 8.5)
-- [ ] Write `TestRun_DryRun_NoSubAgents` — no `sub_agents`; verify output contains `(none)` (Req 8.5)
-- [ ] Write `TestRun_JSON_IncludesToolCalls` — conversation with tool calls + `--json`; verify JSON has `tool_calls` field (Req 8.6)
-- [ ] Write `TestRun_Verbose_ConversationTurns` — conversation with tool calls + `--verbose`; verify stderr has turn-by-turn logs (Req 8.7)
-- [ ] Implement `--dry-run` extension: print Sub-Agents section with names, max depth, parallel, timeout (Req 8.5)
-- [ ] Implement `--json` extension: add `tool_calls` count field; cumulative token counts (Req 8.6, 8.8)
-- [ ] Implement `--verbose` extension: log each conversation turn with message count and tool call info (Req 8.7, 8.8)
-- [ ] Run tests — all output extension tests pass
+- [x] Write `TestRun_DryRun_ShowsSubAgents` — agent with `sub_agents`; verify `--dry-run` output contains Sub-Agents section (Req 8.5)
+- [x] Write `TestRun_DryRun_NoSubAgents` — no `sub_agents`; verify output contains `(none)` (Req 8.5)
+- [x] Write `TestRun_JSON_IncludesToolCalls` — conversation with tool calls + `--json`; verify JSON has `tool_calls` field (Req 8.6)
+- [x] Write `TestRun_Verbose_ConversationTurns` — conversation with tool calls + `--verbose`; verify stderr has turn-by-turn logs (Req 8.7)
+- [x] Implement `--dry-run` extension: print Sub-Agents section with names, max depth, parallel, timeout (Req 8.5)
+- [x] Implement `--json` extension: add `tool_calls` count field; cumulative token counts (Req 8.6, 8.8)
+- [x] Implement `--verbose` extension: log each conversation turn with message count and tool call info (Req 8.7, 8.8)
+- [x] Run tests — all output extension tests pass
 
 ---
 

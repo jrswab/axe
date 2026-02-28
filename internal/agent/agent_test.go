@@ -436,7 +436,7 @@ timeout = 120
 	if cfg.SubAgentsConf.MaxDepth != 4 {
 		t.Errorf("SubAgentsConf.MaxDepth = %d, want 4", cfg.SubAgentsConf.MaxDepth)
 	}
-	if cfg.SubAgentsConf.Parallel != true {
+	if cfg.SubAgentsConf.Parallel == nil || *cfg.SubAgentsConf.Parallel != true {
 		t.Errorf("SubAgentsConf.Parallel = %v, want true", cfg.SubAgentsConf.Parallel)
 	}
 	if cfg.SubAgentsConf.Timeout != 120 {
@@ -462,8 +462,8 @@ sub_agents = ["helper"]
 	if cfg.SubAgentsConf.MaxDepth != 0 {
 		t.Errorf("SubAgentsConf.MaxDepth = %d, want 0", cfg.SubAgentsConf.MaxDepth)
 	}
-	if cfg.SubAgentsConf.Parallel != false {
-		t.Errorf("SubAgentsConf.Parallel = %v, want false (Go zero value)", cfg.SubAgentsConf.Parallel)
+	if cfg.SubAgentsConf.Parallel != nil {
+		t.Errorf("SubAgentsConf.Parallel = %v, want nil (Go zero value for *bool)", cfg.SubAgentsConf.Parallel)
 	}
 	if cfg.SubAgentsConf.Timeout != 0 {
 		t.Errorf("SubAgentsConf.Timeout = %d, want 0", cfg.SubAgentsConf.Timeout)

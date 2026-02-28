@@ -14,12 +14,16 @@ import (
 	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/resolve"
+	"github.com/jrswab/axe/internal/tool"
 	"github.com/jrswab/axe/internal/xdg"
 	"github.com/spf13/cobra"
 )
 
 // defaultUserMessage is sent when no stdin content is piped.
 const defaultUserMessage = "Execute the task described in your instructions."
+
+// maxConversationTurns is the safety limit for the conversation loop.
+const maxConversationTurns = 50
 
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -179,6 +183,17 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		MaxTokens:   cfg.Params.MaxTokens,
 	}
 
+	// Step 16b: Inject tools if agent has sub_agents
+	// Depth starts at 0 for top-level invocation
+	depth := 0
+	effectiveMaxDepth := 3 // system default
+	if cfg.SubAgentsConf.MaxDepth > 0 && cfg.SubAgentsConf.MaxDepth <= 5 {
+		effectiveMaxDepth = cfg.SubAgentsConf.MaxDepth
+	}
+	if len(cfg.SubAgents) > 0 && depth < effectiveMaxDepth {
+		req.Tools = []provider.Tool{tool.CallAgentTool(cfg.SubAgents)}
+	}
+
 	// Verbose: pre-call info
 	if verbose {
 		skillDisplay := skillPath
@@ -202,35 +217,120 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	// Step 18: Call provider
+	// Step 18: Call provider (conversation loop when tools are present)
 	start := time.Now()
-	resp, err := prov.Send(ctx, req)
-	durationMs := time.Since(start).Milliseconds()
 
-	if err != nil {
-		// Verbose: post-call on error
-		if verbose {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
+	// Determine parallel execution setting.
+	// Default is true (per spec). Only false if explicitly set via TOML.
+	// Using *bool allows distinguishing "not set" (nil) from "set to false".
+	parallel := true
+	if cfg.SubAgentsConf.Parallel != nil {
+		parallel = *cfg.SubAgentsConf.Parallel
+	}
+
+	var resp *provider.Response
+	var totalInputTokens int
+	var totalOutputTokens int
+	var totalToolCalls int
+
+	if len(req.Tools) == 0 {
+		// Single-shot: no tools, no conversation loop (identical to M4)
+		resp, err = prov.Send(ctx, req)
+		if err != nil {
+			durationMs := time.Since(start).Milliseconds()
+			if verbose {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
+			}
+			return mapProviderError(err)
 		}
-		return mapProviderError(err)
+		totalInputTokens = resp.InputTokens
+		totalOutputTokens = resp.OutputTokens
+
+		if verbose {
+			durationMs := time.Since(start).Milliseconds()
+			fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
+			fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output\n", resp.InputTokens, resp.OutputTokens)
+			fmt.Fprintf(cmd.ErrOrStderr(), "Stop:     %s\n", resp.StopReason)
+		}
+	} else {
+		// Conversation loop: handle tool calls
+		for turn := 0; turn < maxConversationTurns; turn++ {
+			if verbose {
+				pendingToolCalls := 0
+				for _, m := range req.Messages {
+					if m.Role == "tool" {
+						pendingToolCalls += len(m.ToolResults)
+					}
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Sending request (%d messages, %d tool calls pending)\n", turn+1, len(req.Messages), pendingToolCalls)
+			}
+
+			resp, err = prov.Send(ctx, req)
+			if err != nil {
+				durationMs := time.Since(start).Milliseconds()
+				if verbose {
+					fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
+				}
+				return mapProviderError(err)
+			}
+
+			totalInputTokens += resp.InputTokens
+			totalOutputTokens += resp.OutputTokens
+
+			if verbose {
+				fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Received response: %s (%d tool calls)\n", turn+1, resp.StopReason, len(resp.ToolCalls))
+			}
+
+			// No tool calls: conversation is done
+			if len(resp.ToolCalls) == 0 {
+				break
+			}
+
+			// Append assistant message with tool calls
+			assistantMsg := provider.Message{
+				Role:      "assistant",
+				Content:   resp.Content,
+				ToolCalls: resp.ToolCalls,
+			}
+			req.Messages = append(req.Messages, assistantMsg)
+
+			// Execute tool calls
+			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr())
+			totalToolCalls += len(resp.ToolCalls)
+
+			// Append tool result message
+			toolMsg := provider.Message{
+				Role:        "tool",
+				ToolResults: results,
+			}
+			req.Messages = append(req.Messages, toolMsg)
+		}
+
+		// Check if we exhausted turns
+		if resp != nil && len(resp.ToolCalls) > 0 {
+			return &ExitError{Code: 1, Err: fmt.Errorf("agent exceeded maximum conversation turns (%d)", maxConversationTurns)}
+		}
+
+		if verbose {
+			durationMs := time.Since(start).Milliseconds()
+			fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
+			fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output (cumulative)\n", totalInputTokens, totalOutputTokens)
+			fmt.Fprintf(cmd.ErrOrStderr(), "Stop:     %s\n", resp.StopReason)
+		}
 	}
 
-	// Verbose: post-call info
-	if verbose {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
-		fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output\n", resp.InputTokens, resp.OutputTokens)
-		fmt.Fprintf(cmd.ErrOrStderr(), "Stop:     %s\n", resp.StopReason)
-	}
+	durationMs := time.Since(start).Milliseconds()
 
 	// Step 19: JSON output
 	if jsonOutput {
 		envelope := map[string]interface{}{
 			"model":         resp.Model,
 			"content":       resp.Content,
-			"input_tokens":  resp.InputTokens,
-			"output_tokens": resp.OutputTokens,
+			"input_tokens":  totalInputTokens,
+			"output_tokens": totalOutputTokens,
 			"stop_reason":   resp.StopReason,
 			"duration_ms":   durationMs,
+			"tool_calls":    totalToolCalls,
 		}
 		data, err := json.Marshal(envelope)
 		if err != nil {
@@ -285,7 +385,87 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 		fmt.Fprintln(out, "(none)")
 	}
 
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "--- Sub-Agents ---")
+	if len(cfg.SubAgents) > 0 {
+		fmt.Fprintln(out, strings.Join(cfg.SubAgents, ", "))
+		effectiveMaxDepth := 3
+		if cfg.SubAgentsConf.MaxDepth > 0 && cfg.SubAgentsConf.MaxDepth <= 5 {
+			effectiveMaxDepth = cfg.SubAgentsConf.MaxDepth
+		}
+		parallelVal := "yes"
+		if cfg.SubAgentsConf.Parallel != nil && !*cfg.SubAgentsConf.Parallel {
+			parallelVal = "no"
+		}
+		timeoutVal := cfg.SubAgentsConf.Timeout
+		fmt.Fprintf(out, "Max Depth: %d\n", effectiveMaxDepth)
+		fmt.Fprintf(out, "Parallel:  %s\n", parallelVal)
+		fmt.Fprintf(out, "Timeout:   %ds\n", timeoutVal)
+	} else {
+		fmt.Fprintln(out, "(none)")
+	}
+
 	return nil
+}
+
+// executeToolCalls dispatches tool calls and returns results.
+// When parallel is true and there are multiple calls, they run concurrently.
+func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, depth, maxDepth int, parallel, verbose bool, stderr io.Writer) []provider.ToolResult {
+	results := make([]provider.ToolResult, len(toolCalls))
+
+	execOpts := tool.ExecuteOptions{
+		AllowedAgents: cfg.SubAgents,
+		ParentModel:   cfg.Model,
+		Depth:         depth,
+		MaxDepth:      maxDepth,
+		Timeout:       cfg.SubAgentsConf.Timeout,
+		GlobalConfig:  globalCfg,
+		Verbose:       verbose,
+		Stderr:        stderr,
+	}
+
+	if len(toolCalls) == 1 || !parallel {
+		// Sequential execution (also used for single call)
+		for i, tc := range toolCalls {
+			if tc.Name == tool.CallAgentToolName {
+				results[i] = tool.ExecuteCallAgent(ctx, tc, execOpts)
+			} else {
+				results[i] = provider.ToolResult{
+					CallID:  tc.ID,
+					Content: fmt.Sprintf("Unknown tool: %q", tc.Name),
+					IsError: true,
+				}
+			}
+		}
+	} else {
+		// Parallel execution
+		type indexedResult struct {
+			index  int
+			result provider.ToolResult
+		}
+		ch := make(chan indexedResult, len(toolCalls))
+		for i, tc := range toolCalls {
+			go func(idx int, call provider.ToolCall) {
+				var res provider.ToolResult
+				if call.Name == tool.CallAgentToolName {
+					res = tool.ExecuteCallAgent(ctx, call, execOpts)
+				} else {
+					res = provider.ToolResult{
+						CallID:  call.ID,
+						Content: fmt.Sprintf("Unknown tool: %q", call.Name),
+						IsError: true,
+					}
+				}
+				ch <- indexedResult{index: idx, result: res}
+			}(i, tc)
+		}
+		for range toolCalls {
+			ir := <-ch
+			results[ir.index] = ir.result
+		}
+	}
+
+	return results
 }
 
 // mapProviderError converts a provider error to an ExitError with the correct exit code.

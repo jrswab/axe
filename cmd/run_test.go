@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -810,6 +811,874 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 	if exitErr.Code != 2 {
 		t.Errorf("expected exit code 2, got %d", exitErr.Code)
+	}
+}
+
+// --- Phase 8a: Tool Injection ---
+
+func TestRun_SubAgentToolInjection(t *testing.T) {
+	resetRunCmd(t)
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		receivedBody = body.String()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`{
+			"id": "msg_test",
+			"type": "message",
+			"role": "assistant",
+			"content": [{"type": "text", "text": "No delegation needed."}],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "parent-agent", `name = "parent-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["helper"]
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "parent-agent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the request body contains a tools array with call_agent
+	if !strings.Contains(receivedBody, `"tools"`) {
+		t.Errorf("expected 'tools' in request body, got %q", receivedBody)
+	}
+	if !strings.Contains(receivedBody, `"call_agent"`) {
+		t.Errorf("expected 'call_agent' tool name in request body, got %q", receivedBody)
+	}
+}
+
+func TestRun_NoSubAgents_NoTools(t *testing.T) {
+	resetRunCmd(t)
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		receivedBody = body.String()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`{
+			"id": "msg_test",
+			"type": "message",
+			"role": "assistant",
+			"content": [{"type": "text", "text": "Hello from mock"}],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "no-sub-agent", `name = "no-sub-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "no-sub-agent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the request body does NOT contain a tools key
+	if strings.Contains(receivedBody, `"tools"`) {
+		t.Errorf("expected NO 'tools' in request body when sub_agents is empty, got %q", receivedBody)
+	}
+}
+
+// --- Phase 8b: Conversation Loop Core ---
+
+func TestRun_ConversationLoop_ToolCall(t *testing.T) {
+	resetRunCmd(t)
+
+	// Parent server: first request returns a tool call, second returns text
+	parentCallCount := 0
+	parentServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		parentCallCount++
+		w.Header().Set("Content-Type", "application/json")
+		if parentCallCount == 1 {
+			// First call: return a tool_use calling "helper"
+			w.Write([]byte(`{
+				"id": "msg_1",
+				"type": "message",
+				"role": "assistant",
+				"content": [
+					{"type": "text", "text": "Let me delegate this."},
+					{"type": "tool_use", "id": "toolu_123", "name": "call_agent", "input": {"agent": "helper", "task": "say hello"}}
+				],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			// Second call: return final text
+			w.Write([]byte(`{
+				"id": "msg_2",
+				"type": "message",
+				"role": "assistant",
+				"content": [{"type": "text", "text": "The helper said: greetings!"}],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "end_turn",
+				"usage": {"input_tokens": 30, "output_tokens": 10}
+			}`))
+		}
+	}))
+	defer parentServer.Close()
+
+	// Helper sub-agent server
+	helperServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"id": "msg_helper",
+			"type": "message",
+			"role": "assistant",
+			"content": [{"type": "text", "text": "greetings!"}],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": {"input_tokens": 5, "output_tokens": 3}
+		}`))
+	}))
+	defer helperServer.Close()
+
+	// Setup both agents - helper uses the same provider but different server
+	tmpDir := setupRunTestAgent(t, "parent-loop", `name = "parent-loop"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["helper-loop"]
+`)
+	// Create helper agent TOML
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.WriteFile(filepath.Join(agentsDir, "helper-loop.toml"), []byte(`name = "helper-loop"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", parentServer.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "parent-loop"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "The helper said: greetings!") {
+		t.Errorf("expected final response from parent, got %q", output)
+	}
+
+	if parentCallCount != 2 {
+		t.Errorf("expected parent server to be called 2 times, got %d", parentCallCount)
+	}
+}
+
+func TestRun_ConversationLoop_MaxTurns(t *testing.T) {
+	resetRunCmd(t)
+
+	// Server always returns tool calls (never a final text response)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"id": "msg_loop",
+			"type": "message",
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_loop", "name": "call_agent", "input": {"agent": "helper-turns", "task": "do something"}}
+			],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "tool_use",
+			"usage": {"input_tokens": 5, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "loop-agent", `name = "loop-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["helper-turns"]
+`)
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.WriteFile(filepath.Join(agentsDir, "helper-turns.toml"), []byte(`name = "helper-turns"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "loop-agent", "--timeout", "30"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for exceeding max turns, got nil")
+	}
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T: %v", err, err)
+	}
+	if exitErr.Code != 1 {
+		t.Errorf("expected exit code 1, got %d", exitErr.Code)
+	}
+	if !strings.Contains(err.Error(), "maximum conversation turns") {
+		t.Errorf("expected max turns error message, got: %v", err)
+	}
+}
+
+func TestRun_SubAgent_Error_PropagatesAsToolResult(t *testing.T) {
+	resetRunCmd(t)
+
+	// Parent server: first returns tool call to nonexistent agent, second returns final text
+	parentCallCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		parentCallCount++
+		w.Header().Set("Content-Type", "application/json")
+		if parentCallCount == 1 {
+			w.Write([]byte(`{
+				"id": "msg_1",
+				"type": "message",
+				"role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_err", "name": "call_agent", "input": {"agent": "nonexistent", "task": "do something"}}
+				],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 10}
+			}`))
+		} else {
+			w.Write([]byte(`{
+				"id": "msg_2",
+				"type": "message",
+				"role": "assistant",
+				"content": [{"type": "text", "text": "The sub-agent failed, proceeding without it."}],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "end_turn",
+				"usage": {"input_tokens": 20, "output_tokens": 10}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "err-parent", `name = "err-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["nonexistent"]
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "err-parent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error (parent should handle sub-agent failure gracefully), got: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "The sub-agent failed, proceeding without it.") {
+		t.Errorf("expected parent to continue after sub-agent error, got %q", output)
+	}
+
+	if parentCallCount != 2 {
+		t.Errorf("expected parent server to be called 2 times (tool call + final), got %d", parentCallCount)
+	}
+}
+
+// --- Phase 8c: Parallel and Sequential Execution ---
+
+func TestRun_ParallelToolCalls(t *testing.T) {
+	resetRunCmd(t)
+
+	// Track call counts and which agents were called
+	var mu sync.Mutex
+	callCount := 0
+	subAgentCalls := make(map[string]bool)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		bodyStr := body.String()
+		w.Header().Set("Content-Type", "application/json")
+
+		mu.Lock()
+		callCount++
+		currentCall := callCount
+		mu.Unlock()
+
+		// Check if this is a sub-agent call (has "Task:" in the message)
+		if strings.Contains(bodyStr, "Task: task for agent-a") {
+			mu.Lock()
+			subAgentCalls["agent-a"] = true
+			mu.Unlock()
+			w.Write([]byte(`{
+				"id": "msg_a", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "result from a"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+		if strings.Contains(bodyStr, "Task: task for agent-b") {
+			mu.Lock()
+			subAgentCalls["agent-b"] = true
+			mu.Unlock()
+			w.Write([]byte(`{
+				"id": "msg_b", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "result from b"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+
+		// Parent calls
+		if currentCall == 1 {
+			// First parent call: return two tool calls
+			w.Write([]byte(`{
+				"id": "msg_p1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_a", "name": "call_agent", "input": {"agent": "par-agent-a", "task": "task for agent-a"}},
+					{"type": "tool_use", "id": "toolu_b", "name": "call_agent", "input": {"agent": "par-agent-b", "task": "task for agent-b"}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			// Second parent call: final response
+			w.Write([]byte(`{
+				"id": "msg_p2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Both agents completed successfully."}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 30, "output_tokens": 10}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "par-parent", `name = "par-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["par-agent-a", "par-agent-b"]
+
+[sub_agents_config]
+parallel = true
+`)
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.WriteFile(filepath.Join(agentsDir, "par-agent-a.toml"), []byte(`name = "par-agent-a"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+	os.WriteFile(filepath.Join(agentsDir, "par-agent-b.toml"), []byte(`name = "par-agent-b"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "par-parent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Both agents completed successfully.") {
+		t.Errorf("expected final response, got %q", output)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if !subAgentCalls["agent-a"] {
+		t.Error("expected sub-agent 'agent-a' to be called")
+	}
+	if !subAgentCalls["agent-b"] {
+		t.Error("expected sub-agent 'agent-b' to be called")
+	}
+}
+
+func TestRun_SequentialToolCalls(t *testing.T) {
+	resetRunCmd(t)
+
+	var mu sync.Mutex
+	callCount := 0
+	var callOrder []string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		bodyStr := body.String()
+		w.Header().Set("Content-Type", "application/json")
+
+		mu.Lock()
+		callCount++
+		currentCall := callCount
+		mu.Unlock()
+
+		if strings.Contains(bodyStr, "Task: seq task a") {
+			mu.Lock()
+			callOrder = append(callOrder, "a")
+			mu.Unlock()
+			w.Write([]byte(`{
+				"id": "msg_a", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "seq result a"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+		if strings.Contains(bodyStr, "Task: seq task b") {
+			mu.Lock()
+			callOrder = append(callOrder, "b")
+			mu.Unlock()
+			w.Write([]byte(`{
+				"id": "msg_b", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "seq result b"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+
+		if currentCall == 1 {
+			w.Write([]byte(`{
+				"id": "msg_p1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_a", "name": "call_agent", "input": {"agent": "seq-agent-a", "task": "seq task a"}},
+					{"type": "tool_use", "id": "toolu_b", "name": "call_agent", "input": {"agent": "seq-agent-b", "task": "seq task b"}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			w.Write([]byte(`{
+				"id": "msg_p2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Sequential done."}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 30, "output_tokens": 10}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "seq-parent", `name = "seq-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["seq-agent-a", "seq-agent-b"]
+
+[sub_agents_config]
+parallel = false
+`)
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.WriteFile(filepath.Join(agentsDir, "seq-agent-a.toml"), []byte(`name = "seq-agent-a"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+	os.WriteFile(filepath.Join(agentsDir, "seq-agent-b.toml"), []byte(`name = "seq-agent-b"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "seq-parent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Sequential done.") {
+		t.Errorf("expected final response, got %q", output)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(callOrder) != 2 {
+		t.Errorf("expected 2 sub-agent calls, got %d", len(callOrder))
+	} else {
+		// With sequential execution, a should come before b
+		if callOrder[0] != "a" || callOrder[1] != "b" {
+			t.Errorf("expected sequential order [a, b], got %v", callOrder)
+		}
+	}
+}
+
+// --- Phase 8d: Output Extensions (Dry-Run, JSON, Verbose) ---
+
+func TestRun_DryRun_ShowsSubAgents(t *testing.T) {
+	resetRunCmd(t)
+	setupRunTestAgent(t, "dryrun-sub", `name = "dryrun-sub"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["helper-a", "helper-b"]
+
+[sub_agents_config]
+max_depth = 4
+parallel = true
+timeout = 60
+`)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "dryrun-sub", "--dry-run"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "--- Sub-Agents ---") {
+		t.Errorf("expected Sub-Agents section in dry-run output, got %q", output)
+	}
+	if !strings.Contains(output, "helper-a") {
+		t.Errorf("expected agent name 'helper-a' in output, got %q", output)
+	}
+	if !strings.Contains(output, "helper-b") {
+		t.Errorf("expected agent name 'helper-b' in output, got %q", output)
+	}
+	if !strings.Contains(output, "Max Depth:") {
+		t.Errorf("expected 'Max Depth:' in output, got %q", output)
+	}
+	if !strings.Contains(output, "Parallel:") {
+		t.Errorf("expected 'Parallel:' in output, got %q", output)
+	}
+	if !strings.Contains(output, "Timeout:") {
+		t.Errorf("expected 'Timeout:' in output, got %q", output)
+	}
+}
+
+func TestRun_DryRun_NoSubAgents(t *testing.T) {
+	resetRunCmd(t)
+	setupRunTestAgent(t, "dryrun-nosub", `name = "dryrun-nosub"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "dryrun-nosub", "--dry-run"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "--- Sub-Agents ---") {
+		t.Errorf("expected Sub-Agents section in dry-run output, got %q", output)
+	}
+	if !strings.Contains(output, "(none)") {
+		t.Errorf("expected '(none)' for empty sub-agents, got %q", output)
+	}
+}
+
+func TestRun_JSON_IncludesToolCalls(t *testing.T) {
+	resetRunCmd(t)
+
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		bodyStr := body.String()
+		w.Header().Set("Content-Type", "application/json")
+
+		// Sub-agent call
+		if strings.Contains(bodyStr, "Task: test task") {
+			w.Write([]byte(`{
+				"id": "msg_h", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "sub-result"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+
+		callCount++
+		if callCount == 1 {
+			w.Write([]byte(`{
+				"id": "msg_1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_1", "name": "call_agent", "input": {"agent": "json-helper", "task": "test task"}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 15}
+			}`))
+		} else {
+			w.Write([]byte(`{
+				"id": "msg_2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Final json result."}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 20, "output_tokens": 10}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "json-parent", `name = "json-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["json-helper"]
+`)
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.WriteFile(filepath.Join(agentsDir, "json-helper.toml"), []byte(`name = "json-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "json-parent", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	// Check tool_calls field exists and is > 0
+	tc, ok := result["tool_calls"]
+	if !ok {
+		t.Fatalf("JSON output missing 'tool_calls' field: %v", result)
+	}
+	if tc.(float64) < 1 {
+		t.Errorf("expected tool_calls >= 1, got %v", tc)
+	}
+
+	// Check cumulative token counts
+	inputTokens := result["input_tokens"].(float64)
+	if inputTokens < 20 {
+		t.Errorf("expected cumulative input_tokens >= 20, got %v", inputTokens)
+	}
+}
+
+func TestRun_Verbose_ConversationTurns(t *testing.T) {
+	resetRunCmd(t)
+
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		bodyStr := body.String()
+		w.Header().Set("Content-Type", "application/json")
+
+		if strings.Contains(bodyStr, "Task: verbose task") {
+			w.Write([]byte(`{
+				"id": "msg_h", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "verbose sub-result"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+
+		callCount++
+		if callCount == 1 {
+			w.Write([]byte(`{
+				"id": "msg_1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_v", "name": "call_agent", "input": {"agent": "verbose-helper", "task": "verbose task"}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 15}
+			}`))
+		} else {
+			w.Write([]byte(`{
+				"id": "msg_2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Verbose final."}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 20, "output_tokens": 10}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := setupRunTestAgent(t, "verbose-parent", `name = "verbose-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["verbose-helper"]
+`)
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.WriteFile(filepath.Join(agentsDir, "verbose-helper.toml"), []byte(`name = "verbose-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "verbose-parent", "--verbose"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stderr := errBuf.String()
+	// Should have turn-by-turn logs
+	if !strings.Contains(stderr, "[turn 1]") {
+		t.Errorf("expected '[turn 1]' in stderr, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "[turn 2]") {
+		t.Errorf("expected '[turn 2]' in stderr, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "Sending request") {
+		t.Errorf("expected 'Sending request' in stderr, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "Received response") {
+		t.Errorf("expected 'Received response' in stderr, got %q", stderr)
+	}
+}
+
+// --- Review: Additional coverage tests ---
+
+func TestRun_ParallelDefault_MultipleToolCalls(t *testing.T) {
+	// Verify that when [sub_agents_config] is absent (Parallel is nil),
+	// multiple tool calls still execute (parallel is the default).
+	resetRunCmd(t)
+
+	var mu sync.Mutex
+	subAgentCalls := make(map[string]bool)
+	callCount := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := new(bytes.Buffer)
+		body.ReadFrom(r.Body)
+		bodyStr := body.String()
+		w.Header().Set("Content-Type", "application/json")
+
+		if strings.Contains(bodyStr, "Task: default-task-a") {
+			mu.Lock()
+			subAgentCalls["a"] = true
+			mu.Unlock()
+			w.Write([]byte(`{
+				"id": "msg_a", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "result a"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+		if strings.Contains(bodyStr, "Task: default-task-b") {
+			mu.Lock()
+			subAgentCalls["b"] = true
+			mu.Unlock()
+			w.Write([]byte(`{
+				"id": "msg_b", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "result b"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 5, "output_tokens": 3}
+			}`))
+			return
+		}
+
+		mu.Lock()
+		callCount++
+		cc := callCount
+		mu.Unlock()
+
+		if cc == 1 {
+			w.Write([]byte(`{
+				"id": "msg_p1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "t_a", "name": "call_agent", "input": {"agent": "def-a", "task": "default-task-a"}},
+					{"type": "tool_use", "id": "t_b", "name": "call_agent", "input": {"agent": "def-b", "task": "default-task-b"}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			w.Write([]byte(`{
+				"id": "msg_p2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Default parallel done."}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 20, "output_tokens": 10}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	// No [sub_agents_config] section - Parallel should default to true
+	tmpDir := setupRunTestAgent(t, "def-parent", `name = "def-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["def-a", "def-b"]
+`)
+	agentsDir := filepath.Join(tmpDir, "axe", "agents")
+	os.WriteFile(filepath.Join(agentsDir, "def-a.toml"), []byte(`name = "def-a"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+	os.WriteFile(filepath.Join(agentsDir, "def-b.toml"), []byte(`name = "def-b"
+model = "anthropic/claude-sonnet-4-20250514"
+`), 0644)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "def-parent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if !subAgentCalls["a"] {
+		t.Error("expected sub-agent 'a' to be called with default parallel=true")
+	}
+	if !subAgentCalls["b"] {
+		t.Error("expected sub-agent 'b' to be called with default parallel=true")
 	}
 }
 
