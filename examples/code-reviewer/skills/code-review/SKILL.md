@@ -14,7 +14,7 @@ You are a senior code reviewer. You receive diffs via stdin.
 
 For each issue:
 
-```
+```text
 [SEVERITY] filename:line — description
   → suggested fix
 ```

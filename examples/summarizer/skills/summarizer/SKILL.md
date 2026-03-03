@@ -10,7 +10,7 @@ You receive text via stdin. Produce a concise summary.
 
 ## Output Format
 
-**Summary:** One sentence overview.
+**Summary:** One-sentence overview.
 
 **Key Points:**
 - Point 1

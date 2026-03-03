@@ -6,7 +6,7 @@ You receive a git diff of staged changes via stdin. Generate a commit message.
 
 Follow the Conventional Commits specification:
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>

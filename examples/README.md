@@ -21,7 +21,11 @@ directory into your axe config and go.
 
    ```bash
    cp examples/code-reviewer/code-reviewer.toml "$(axe config path)/agents/"
-   cp -r examples/code-reviewer/skills/ "$(axe config path)/skills/"
+   cp examples/commit-msg/commit-msg.toml "$(axe config path)/agents/"
+   cp examples/summarizer/summarizer.toml "$(axe config path)/agents/"
+   cp -r examples/code-reviewer/skills/code-review "$(axe config path)/skills/"
+   cp -r examples/commit-msg/skills/commit-msg "$(axe config path)/skills/"
+   cp -r examples/summarizer/skills/summarizer "$(axe config path)/skills/"
    ```
 
 3. Set your API key:
