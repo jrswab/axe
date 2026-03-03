@@ -143,6 +143,39 @@ git diff | docker run --rm -i \
 Without a config volume mounted, axe exits with code 2 (config error) because no
 agent TOML files exist.
 
+### Running a Single Agent
+
+The examples above mount the entire config directory. If you only need to run one
+agent with one skill, mount just those files to their expected XDG paths inside
+the container. No `config.toml` is needed when API keys are passed via
+environment variables.
+
+```bash
+docker run --rm -i \
+  -e ANTHROPIC_API_KEY \
+  -v ./agents/reviewer.toml:/home/axe/.config/axe/agents/reviewer.toml:ro \
+  -v ./skills/code-review/:/home/axe/.config/axe/skills/code-review/:ro \
+  axe run reviewer
+```
+
+The agent's `skill` field resolves automatically against the XDG config path
+inside the container, so no `--skill` flag is needed.
+
+To use a **different skill** than the one declared in the agent's TOML, use the
+`--skill` flag to override it. In this case you only mount the replacement skill
+— the original skill declared in the TOML is ignored entirely:
+
+```bash
+docker run --rm -i \
+  -e ANTHROPIC_API_KEY \
+  -v ./agents/reviewer.toml:/home/axe/.config/axe/agents/reviewer.toml:ro \
+  -v ./alt-review.md:/home/axe/alt-review.md:ro \
+  axe run reviewer --skill /home/axe/alt-review.md
+```
+
+If the agent declares `sub_agents`, all referenced agent TOMLs and their skills
+must also be mounted.
+
 ### Persistent Data
 
 Agent memory persists across runs when you mount a data volume:
