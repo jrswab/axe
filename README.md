@@ -50,6 +50,60 @@ cd axe
 go build .
 ```
 
+## Quick Start
+
+Initialize the configuration directory:
+
+```bash
+axe config init
+```
+
+This creates the directory structure at `$XDG_CONFIG_HOME/axe/` with a sample
+skill and a default `config.toml` for provider credentials.
+
+Scaffold a new agent:
+
+```bash
+axe agents init my-agent
+```
+
+Edit its configuration:
+
+```bash
+axe agents edit my-agent
+```
+
+Run the agent:
+
+```bash
+axe run my-agent
+```
+
+Pipe input from other tools:
+
+```bash
+git diff --cached | axe run pr-reviewer
+cat error.log | axe run log-analyzer
+```
+
+## Examples
+
+The [`examples/`](examples/) directory contains ready-to-run agents you can copy
+into your config and use immediately. Includes a code reviewer, commit message
+generator, and text summarizer — each with a focused SKILL.md.
+
+```bash
+# Copy an example agent into your config
+cp examples/code-reviewer/code-reviewer.toml "$(axe config path)/agents/"
+cp -r examples/code-reviewer/skills/ "$(axe config path)/skills/"
+
+# Set your API key and run
+export ANTHROPIC_API_KEY="your-key-here"
+git diff | axe run code-reviewer
+```
+
+See [`examples/README.md`](examples/README.md) for full setup instructions.
+
 ## Docker
 
 Axe provides a Docker image for running agents in an isolated, hardened container.
@@ -169,60 +223,6 @@ it. Mount as `:ro` if you only run agents.
 | `AXE_OLLAMA_BASE_URL` | If using Ollama | Ollama endpoint (default in compose: `http://ollama:11434`) |
 | `AXE_ANTHROPIC_BASE_URL` | No | Override Anthropic API endpoint |
 | `AXE_OPENAI_BASE_URL` | No | Override OpenAI API endpoint |
-
-## Quick Start
-
-Initialize the configuration directory:
-
-```bash
-axe config init
-```
-
-This creates the directory structure at `$XDG_CONFIG_HOME/axe/` with a sample
-skill and a default `config.toml` for provider credentials.
-
-Scaffold a new agent:
-
-```bash
-axe agents init my-agent
-```
-
-Edit its configuration:
-
-```bash
-axe agents edit my-agent
-```
-
-Run the agent:
-
-```bash
-axe run my-agent
-```
-
-Pipe input from other tools:
-
-```bash
-git diff --cached | axe run pr-reviewer
-cat error.log | axe run log-analyzer
-```
-
-## Examples
-
-The [`examples/`](examples/) directory contains ready-to-run agents you can copy
-into your config and use immediately. Includes a code reviewer, commit message
-generator, and text summarizer — each with a focused SKILL.md.
-
-```bash
-# Copy an example agent into your config
-cp examples/code-reviewer/code-reviewer.toml "$(axe config path)/agents/"
-cp -r examples/code-reviewer/skills/ "$(axe config path)/skills/"
-
-# Set your API key and run
-export ANTHROPIC_API_KEY="your-key-here"
-git diff | axe run code-reviewer
-```
-
-See [`examples/README.md`](examples/README.md) for full setup instructions.
 
 ## CLI Reference
 

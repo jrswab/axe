@@ -59,7 +59,7 @@ Use it in a git hook — add to `.git/hooks/prepare-commit-msg`:
 
 ```bash
 #!/bin/sh
-axe run commit-msg < /dev/stdin > "$1"
+git diff --cached | axe run commit-msg > "$1"
 ```
 
 ### summarizer
