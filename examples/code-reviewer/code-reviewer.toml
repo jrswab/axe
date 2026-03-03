@@ -1,0 +1,4 @@
+name = "code-reviewer"
+description = "Reviews code diffs for bugs, style issues, and improvements"
+model = "anthropic/claude-sonnet-4-20250514"
+skill = "skills/code-review/SKILL.md"

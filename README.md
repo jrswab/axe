@@ -206,6 +206,24 @@ git diff --cached | axe run pr-reviewer
 cat error.log | axe run log-analyzer
 ```
 
+## Examples
+
+The [`examples/`](examples/) directory contains ready-to-run agents you can copy
+into your config and use immediately. Includes a code reviewer, commit message
+generator, and text summarizer — each with a focused SKILL.md.
+
+```bash
+# Copy an example agent into your config
+cp examples/code-reviewer/code-reviewer.toml "$(axe config path)/agents/"
+cp -r examples/code-reviewer/skills/ "$(axe config path)/skills/"
+
+# Set your API key and run
+export ANTHROPIC_API_KEY="your-key-here"
+git diff | axe run code-reviewer
+```
+
+See [`examples/README.md`](examples/README.md) for full setup instructions.
+
 ## CLI Reference
 
 ### Commands

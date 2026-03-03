@@ -1,0 +1,4 @@
+name = "commit-msg"
+description = "Generates conventional commit messages from staged diffs"
+model = "anthropic/claude-sonnet-4-20250514"
+skill = "skills/commit-msg/SKILL.md"

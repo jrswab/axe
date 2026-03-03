@@ -1,0 +1,4 @@
+name = "summarizer"
+description = "Condenses text into key points"
+model = "anthropic/claude-sonnet-4-20250514"
+skill = "skills/summarizer/SKILL.md"
