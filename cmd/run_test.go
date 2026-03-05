@@ -492,13 +492,16 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 
 	// Check required fields
-	for _, field := range []string{"model", "content", "input_tokens", "output_tokens", "stop_reason", "duration_ms"} {
+	for _, field := range []string{"model", "content", "input_tokens", "output_tokens", "stop_reason", "duration_ms", "refused"} {
 		if _, ok := result[field]; !ok {
 			t.Errorf("JSON output missing field %q", field)
 		}
 	}
 	if result["content"] != "Hello from mock" {
 		t.Errorf("expected content 'Hello from mock', got %q", result["content"])
+	}
+	if refused, ok := result["refused"].(bool); !ok || refused {
+		t.Errorf("expected refused false, got %v", result["refused"])
 	}
 }
 

@@ -692,7 +692,7 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 
 	// Verify required fields
-	requiredFields := []string{"model", "content", "input_tokens", "output_tokens", "stop_reason", "duration_ms", "tool_calls", "tool_call_details"}
+	requiredFields := []string{"model", "content", "input_tokens", "output_tokens", "stop_reason", "duration_ms", "tool_calls", "tool_call_details", "refused"}
 	for _, field := range requiredFields {
 		if _, ok := result[field]; !ok {
 			t.Errorf("expected JSON field %q to be present", field)
@@ -733,6 +733,174 @@ model = "anthropic/claude-sonnet-4-20250514"
 
 	if outputTokens, ok := result["output_tokens"].(float64); !ok || outputTokens != 5 {
 		t.Errorf("expected output_tokens 5, got %v", result["output_tokens"])
+	}
+
+	if refused, ok := result["refused"].(bool); !ok || refused {
+		t.Errorf("expected refused false, got %v", result["refused"])
+	}
+}
+
+func TestIntegration_JSONOutput_RefusalDetected(t *testing.T) {
+	resetRunCmd(t)
+
+	refusalText := "I'm sorry, but I cannot assist with that request."
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse(refusalText),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "json-refusal", `name = "json-refusal"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "json-refusal", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error (exit code 0), got: %v", err)
+	}
+
+	var result map[string]interface{}
+	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+		t.Fatalf("expected valid JSON output, got parse error: %v\nraw: %q", jsonErr, buf.String())
+	}
+
+	requiredFields := []string{"model", "content", "input_tokens", "output_tokens", "stop_reason", "duration_ms", "tool_calls", "tool_call_details", "refused"}
+	for _, field := range requiredFields {
+		if _, ok := result[field]; !ok {
+			t.Errorf("expected JSON field %q to be present", field)
+		}
+	}
+
+	if content, ok := result["content"].(string); !ok || content != refusalText {
+		t.Errorf("expected content %q, got %v", refusalText, result["content"])
+	}
+	if stopReason, ok := result["stop_reason"].(string); !ok || stopReason != "end_turn" {
+		t.Errorf("expected stop_reason %q, got %v", "end_turn", result["stop_reason"])
+	}
+	if inputTokens, ok := result["input_tokens"].(float64); !ok || inputTokens != 10 {
+		t.Errorf("expected input_tokens 10, got %v", result["input_tokens"])
+	}
+	if outputTokens, ok := result["output_tokens"].(float64); !ok || outputTokens != 5 {
+		t.Errorf("expected output_tokens 5, got %v", result["output_tokens"])
+	}
+	if toolCalls, ok := result["tool_calls"].(float64); !ok || toolCalls != 0 {
+		t.Errorf("expected tool_calls 0, got %v", result["tool_calls"])
+	}
+	if details, ok := result["tool_call_details"].([]interface{}); !ok || len(details) != 0 {
+		t.Errorf("expected empty tool_call_details, got %v", result["tool_call_details"])
+	}
+	if refused, ok := result["refused"].(bool); !ok || !refused {
+		t.Errorf("expected refused true, got %v", result["refused"])
+	}
+}
+
+func TestIntegration_JSONOutput_RefusalDetected_WithToolCalls(t *testing.T) {
+	resetRunCmd(t)
+
+	refusalText := "As an AI, I must decline this request."
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Delegating.", []testutil.MockToolCall{
+			{ID: "toolu_r1", Name: "call_agent", Input: map[string]string{"agent": "json-refusal-helper", "task": "do work"}},
+		}),
+		testutil.AnthropicResponse("helper result"),
+		testutil.AnthropicResponse(refusalText),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "json-refusal-parent", `name = "json-refusal-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["json-refusal-helper"]
+`)
+	writeAgentConfig(t, configDir, "json-refusal-helper", `name = "json-refusal-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "json-refusal-parent", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error (exit code 0), got: %v", err)
+	}
+
+	var result map[string]interface{}
+	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+		t.Fatalf("expected valid JSON output, got parse error: %v\nraw: %q", jsonErr, buf.String())
+	}
+
+	if content, ok := result["content"].(string); !ok || content != refusalText {
+		t.Errorf("expected refusal content %q, got %v", refusalText, result["content"])
+	}
+	if toolCalls, ok := result["tool_calls"].(float64); !ok || toolCalls != 1 {
+		t.Errorf("expected tool_calls 1, got %v", result["tool_calls"])
+	}
+	if refused, ok := result["refused"].(bool); !ok || !refused {
+		t.Errorf("expected refused true, got %v", result["refused"])
+	}
+}
+
+func TestIntegration_JSONOutput_NoRefusal_WithToolCalls(t *testing.T) {
+	resetRunCmd(t)
+
+	finalText := "All done with the requested work."
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Delegating.", []testutil.MockToolCall{
+			{ID: "toolu_nr1", Name: "call_agent", Input: map[string]string{"agent": "json-no-refusal-helper", "task": "do work"}},
+		}),
+		testutil.AnthropicResponse("helper result"),
+		testutil.AnthropicResponse(finalText),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "json-no-refusal-parent", `name = "json-no-refusal-parent"
+model = "anthropic/claude-sonnet-4-20250514"
+sub_agents = ["json-no-refusal-helper"]
+`)
+	writeAgentConfig(t, configDir, "json-no-refusal-helper", `name = "json-no-refusal-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "json-no-refusal-parent", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error (exit code 0), got: %v", err)
+	}
+
+	var result map[string]interface{}
+	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+		t.Fatalf("expected valid JSON output, got parse error: %v\nraw: %q", jsonErr, buf.String())
+	}
+
+	if content, ok := result["content"].(string); !ok || content != finalText {
+		t.Errorf("expected content %q, got %v", finalText, result["content"])
+	}
+	if toolCalls, ok := result["tool_calls"].(float64); !ok || toolCalls != 1 {
+		t.Errorf("expected tool_calls 1, got %v", result["tool_calls"])
+	}
+	if refused, ok := result["refused"].(bool); !ok || refused {
+		t.Errorf("expected refused false, got %v", result["refused"])
 	}
 }
 

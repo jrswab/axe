@@ -15,6 +15,7 @@ import (
 	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
+	"github.com/jrswab/axe/internal/refusal"
 	"github.com/jrswab/axe/internal/resolve"
 	"github.com/jrswab/axe/internal/tool"
 	"github.com/jrswab/axe/internal/xdg"
@@ -426,6 +427,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			"duration_ms":       durationMs,
 			"tool_calls":        totalToolCalls,
 			"tool_call_details": allToolCallDetails,
+			"refused":           refusal.Detect(resp.Content),
 		}
 		data, err := json.Marshal(envelope)
 		if err != nil {

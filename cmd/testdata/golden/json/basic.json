@@ -4,6 +4,7 @@
   "input_tokens": 10,
   "model": "gpt-4o",
   "output_tokens": 5,
+  "refused": false,
   "stop_reason": "stop",
   "tool_call_details": [],
   "tool_calls": 0
