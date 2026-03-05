@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jrswab/axe/internal/agent"
 	"github.com/jrswab/axe/internal/config"
@@ -81,7 +82,13 @@ func truncateOutput(s string) string {
 		return s
 	}
 
-	return s[:maxToolOutputBytes] + "... (truncated)"
+	// Backtrack from the byte limit to avoid splitting a multi-byte UTF-8 rune.
+	i := maxToolOutputBytes
+	for i > 0 && !utf8.RuneStart(s[i]) {
+		i--
+	}
+
+	return s[:i] + "... (truncated)"
 }
 
 func runAgent(cmd *cobra.Command, args []string) error {
