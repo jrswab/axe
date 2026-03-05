@@ -4,14 +4,14 @@ import "testing"
 
 func TestValidNames_ReturnsExpectedCount(t *testing.T) {
 	names := ValidNames()
-	if len(names) != 5 {
-		t.Errorf("ValidNames() returned %d entries, want 5", len(names))
+	if len(names) != 6 {
+		t.Errorf("ValidNames() returned %d entries, want 6", len(names))
 	}
 }
 
 func TestValidNames_ContainsAllExpectedNames(t *testing.T) {
 	names := ValidNames()
-	expected := []string{ListDirectory, ReadFile, WriteFile, EditFile, RunCommand}
+	expected := []string{ListDirectory, ReadFile, WriteFile, EditFile, RunCommand, URLFetch}
 	for _, name := range expected {
 		if !names[name] {
 			t.Errorf("ValidNames() missing %q", name)
@@ -48,6 +48,7 @@ func TestConstants_Values(t *testing.T) {
 		{"WriteFile", WriteFile, "write_file"},
 		{"EditFile", EditFile, "edit_file"},
 		{"RunCommand", RunCommand, "run_command"},
+		{"URLFetch", URLFetch, "url_fetch"},
 	}
 
 	for _, tt := range tests {
