@@ -692,7 +692,7 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 
 	// Verify required fields
-	requiredFields := []string{"model", "content", "input_tokens", "output_tokens", "stop_reason", "duration_ms", "tool_calls"}
+	requiredFields := []string{"model", "content", "input_tokens", "output_tokens", "stop_reason", "duration_ms", "tool_calls", "tool_call_details"}
 	for _, field := range requiredFields {
 		if _, ok := result[field]; !ok {
 			t.Errorf("expected JSON field %q to be present", field)
@@ -709,6 +709,18 @@ model = "anthropic/claude-sonnet-4-20250514"
 
 	if toolCalls, ok := result["tool_calls"].(float64); !ok || toolCalls != 0 {
 		t.Errorf("expected tool_calls 0, got %v", result["tool_calls"])
+	}
+
+	toolCallDetailsRaw, ok := result["tool_call_details"]
+	if !ok {
+		t.Fatalf("expected tool_call_details field to be present")
+	}
+	toolCallDetails, ok := toolCallDetailsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details to be array, got %T", toolCallDetailsRaw)
+	}
+	if len(toolCallDetails) != 0 {
+		t.Errorf("expected tool_call_details to be empty array, got length %d", len(toolCallDetails))
 	}
 
 	if durationMs, ok := result["duration_ms"].(float64); !ok || durationMs < 0 {
@@ -768,6 +780,41 @@ model = "anthropic/claude-sonnet-4-20250514"
 
 	if toolCalls, ok := result["tool_calls"].(float64); !ok || toolCalls != 1 {
 		t.Errorf("expected tool_calls 1, got %v", result["tool_calls"])
+	}
+
+	detailsRaw, ok := result["tool_call_details"]
+	if !ok {
+		t.Fatalf("expected tool_call_details field to be present")
+	}
+	details, ok := detailsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details to be array, got %T", detailsRaw)
+	}
+	if len(details) != 1 {
+		t.Fatalf("expected tool_call_details length 1, got %d", len(details))
+	}
+	entry, ok := details[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details[0] to be object, got %T", details[0])
+	}
+	if name, ok := entry["name"].(string); !ok || name != "call_agent" {
+		t.Fatalf("expected tool_call_details[0].name to be call_agent, got %v", entry["name"])
+	}
+	inputObj, ok := entry["input"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details[0].input to be object, got %T", entry["input"])
+	}
+	if _, ok := inputObj["agent"]; !ok {
+		t.Fatalf("expected input.agent key in tool_call_details[0].input")
+	}
+	if _, ok := inputObj["task"]; !ok {
+		t.Fatalf("expected input.task key in tool_call_details[0].input")
+	}
+	if isError, ok := entry["is_error"].(bool); !ok || isError {
+		t.Fatalf("expected tool_call_details[0].is_error to be false, got %v", entry["is_error"])
+	}
+	if out, ok := entry["output"].(string); !ok || out == "" {
+		t.Fatalf("expected tool_call_details[0].output to be non-empty string, got %v", entry["output"])
 	}
 
 	// Token sums: turn 1 (10+20) + turn 2 (10+5) = input 20, output 25
@@ -1451,6 +1498,36 @@ tools = ["read_file", "list_directory", "run_command"]
 		t.Errorf("expected tool_calls 3, got %v", result["tool_calls"])
 	}
 
+	detailsRaw, ok := result["tool_call_details"]
+	if !ok {
+		t.Fatalf("expected tool_call_details field to be present")
+	}
+	details, ok := detailsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details to be array, got %T", detailsRaw)
+	}
+	if len(details) != 3 {
+		t.Fatalf("expected tool_call_details length 3, got %d", len(details))
+	}
+	wantOrder := []string{"read_file", "list_directory", "run_command"}
+	for i, raw := range details {
+		entry, ok := raw.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected tool_call_details[%d] to be object, got %T", i, raw)
+		}
+		for _, key := range []string{"name", "input", "output", "is_error"} {
+			if _, ok := entry[key]; !ok {
+				t.Fatalf("expected tool_call_details[%d] to include key %q", i, key)
+			}
+		}
+		if name, ok := entry["name"].(string); !ok || name != wantOrder[i] {
+			t.Fatalf("expected tool_call_details[%d].name=%q, got %v", i, wantOrder[i], entry["name"])
+		}
+		if isError, ok := entry["is_error"].(bool); !ok || isError {
+			t.Fatalf("expected tool_call_details[%d].is_error=false, got %v", i, entry["is_error"])
+		}
+	}
+
 	if content, ok := result["content"].(string); !ok || content != "final" {
 		t.Errorf("expected content %q, got %v", "final", result["content"])
 	}
@@ -1523,6 +1600,106 @@ tools = ["read_file"]
 	}
 	if !strings.Contains(stderrStr, "Duration:") {
 		t.Errorf("expected stderr to contain 'Duration:', got: %s", stderrStr)
+	}
+}
+
+func TestIntegration_JSONOutput_ToolCallDetails_Truncation(t *testing.T) {
+	resetRunCmd(t)
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Reading big file.", []testutil.MockToolCall{
+			{ID: "tc_big", Name: "read_file", Input: map[string]string{"path": "big.txt"}},
+		}),
+		testutil.AnthropicResponse("done"),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "json-truncate", `name = "json-truncate"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["read_file"]
+`)
+
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "big.txt"), []byte(strings.Repeat("a", 2048)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "json-truncate", "--json", "--workdir", workdir})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+
+	var result map[string]interface{}
+	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+		t.Fatalf("expected valid JSON output, got parse error: %v\nraw: %q", jsonErr, buf.String())
+	}
+
+	details := result["tool_call_details"].([]interface{})
+	entry := details[0].(map[string]interface{})
+	output := entry["output"].(string)
+	if !strings.HasSuffix(output, "... (truncated)") {
+		t.Fatalf("expected output to end with truncation suffix, got %q", output)
+	}
+	if len(output) != 1039 {
+		t.Fatalf("expected output length 1039, got %d", len(output))
+	}
+}
+
+func TestIntegration_JSONOutput_ToolCallDetails_Error(t *testing.T) {
+	resetRunCmd(t)
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Reading escaped path.", []testutil.MockToolCall{
+			{ID: "tc_err", Name: "read_file", Input: map[string]string{"path": "../escape.txt"}},
+		}),
+		testutil.AnthropicResponse("done"),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "json-error", `name = "json-error"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["read_file"]
+`)
+
+	workdir := t.TempDir()
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "json-error", "--json", "--workdir", workdir})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+
+	var result map[string]interface{}
+	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+		t.Fatalf("expected valid JSON output, got parse error: %v\nraw: %q", jsonErr, buf.String())
+	}
+
+	details := result["tool_call_details"].([]interface{})
+	entry := details[0].(map[string]interface{})
+	if name, ok := entry["name"].(string); !ok || name != "read_file" {
+		t.Fatalf("expected name read_file, got %v", entry["name"])
+	}
+	if isError, ok := entry["is_error"].(bool); !ok || !isError {
+		t.Fatalf("expected is_error=true, got %v", entry["is_error"])
+	}
+	if output, ok := entry["output"].(string); !ok || strings.TrimSpace(output) == "" {
+		t.Fatalf("expected non-empty error output, got %v", entry["output"])
 	}
 }
 

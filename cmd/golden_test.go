@@ -78,6 +78,17 @@ func maskJSONOutput(output string) string {
 	}
 
 	envelope["duration_ms"] = "{{DURATION_MS}}"
+	if details, ok := envelope["tool_call_details"].([]interface{}); ok {
+		for _, raw := range details {
+			entry, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if _, hasOutput := entry["output"]; hasOutput {
+				entry["output"] = "{{TOOL_OUTPUT}}"
+			}
+		}
+	}
 
 	data, err := json.MarshalIndent(envelope, "", "  ")
 	if err != nil {
@@ -377,6 +388,15 @@ func TestMaskJSONOutput(t *testing.T) {
 		input string
 		check func(t *testing.T, got string)
 	}{
+		{
+			name:  "masks tool_call_details outputs",
+			input: `{"model":"gpt-4o","duration_ms":1,"tool_call_details":[{"name":"read_file","input":{"path":"a.txt"},"output":"dynamic text","is_error":false}]}`,
+			check: func(t *testing.T, got string) {
+				if !strings.Contains(got, `"output": "{{TOOL_OUTPUT}}"`) {
+					t.Errorf("expected tool_call_details output to be masked, got:\n%s", got)
+				}
+			},
+		},
 		{
 			name:  "masks duration_ms",
 			input: `{"model":"gpt-4o","content":"hello","duration_ms":42,"input_tokens":10,"output_tokens":5,"stop_reason":"stop","tool_calls":0}`,

@@ -5,5 +5,6 @@
   "model": "gpt-4o",
   "output_tokens": 5,
   "stop_reason": "stop",
+  "tool_call_details": [],
   "tool_calls": 0
 }

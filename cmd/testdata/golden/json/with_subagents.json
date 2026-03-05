@@ -5,5 +5,25 @@
   "model": "claude-sonnet-4-20250514",
   "output_tokens": 25,
   "stop_reason": "end_turn",
+  "tool_call_details": [
+    {
+      "input": {
+        "agent": "basic",
+        "task": "hello"
+      },
+      "is_error": false,
+      "name": "call_agent",
+      "output": "{{TOOL_OUTPUT}}"
+    },
+    {
+      "input": {
+        "agent": "with_skill",
+        "task": "hello"
+      },
+      "is_error": false,
+      "name": "call_agent",
+      "output": "{{TOOL_OUTPUT}}"
+    }
+  ],
   "tool_calls": 2
 }

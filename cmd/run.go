@@ -26,6 +26,15 @@ const defaultUserMessage = "Execute the task described in your instructions."
 // maxConversationTurns is the safety limit for the conversation loop.
 const maxConversationTurns = 50
 
+const maxToolOutputBytes = 1024
+
+type toolCallDetail struct {
+	Name    string            `json:"name"`
+	Input   map[string]string `json:"input"`
+	Output  string            `json:"output"`
+	IsError bool              `json:"is_error"`
+}
+
 var runCmd = &cobra.Command{
 	Use:   "run <agent>",
 	Short: "Run an agent",
@@ -65,6 +74,14 @@ func parseModel(model string) (providerName, modelName string, err error) {
 	}
 
 	return providerName, modelName, nil
+}
+
+func truncateOutput(s string) string {
+	if len(s) <= maxToolOutputBytes {
+		return s
+	}
+
+	return s[:maxToolOutputBytes] + "... (truncated)"
 }
 
 func runAgent(cmd *cobra.Command, args []string) error {
@@ -281,6 +298,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	var totalInputTokens int
 	var totalOutputTokens int
 	var totalToolCalls int
+	var allToolCallDetails []toolCallDetail
 
 	if len(req.Tools) == 0 {
 		// Single-shot: no tools, no conversation loop (identical to M4)
@@ -347,6 +365,22 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr(), workdir)
 			totalToolCalls += len(resp.ToolCalls)
 
+			if jsonOutput {
+				for i, tc := range resp.ToolCalls {
+					input := tc.Arguments
+					if input == nil {
+						input = map[string]string{}
+					}
+
+					allToolCallDetails = append(allToolCallDetails, toolCallDetail{
+						Name:    tc.Name,
+						Input:   input,
+						Output:  truncateOutput(results[i].Content),
+						IsError: results[i].IsError,
+					})
+				}
+			}
+
 			// Append tool result message
 			toolMsg := provider.Message{
 				Role:        "tool",
@@ -372,14 +406,19 @@ func runAgent(cmd *cobra.Command, args []string) error {
 
 	// Step 19: JSON output
 	if jsonOutput {
+		if allToolCallDetails == nil {
+			allToolCallDetails = make([]toolCallDetail, 0)
+		}
+
 		envelope := map[string]interface{}{
-			"model":         resp.Model,
-			"content":       resp.Content,
-			"input_tokens":  totalInputTokens,
-			"output_tokens": totalOutputTokens,
-			"stop_reason":   resp.StopReason,
-			"duration_ms":   durationMs,
-			"tool_calls":    totalToolCalls,
+			"model":             resp.Model,
+			"content":           resp.Content,
+			"input_tokens":      totalInputTokens,
+			"output_tokens":     totalOutputTokens,
+			"stop_reason":       resp.StopReason,
+			"duration_ms":       durationMs,
+			"tool_calls":        totalToolCalls,
+			"tool_call_details": allToolCallDetails,
 		}
 		data, err := json.Marshal(envelope)
 		if err != nil {

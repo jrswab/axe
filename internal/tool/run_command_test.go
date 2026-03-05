@@ -168,8 +168,13 @@ func TestRunCommand_WorkdirRespected(t *testing.T) {
 	if result.IsError {
 		t.Fatalf("unexpected error: %s", result.Content)
 	}
-	if !strings.Contains(result.Content, resolvedTmpdir) {
-		t.Errorf("Content %q should contain tmpdir %q", result.Content, resolvedTmpdir)
+	outputDir := strings.TrimSpace(result.Content)
+	resolvedOutputDir, err := filepath.EvalSymlinks(outputDir)
+	if err != nil {
+		t.Fatalf("failed to resolve output path %q: %v", outputDir, err)
+	}
+	if resolvedOutputDir != resolvedTmpdir {
+		t.Errorf("pwd output %q resolved to %q, want %q", outputDir, resolvedOutputDir, resolvedTmpdir)
 	}
 }
 
