@@ -82,7 +82,9 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 	if err != nil {
 		return provider.ToolResult{CallID: call.ID, Content: err.Error(), IsError: true}
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	statusCode = resp.StatusCode
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxReadBytes+1))
