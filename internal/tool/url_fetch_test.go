@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"bytes"
 	"context"
 	"net"
 	"net/http"
@@ -188,8 +189,15 @@ func TestURLFetch_ExactLimitNotTruncated(t *testing.T) {
 
 func TestURLFetch_ContextCancellation(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(10 * time.Second)
-		_, _ = w.Write([]byte("too late"))
+		timer := time.NewTimer(10 * time.Second)
+		defer timer.Stop()
+
+		select {
+		case <-r.Context().Done():
+			return
+		case <-timer.C:
+			_, _ = w.Write([]byte("too late"))
+		}
 	}))
 	defer ts.Close()
 
@@ -276,5 +284,32 @@ func TestURLFetch_Non2xxWithLargeBody(t *testing.T) {
 	}
 	if !strings.Contains(result.Content, "[response truncated, exceeded 10000 characters]") {
 		t.Errorf("Content missing truncation notice: %q", result.Content)
+	}
+}
+
+func TestURLFetch_VerboseLog_SanitizesURL(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer ts.Close()
+
+	targetURL := strings.Replace(ts.URL, "http://", "http://user:pass@", 1) + "/secret/path?token=abc#frag"
+
+	var stderr bytes.Buffer
+	entry := urlFetchEntry()
+	_ = entry.Execute(context.Background(), provider.ToolCall{ID: "uf-verbose", Arguments: map[string]string{"url": targetURL}}, ExecContext{Verbose: true, Stderr: &stderr})
+
+	logOutput := stderr.String()
+	if strings.Contains(logOutput, "user:pass") {
+		t.Errorf("verbose log leaked credentials: %q", logOutput)
+	}
+	if strings.Contains(logOutput, "token=abc") {
+		t.Errorf("verbose log leaked query string: %q", logOutput)
+	}
+	if strings.Contains(logOutput, "#frag") {
+		t.Errorf("verbose log leaked fragment: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "/secret/path") {
+		t.Errorf("verbose log missing sanitized path: %q", logOutput)
 	}
 }

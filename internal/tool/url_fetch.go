@@ -20,6 +20,24 @@ func truncateURL(urlStr string, maxLen int) string {
 	return urlStr[:maxLen] + "..."
 }
 
+func sanitizeURL(urlStr string) string {
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return "invalid-url"
+	}
+
+	if parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return "invalid-url"
+	}
+
+	path := parsedURL.EscapedPath()
+	if path == "" {
+		return parsedURL.Scheme + "://" + parsedURL.Host
+	}
+
+	return parsedURL.Scheme + "://" + parsedURL.Host + path
+}
+
 func urlFetchEntry() ToolEntry {
 	return ToolEntry{
 		Definition: urlFetchDefinition,
@@ -46,10 +64,10 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 	statusCode := 0
 
 	defer func() {
-		truncURL := truncateURL(urlStr, 120)
-		summary := fmt.Sprintf("url %q", truncURL)
+		safeURL := truncateURL(sanitizeURL(urlStr), 120)
+		summary := fmt.Sprintf("url %q", safeURL)
 		if statusCode != 0 {
-			summary = fmt.Sprintf("url %q (HTTP %d)", truncURL, statusCode)
+			summary = fmt.Sprintf("url %q (HTTP %d)", safeURL, statusCode)
 		} else if result.IsError {
 			summary = fmt.Sprintf("%s: %s", summary, truncateURL(result.Content, 120))
 		}
