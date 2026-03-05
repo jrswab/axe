@@ -174,7 +174,7 @@ model = "provider/model-name"
 # workdir = ""
 
 # Tools this agent can use (optional)
-# Valid: list_directory, read_file, write_file, edit_file, run_command
+# Valid: list_directory, read_file, write_file, edit_file, run_command, url_fetch
 # tools = []
 
 # Sub-agents this agent can invoke (optional)

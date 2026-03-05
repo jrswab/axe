@@ -10,6 +10,7 @@ const (
 	WriteFile     = "write_file"
 	EditFile      = "edit_file"
 	RunCommand    = "run_command"
+	URLFetch      = "url_fetch"
 )
 
 // ValidNames returns the set of tool names that can appear in an agent's
@@ -22,5 +23,6 @@ func ValidNames() map[string]bool {
 		WriteFile:     true,
 		EditFile:      true,
 		RunCommand:    true,
+		URLFetch:      true,
 	}
 }
