@@ -127,8 +127,8 @@ func TestOpenAI_Send_RequestFormat(t *testing.T) {
 	if gotMethod != "POST" {
 		t.Errorf("expected POST, got %s", gotMethod)
 	}
-	if gotPath != "/v1/chat/completions" {
-		t.Errorf("expected /v1/chat/completions, got %s", gotPath)
+	if gotPath != "/chat/completions" {
+		t.Errorf("expected /chat/completions, got %s", gotPath)
 	}
 	if gotAuth != "Bearer test-key" {
 		t.Errorf("expected 'Bearer test-key', got %q", gotAuth)
@@ -147,6 +147,35 @@ func TestOpenAI_Send_RequestFormat(t *testing.T) {
 	}
 	if gotSecondRole != "user" {
 		t.Errorf("expected second message role 'user', got %v", gotSecondRole)
+	}
+}
+
+func TestOpenAI_Send_CustomBaseURL_NoV1Prefix(t *testing.T) {
+	var gotPath string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":   "gpt-4o",
+			"choices": []map[string]interface{}{{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"}},
+			"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	// Custom base_url simulating Gloo: server.URL acts as "https://platform.ai.gloo.com/ai/v2"
+	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL+"/ai/v2"))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "gloo-anthropic-claude-sonnet-4.5",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Custom base URL should NOT get /v1 injected — path should be /ai/v2/chat/completions
+	if gotPath != "/ai/v2/chat/completions" {
+		t.Errorf("expected /ai/v2/chat/completions, got %s", gotPath)
 	}
 }
 

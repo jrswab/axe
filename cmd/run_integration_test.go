@@ -112,8 +112,8 @@ model = "openai/gpt-4o"
 		t.Errorf("expected 1 request, got %d", mock.RequestCount())
 	}
 
-	if mock.Requests[0].Path != "/v1/chat/completions" {
-		t.Errorf("expected path /v1/chat/completions, got %q", mock.Requests[0].Path)
+	if mock.Requests[0].Path != "/chat/completions" {
+		t.Errorf("expected path /chat/completions, got %q", mock.Requests[0].Path)
 	}
 
 	body := mock.Requests[0].Body

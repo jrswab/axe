@@ -11,7 +11,9 @@ import (
 
 const (
 	// defaultOpenAIBaseURL is the default OpenAI API base URL.
-	defaultOpenAIBaseURL = "https://api.openai.com"
+	// Includes /v1 so custom base URLs (e.g. Gloo, Azure) can set their
+	// own version prefix without the provider injecting /v1.
+	defaultOpenAIBaseURL = "https://api.openai.com/v1"
 )
 
 // OpenAIOption is a functional option for configuring the OpenAI provider.
@@ -244,7 +246,7 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/v1/chat/completions", bytes.NewReader(jsonBody))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/chat/completions", bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
