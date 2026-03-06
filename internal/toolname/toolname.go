@@ -11,6 +11,7 @@ const (
 	EditFile      = "edit_file"
 	RunCommand    = "run_command"
 	URLFetch      = "url_fetch"
+	WebSearch     = "web_search"
 )
 
 // ValidNames returns the set of tool names that can appear in an agent's
@@ -24,5 +25,6 @@ func ValidNames() map[string]bool {
 		EditFile:      true,
 		RunCommand:    true,
 		URLFetch:      true,
+		WebSearch:     true,
 	}
 }

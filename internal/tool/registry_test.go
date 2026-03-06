@@ -434,6 +434,34 @@ func TestRegisterAll_ResolvesURLFetch(t *testing.T) {
 	}
 }
 
+func TestRegisterAll_RegistersWebSearch(t *testing.T) {
+	r := NewRegistry()
+	RegisterAll(r)
+
+	if !r.Has(toolname.WebSearch) {
+		t.Fatalf("Has(%q) returned false after RegisterAll", toolname.WebSearch)
+	}
+}
+
+func TestRegisterAll_ResolvesWebSearch(t *testing.T) {
+	r := NewRegistry()
+	RegisterAll(r)
+
+	tools, err := r.Resolve([]string{toolname.WebSearch})
+	if err != nil {
+		t.Fatalf("Resolve returned error: %v", err)
+	}
+	if len(tools) != 1 {
+		t.Fatalf("expected 1 tool, got %d", len(tools))
+	}
+	if tools[0].Name != toolname.WebSearch {
+		t.Errorf("tool Name: got %q, want %q", tools[0].Name, toolname.WebSearch)
+	}
+	if _, ok := tools[0].Parameters["query"]; !ok {
+		t.Error("expected tool to have a 'query' parameter")
+	}
+}
+
 func TestRegisterAll_Idempotent(t *testing.T) {
 	r := NewRegistry()
 	RegisterAll(r)
