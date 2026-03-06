@@ -994,6 +994,74 @@ func TestValidate_MCPServers_MissingURL(t *testing.T) {
 	}
 }
 
+func TestValidate_MCPServers_MalformedURL(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "local", URL: "not a url", Transport: "sse"},
+		},
+	}
+
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "mcp_servers[0].url is invalid") {
+		t.Fatalf("got %q, want error containing 'mcp_servers[0].url is invalid'", err.Error())
+	}
+}
+
+func TestValidate_MCPServers_InvalidScheme(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "local", URL: "ftp://example.com/mcp", Transport: "sse"},
+		},
+	}
+
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got, want := err.Error(), `mcp_servers[0].url must use http or https scheme, got "ftp"`; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestValidate_MCPServers_MissingHost(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "local", URL: "http:///path-only", Transport: "sse"},
+		},
+	}
+
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got, want := err.Error(), "mcp_servers[0].url must include a host"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestValidate_MCPServers_ValidHTTPS(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "remote", URL: "https://example.com/mcp", Transport: "streamable-http"},
+		},
+	}
+
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+}
+
 func TestValidate_MCPServers_InvalidTransport(t *testing.T) {
 	cfg := &AgentConfig{
 		Name:  "test",

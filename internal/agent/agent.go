@@ -3,6 +3,7 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,6 +98,16 @@ func Validate(cfg *AgentConfig) error {
 		}
 		if strings.TrimSpace(server.URL) == "" {
 			return fmt.Errorf("mcp_servers[%d].url is required", i)
+		}
+		parsedURL, err := url.ParseRequestURI(strings.TrimSpace(server.URL))
+		if err != nil {
+			return fmt.Errorf("mcp_servers[%d].url is invalid: %v", i, err)
+		}
+		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+			return fmt.Errorf("mcp_servers[%d].url must use http or https scheme, got %q", i, parsedURL.Scheme)
+		}
+		if parsedURL.Host == "" {
+			return fmt.Errorf("mcp_servers[%d].url must include a host", i)
 		}
 		if server.Transport != "sse" && server.Transport != "streamable-http" {
 			return fmt.Errorf("mcp_servers[%d].transport must be one of: sse, streamable-http", i)
