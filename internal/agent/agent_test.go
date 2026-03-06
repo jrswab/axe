@@ -921,7 +921,7 @@ func TestScaffold_ContainsValidToolNames(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "# Valid: list_directory, read_file, write_file, edit_file, run_command, url_fetch") {
+	if !strings.Contains(out, "# Valid: list_directory, read_file, write_file, edit_file, run_command, url_fetch, web_search") {
 		t.Errorf("scaffold output missing valid tool names comment\nfull output:\n%s", out)
 	}
 }

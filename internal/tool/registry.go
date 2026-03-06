@@ -96,4 +96,5 @@ func RegisterAll(r *Registry) {
 	r.Register(toolname.EditFile, editFileEntry())
 	r.Register(toolname.RunCommand, runCommandEntry())
 	r.Register(toolname.URLFetch, urlFetchEntry())
+	r.Register(toolname.WebSearch, webSearchEntry())
 }
