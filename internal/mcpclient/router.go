@@ -9,7 +9,8 @@ import (
 
 // Router routes MCP tool calls to owning clients.
 type Router struct {
-	tools map[string]*Client
+	tools   map[string]*Client
+	clients []*Client
 }
 
 // NewRouter returns a new empty MCP tool router.
@@ -19,6 +20,7 @@ func NewRouter() *Router {
 
 // Register adds tool routes for a client and returns tools not skipped.
 func (r *Router) Register(client *Client, tools []provider.Tool, builtinNames map[string]bool) ([]provider.Tool, error) {
+	r.clients = append(r.clients, client)
 	filtered := make([]provider.Tool, 0, len(tools))
 	for _, tool := range tools {
 		if builtinNames[tool.Name] {
@@ -65,7 +67,7 @@ func (r *Router) Close() error {
 	closed := map[*Client]struct{}{}
 	var firstErr error
 
-	for _, client := range r.tools {
+	for _, client := range r.clients {
 		if _, seen := closed[client]; seen {
 			continue
 		}

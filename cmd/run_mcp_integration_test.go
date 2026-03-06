@@ -28,8 +28,15 @@ func newRunTestMCPServer(t *testing.T) *httptest.Server {
 			},
 			"required": []any{"name"},
 		},
-	}, func(_ context.Context, _ *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "hello axe"}}}, nil
+	}, func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args map[string]any
+		name := "unknown"
+		if err := json.Unmarshal(req.Params.Arguments, &args); err == nil {
+			if n, ok := args["name"].(string); ok && n != "" {
+				name = n
+			}
+		}
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf("hello %s", name)}}}, nil
 	})
 
 	h := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return s }, nil)

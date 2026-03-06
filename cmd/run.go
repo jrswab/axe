@@ -207,7 +207,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent, memoryEntries)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	ctx, cancel := context.WithTimeout(cmd.Context(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	// Step 12-13: Resolve API key and validate
@@ -311,9 +311,6 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			}
 
 			req.Tools = append(req.Tools, filtered...)
-			for _, t := range filtered {
-				builtinNames[t.Name] = true
-			}
 		}
 	}
 

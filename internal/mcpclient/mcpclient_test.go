@@ -2,8 +2,11 @@ package mcpclient
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -315,4 +318,100 @@ func newMCPComplexSchemaServer(t *testing.T) *httptest.Server {
 	ts := httptest.NewServer(h)
 	t.Cleanup(ts.Close)
 	return ts
+}
+
+func TestCoerceArg(t *testing.T) {
+	tests := []struct {
+		value    string
+		typeName string
+		want     any
+	}{
+		{"3", "integer", int64(3)},
+		{"-7", "integer", int64(-7)},
+		{"1.5", "number", 1.5},
+		{"-0.5", "number", -0.5},
+		{"true", "boolean", true},
+		{"false", "boolean", false},
+		{"hello", "string", "hello"},
+		{"hello", "", "hello"},
+		{"notanint", "integer", "notanint"},
+		{"notabool", "boolean", "notabool"},
+		{"notanum", "number", "notanum"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.value+"_"+tc.typeName, func(t *testing.T) {
+			got := coerceArg(tc.value, tc.typeName)
+			if got != tc.want {
+				t.Errorf("coerceArg(%q, %q) = %v (%T), want %v (%T)",
+					tc.value, tc.typeName, got, got, tc.want, tc.want)
+			}
+		})
+	}
+}
+
+func newMCPTypedArgsServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	s := mcp.NewServer(&mcp.Implementation{Name: "typed-server", Version: "1.0.0"}, nil)
+	s.AddTool(&mcp.Tool{
+		Name: "typed",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"count":   map[string]any{"type": "integer", "description": "a count"},
+				"enabled": map[string]any{"type": "boolean", "description": "flag"},
+				"ratio":   map[string]any{"type": "number", "description": "a ratio"},
+				"label":   map[string]any{"type": "string", "description": "a label"},
+			},
+		},
+	}, func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args map[string]any
+		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+			return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{
+				&mcp.TextContent{Text: fmt.Sprintf("unmarshal error: %v", err)},
+			}}, nil
+		}
+		var parts []string
+		for k, v := range args {
+			parts = append(parts, fmt.Sprintf("%s:%T", k, v))
+		}
+		sort.Strings(parts)
+		return &mcp.CallToolResult{Content: []mcp.Content{
+			&mcp.TextContent{Text: strings.Join(parts, ",")},
+		}}, nil
+	})
+	h := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return s }, nil)
+	ts := httptest.NewServer(h)
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+func TestCallTool_CoercesArgTypes(t *testing.T) {
+	ts := newMCPTypedArgsServer(t)
+	client := mustConnectTestClient(t, ts.URL)
+
+	// ListTools must be called first to populate schemas.
+	if _, err := client.ListTools(context.Background()); err != nil {
+		t.Fatalf("ListTools failed: %v", err)
+	}
+
+	result, err := client.CallTool(context.Background(), provider.ToolCall{
+		ID:   "call-typed",
+		Name: "typed",
+		Arguments: map[string]string{
+			"count":   "3",
+			"enabled": "true",
+			"ratio":   "1.5",
+			"label":   "hello",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CallTool failed: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected non-error, got: %s", result.Content)
+	}
+	// After coercion, count should arrive as a numeric type, not string.
+	if strings.Contains(result.Content, "count:string") {
+		t.Fatalf("count should be coerced from string, got: %s", result.Content)
+	}
 }

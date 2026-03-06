@@ -18,7 +18,7 @@ func ExpandHeaders(headers map[string]string) (map[string]string, error) {
 	for key, value := range headers {
 		replaced, err := expandValue(value)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("header %q: %w", key, err)
 		}
 		expanded[key] = replaced
 	}

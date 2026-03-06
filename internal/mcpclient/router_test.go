@@ -114,8 +114,11 @@ func TestRouter_Register_MCPCollision(t *testing.T) {
 func TestRouter_Close_ClosesAllClients(t *testing.T) {
 	r := NewRouter()
 	var closed int32
-	r.tools["a"] = &Client{name: "a", closeFn: func() error { atomic.AddInt32(&closed, 1); return nil }}
-	r.tools["b"] = &Client{name: "b", closeFn: func() error { atomic.AddInt32(&closed, 1); return nil }}
+	clientA := &Client{name: "a", closeFn: func() error { atomic.AddInt32(&closed, 1); return nil }}
+	clientB := &Client{name: "b", closeFn: func() error { atomic.AddInt32(&closed, 1); return nil }}
+	r.tools["a"] = clientA
+	r.tools["b"] = clientB
+	r.clients = append(r.clients, clientA, clientB)
 
 	if err := r.Close(); err != nil {
 		t.Fatalf("Close failed: %v", err)
@@ -131,6 +134,7 @@ func TestRouter_Close_DeduplicatesClients(t *testing.T) {
 	shared := &Client{name: "shared", closeFn: func() error { atomic.AddInt32(&closed, 1); return nil }}
 	r.tools["a"] = shared
 	r.tools["b"] = shared
+	r.clients = append(r.clients, shared, shared)
 
 	if err := r.Close(); err != nil {
 		t.Fatalf("Close failed: %v", err)
@@ -140,11 +144,36 @@ func TestRouter_Close_DeduplicatesClients(t *testing.T) {
 	}
 }
 
+func TestRouter_Close_ClosesZeroToolClients(t *testing.T) {
+	r := NewRouter()
+	var closed int32
+	zeroToolClient := &Client{name: "zero", closeFn: func() error {
+		atomic.AddInt32(&closed, 1)
+		return nil
+	}}
+
+	// Register with all tools filtered out (all are builtins).
+	_, err := r.Register(zeroToolClient, []provider.Tool{{Name: "builtin_a"}}, map[string]bool{"builtin_a": true})
+	if err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	if err := r.Close(); err != nil {
+		t.Fatalf("Close failed: %v", err)
+	}
+	if got := atomic.LoadInt32(&closed); got != 1 {
+		t.Fatalf("close count = %d, want 1 (zero-tool client not closed)", got)
+	}
+}
+
 func TestRouter_Close_ReturnsFirstError(t *testing.T) {
 	r := NewRouter()
 	errBoom := errors.New("boom")
-	r.tools["a"] = &Client{name: "a", closeFn: func() error { return errBoom }}
-	r.tools["b"] = &Client{name: "b", closeFn: func() error { return nil }}
+	clientA := &Client{name: "a", closeFn: func() error { return errBoom }}
+	clientB := &Client{name: "b", closeFn: func() error { return nil }}
+	r.tools["a"] = clientA
+	r.tools["b"] = clientB
+	r.clients = append(r.clients, clientA, clientB)
 
 	err := r.Close()
 	if err == nil {

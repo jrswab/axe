@@ -82,7 +82,7 @@ func TestExpandHeaders_MissingVar(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if got, want := err.Error(), `environment variable "MISSING_TOKEN" is not set or empty`; got != want {
+	if got, want := err.Error(), `header "Authorization": environment variable "MISSING_TOKEN" is not set or empty`; got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
 }
@@ -95,7 +95,7 @@ func TestExpandHeaders_EmptyVar(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if got, want := err.Error(), `environment variable "TOKEN" is not set or empty`; got != want {
+	if got, want := err.Error(), `header "Authorization": environment variable "TOKEN" is not set or empty`; got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
 }
