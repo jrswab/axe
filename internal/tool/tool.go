@@ -9,6 +9,7 @@ import (
 
 	"github.com/jrswab/axe/internal/agent"
 	"github.com/jrswab/axe/internal/config"
+	"github.com/jrswab/axe/internal/mcpclient"
 	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/resolve"
@@ -30,6 +31,7 @@ type ExecuteOptions struct {
 	MaxDepth      int
 	Timeout       int
 	GlobalConfig  *config.GlobalConfig
+	MCPRouter     *mcpclient.Router
 	Verbose       bool
 	Stderr        io.Writer
 }
@@ -249,6 +251,40 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		req.Tools = append(req.Tools, resolvedTools...)
 	}
 
+	var mcpRouter *mcpclient.Router
+	if len(cfg.MCPServers) > 0 {
+		mcpRouter = mcpclient.NewRouter()
+		defer func() { _ = mcpRouter.Close() }()
+
+		builtinNames := make(map[string]bool, len(req.Tools)+1)
+		for _, t := range req.Tools {
+			builtinNames[t.Name] = true
+		}
+		if len(cfg.SubAgents) > 0 && newDepth < opts.MaxDepth {
+			builtinNames[CallAgentToolName] = true
+		}
+
+		for _, serverCfg := range cfg.MCPServers {
+			client, connErr := mcpclient.Connect(ctx, serverCfg)
+			if connErr != nil {
+				return errorResult(call.ID, agentName, fmt.Sprintf("failed to connect MCP server %q: %s", serverCfg.Name, connErr), opts)
+			}
+
+			tools, listErr := client.ListTools(ctx)
+			if listErr != nil {
+				_ = client.Close()
+				return errorResult(call.ID, agentName, fmt.Sprintf("failed to list MCP tools from %q: %s", serverCfg.Name, listErr), opts)
+			}
+
+			filtered, registerErr := mcpRouter.Register(client, tools, builtinNames)
+			if registerErr != nil {
+				_ = client.Close()
+				return errorResult(call.ID, agentName, fmt.Sprintf("failed to register MCP tools from %q: %s", serverCfg.Name, registerErr), opts)
+			}
+			req.Tools = append(req.Tools, filtered...)
+		}
+	}
+
 	// Step 13: Create timeout context
 	var callCtx context.Context
 	var cancel context.CancelFunc
@@ -260,7 +296,9 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 	defer cancel()
 
 	// Step 14: Run conversation loop (or single-shot if no tools)
-	resp, err := runConversationLoop(callCtx, prov, req, cfg, registry, newDepth, opts, workdir)
+	runOpts := opts
+	runOpts.MCPRouter = mcpRouter
+	resp, err := runConversationLoop(callCtx, prov, req, cfg, registry, newDepth, runOpts, workdir)
 	if err != nil {
 		durationMs := time.Since(start).Milliseconds()
 		if opts.Verbose && opts.Stderr != nil {
@@ -329,7 +367,9 @@ func runConversationLoop(ctx context.Context, prov provider.Provider, req *provi
 		// Execute tool calls and collect results
 		results := make([]provider.ToolResult, len(resp.ToolCalls))
 		for i, tc := range resp.ToolCalls {
-			if tc.Name == CallAgentToolName {
+			if opts.MCPRouter != nil && opts.MCPRouter.Has(tc.Name) {
+				results[i] = dispatchToolCall(ctx, tc, registry, opts, toolWorkdir)
+			} else if tc.Name == CallAgentToolName {
 				subOpts := ExecuteOptions{
 					AllowedAgents: cfg.SubAgents,
 					ParentModel:   cfg.Model,
@@ -337,26 +377,13 @@ func runConversationLoop(ctx context.Context, prov provider.Provider, req *provi
 					MaxDepth:      opts.MaxDepth,
 					Timeout:       opts.Timeout,
 					GlobalConfig:  opts.GlobalConfig,
+					MCPRouter:     nil,
 					Verbose:       opts.Verbose,
 					Stderr:        opts.Stderr,
 				}
 				results[i] = ExecuteCallAgent(ctx, tc, subOpts)
 			} else {
-				execCtx := ExecContext{
-					Workdir: toolWorkdir,
-					Stderr:  opts.Stderr,
-					Verbose: opts.Verbose,
-				}
-				result, dispatchErr := registry.Dispatch(ctx, tc, execCtx)
-				if dispatchErr != nil {
-					results[i] = provider.ToolResult{
-						CallID:  tc.ID,
-						Content: dispatchErr.Error(),
-						IsError: true,
-					}
-				} else {
-					results[i] = result
-				}
+				results[i] = dispatchToolCall(ctx, tc, registry, opts, toolWorkdir)
 			}
 		}
 
@@ -369,6 +396,23 @@ func runConversationLoop(ctx context.Context, prov provider.Provider, req *provi
 	}
 
 	return nil, fmt.Errorf("sub-agent exceeded maximum conversation turns (%d)", maxConversationTurns)
+}
+
+func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *Registry, opts ExecuteOptions, toolWorkdir string) provider.ToolResult {
+	if opts.MCPRouter != nil && opts.MCPRouter.Has(tc.Name) {
+		result, err := opts.MCPRouter.Dispatch(ctx, tc)
+		if err != nil {
+			return provider.ToolResult{CallID: tc.ID, Content: err.Error(), IsError: true}
+		}
+		return result
+	}
+
+	execCtx := ExecContext{Workdir: toolWorkdir, Stderr: opts.Stderr, Verbose: opts.Verbose}
+	result, dispatchErr := registry.Dispatch(ctx, tc, execCtx)
+	if dispatchErr != nil {
+		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}
+	}
+	return result
 }
 
 // errorResult creates an error ToolResult for a sub-agent failure.

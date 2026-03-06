@@ -943,3 +943,208 @@ func TestScaffold_ToolsBeforeSubAgents(t *testing.T) {
 		t.Errorf("tools section (pos %d) should appear before sub_agents section (pos %d)", toolsIdx, subAgentsIdx)
 	}
 }
+
+func TestValidate_MCPServers_Valid(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "local", URL: "http://localhost:8080/mcp", Transport: "streamable-http"},
+		},
+	}
+
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+}
+
+func TestValidate_MCPServers_MissingName(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "", URL: "http://localhost:8080/mcp", Transport: "sse"},
+		},
+	}
+
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got, want := err.Error(), `mcp_servers[0].name is required`; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestValidate_MCPServers_MissingURL(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "local", URL: "", Transport: "sse"},
+		},
+	}
+
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got, want := err.Error(), `mcp_servers[0].url is required`; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestValidate_MCPServers_InvalidTransport(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "local", URL: "http://localhost:8080/mcp", Transport: "stdio"},
+		},
+	}
+
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got, want := err.Error(), `mcp_servers[0].transport must be one of: sse, streamable-http`; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestValidate_MCPServers_ValidTransports(t *testing.T) {
+	tests := []struct {
+		name      string
+		transport string
+	}{
+		{name: "sse", transport: "sse"},
+		{name: "streamable-http", transport: "streamable-http"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &AgentConfig{
+				Name:  "test",
+				Model: "openai/gpt-4o",
+				MCPServers: []MCPServerConfig{
+					{Name: "local", URL: "http://localhost:8080/mcp", Transport: tc.transport},
+				},
+			}
+
+			if err := Validate(cfg); err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+		})
+	}
+}
+
+func TestValidate_MCPServers_DuplicateNames(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		MCPServers: []MCPServerConfig{
+			{Name: "local", URL: "http://localhost:8080/one", Transport: "sse"},
+			{Name: "local", URL: "http://localhost:8080/two", Transport: "streamable-http"},
+		},
+	}
+
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got, want := err.Error(), `mcp_servers names must be unique: "local"`; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestParseTOML_MCPServers(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "mcp-agent"
+model = "openai/gpt-4o"
+
+[[mcp_servers]]
+name = "github"
+url = "https://example.com/mcp"
+transport = "streamable-http"
+headers = { Authorization = "Bearer ${TOKEN}", "X-Foo" = "bar" }
+
+[[mcp_servers]]
+name = "files"
+url = "https://example.com/sse"
+transport = "sse"
+`
+	writeAgentFile(t, agentsDir, "mcp-agent", tomlContent)
+
+	cfg, err := Load("mcp-agent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(cfg.MCPServers) != 2 {
+		t.Fatalf("MCPServers length = %d, want 2", len(cfg.MCPServers))
+	}
+	if cfg.MCPServers[0].Name != "github" {
+		t.Errorf("MCPServers[0].Name = %q, want github", cfg.MCPServers[0].Name)
+	}
+	if cfg.MCPServers[0].URL != "https://example.com/mcp" {
+		t.Errorf("MCPServers[0].URL = %q, want https://example.com/mcp", cfg.MCPServers[0].URL)
+	}
+	if cfg.MCPServers[0].Transport != "streamable-http" {
+		t.Errorf("MCPServers[0].Transport = %q, want streamable-http", cfg.MCPServers[0].Transport)
+	}
+	if len(cfg.MCPServers[0].Headers) != 2 {
+		t.Fatalf("MCPServers[0].Headers length = %d, want 2", len(cfg.MCPServers[0].Headers))
+	}
+	if cfg.MCPServers[0].Headers["Authorization"] != "Bearer ${TOKEN}" {
+		t.Errorf("MCPServers[0].Headers[Authorization] = %q, want Bearer ${TOKEN}", cfg.MCPServers[0].Headers["Authorization"])
+	}
+	if cfg.MCPServers[1].Name != "files" {
+		t.Errorf("MCPServers[1].Name = %q, want files", cfg.MCPServers[1].Name)
+	}
+	if cfg.MCPServers[1].Transport != "sse" {
+		t.Errorf("MCPServers[1].Transport = %q, want sse", cfg.MCPServers[1].Transport)
+	}
+}
+
+func TestParseTOML_MCPServers_Empty(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "no-mcp"
+model = "openai/gpt-4o"
+`
+	writeAgentFile(t, agentsDir, "no-mcp", tomlContent)
+
+	cfg, err := Load("no-mcp")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.MCPServers != nil {
+		t.Errorf("MCPServers = %v, want nil", cfg.MCPServers)
+	}
+}
+
+func TestScaffold_IncludesMCPServersExample(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	checks := []string{
+		"# MCP server connections (optional)",
+		"# [[mcp_servers]]",
+		"# name = \"my-tools\"",
+		"# url = \"https://my-mcp-server.example.com/sse\"",
+		"# transport = \"sse\"",
+		"# headers = { Authorization = \"Bearer ${MY_TOKEN}\" }",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(out, check) {
+			t.Fatalf("scaffold output missing %q", check)
+		}
+	}
+}

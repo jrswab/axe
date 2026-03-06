@@ -52,5 +52,8 @@ Plain text, single line.
 --- Tools ---
 (none)
 
+--- MCP Servers ---
+(none)
+
 --- Sub-Agents ---
 (none)

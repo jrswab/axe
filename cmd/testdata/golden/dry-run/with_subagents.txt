@@ -20,6 +20,9 @@ Params:   temperature=0, max_tokens=0
 --- Tools ---
 (none)
 
+--- MCP Servers ---
+(none)
+
 --- Sub-Agents ---
 basic, with_skill
 Max Depth: 3

@@ -269,6 +269,63 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 }
 
+func TestRunCmd_DryRun_WithMCPServers(t *testing.T) {
+	resetRunCmd(t)
+	setupRunTestAgent(t, "dry-mcp", `name = "dry-mcp"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[[mcp_servers]]
+name = "github"
+url = "https://mcp.example.com"
+transport = "streamable-http"
+`)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "dry-mcp", "--dry-run"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "--- MCP Servers ---") {
+		t.Fatal("expected MCP servers section")
+	}
+	if !strings.Contains(output, "github: https://mcp.example.com (streamable-http)") {
+		t.Fatalf("expected configured MCP server line, got %q", output)
+	}
+}
+
+func TestRunCmd_DryRun_NoMCPServers(t *testing.T) {
+	resetRunCmd(t)
+	setupRunTestAgent(t, "dry-no-mcp", `name = "dry-no-mcp"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "dry-no-mcp", "--dry-run"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "--- MCP Servers ---") {
+		t.Fatal("expected MCP servers section")
+	}
+	if !strings.Contains(output, "--- MCP Servers ---\n(none)") {
+		t.Fatalf("expected MCP section to show (none), got %q", output)
+	}
+}
+
 // --- Phase 11e: LLM Call and Default Output ---
 
 func TestRun_Success(t *testing.T) {

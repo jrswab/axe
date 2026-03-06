@@ -13,6 +13,7 @@ import (
 
 	"github.com/jrswab/axe/internal/agent"
 	"github.com/jrswab/axe/internal/config"
+	"github.com/jrswab/axe/internal/mcpclient"
 	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/refusal"
@@ -206,6 +207,9 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent, memoryEntries)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+
 	// Step 12-13: Resolve API key and validate
 	apiKey := globalCfg.ResolveAPIKey(provName)
 	baseURL := globalCfg.ResolveBaseURL(provName)
@@ -261,6 +265,58 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		req.Tools = append(req.Tools, tool.CallAgentTool(cfg.SubAgents))
 	}
 
+	var mcpRouter *mcpclient.Router
+	if len(cfg.MCPServers) > 0 {
+		mcpRouter = mcpclient.NewRouter()
+		defer func() { _ = mcpRouter.Close() }()
+
+		builtinNames := make(map[string]bool, len(req.Tools))
+		for _, t := range req.Tools {
+			builtinNames[t.Name] = true
+		}
+
+		for _, serverCfg := range cfg.MCPServers {
+			if verbose {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[mcp] Connecting to %q at %s (%s)\n", serverCfg.Name, serverCfg.URL, serverCfg.Transport)
+			}
+
+			client, connErr := mcpclient.Connect(ctx, serverCfg)
+			if connErr != nil {
+				code := 3
+				if strings.Contains(connErr.Error(), "environment variable") || strings.Contains(connErr.Error(), "unsupported MCP transport") {
+					code = 2
+				}
+				return &ExitError{Code: code, Err: fmt.Errorf("failed to connect MCP server %q: %w", serverCfg.Name, connErr)}
+			}
+
+			mcpTools, listErr := client.ListTools(ctx)
+			if listErr != nil {
+				_ = client.Close()
+				return &ExitError{Code: 3, Err: fmt.Errorf("failed to list tools from MCP server %q: %w", serverCfg.Name, listErr)}
+			}
+
+			filtered, registerErr := mcpRouter.Register(client, mcpTools, builtinNames)
+			if registerErr != nil {
+				_ = client.Close()
+				return &ExitError{Code: 2, Err: fmt.Errorf("failed to register MCP tools from %q: %w", serverCfg.Name, registerErr)}
+			}
+
+			if verbose {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[mcp] %q discovered %d tool(s), registered %d\n", serverCfg.Name, len(mcpTools), len(filtered))
+				for _, discovered := range mcpTools {
+					if builtinNames[discovered.Name] {
+						_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[mcp] Skipping %q from %q (conflicts with built-in tool)\n", discovered.Name, serverCfg.Name)
+					}
+				}
+			}
+
+			req.Tools = append(req.Tools, filtered...)
+			for _, t := range filtered {
+				builtinNames[t.Name] = true
+			}
+		}
+	}
+
 	// Verbose: pre-call info
 	if verbose {
 		skillDisplay := skillPath
@@ -286,10 +342,6 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-
-	// Step 17: Create context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	defer cancel()
 
 	// Step 18: Call provider (conversation loop when tools are present)
 	start := time.Now()
@@ -370,7 +422,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			req.Messages = append(req.Messages, assistantMsg)
 
 			// Execute tool calls
-			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr(), workdir)
+			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, mcpRouter, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr(), workdir)
 			totalToolCalls += len(resp.ToolCalls)
 
 			if jsonOutput {
@@ -513,6 +565,16 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 	}
 
 	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "--- MCP Servers ---")
+	if len(cfg.MCPServers) > 0 {
+		for _, srv := range cfg.MCPServers {
+			_, _ = fmt.Fprintf(out, "%s: %s (%s)\n", srv.Name, srv.URL, srv.Transport)
+		}
+	} else {
+		_, _ = fmt.Fprintln(out, "(none)")
+	}
+
+	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "--- Sub-Agents ---")
 	if len(cfg.SubAgents) > 0 {
 		_, _ = fmt.Fprintln(out, strings.Join(cfg.SubAgents, ", "))
@@ -537,7 +599,7 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 
 // executeToolCalls dispatches tool calls and returns results.
 // When parallel is true and there are multiple calls, they run concurrently.
-func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string) []provider.ToolResult {
+func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string) []provider.ToolResult {
 	results := make([]provider.ToolResult, len(toolCalls))
 
 	execOpts := tool.ExecuteOptions{
@@ -547,6 +609,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		MaxDepth:      maxDepth,
 		Timeout:       cfg.SubAgentsConf.Timeout,
 		GlobalConfig:  globalCfg,
+		MCPRouter:     mcpRouter,
 		Verbose:       verbose,
 		Stderr:        stderr,
 	}
@@ -554,19 +617,12 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 	if len(toolCalls) == 1 || !parallel {
 		// Sequential execution (also used for single call)
 		for i, tc := range toolCalls {
-			if tc.Name == tool.CallAgentToolName {
+			if mcpRouter != nil && mcpRouter.Has(tc.Name) {
+				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir)
+			} else if tc.Name == tool.CallAgentToolName {
 				results[i] = tool.ExecuteCallAgent(ctx, tc, execOpts)
 			} else {
-				result, dispatchErr := registry.Dispatch(ctx, tc, tool.ExecContext{Workdir: workdir, Stderr: stderr, Verbose: verbose})
-				if dispatchErr != nil {
-					results[i] = provider.ToolResult{
-						CallID:  tc.ID,
-						Content: dispatchErr.Error(),
-						IsError: true,
-					}
-				} else {
-					results[i] = result
-				}
+				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir)
 			}
 		}
 	} else {
@@ -579,19 +635,12 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		for i, tc := range toolCalls {
 			go func(idx int, call provider.ToolCall) {
 				var res provider.ToolResult
-				if call.Name == tool.CallAgentToolName {
+				if mcpRouter != nil && mcpRouter.Has(call.Name) {
+					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir)
+				} else if call.Name == tool.CallAgentToolName {
 					res = tool.ExecuteCallAgent(ctx, call, execOpts)
 				} else {
-					result, dispatchErr := registry.Dispatch(ctx, call, tool.ExecContext{Workdir: workdir, Stderr: stderr, Verbose: verbose})
-					if dispatchErr != nil {
-						res = provider.ToolResult{
-							CallID:  call.ID,
-							Content: dispatchErr.Error(),
-							IsError: true,
-						}
-					} else {
-						res = result
-					}
+					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir)
 				}
 				ch <- indexedResult{index: idx, result: res}
 			}(i, tc)
@@ -603,6 +652,27 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 	}
 
 	return results
+}
+
+func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.Registry, mcpRouter *mcpclient.Router, verbose bool, stderr io.Writer, workdir string) provider.ToolResult {
+	if mcpRouter != nil && mcpRouter.Has(tc.Name) {
+		if verbose && stderr != nil {
+			if serverName, ok := mcpRouter.ServerName(tc.Name); ok {
+				_, _ = fmt.Fprintf(stderr, "[mcp] Routing tool %q to server %q\n", tc.Name, serverName)
+			}
+		}
+		result, err := mcpRouter.Dispatch(ctx, tc)
+		if err != nil {
+			return provider.ToolResult{CallID: tc.ID, Content: err.Error(), IsError: true}
+		}
+		return result
+	}
+
+	result, dispatchErr := registry.Dispatch(ctx, tc, tool.ExecContext{Workdir: workdir, Stderr: stderr, Verbose: verbose})
+	if dispatchErr != nil {
+		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}
+	}
+	return result
 }
 
 // mapProviderError converts a provider error to an ExitError with the correct exit code.

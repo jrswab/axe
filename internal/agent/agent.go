@@ -33,20 +33,29 @@ type SubAgentsConfig struct {
 	Timeout  int   `toml:"timeout"`
 }
 
+// MCPServerConfig holds Model Context Protocol server configuration.
+type MCPServerConfig struct {
+	Name      string            `toml:"name"`
+	URL       string            `toml:"url"`
+	Transport string            `toml:"transport"`
+	Headers   map[string]string `toml:"headers"`
+}
+
 // AgentConfig represents a parsed agent TOML configuration file.
 type AgentConfig struct {
-	Name          string          `toml:"name"`
-	Description   string          `toml:"description"`
-	Model         string          `toml:"model"`
-	SystemPrompt  string          `toml:"system_prompt"`
-	Skill         string          `toml:"skill"`
-	Files         []string        `toml:"files"`
-	Workdir       string          `toml:"workdir"`
-	Tools         []string        `toml:"tools"`
-	SubAgents     []string        `toml:"sub_agents"`
-	SubAgentsConf SubAgentsConfig `toml:"sub_agents_config"`
-	Memory        MemoryConfig    `toml:"memory"`
-	Params        ParamsConfig    `toml:"params"`
+	Name          string            `toml:"name"`
+	Description   string            `toml:"description"`
+	Model         string            `toml:"model"`
+	SystemPrompt  string            `toml:"system_prompt"`
+	Skill         string            `toml:"skill"`
+	Files         []string          `toml:"files"`
+	Workdir       string            `toml:"workdir"`
+	Tools         []string          `toml:"tools"`
+	MCPServers    []MCPServerConfig `toml:"mcp_servers"`
+	SubAgents     []string          `toml:"sub_agents"`
+	SubAgentsConf SubAgentsConfig   `toml:"sub_agents_config"`
+	Memory        MemoryConfig      `toml:"memory"`
+	Params        ParamsConfig      `toml:"params"`
 }
 
 // Validate checks that required fields are present in the agent configuration.
@@ -79,6 +88,23 @@ func Validate(cfg *AgentConfig) error {
 		if !validTools[name] {
 			return fmt.Errorf("unknown tool %q in tools config", name)
 		}
+	}
+
+	seenMCPNames := make(map[string]struct{}, len(cfg.MCPServers))
+	for i, server := range cfg.MCPServers {
+		if strings.TrimSpace(server.Name) == "" {
+			return fmt.Errorf("mcp_servers[%d].name is required", i)
+		}
+		if strings.TrimSpace(server.URL) == "" {
+			return fmt.Errorf("mcp_servers[%d].url is required", i)
+		}
+		if server.Transport != "sse" && server.Transport != "streamable-http" {
+			return fmt.Errorf("mcp_servers[%d].transport must be one of: sse, streamable-http", i)
+		}
+		if _, exists := seenMCPNames[server.Name]; exists {
+			return fmt.Errorf("mcp_servers names must be unique: %q", server.Name)
+		}
+		seenMCPNames[server.Name] = struct{}{}
 	}
 	return nil
 }
@@ -184,6 +210,13 @@ model = "provider/model-name"
 # max_depth = 3
 # parallel = true
 # timeout = 120
+
+# MCP server connections (optional)
+# [[mcp_servers]]
+# name = "my-tools"
+# url = "https://my-mcp-server.example.com/sse"
+# transport = "sse"
+# headers = { Authorization = "Bearer ${MY_TOKEN}" }
 
 # [memory]
 # enabled = false

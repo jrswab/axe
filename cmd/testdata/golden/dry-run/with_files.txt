@@ -20,5 +20,8 @@ Params:   temperature=0, max_tokens=0
 --- Tools ---
 (none)
 
+--- MCP Servers ---
+(none)
+
 --- Sub-Agents ---
 (none)
