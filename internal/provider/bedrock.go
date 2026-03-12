@@ -196,6 +196,9 @@ func convertFromBedrockResponse(output types.ConverseOutput, usage *types.TokenU
 		case *types.ContentBlockMemberText:
 			textContent += v.Value
 		case *types.ContentBlockMemberToolUse:
+			if v.Value.ToolUseId == nil || v.Value.Name == nil {
+				continue // Skip malformed tool use blocks
+			}
 			args := make(map[string]string)
 			// Decode document to map
 			var inputMap map[string]interface{}
@@ -309,7 +312,7 @@ func (b *Bedrock) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	inferenceConfig := &types.InferenceConfiguration{}
-	if req.Temperature > 0 {
+	if req.Temperature != 0 {
 		temp := float32(req.Temperature)
 		inferenceConfig.Temperature = &temp
 	}
@@ -317,7 +320,7 @@ func (b *Bedrock) Send(ctx context.Context, req *Request) (*Response, error) {
 		maxTokens := int32(req.MaxTokens)
 		inferenceConfig.MaxTokens = &maxTokens
 	}
-	if req.Temperature > 0 || req.MaxTokens > 0 {
+	if req.Temperature != 0 || req.MaxTokens > 0 {
 		input.InferenceConfig = inferenceConfig
 	}
 
