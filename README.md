@@ -1,6 +1,6 @@
-![axe banner](banner.png)
+# Axe
 
-# axe
+![axe banner](banner.png)
 
 A CLI tool for managing and running LLM-powered agents.
 
@@ -12,17 +12,13 @@ Axe treats LLM agents the same way Unix treats programs. Each agent does one thi
 
 ## Overview
 
-Axe orchestrates LLM-powered agents defined via TOML configuration files. Each
-agent has its own system prompt, model selection, skill files, context files,
-working directory, persistent memory, and the ability to delegate to sub-agents.
+Axe orchestrates LLM-powered agents defined via TOML configuration files. Each agent has its own system prompt, model selection, skill files, context files, working directory, persistent memory, and the ability to delegate to sub-agents.
 
-Axe is the executor, not the scheduler. It is designed to be composed with
-standard Unix tools — cron, git hooks, pipes, file watchers — rather than
-reinventing scheduling or workflow orchestration.
+Axe is the executor, not the scheduler. It is designed to be composed with standard Unix tools — cron, git hooks, pipes, file watchers — rather than reinventing scheduling or workflow orchestration.
 
 ## Features
 
-- **Multi-provider support** — Anthropic, OpenAI, and Ollama (local models)
+- **Multi-provider support** — Anthropic, OpenAI, Ollama (local models), OpenCode, and AWS Bedrock
 - **TOML-based agent configuration** — declarative, version-controllable agent definitions
 - **Sub-agent delegation** — agents can call other agents via LLM tool use, with depth limiting and parallel execution
 - **Persistent memory** — timestamped markdown logs that carry context across runs
@@ -31,13 +27,13 @@ reinventing scheduling or workflow orchestration.
 - **Stdin piping** — pipe any output directly into an agent (`git diff | axe run reviewer`)
 - **Dry-run mode** — inspect resolved context without calling the LLM
 - **JSON output** — structured output with metadata for scripting
-- **Built-in tools** — file operations (read, write, edit, list), shell command execution, all sandboxed to the agent's working directory
+- **Built-in tools** — file operations (read, write, edit, list) sandboxed to working directory; shell command execution; URL fetching; web search
 - **MCP tool support** — connect to external MCP servers for additional tools via SSE or streamable-HTTP transport
-- **Minimal dependencies** — four direct dependencies (cobra, toml, mcp-go-sdk, x/net); all LLM calls use the standard library
+- **Minimal dependencies** — four direct dependencies (cobra, toml, mcp-go-sdk, x/net); AWS SDK v2 for Bedrock support
 
 ## Installation
 
-Requires Go 1.24+.
+Requires Go 1.25+.
 
 ```bash
 go install github.com/jrswab/axe@latest
@@ -59,8 +55,7 @@ Initialize the configuration directory:
 axe config init
 ```
 
-This creates the directory structure at `$XDG_CONFIG_HOME/axe/` with a sample
-skill and a default `config.toml` for provider credentials.
+This creates the directory structure at `$XDG_CONFIG_HOME/axe/` with a sample skill and a default `config.toml` for provider credentials.
 
 Scaffold a new agent:
 
@@ -89,9 +84,7 @@ cat error.log | axe run log-analyzer
 
 ## Examples
 
-The [`examples/`](examples/) directory contains ready-to-run agents you can copy
-into your config and use immediately. Includes a code reviewer, commit message
-generator, and text summarizer — each with a focused SKILL.md.
+The [`examples/`](examples/) directory contains ready-to-run agents you can copy into your config and use immediately. Includes a code reviewer, commit message generator, and text summarizer — each with a focused SKILL.md.
 
 ```bash
 # Copy an example agent into your config
@@ -141,15 +134,11 @@ git diff | docker run --rm -i \
   axe run pr-reviewer
 ```
 
-Without a config volume mounted, axe exits with code 2 (config error) because no
-agent TOML files exist.
+Without a config volume mounted, axe exits with code 2 (config error) because no agent TOML files exist.
 
 ### Running a Single Agent
 
-The examples above mount the entire config directory. If you only need to run one
-agent with one skill, mount just those files to their expected XDG paths inside
-the container. No `config.toml` is needed when API keys are passed via
-environment variables.
+The examples above mount the entire config directory. If you only need to run one agent with one skill, mount just those files to their expected XDG paths inside the container. No `config.toml` is needed when API keys are passed via environment variables.
 
 ```bash
 docker run --rm -i \
@@ -159,12 +148,9 @@ docker run --rm -i \
   axe run reviewer
 ```
 
-The agent's `skill` field resolves automatically against the XDG config path
-inside the container, so no `--skill` flag is needed.
+The agent's `skill` field resolves automatically against the XDG config path inside the container, so no `--skill` flag is needed.
 
-To use a **different skill** than the one declared in the agent's TOML, use the
-`--skill` flag to override it. In this case you only mount the replacement skill
-— the original skill declared in the TOML is ignored entirely:
+To use a **different skill** than the one declared in the agent's TOML, use the `--skill` flag to override it. In this case you only mount the replacement skill — the original skill declared in the TOML is ignored entirely:
 
 ```bash
 docker run --rm -i \
@@ -174,8 +160,7 @@ docker run --rm -i \
   axe run reviewer --skill /home/axe/alt-review.md
 ```
 
-If the agent declares `sub_agents`, all referenced agent TOMLs and their skills
-must also be mounted.
+If the agent declares `sub_agents`, all referenced agent TOMLs and their skills must also be mounted.
 
 ### Persistent Data
 
@@ -191,8 +176,7 @@ docker run --rm \
 
 ### Docker Compose
 
-A `docker-compose.yml` is included for running axe alongside a local Ollama
-instance.
+A `docker-compose.yml` is included for running axe alongside a local Ollama instance.
 
 **Cloud provider only (no Ollama):**
 
@@ -213,10 +197,7 @@ docker compose --profile cli run --rm axe run my-agent
 docker compose --profile ollama exec ollama ollama pull llama3
 ```
 
-> **Note:** The compose `axe` service declares `depends_on: ollama`. Docker
-> Compose will attempt to start the Ollama service whenever axe is started via
-> compose, even for cloud-only runs. For cloud-only usage without Ollama, use
-> `docker run` directly instead of `docker compose run`.
+> **Note:** The compose `axe` service declares `depends_on: ollama`. Docker Compose will attempt to start the Ollama service whenever axe is started via compose, even for cloud-only runs. For cloud-only usage without Ollama, use `docker run` directly instead of `docker compose run`.
 
 ### Ollama on the Host
 
@@ -234,9 +215,7 @@ The container runs with the following hardening by default (via compose):
 - **All capabilities dropped** — `cap_drop: ALL`
 - **No privilege escalation** — `no-new-privileges:true`
 
-These settings do not restrict outbound network access. To isolate an agent that
-only talks to a local Ollama instance, add `--network=none` and connect it to the
-shared Docker network manually.
+These settings do not restrict outbound network access. To isolate an agent that only talks to a local Ollama instance, add `--network=none` and connect it to the shared Docker network manually.
 
 ### Volume Mounts
 
@@ -245,8 +224,7 @@ shared Docker network manually.
 | `/home/axe/.config/axe/` | Agent TOML files, skills, `config.toml` | Read-write |
 | `/home/axe/.local/share/axe/` | Persistent memory files | Read-write |
 
-Config is read-write because `axe config init` and `axe agents init` write into
-it. Mount as `:ro` if you only run agents.
+Config is read-write because `axe config init` and `axe agents init` write into it. Mount as `:ro` if you only run agents.
 
 ### Environment Variables
 
@@ -257,6 +235,9 @@ it. Mount as `:ro` if you only run agents.
 | `AXE_OLLAMA_BASE_URL` | If using Ollama | Ollama endpoint (default in compose: `http://ollama:11434`) |
 | `AXE_ANTHROPIC_BASE_URL` | No | Override Anthropic API endpoint |
 | `AXE_OPENAI_BASE_URL` | No | Override OpenAI API endpoint |
+| `AXE_OPENCODE_BASE_URL` | No | Override OpenCode API endpoint |
+| `AXE_WEB_SEARCH_API_KEY` | If using web_search | Web search API key |
+| `AXE_WEB_SEARCH_BASE_URL` | No | Override web search endpoint |
 
 ## CLI Reference
 
@@ -321,15 +302,19 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 [params]
 temperature = 0.3
 max_tokens = 4096
+
+[[mcp_servers]]
+name = "filesystem"
+transport = "stdio"
+command = "/usr/local/bin/mcp-server-filesystem"
+args = ["--root", "/home/user/projects"]
 ```
 
 All fields except `name` and `model` are optional.
 
 ## Tools
 
-Agents can use built-in tools to interact with the filesystem and run commands.
-When tools are enabled, the agent enters a conversation loop — the LLM can make
-tool calls, receive results, and continue reasoning for up to 50 turns.
+Agents can use built-in tools to interact with the filesystem and run commands. When tools are enabled, the agent enters a conversation loop — the LLM can make tool calls, receive results, and continue reasoning for up to 50 turns.
 
 ### Built-in Tools
 
@@ -340,6 +325,8 @@ tool calls, receive results, and continue reasoning for up to 50 turns.
 | `write_file` | Create or overwrite a file, creating parent directories as needed |
 | `edit_file` | Find and replace exact text in a file, with optional replace-all mode |
 | `run_command` | Execute a shell command via `sh -c` and return combined output |
+| `url_fetch` | Fetch URL content with HTML stripping and truncation |
+| `web_search` | Search the web and return results |
 | `call_agent` | Delegate a task to a sub-agent (controlled via `sub_agents`, not `tools`) |
 
 Enable tools by adding them to the agent's `tools` field:
@@ -348,20 +335,15 @@ Enable tools by adding them to the agent's `tools` field:
 tools = ["read_file", "list_directory", "run_command"]
 ```
 
-The `call_agent` tool is not listed in `tools` — it is automatically available
-when `sub_agents` is configured and the depth limit has not been reached.
+The `call_agent` tool is not listed in `tools` — it is automatically available when `sub_agents` is configured and the depth limit has not been reached.
 
 ### Path Security
 
-All file tools (`list_directory`, `read_file`, `write_file`, `edit_file`) are
-sandboxed to the agent's working directory. Absolute paths, `..` traversal, and
-symlink escapes are rejected.
+All file tools (`list_directory`, `read_file`, `write_file`, `edit_file`) are sandboxed to the agent's working directory. Absolute paths, `..` traversal, and symlink escapes are rejected.
 
 ### Parallel Execution
 
-When an LLM returns multiple tool calls in a single turn, they run concurrently
-by default. This applies to both built-in tools and sub-agent calls. Disable
-with `parallel = false` in `[sub_agents_config]`.
+When an LLM returns multiple tool calls in a single turn, they run concurrently by default. This applies to both built-in tools and sub-agent calls. Disable with `parallel = false` in `[sub_agents_config]`.
 
 ### MCP Tools
 
@@ -392,26 +374,19 @@ the built-in takes precedence.
 
 ## Skills
 
-Skills are reusable instruction sets that provide an agent with domain-specific
-knowledge and workflows. They are defined as `SKILL.md` files following the
-community SKILL.md format.
+Skills are reusable instruction sets that provide an agent with domain-specific knowledge and workflows. They are defined as `SKILL.md` files following the community SKILL.md format.
 
 ### Skill Resolution
 
 The `skill` field in an agent TOML is resolved in order:
 
 1. **Absolute path** — used as-is (e.g. `/home/user/skills/SKILL.md`)
-2. **Relative to config dir** — e.g. `skills/code-review/SKILL.md` resolves to
-   `$XDG_CONFIG_HOME/axe/skills/code-review/SKILL.md`
-3. **Bare name** — e.g. `code-review` resolves to
-   `$XDG_CONFIG_HOME/axe/skills/code-review/SKILL.md`
+2. **Relative to config dir** — e.g. `skills/code-review/SKILL.md` resolves to `$XDG_CONFIG_HOME/axe/skills/code-review/SKILL.md`
+3. **Bare name** — e.g. `code-review` resolves to `$XDG_CONFIG_HOME/axe/skills/code-review/SKILL.md`
 
 ### Script Paths
 
-Skills often reference helper scripts. Since `run_command` executes in the
-agent's `workdir` (not the skill directory), **script paths in SKILL.md must
-be absolute**. Relative paths will fail because the scripts don't exist in the
-agent's working directory.
+Skills often reference helper scripts. Since `run_command` executes in the agent's `workdir` (not the skill directory), **script paths in SKILL.md must be absolute**. Relative paths will fail because the scripts don't exist in the agent's working directory.
 
 ```
 # Correct — absolute path
@@ -442,9 +417,15 @@ $XDG_CONFIG_HOME/axe/
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
+| OpenCode | `OPENCODE_API_KEY` | Configurable |
+| AWS Bedrock | (uses AWS credentials) | Region-based |
 
-Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables
-or in `config.toml`.
+**AWS Bedrock Configuration:**
+- Region: Set via `AWS_REGION` environment variable or `[providers.bedrock] region = "us-east-1"` in config.toml
+- Credentials: Uses standard AWS credential chain (environment variables, ~/.aws/credentials, IAM roles, AWS SSO)
+- Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)
+
+Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 ## License
 
