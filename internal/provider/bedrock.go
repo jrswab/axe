@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
@@ -172,8 +173,12 @@ func convertFromBedrockResponse(output types.ConverseOutput, usage *types.TokenU
 	}
 
 	if usage != nil {
-		resp.InputTokens = int(*usage.InputTokens)
-		resp.OutputTokens = int(*usage.OutputTokens)
+		if usage.InputTokens != nil {
+			resp.InputTokens = int(*usage.InputTokens)
+		}
+		if usage.OutputTokens != nil {
+			resp.OutputTokens = int(*usage.OutputTokens)
+		}
 	}
 
 	msg, ok := output.(*types.ConverseOutputMemberMessage)
@@ -219,7 +224,7 @@ func mapBedrockError(err error) error {
 	errMsg := err.Error()
 
 	// Check for specific AWS error types
-	if contains(errMsg, "AccessDeniedException") || contains(errMsg, "UnauthorizedException") {
+	if strings.Contains(errMsg, "AccessDeniedException") || strings.Contains(errMsg, "UnauthorizedException") {
 		return &ProviderError{
 			Category: ErrCategoryAuth,
 			Message:  "authentication failed",
@@ -227,7 +232,7 @@ func mapBedrockError(err error) error {
 		}
 	}
 
-	if contains(errMsg, "ThrottlingException") || contains(errMsg, "TooManyRequestsException") {
+	if strings.Contains(errMsg, "ThrottlingException") || strings.Contains(errMsg, "TooManyRequestsException") {
 		return &ProviderError{
 			Category: ErrCategoryRateLimit,
 			Message:  "rate limit exceeded",
@@ -235,7 +240,7 @@ func mapBedrockError(err error) error {
 		}
 	}
 
-	if contains(errMsg, "ValidationException") || contains(errMsg, "InvalidRequestException") {
+	if strings.Contains(errMsg, "ValidationException") || strings.Contains(errMsg, "InvalidRequestException") {
 		return &ProviderError{
 			Category: ErrCategoryBadRequest,
 			Message:  "invalid request",
@@ -243,7 +248,7 @@ func mapBedrockError(err error) error {
 		}
 	}
 
-	if contains(errMsg, "ServiceUnavailableException") || contains(errMsg, "InternalServerException") {
+	if strings.Contains(errMsg, "ServiceUnavailableException") || strings.Contains(errMsg, "InternalServerException") {
 		return &ProviderError{
 			Category: ErrCategoryServer,
 			Message:  "server error",
@@ -251,7 +256,7 @@ func mapBedrockError(err error) error {
 		}
 	}
 
-	if contains(errMsg, "context deadline exceeded") || contains(errMsg, "context canceled") {
+	if strings.Contains(errMsg, "context deadline exceeded") || strings.Contains(errMsg, "context canceled") {
 		return &ProviderError{
 			Category: ErrCategoryTimeout,
 			Message:  "request timeout",
@@ -264,21 +269,6 @@ func mapBedrockError(err error) error {
 		Message:  errMsg,
 		Err:      err,
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && 
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
-		len(s) > len(substr)+1 && findSubstr(s, substr)))
-}
-
-func findSubstr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 // Send implements the Provider interface.

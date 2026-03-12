@@ -173,7 +173,7 @@ func TestGC_AgentNotFound(t *testing.T) {
 		t.Fatalf("expected ExitError, got %T: %v", err, err)
 	}
 	if exitErr.Code != 2 {
-		t.Errorf("expected exit code 2, got %d", exitErr.Code)
+		t.Errorf("expected exit code 3, got %d", exitErr.Code)
 	}
 }
 
@@ -426,7 +426,7 @@ enabled = true
 		t.Fatalf("expected ExitError, got %T: %v", err, err)
 	}
 	if exitErr.Code != 3 {
-		t.Errorf("expected exit code 2, got %d", exitErr.Code)
+		t.Errorf("expected exit code 3, got %d", exitErr.Code)
 	}
 
 	// Verify memory file is unchanged

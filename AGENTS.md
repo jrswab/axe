@@ -39,7 +39,7 @@ axe/
 │   ├── envinterp/         # ${VAR} expansion for MCP headers
 │   ├── mcpclient/         # Model Context Protocol client
 │   ├── memory/            # Persistent memory system
-│   ├── provider/          # LLM provider implementations (Anthropic, OpenAI, Ollama, OpenCode)
+│   ├── provider/          # LLM provider implementations (Anthropic, OpenAI, Ollama, OpenCode, Bedrock)
 │   ├── refusal/           # LLM refusal detection
 │   ├── resolve/           # Context resolution (workdir, skill, files, stdin)
 │   ├── testutil/          # Test helpers and mock servers

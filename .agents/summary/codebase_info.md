@@ -64,7 +64,7 @@ axe/
 
 ## Key Features
 
-- Multi-provider LLM support (Anthropic, OpenAI, Ollama, OpenCode)
+- Multi-provider LLM support (Anthropic, OpenAI, Ollama, OpenCode, AWS Bedrock)
 - TOML-based agent configuration
 - Sub-agent delegation with depth limiting
 - Persistent memory with garbage collection
