@@ -265,9 +265,16 @@ func mapBedrockError(err error) error {
 		}
 	}
 
-	// Network errors - treat as server errors
+	// Network errors - check for timeouts first
 	var netErr net.Error
 	if errors.As(err, &netErr) {
+		if netErr.Timeout() {
+			return &ProviderError{
+				Category: ErrCategoryTimeout,
+				Message:  "request timeout",
+				Err:      err,
+			}
+		}
 		return &ProviderError{
 			Category: ErrCategoryServer,
 			Message:  "network error",
