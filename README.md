@@ -236,7 +236,7 @@ Config is read-write because `axe config init` and `axe agents init` write into 
 | `AXE_ANTHROPIC_BASE_URL` | No | Override Anthropic API endpoint |
 | `AXE_OPENAI_BASE_URL` | No | Override OpenAI API endpoint |
 | `AXE_OPENCODE_BASE_URL` | No | Override OpenCode API endpoint |
-| `AXE_WEB_SEARCH_API_KEY` | If using web_search | Web search API key |
+| `TAVILY_API_KEY` | If using web_search | Tavily web search API key |
 | `AXE_WEB_SEARCH_BASE_URL` | No | Override web search endpoint |
 
 ## CLI Reference
