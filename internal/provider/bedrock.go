@@ -2,13 +2,15 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
+	"net"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/document"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
+	"github.com/aws/smithy-go"
 )
 
 // BedrockOption is a functional option for configuring the Bedrock provider.
@@ -29,16 +31,16 @@ type Bedrock struct {
 
 // NewBedrock creates a new Bedrock provider. Returns an error if region is empty.
 func NewBedrock(region string, opts ...BedrockOption) (*Bedrock, error) {
-	if region == "" {
-		return nil, fmt.Errorf("region is required")
-	}
-
 	b := &Bedrock{
 		region: region,
 	}
 
 	for _, opt := range opts {
 		opt(b)
+	}
+
+	if b.region == "" {
+		return nil, fmt.Errorf("region is required (set AWS_REGION environment variable or configure in config.toml)")
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(b.region))
@@ -221,42 +223,8 @@ func mapBedrockError(err error) error {
 		return nil
 	}
 
-	errMsg := err.Error()
-
-	// Check for specific AWS error types
-	if strings.Contains(errMsg, "AccessDeniedException") || strings.Contains(errMsg, "UnauthorizedException") {
-		return &ProviderError{
-			Category: ErrCategoryAuth,
-			Message:  "authentication failed",
-			Err:      err,
-		}
-	}
-
-	if strings.Contains(errMsg, "ThrottlingException") || strings.Contains(errMsg, "TooManyRequestsException") {
-		return &ProviderError{
-			Category: ErrCategoryRateLimit,
-			Message:  "rate limit exceeded",
-			Err:      err,
-		}
-	}
-
-	if strings.Contains(errMsg, "ValidationException") || strings.Contains(errMsg, "InvalidRequestException") {
-		return &ProviderError{
-			Category: ErrCategoryBadRequest,
-			Message:  "invalid request",
-			Err:      err,
-		}
-	}
-
-	if strings.Contains(errMsg, "ServiceUnavailableException") || strings.Contains(errMsg, "InternalServerException") {
-		return &ProviderError{
-			Category: ErrCategoryServer,
-			Message:  "server error",
-			Err:      err,
-		}
-	}
-
-	if strings.Contains(errMsg, "context deadline exceeded") || strings.Contains(errMsg, "context canceled") {
+	// Check for context errors first
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		return &ProviderError{
 			Category: ErrCategoryTimeout,
 			Message:  "request timeout",
@@ -264,9 +232,53 @@ func mapBedrockError(err error) error {
 		}
 	}
 
+	// Use AWS SDK v2 structured error types
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		code := apiErr.ErrorCode()
+		
+		switch code {
+		case "AccessDeniedException", "UnauthorizedException":
+			return &ProviderError{
+				Category: ErrCategoryAuth,
+				Message:  "authentication failed",
+				Err:      err,
+			}
+		case "ThrottlingException", "TooManyRequestsException":
+			return &ProviderError{
+				Category: ErrCategoryRateLimit,
+				Message:  "rate limit exceeded",
+				Err:      err,
+			}
+		case "ValidationException", "InvalidRequestException":
+			return &ProviderError{
+				Category: ErrCategoryBadRequest,
+				Message:  "invalid request",
+				Err:      err,
+			}
+		case "ServiceUnavailableException", "InternalServerException":
+			return &ProviderError{
+				Category: ErrCategoryServer,
+				Message:  "server error",
+				Err:      err,
+			}
+		}
+	}
+
+	// Network errors - treat as server errors
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return &ProviderError{
+			Category: ErrCategoryServer,
+			Message:  "network error",
+			Err:      err,
+		}
+	}
+
+	// Default to server error for unknown AWS errors
 	return &ProviderError{
 		Category: ErrCategoryServer,
-		Message:  errMsg,
+		Message:  err.Error(),
 		Err:      err,
 	}
 }
