@@ -57,6 +57,7 @@ var knownAPIKeyEnvVars = map[string]string{
 	"openai":    "OPENAI_API_KEY",
 	"opencode":  "OPENCODE_API_KEY",
 	"google":    "GEMINI_API_KEY",
+	"minimax":   "MINIMAX_API_KEY",
 }
 
 // APIKeyEnvVar returns the environment variable name used to resolve the API key

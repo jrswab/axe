@@ -310,3 +310,35 @@ func TestResolveAPIKey_Google(t *testing.T) {
 		t.Errorf("expected empty string, got %q", got)
 	}
 }
+
+func TestAPIKeyEnvVar_MiniMax(t *testing.T) {
+	if got := APIKeyEnvVar("minimax"); got != "MINIMAX_API_KEY" {
+		t.Errorf("expected MINIMAX_API_KEY, got %q", got)
+	}
+}
+
+func TestResolveAPIKey_MiniMax(t *testing.T) {
+	// Env var takes precedence over config file.
+	t.Setenv("MINIMAX_API_KEY", "minimax-key-from-env")
+	cfg := &GlobalConfig{
+		Providers: map[string]ProviderConfig{
+			"minimax": {APIKey: "minimax-key-from-config"},
+		},
+	}
+	if got := cfg.ResolveAPIKey("minimax"); got != "minimax-key-from-env" {
+		t.Errorf("expected 'minimax-key-from-env', got %q", got)
+	}
+
+	// Config file value used when env var is empty.
+	t.Setenv("MINIMAX_API_KEY", "")
+	if got := cfg.ResolveAPIKey("minimax"); got != "minimax-key-from-config" {
+		t.Errorf("expected 'minimax-key-from-config', got %q", got)
+	}
+
+	// Empty string when neither is set.
+	t.Setenv("MINIMAX_API_KEY", "")
+	emptyCfg := &GlobalConfig{Providers: map[string]ProviderConfig{}}
+	if got := emptyCfg.ResolveAPIKey("minimax"); got != "" {
+		t.Errorf("expected empty string, got %q", got)
+	}
+}

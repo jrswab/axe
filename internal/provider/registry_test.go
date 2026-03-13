@@ -57,7 +57,7 @@ func TestNew_UnsupportedProvider(t *testing.T) {
 	if !strings.Contains(err.Error(), `unsupported provider "groq"`) {
 		t.Errorf("expected error to mention 'unsupported provider \"groq\"', got %q", err.Error())
 	}
-	if !strings.Contains(err.Error(), "anthropic, openai, ollama, opencode, google") {
+	if !strings.Contains(err.Error(), "anthropic, openai, ollama, opencode, google, minimax") {
 		t.Errorf("expected error to list supported providers, got %q", err.Error())
 	}
 }
@@ -100,7 +100,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "openai", "ollama", "google"} {
+	for _, name := range []string{"anthropic", "openai", "ollama", "google", "minimax"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
@@ -160,7 +160,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "openai", "ollama", "opencode", "google"} {
+	for _, name := range []string{"anthropic", "openai", "ollama", "opencode", "google", "minimax"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}
@@ -200,5 +200,41 @@ func TestNew_GoogleMissingAPIKey(t *testing.T) {
 func TestSupported_Google(t *testing.T) {
 	if !Supported("google") {
 		t.Error("expected 'google' to be supported")
+	}
+}
+
+func TestNew_MiniMax(t *testing.T) {
+	p, err := New("minimax", "test-key", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p == nil {
+		t.Fatal("expected non-nil provider")
+	}
+}
+
+func TestNew_MiniMaxWithBaseURL(t *testing.T) {
+	p, err := New("minimax", "test-key", "http://custom:8080")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p == nil {
+		t.Fatal("expected non-nil provider")
+	}
+}
+
+func TestNew_MiniMaxMissingAPIKey(t *testing.T) {
+	_, err := New("minimax", "", "")
+	if err == nil {
+		t.Fatal("expected error for missing API key")
+	}
+	if !strings.Contains(err.Error(), "API key is required") {
+		t.Errorf("expected 'API key is required', got %q", err.Error())
+	}
+}
+
+func TestSupported_MiniMax(t *testing.T) {
+	if !Supported("minimax") {
+		t.Error("expected 'minimax' to be supported")
 	}
 }

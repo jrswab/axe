@@ -9,6 +9,7 @@ var supportedProviders = map[string]bool{
 	"ollama":    true,
 	"opencode":  true,
 	"google":    true,
+	"minimax":   true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -54,7 +55,14 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		}
 		return NewGemini(apiKey, opts...)
 
+	case "minimax":
+		var opts []AnthropicOption
+		if baseURL != "" {
+			opts = append(opts, WithBaseURL(baseURL))
+		}
+		return NewMiniMax(apiKey, opts...)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax", providerName)
 	}
 }
