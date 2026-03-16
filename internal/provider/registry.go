@@ -49,7 +49,6 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		}
 		return NewOpenCode(apiKey, opts...)
 
-<<<<<<< HEAD
 	case "google":
 		var opts []GeminiOption
 		if baseURL != "" {
