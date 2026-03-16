@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-15
+
+### Added
+- Google Gemini provider support
+- MiniMax provider support (#27)
+- GHCR docker publish workflow on version tags (#33)
+
+### Fixed
+- Use max_completion_tokens for OpenAI provider (#34)
+
 ## [1.2.0] - 2026-03-10
 
 ### Added
@@ -50,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - staticcheck/errcheck lint issues
 - Duplicate error silencing, glob validation, and nil ExitError guard
 
+[1.3.0]: https://github.com/jrswab/axe/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/jrswab/axe/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/jrswab/axe/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/jrswab/axe/compare/v1.0.0...v1.1.0
