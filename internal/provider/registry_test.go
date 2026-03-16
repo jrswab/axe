@@ -170,7 +170,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "openai", "ollama", "opencode", "google", "minimax"} {
+	for _, name := range []string{"anthropic", "openai", "ollama", "opencode", "google", "minimax", "bedrock"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}
