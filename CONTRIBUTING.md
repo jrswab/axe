@@ -189,7 +189,7 @@ Prefer using real implementations or test utilities over mocks. Use `internal/te
 
 Follow conventional commit format:
 
-```
+```text
 type(scope): brief description
 
 Longer explanation if needed.

@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// awsCredentials holds AWS access credentials for request signing.
 type awsCredentials struct {
 	AccessKeyID    string
 	SecretAccessKey string
@@ -43,12 +44,13 @@ func resolveCredentials(profile string) (*awsCredentials, error) {
 	return creds, nil
 }
 
+// parseCredentialsFile reads AWS credentials for the given profile from an INI-format file.
 func parseCredentialsFile(path, profile string) (*awsCredentials, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var creds awsCredentials
 	inProfile := false

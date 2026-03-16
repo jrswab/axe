@@ -422,7 +422,7 @@ $XDG_CONFIG_HOME/axe/
 
 **AWS Bedrock Configuration:**
 - Region: Set via `AWS_REGION` environment variable or `[providers.bedrock] region = "us-east-1"` in config.toml
-- Credentials: Uses standard AWS credential chain (environment variables, ~/.aws/credentials, IAM roles, AWS SSO)
+- Credentials: Uses environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`) or `~/.aws/credentials` file (supports `AWS_PROFILE` and `AWS_SHARED_CREDENTIALS_FILE`)
 - Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)
 
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.

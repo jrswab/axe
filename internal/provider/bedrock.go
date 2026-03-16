@@ -64,8 +64,7 @@ func NewBedrock(region string, opts ...BedrockOption) (*Bedrock, error) {
 	return b, nil
 }
 
-// --- Wire types for Bedrock Converse API ---
-
+// bedrockRequest is the JSON body sent to the Bedrock Converse API.
 type bedrockRequest struct {
 	Messages        []bedrockMessage        `json:"messages"`
 	System          []bedrockSystemBlock     `json:"system,omitempty"`
@@ -73,80 +72,91 @@ type bedrockRequest struct {
 	ToolConfig      *bedrockToolConfig       `json:"toolConfig,omitempty"`
 }
 
+// bedrockMessage is the wire format for a message in the Bedrock API.
 type bedrockMessage struct {
 	Role    string         `json:"role"`
 	Content []bedrockBlock `json:"content"`
 }
 
+// bedrockBlock is a content block in a Bedrock message.
 type bedrockBlock struct {
 	Text       string              `json:"text,omitempty"`
 	ToolUse    *bedrockToolUse     `json:"toolUse,omitempty"`
 	ToolResult *bedrockToolResult  `json:"toolResult,omitempty"`
 }
 
+// bedrockToolUse represents a tool invocation in a Bedrock response.
 type bedrockToolUse struct {
 	ToolUseID string                 `json:"toolUseId"`
 	Name      string                 `json:"name"`
 	Input     map[string]interface{} `json:"input"`
 }
 
+// bedrockToolResult represents a tool result sent back to Bedrock.
 type bedrockToolResult struct {
 	ToolUseID string                    `json:"toolUseId"`
 	Content   []bedrockToolResultContent `json:"content"`
 	Status    string                    `json:"status"`
 }
 
+// bedrockToolResultContent is the text content inside a tool result.
 type bedrockToolResultContent struct {
 	Text string `json:"text,omitempty"`
 }
 
+// bedrockSystemBlock is a system prompt block in the Bedrock API.
 type bedrockSystemBlock struct {
 	Text string `json:"text"`
 }
 
+// bedrockInferenceConfig holds temperature and max token settings.
 type bedrockInferenceConfig struct {
 	Temperature *float64 `json:"temperature,omitempty"`
 	MaxTokens   *int     `json:"maxTokens,omitempty"`
 }
 
+// bedrockToolConfig wraps the tool definitions sent to Bedrock.
 type bedrockToolConfig struct {
 	Tools []bedrockToolDef `json:"tools"`
 }
 
+// bedrockToolDef is the wire format for a tool definition in the Bedrock API.
 type bedrockToolDef struct {
 	ToolSpec bedrockToolSpec `json:"toolSpec"`
 }
 
+// bedrockToolSpec is the tool specification inside a bedrockToolDef.
 type bedrockToolSpec struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description"`
 	InputSchema map[string]interface{} `json:"inputSchema"`
 }
 
-// --- Response wire types ---
-
+// bedrockResponse represents the JSON response from the Bedrock Converse API.
 type bedrockResponse struct {
 	Output     bedrockOutput `json:"output"`
 	StopReason string        `json:"stopReason"`
 	Usage      bedrockUsage  `json:"usage"`
 }
 
+// bedrockOutput wraps the message in a Bedrock response.
 type bedrockOutput struct {
 	Message *bedrockMessage `json:"message,omitempty"`
 }
 
+// bedrockUsage contains token usage information from the Bedrock response.
 type bedrockUsage struct {
 	InputTokens  int `json:"inputTokens"`
 	OutputTokens int `json:"outputTokens"`
 }
 
+// bedrockErrorResponse represents a Bedrock API error response.
 type bedrockErrorResponse struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`
 }
 
-// --- Conversion functions ---
-
+// buildBedrockRequest converts a provider Request to the Bedrock wire format.
 func buildBedrockRequest(req *Request) bedrockRequest {
 	br := bedrockRequest{
 		Messages: convertMessages(req.Messages),
@@ -171,6 +181,7 @@ func buildBedrockRequest(req *Request) bedrockRequest {
 	return br
 }
 
+// convertMessages converts provider Messages to the Bedrock wire format.
 func convertMessages(msgs []Message) []bedrockMessage {
 	result := make([]bedrockMessage, 0, len(msgs))
 	for _, msg := range msgs {
@@ -206,6 +217,7 @@ func convertMessages(msgs []Message) []bedrockMessage {
 	return result
 }
 
+// convertTools converts provider Tools to the Bedrock wire format.
 func convertTools(tools []Tool) []bedrockToolDef {
 	result := make([]bedrockToolDef, len(tools))
 	for i, tool := range tools {
@@ -228,6 +240,7 @@ func convertTools(tools []Tool) []bedrockToolDef {
 	return result
 }
 
+// parseBedrockResponse converts a Bedrock API response to a provider Response.
 func parseBedrockResponse(resp *bedrockResponse, model string) *Response {
 	r := &Response{
 		Model:        model,
@@ -255,23 +268,21 @@ func parseBedrockResponse(resp *bedrockResponse, model string) *Response {
 	return r
 }
 
-// --- Error handling ---
-
+// mapStatusToCategory maps HTTP status codes to error categories.
 func (b *Bedrock) mapStatusToCategory(status int) ErrorCategory {
-	switch {
-	case status == 403 || status == 401:
+	switch status {
+	case 401, 403:
 		return ErrCategoryAuth
-	case status == 429:
+	case 429:
 		return ErrCategoryRateLimit
-	case status == 400:
+	case 400:
 		return ErrCategoryBadRequest
 	default:
 		return ErrCategoryServer
 	}
 }
 
-// --- Send ---
-
+// Send makes a completion request to the AWS Bedrock Converse API.
 func (b *Bedrock) Send(ctx context.Context, req *Request) (*Response, error) {
 	body, err := json.Marshal(buildBedrockRequest(req))
 	if err != nil {

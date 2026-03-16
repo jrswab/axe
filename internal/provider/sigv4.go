@@ -63,6 +63,7 @@ func signRequest(req *http.Request, creds *awsCredentials, region, service strin
 	))
 }
 
+// deriveSigningKey computes the SigV4 signing key from the secret and scope components.
 func deriveSigningKey(secret, dateStamp, region, service string) []byte {
 	kDate := hmacSHA256([]byte("AWS4"+secret), []byte(dateStamp))
 	kRegion := hmacSHA256(kDate, []byte(region))
@@ -70,17 +71,20 @@ func deriveSigningKey(secret, dateStamp, region, service string) []byte {
 	return hmacSHA256(kService, []byte("aws4_request"))
 }
 
+// hmacSHA256 computes an HMAC-SHA256 digest.
 func hmacSHA256(key, data []byte) []byte {
 	h := hmac.New(sha256.New, key)
 	h.Write(data)
 	return h.Sum(nil)
 }
 
+// sha256Hex returns the hex-encoded SHA-256 hash of data.
 func sha256Hex(data []byte) string {
 	h := sha256.Sum256(data)
 	return hex.EncodeToString(h[:])
 }
 
+// sortedHeaderNames returns lowercase header names sorted alphabetically.
 func sortedHeaderNames(h http.Header) []string {
 	var names []string
 	for k := range h {
@@ -90,6 +94,7 @@ func sortedHeaderNames(h http.Header) []string {
 	return names
 }
 
+// canonicalHeaders builds the canonical headers string for SigV4 signing.
 func canonicalHeaders(h http.Header, sorted []string) string {
 	var b strings.Builder
 	for _, name := range sorted {

@@ -36,7 +36,7 @@ func TestResolveCredentials_EnvVarsNoToken(t *testing.T) {
 func TestResolveCredentials_File(t *testing.T) {
 	dir := t.TempDir()
 	credsPath := filepath.Join(dir, "credentials")
-	os.WriteFile(credsPath, []byte("[default]\naws_access_key_id = FILEAKID\naws_secret_access_key = FILESECRET\n"), 0600)
+	_ = os.WriteFile(credsPath, []byte("[default]\naws_access_key_id = FILEAKID\naws_secret_access_key = FILESECRET\n"), 0600)
 
 	t.Setenv("AWS_ACCESS_KEY_ID", "")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
@@ -54,7 +54,7 @@ func TestResolveCredentials_File(t *testing.T) {
 func TestResolveCredentials_ProfileSelection(t *testing.T) {
 	dir := t.TempDir()
 	credsPath := filepath.Join(dir, "credentials")
-	os.WriteFile(credsPath, []byte("[default]\naws_access_key_id = DEFAULT\naws_secret_access_key = DEFAULTSECRET\n\n[staging]\naws_access_key_id = STAGING\naws_secret_access_key = STAGINGSECRET\naws_session_token = STAGINGTOKEN\n"), 0600)
+	_ = os.WriteFile(credsPath, []byte("[default]\naws_access_key_id = DEFAULT\naws_secret_access_key = DEFAULTSECRET\n\n[staging]\naws_access_key_id = STAGING\naws_secret_access_key = STAGINGSECRET\naws_session_token = STAGINGTOKEN\n"), 0600)
 
 	t.Setenv("AWS_ACCESS_KEY_ID", "")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
@@ -72,7 +72,7 @@ func TestResolveCredentials_ProfileSelection(t *testing.T) {
 func TestResolveCredentials_AWSProfileEnv(t *testing.T) {
 	dir := t.TempDir()
 	credsPath := filepath.Join(dir, "credentials")
-	os.WriteFile(credsPath, []byte("[prod]\naws_access_key_id = PROD\naws_secret_access_key = PRODSECRET\n"), 0600)
+	_ = os.WriteFile(credsPath, []byte("[prod]\naws_access_key_id = PROD\naws_secret_access_key = PRODSECRET\n"), 0600)
 
 	t.Setenv("AWS_ACCESS_KEY_ID", "")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
@@ -102,7 +102,7 @@ func TestResolveCredentials_MissingCreds(t *testing.T) {
 func TestParseCredentialsFile_Comments(t *testing.T) {
 	dir := t.TempDir()
 	credsPath := filepath.Join(dir, "credentials")
-	os.WriteFile(credsPath, []byte("# comment\n; another comment\n[default]\naws_access_key_id = AK\naws_secret_access_key = SK\n"), 0600)
+	_ = os.WriteFile(credsPath, []byte("# comment\n; another comment\n[default]\naws_access_key_id = AK\naws_secret_access_key = SK\n"), 0600)
 
 	creds, err := parseCredentialsFile(credsPath, "default")
 	if err != nil {
@@ -116,7 +116,7 @@ func TestParseCredentialsFile_Comments(t *testing.T) {
 func TestParseCredentialsFile_MissingProfile(t *testing.T) {
 	dir := t.TempDir()
 	credsPath := filepath.Join(dir, "credentials")
-	os.WriteFile(credsPath, []byte("[default]\naws_access_key_id = AK\naws_secret_access_key = SK\n"), 0600)
+	_ = os.WriteFile(credsPath, []byte("[default]\naws_access_key_id = AK\naws_secret_access_key = SK\n"), 0600)
 
 	_, err := parseCredentialsFile(credsPath, "nonexistent")
 	if err == nil {

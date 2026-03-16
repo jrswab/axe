@@ -30,7 +30,7 @@ A lightweight CLI for running single-purpose LLM agents. Think `make` for AI —
 
 ## Directory Structure
 
-```
+```text
 axe/
 ├── cmd/                    # CLI commands (run, agents, config, gc, version)
 ├── internal/
@@ -139,7 +139,7 @@ region = "us-east-1"
 - `AXE_ANTHROPIC_BASE_URL`, `AXE_OPENAI_BASE_URL`, `AXE_OLLAMA_BASE_URL`, `AXE_OPENCODE_BASE_URL`
 - `AWS_REGION`, `AWS_DEFAULT_REGION` (for Bedrock)
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (for Bedrock)
-- `TAVILY_API_KEY`, `AXE_WEB_SEARCH_BASE_URL`
+- `TAVILY_API_KEY` (overrides config for web search API key), `AXE_WEB_SEARCH_BASE_URL`
 
 ## Repo-Specific Patterns
 

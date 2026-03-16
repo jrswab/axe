@@ -59,7 +59,7 @@ func TestBedrock_Send_Success(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(bedrockResponse{
+		_ = json.NewEncoder(w).Encode(bedrockResponse{
 			Output: bedrockOutput{Message: &bedrockMessage{
 				Role:    "assistant",
 				Content: []bedrockBlock{{Text: "Hello from Bedrock"}},
@@ -98,13 +98,13 @@ func TestBedrock_Send_ToolUse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify tool config was sent
 		var req bedrockRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		if req.ToolConfig == nil || len(req.ToolConfig.Tools) == 0 {
 			t.Error("expected tool config in request")
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(bedrockResponse{
+		_ = json.NewEncoder(w).Encode(bedrockResponse{
 			Output: bedrockOutput{Message: &bedrockMessage{
 				Role: "assistant",
 				Content: []bedrockBlock{{ToolUse: &bedrockToolUse{
@@ -148,9 +148,9 @@ func TestBedrock_Send_ToolUse(t *testing.T) {
 func TestBedrock_Send_ToolResult(t *testing.T) {
 	var receivedReq bedrockRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewDecoder(r.Body).Decode(&receivedReq)
+		_ = json.NewDecoder(r.Body).Decode(&receivedReq)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(bedrockResponse{
+		_ = json.NewEncoder(w).Encode(bedrockResponse{
 			Output:     bedrockOutput{Message: &bedrockMessage{Role: "assistant", Content: []bedrockBlock{{Text: "Done"}}}},
 			StopReason: "end_turn",
 			Usage:      bedrockUsage{InputTokens: 5, OutputTokens: 2},
@@ -191,7 +191,7 @@ func TestBedrock_Send_ToolResult(t *testing.T) {
 func TestBedrock_Send_AuthError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(403)
-		json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Access denied", Type: "AccessDeniedException"})
+		_ = json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Access denied", Type: "AccessDeniedException"})
 	}))
 	defer server.Close()
 
@@ -212,7 +212,7 @@ func TestBedrock_Send_AuthError(t *testing.T) {
 func TestBedrock_Send_RateLimitError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(429)
-		json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Too many requests"})
+		_ = json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Too many requests"})
 	}))
 	defer server.Close()
 
@@ -227,7 +227,7 @@ func TestBedrock_Send_RateLimitError(t *testing.T) {
 func TestBedrock_Send_BadRequestError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
-		json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Invalid model"})
+		_ = json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Invalid model"})
 	}))
 	defer server.Close()
 
@@ -242,7 +242,7 @@ func TestBedrock_Send_BadRequestError(t *testing.T) {
 func TestBedrock_Send_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Internal error"})
+		_ = json.NewEncoder(w).Encode(bedrockErrorResponse{Message: "Internal error"})
 	}))
 	defer server.Close()
 
@@ -257,9 +257,9 @@ func TestBedrock_Send_ServerError(t *testing.T) {
 func TestBedrock_Send_Temperature(t *testing.T) {
 	var receivedReq bedrockRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewDecoder(r.Body).Decode(&receivedReq)
+		_ = json.NewDecoder(r.Body).Decode(&receivedReq)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(bedrockResponse{
+		_ = json.NewEncoder(w).Encode(bedrockResponse{
 			Output:     bedrockOutput{Message: &bedrockMessage{Role: "assistant", Content: []bedrockBlock{{Text: "ok"}}}},
 			StopReason: "end_turn",
 		})
@@ -267,7 +267,7 @@ func TestBedrock_Send_Temperature(t *testing.T) {
 	defer server.Close()
 
 	b, _ := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
-	b.Send(context.Background(), &Request{
+	_, _ = b.Send(context.Background(), &Request{
 		Model: "m", Messages: []Message{{Role: "user", Content: "hi"}},
 		Temperature: 0.7, MaxTokens: 100,
 	})
