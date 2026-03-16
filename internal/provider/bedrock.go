@@ -1,17 +1,14 @@
 package provider
 
 import (
+	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"net"
+	"io"
+	"net/http"
 	"os"
-
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
-	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/document"
-	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
-	"github.com/aws/smithy-go"
+	"time"
 )
 
 // BedrockOption is a functional option for configuring the Bedrock provider.
@@ -19,317 +16,316 @@ type BedrockOption func(*Bedrock)
 
 // WithBedrockRegion sets a custom region.
 func WithBedrockRegion(region string) BedrockOption {
-	return func(b *Bedrock) {
-		b.region = region
-	}
+	return func(b *Bedrock) { b.region = region }
+}
+
+// WithBedrockBaseURL sets a custom base URL (used for testing with httptest).
+func WithBedrockBaseURL(url string) BedrockOption {
+	return func(b *Bedrock) { b.baseURL = url }
+}
+
+// withBedrockCreds sets credentials directly (used for testing).
+func withBedrockCreds(creds *awsCredentials) BedrockOption {
+	return func(b *Bedrock) { b.creds = creds }
 }
 
 // Bedrock implements the Provider interface for AWS Bedrock.
 type Bedrock struct {
-	client *bedrockruntime.Client
-	region string
+	region  string
+	baseURL string
+	creds   *awsCredentials
+	client  *http.Client
 }
 
-// NewBedrock creates a new Bedrock provider. Returns an error if region is empty.
+// NewBedrock creates a new Bedrock provider.
 func NewBedrock(region string, opts ...BedrockOption) (*Bedrock, error) {
-	b := &Bedrock{
-		region: region,
-	}
-
+	b := &Bedrock{region: region}
 	for _, opt := range opts {
 		opt(b)
 	}
-
 	if b.region == "" {
 		return nil, fmt.Errorf("region is required (set AWS_REGION environment variable or configure in config.toml)")
 	}
-
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(b.region))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	if b.baseURL == "" {
+		b.baseURL = fmt.Sprintf("https://bedrock-runtime.%s.amazonaws.com", b.region)
 	}
-
-	b.client = bedrockruntime.NewFromConfig(cfg)
-
+	if b.creds == nil {
+		creds, err := resolveCredentials("")
+		if err != nil {
+			return nil, err
+		}
+		b.creds = creds
+	}
+	b.client = &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	return b, nil
 }
 
-func convertToBedrockSystemPrompts(system string) []types.SystemContentBlock {
-	if system == "" {
-		return nil
-	}
-	return []types.SystemContentBlock{
-		&types.SystemContentBlockMemberText{Value: system},
-	}
+// --- Wire types for Bedrock Converse API ---
+
+type bedrockRequest struct {
+	Messages        []bedrockMessage        `json:"messages"`
+	System          []bedrockSystemBlock     `json:"system,omitempty"`
+	InferenceConfig *bedrockInferenceConfig  `json:"inferenceConfig,omitempty"`
+	ToolConfig      *bedrockToolConfig       `json:"toolConfig,omitempty"`
 }
 
-func convertToBedrockTools(tools []Tool) []types.Tool {
-	if len(tools) == 0 {
-		return nil
+type bedrockMessage struct {
+	Role    string         `json:"role"`
+	Content []bedrockBlock `json:"content"`
+}
+
+type bedrockBlock struct {
+	Text       string              `json:"text,omitempty"`
+	ToolUse    *bedrockToolUse     `json:"toolUse,omitempty"`
+	ToolResult *bedrockToolResult  `json:"toolResult,omitempty"`
+}
+
+type bedrockToolUse struct {
+	ToolUseID string                 `json:"toolUseId"`
+	Name      string                 `json:"name"`
+	Input     map[string]interface{} `json:"input"`
+}
+
+type bedrockToolResult struct {
+	ToolUseID string                    `json:"toolUseId"`
+	Content   []bedrockToolResultContent `json:"content"`
+	Status    string                    `json:"status"`
+}
+
+type bedrockToolResultContent struct {
+	Text string `json:"text,omitempty"`
+}
+
+type bedrockSystemBlock struct {
+	Text string `json:"text"`
+}
+
+type bedrockInferenceConfig struct {
+	Temperature *float64 `json:"temperature,omitempty"`
+	MaxTokens   *int     `json:"maxTokens,omitempty"`
+}
+
+type bedrockToolConfig struct {
+	Tools []bedrockToolDef `json:"tools"`
+}
+
+type bedrockToolDef struct {
+	ToolSpec bedrockToolSpec `json:"toolSpec"`
+}
+
+type bedrockToolSpec struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	InputSchema map[string]interface{} `json:"inputSchema"`
+}
+
+// --- Response wire types ---
+
+type bedrockResponse struct {
+	Output     bedrockOutput `json:"output"`
+	StopReason string        `json:"stopReason"`
+	Usage      bedrockUsage  `json:"usage"`
+}
+
+type bedrockOutput struct {
+	Message *bedrockMessage `json:"message,omitempty"`
+}
+
+type bedrockUsage struct {
+	InputTokens  int `json:"inputTokens"`
+	OutputTokens int `json:"outputTokens"`
+}
+
+type bedrockErrorResponse struct {
+	Message string `json:"message"`
+	Type    string `json:"type"`
+}
+
+// --- Conversion functions ---
+
+func buildBedrockRequest(req *Request) bedrockRequest {
+	br := bedrockRequest{
+		Messages: convertMessages(req.Messages),
 	}
-
-	result := make([]types.Tool, len(tools))
-	for i, tool := range tools {
-		inputSchema := map[string]interface{}{
-			"type":       "object",
-			"properties": make(map[string]interface{}),
+	if req.System != "" {
+		br.System = []bedrockSystemBlock{{Text: req.System}}
+	}
+	if req.Temperature != 0 || req.MaxTokens > 0 {
+		br.InferenceConfig = &bedrockInferenceConfig{}
+		if req.Temperature != 0 {
+			t := req.Temperature
+			br.InferenceConfig.Temperature = &t
 		}
+		if req.MaxTokens > 0 {
+			m := req.MaxTokens
+			br.InferenceConfig.MaxTokens = &m
+		}
+	}
+	if len(req.Tools) > 0 {
+		br.ToolConfig = &bedrockToolConfig{Tools: convertTools(req.Tools)}
+	}
+	return br
+}
 
-		required := []interface{}{}
-		props := inputSchema["properties"].(map[string]interface{})
-
-		for name, param := range tool.Parameters {
-			props[name] = map[string]interface{}{
-				"type":        param.Type,
-				"description": param.Description,
+func convertMessages(msgs []Message) []bedrockMessage {
+	result := make([]bedrockMessage, 0, len(msgs))
+	for _, msg := range msgs {
+		bm := bedrockMessage{Role: msg.Role}
+		if msg.Role != "user" && msg.Role != "assistant" {
+			bm.Role = "assistant"
+		}
+		if msg.Content != "" {
+			bm.Content = append(bm.Content, bedrockBlock{Text: msg.Content})
+		}
+		for _, tc := range msg.ToolCalls {
+			input := make(map[string]interface{}, len(tc.Arguments))
+			for k, v := range tc.Arguments {
+				input[k] = v
 			}
+			bm.Content = append(bm.Content, bedrockBlock{ToolUse: &bedrockToolUse{
+				ToolUseID: tc.ID, Name: tc.Name, Input: input,
+			}})
+		}
+		for _, tr := range msg.ToolResults {
+			status := "success"
+			if tr.IsError {
+				status = "error"
+			}
+			bm.Content = append(bm.Content, bedrockBlock{ToolResult: &bedrockToolResult{
+				ToolUseID: tr.CallID,
+				Content:   []bedrockToolResultContent{{Text: tr.Content}},
+				Status:    status,
+			}})
+		}
+		result = append(result, bm)
+	}
+	return result
+}
+
+func convertTools(tools []Tool) []bedrockToolDef {
+	result := make([]bedrockToolDef, len(tools))
+	for i, tool := range tools {
+		props := make(map[string]interface{}, len(tool.Parameters))
+		var required []string
+		for name, param := range tool.Parameters {
+			props[name] = map[string]interface{}{"type": param.Type, "description": param.Description}
 			if param.Required {
 				required = append(required, name)
 			}
 		}
-
+		schema := map[string]interface{}{"type": "object", "properties": props}
 		if len(required) > 0 {
-			inputSchema["required"] = required
+			schema["required"] = required
 		}
-
-		result[i] = &types.ToolMemberToolSpec{
-			Value: types.ToolSpecification{
-				Name:        &tool.Name,
-				Description: &tool.Description,
-				InputSchema: &types.ToolInputSchemaMemberJson{
-					Value: document.NewLazyDocument(inputSchema),
-				},
-			},
-		}
+		result[i] = bedrockToolDef{ToolSpec: bedrockToolSpec{
+			Name: tool.Name, Description: tool.Description, InputSchema: schema,
+		}}
 	}
 	return result
 }
 
-func convertToBedrockMessages(messages []Message) []types.Message {
-	result := make([]types.Message, 0, len(messages))
-
-	for _, msg := range messages {
-		var role types.ConversationRole
-		if msg.Role == "user" {
-			role = types.ConversationRoleUser
-		} else {
-			role = types.ConversationRoleAssistant
-		}
-
-		content := make([]types.ContentBlock, 0)
-
-		// Add text content
-		if msg.Content != "" {
-			content = append(content, &types.ContentBlockMemberText{
-				Value: msg.Content,
-			})
-		}
-
-		// Add tool calls (assistant messages)
-		for _, tc := range msg.ToolCalls {
-			// Convert string map to interface map for document
-			input := make(map[string]interface{})
-			for k, v := range tc.Arguments {
-				input[k] = v
-			}
-			
-			content = append(content, &types.ContentBlockMemberToolUse{
-				Value: types.ToolUseBlock{
-					ToolUseId: &tc.ID,
-					Name:      &tc.Name,
-					Input:     document.NewLazyDocument(input),
-				},
-			})
-		}
-
-		// Add tool results (user messages with tool results)
-		for _, tr := range msg.ToolResults {
-			status := types.ToolResultStatusSuccess
-			if tr.IsError {
-				status = types.ToolResultStatusError
-			}
-
-			content = append(content, &types.ContentBlockMemberToolResult{
-				Value: types.ToolResultBlock{
-					ToolUseId: &tr.CallID,
-					Content: []types.ToolResultContentBlock{
-						&types.ToolResultContentBlockMemberText{Value: tr.Content},
-					},
-					Status: status,
-				},
-			})
-		}
-
-		result = append(result, types.Message{
-			Role:    role,
-			Content: content,
-		})
+func parseBedrockResponse(resp *bedrockResponse, model string) *Response {
+	r := &Response{
+		Model:        model,
+		StopReason:   resp.StopReason,
+		InputTokens:  resp.Usage.InputTokens,
+		OutputTokens: resp.Usage.OutputTokens,
 	}
-
-	return result
+	if resp.Output.Message == nil {
+		return r
+	}
+	for _, block := range resp.Output.Message.Content {
+		if block.Text != "" {
+			r.Content += block.Text
+		}
+		if block.ToolUse != nil {
+			args := make(map[string]string, len(block.ToolUse.Input))
+			for k, v := range block.ToolUse.Input {
+				args[k] = fmt.Sprintf("%v", v)
+			}
+			r.ToolCalls = append(r.ToolCalls, ToolCall{
+				ID: block.ToolUse.ToolUseID, Name: block.ToolUse.Name, Arguments: args,
+			})
+		}
+	}
+	return r
 }
 
-func convertFromBedrockResponse(output types.ConverseOutput, usage *types.TokenUsage, stopReason types.StopReason, modelID string) *Response {
-	resp := &Response{
-		Model:      modelID,
-		StopReason: string(stopReason),
-	}
+// --- Error handling ---
 
-	if usage != nil {
-		if usage.InputTokens != nil {
-			resp.InputTokens = int(*usage.InputTokens)
-		}
-		if usage.OutputTokens != nil {
-			resp.OutputTokens = int(*usage.OutputTokens)
-		}
-	}
-
-	msg, ok := output.(*types.ConverseOutputMemberMessage)
-	if !ok || msg.Value.Content == nil {
-		return resp
-	}
-
-	var textContent string
-	var toolCalls []ToolCall
-
-	for _, block := range msg.Value.Content {
-		switch v := block.(type) {
-		case *types.ContentBlockMemberText:
-			textContent += v.Value
-		case *types.ContentBlockMemberToolUse:
-			if v.Value.ToolUseId == nil || v.Value.Name == nil {
-				continue // Skip malformed tool use blocks
-			}
-			args := make(map[string]string)
-			var inputMap map[string]interface{}
-			if err := v.Value.Input.UnmarshalSmithyDocument(&inputMap); err != nil {
-				fmt.Fprintf(os.Stderr, "bedrock: failed to unmarshal tool input for %s: %v\n", *v.Value.Name, err)
-			} else {
-				for k, val := range inputMap {
-					args[k] = fmt.Sprintf("%v", val)
-				}
-			}
-			toolCalls = append(toolCalls, ToolCall{
-				ID:        *v.Value.ToolUseId,
-				Name:      *v.Value.Name,
-				Arguments: args,
-			})
-		}
-	}
-
-	resp.Content = textContent
-	resp.ToolCalls = toolCalls
-
-	return resp
-}
-
-func mapBedrockError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	// Check for context errors first
-	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-		return &ProviderError{
-			Category: ErrCategoryTimeout,
-			Message:  "request timeout",
-			Err:      err,
-		}
-	}
-
-	// Use AWS SDK v2 structured error types
-	var apiErr smithy.APIError
-	if errors.As(err, &apiErr) {
-		code := apiErr.ErrorCode()
-		
-		switch code {
-		case "AccessDeniedException", "UnauthorizedException":
-			return &ProviderError{
-				Category: ErrCategoryAuth,
-				Message:  "authentication failed",
-				Err:      err,
-			}
-		case "ThrottlingException", "TooManyRequestsException":
-			return &ProviderError{
-				Category: ErrCategoryRateLimit,
-				Message:  "rate limit exceeded",
-				Err:      err,
-			}
-		case "ValidationException", "InvalidRequestException":
-			return &ProviderError{
-				Category: ErrCategoryBadRequest,
-				Message:  "invalid request",
-				Err:      err,
-			}
-		case "ServiceUnavailableException", "InternalServerException":
-			return &ProviderError{
-				Category: ErrCategoryServer,
-				Message:  "server error",
-				Err:      err,
-			}
-		}
-	}
-
-	// Network errors - check for timeouts first
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		if netErr.Timeout() {
-			return &ProviderError{
-				Category: ErrCategoryTimeout,
-				Message:  "request timeout",
-				Err:      err,
-			}
-		}
-		return &ProviderError{
-			Category: ErrCategoryServer,
-			Message:  "network error",
-			Err:      err,
-		}
-	}
-
-	// Default to server error for unknown AWS errors
-	return &ProviderError{
-		Category: ErrCategoryServer,
-		Message:  err.Error(),
-		Err:      err,
+func (b *Bedrock) mapStatusToCategory(status int) ErrorCategory {
+	switch {
+	case status == 403 || status == 401:
+		return ErrCategoryAuth
+	case status == 429:
+		return ErrCategoryRateLimit
+	case status == 400:
+		return ErrCategoryBadRequest
+	default:
+		return ErrCategoryServer
 	}
 }
 
-// Send implements the Provider interface.
+// --- Send ---
+
 func (b *Bedrock) Send(ctx context.Context, req *Request) (*Response, error) {
-	input := &bedrockruntime.ConverseInput{
-		ModelId:  &req.Model,
-		Messages: convertToBedrockMessages(req.Messages),
-	}
-
-	if req.System != "" {
-		input.System = convertToBedrockSystemPrompts(req.System)
-	}
-
-	if len(req.Tools) > 0 {
-		toolConfig := &types.ToolConfiguration{
-			Tools: convertToBedrockTools(req.Tools),
-		}
-		input.ToolConfig = toolConfig
-	}
-
-	inferenceConfig := &types.InferenceConfiguration{}
-	if req.Temperature != 0 {
-		temp := float32(req.Temperature)
-		inferenceConfig.Temperature = &temp
-	}
-	if req.MaxTokens > 0 {
-		maxTokens := int32(req.MaxTokens)
-		inferenceConfig.MaxTokens = &maxTokens
-	}
-	if req.Temperature != 0 || req.MaxTokens > 0 {
-		input.InferenceConfig = inferenceConfig
-	}
-
-	output, err := b.client.Converse(ctx, input)
+	body, err := json.Marshal(buildBedrockRequest(req))
 	if err != nil {
-		return nil, mapBedrockError(err)
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	return convertFromBedrockResponse(output.Output, output.Usage, output.StopReason, req.Model), nil
+	url := fmt.Sprintf("%s/model/%s/converse", b.baseURL, req.Model)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	signRequest(httpReq, b.creds, b.region, "bedrock", body, time.Now())
+
+	httpResp, err := b.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{Category: ErrCategoryTimeout, Message: ctx.Err().Error(), Err: ctx.Err()}
+		}
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: err.Error(), Err: err}
+	}
+	defer func() { _ = httpResp.Body.Close() }()
+
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		msg := http.StatusText(httpResp.StatusCode)
+		var errResp bedrockErrorResponse
+		if json.Unmarshal(respBody, &errResp) == nil && errResp.Message != "" {
+			msg = errResp.Message
+		}
+		return nil, &ProviderError{
+			Category: b.mapStatusToCategory(httpResp.StatusCode),
+			Status:   httpResp.StatusCode,
+			Message:  msg,
+		}
+	}
+
+	var apiResp bedrockResponse
+	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+		return nil, &ProviderError{
+			Category: ErrCategoryServer,
+			Message:  fmt.Sprintf("failed to parse response: %s", err),
+			Err:      err,
+		}
+	}
+
+	if apiResp.Output.Message == nil {
+		fmt.Fprintf(os.Stderr, "bedrock: response contains no message content\n")
+	}
+
+	return parseBedrockResponse(&apiResp, req.Model), nil
 }

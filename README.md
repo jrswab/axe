@@ -29,7 +29,7 @@ Axe is the executor, not the scheduler. It is designed to be composed with stand
 - **JSON output** — structured output with metadata for scripting
 - **Built-in tools** — file operations (read, write, edit, list) sandboxed to working directory; shell command execution; URL fetching; web search
 - **MCP tool support** — connect to external MCP servers for additional tools via SSE or streamable-HTTP transport
-- **Minimal dependencies** — four direct dependencies (cobra, toml, mcp-go-sdk, x/net); AWS SDK v2 for Bedrock support
+- **Minimal dependencies** — four direct dependencies (cobra, toml, mcp-go-sdk, x/net); all LLM calls use the standard library
 
 ## Installation
 
