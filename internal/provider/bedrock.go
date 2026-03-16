@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
@@ -200,9 +201,10 @@ func convertFromBedrockResponse(output types.ConverseOutput, usage *types.TokenU
 				continue // Skip malformed tool use blocks
 			}
 			args := make(map[string]string)
-			// Decode document to map
 			var inputMap map[string]interface{}
-			if err := v.Value.Input.UnmarshalSmithyDocument(&inputMap); err == nil {
+			if err := v.Value.Input.UnmarshalSmithyDocument(&inputMap); err != nil {
+				fmt.Fprintf(os.Stderr, "bedrock: failed to unmarshal tool input for %s: %v\n", *v.Value.Name, err)
+			} else {
 				for k, val := range inputMap {
 					args[k] = fmt.Sprintf("%v", val)
 				}
