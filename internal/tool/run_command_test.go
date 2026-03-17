@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -211,5 +212,129 @@ func TestRunCommand_FailingCommandWithOutput(t *testing.T) {
 	}
 	if !strings.Contains(result.Content, "before-fail") {
 		t.Errorf("Content %q should contain 'before-fail'", result.Content)
+	}
+}
+
+func TestRunCommand_RejectsAbsolutePathOutsideWorkdir(t *testing.T) {
+	tmpdir := t.TempDir()
+
+	entry := runCommandEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "sandbox-1",
+		Name:      "run_command",
+		Arguments: map[string]string{"command": "cat /etc/passwd"},
+	}, ExecContext{Workdir: tmpdir})
+
+	if !result.IsError {
+		t.Fatal("expected error for absolute path outside workdir, got success")
+	}
+	if !strings.Contains(result.Content, "absolute path") {
+		t.Errorf("Content %q should contain 'absolute path'", result.Content)
+	}
+}
+
+func TestRunCommand_RejectsParentTraversal(t *testing.T) {
+	tmpdir := t.TempDir()
+
+	entry := runCommandEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "sandbox-2",
+		Name:      "run_command",
+		Arguments: map[string]string{"command": "cat ../../etc/passwd"},
+	}, ExecContext{Workdir: tmpdir})
+
+	if !result.IsError {
+		t.Fatal("expected error for parent traversal, got success")
+	}
+	if !strings.Contains(result.Content, "parent traversal") {
+		t.Errorf("Content %q should contain 'parent traversal'", result.Content)
+	}
+}
+
+func TestRunCommand_RejectsTildeExpansion(t *testing.T) {
+	tmpdir := t.TempDir()
+
+	entry := runCommandEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "sandbox-3",
+		Name:      "run_command",
+		Arguments: map[string]string{"command": "cat ~/secrets"},
+	}, ExecContext{Workdir: tmpdir})
+
+	if !result.IsError {
+		t.Fatal("expected error for tilde expansion, got success")
+	}
+}
+
+func TestRunCommand_AllowsAbsolutePathInsideWorkdir(t *testing.T) {
+	tmpdir := t.TempDir()
+
+	// Create a file inside tmpdir
+	testFile := filepath.Join(tmpdir, "file.txt")
+	if err := os.WriteFile(testFile, []byte("test content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	entry := runCommandEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "sandbox-4",
+		Name:      "run_command",
+		Arguments: map[string]string{"command": "cat " + tmpdir + "/file.txt"},
+	}, ExecContext{Workdir: tmpdir})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "test content") {
+		t.Errorf("Content %q should contain 'test content'", result.Content)
+	}
+}
+
+func TestRunCommand_HomeSetToWorkdir(t *testing.T) {
+	tmpdir := t.TempDir()
+
+	entry := runCommandEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "sandbox-5",
+		Name:      "run_command",
+		Arguments: map[string]string{"command": "echo $HOME"},
+	}, ExecContext{Workdir: tmpdir})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+
+	outputDir := strings.TrimSpace(result.Content)
+	resolvedOutput, err := filepath.EvalSymlinks(outputDir)
+	if err != nil {
+		t.Fatalf("failed to resolve output path %q: %v", outputDir, err)
+	}
+	resolvedTmpdir, err := filepath.EvalSymlinks(tmpdir)
+	if err != nil {
+		t.Fatalf("failed to resolve tmpdir %q: %v", tmpdir, err)
+	}
+
+	if resolvedOutput != resolvedTmpdir {
+		t.Errorf("HOME %q resolved to %q, want %q", outputDir, resolvedOutput, resolvedTmpdir)
+	}
+}
+
+func TestRunCommand_StripsEnvVars(t *testing.T) {
+	tmpdir := t.TempDir()
+
+	t.Setenv("SECRET_TOKEN", "leaked")
+
+	entry := runCommandEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "sandbox-6",
+		Name:      "run_command",
+		Arguments: map[string]string{"command": "echo $SECRET_TOKEN"},
+	}, ExecContext{Workdir: tmpdir})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+	if strings.TrimSpace(result.Content) != "" {
+		t.Errorf("Content %q should be empty (env var stripped)", result.Content)
 	}
 }

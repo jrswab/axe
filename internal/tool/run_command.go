@@ -31,7 +31,7 @@ func runCommandEntry() ToolEntry {
 func runCommandDefinition() provider.Tool {
 	return provider.Tool{
 		Name:        toolname.RunCommand,
-		Description: "Execute a shell command in the agent's working directory via sh -c and return the combined stdout/stderr output.",
+		Description: "Execute a shell command in the agent's working directory via sh -c and return the combined stdout/stderr output. Commands are sandboxed to the working directory: absolute paths outside it are rejected, parent traversal (..) escaping it is rejected, and all file operations should use relative paths.",
 		Parameters: map[string]provider.ToolParameter{
 			"command": {
 				Type:        "string",
@@ -72,8 +72,17 @@ func runCommandExecute(ctx context.Context, call provider.ToolCall, ec ExecConte
 		}
 	}
 
+	if err := validateCommand(ec.Workdir, command); err != nil {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: err.Error(),
+			IsError: true,
+		}
+	}
+
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = ec.Workdir
+	cmd.Env = sandboxEnv(ec.Workdir)
 
 	output, err := cmd.CombinedOutput()
 
