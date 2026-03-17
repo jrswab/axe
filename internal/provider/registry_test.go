@@ -16,6 +16,8 @@ func TestNew_Anthropic(t *testing.T) {
 }
 
 func TestNew_Bedrock(t *testing.T) {
+	t.Setenv("AWS_ACCESS_KEY_ID", "AKID")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "SECRET")
 	p, err := New("bedrock", "us-east-1", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
