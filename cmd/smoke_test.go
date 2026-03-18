@@ -329,8 +329,8 @@ func TestSmoke_MissingAPIKey(t *testing.T) {
 
 	stdout, stderr, exitCode := runAxe(t, env, "", "run", "basic")
 
-	if exitCode != 3 {
-		t.Fatalf("expected exit code 3, got %d; stderr: %s", exitCode, stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit code 2, got %d; stderr: %s", exitCode, stderr)
 	}
 	if !strings.Contains(stderr, "API key") {
 		t.Errorf("stderr does not contain 'API key': %q", stderr)

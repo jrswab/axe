@@ -119,10 +119,20 @@ func runSingleAgentGC(cmd *cobra.Command, agentName string) error {
 
 	apiKey := globalCfg.ResolveAPIKey(provName)
 	baseURL := globalCfg.ResolveBaseURL(provName)
+	region := globalCfg.ResolveRegion(provName)
 
-	if provider.Supported(provName) && provName != "ollama" && apiKey == "" {
+	// For bedrock, use region as apiKey parameter and clear baseURL
+	if provName == "bedrock" {
+		if region == "" {
+			return &ExitError{Code: 2, Err: fmt.Errorf("region for provider %q is not configured (set AWS_REGION or add to config.toml)", provName)}
+		}
+		apiKey = region
+		baseURL = "" // Don't pass baseURL to bedrock
+	}
+
+	if provider.Supported(provName) && provName != "ollama" && provName != "bedrock" && apiKey == "" {
 		envVar := config.APIKeyEnvVar(provName)
-		return &ExitError{Code: 3, Err: fmt.Errorf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar)}
+		return &ExitError{Code: 2, Err: fmt.Errorf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar)}
 	}
 
 	// Step 8: Create provider (Req 3.7)

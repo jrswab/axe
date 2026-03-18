@@ -213,12 +213,22 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	// Step 12-13: Resolve API key and validate
 	apiKey := globalCfg.ResolveAPIKey(provName)
 	baseURL := globalCfg.ResolveBaseURL(provName)
+	region := globalCfg.ResolveRegion(provName)
+
+	// For bedrock, use region as apiKey parameter and clear baseURL
+	if provName == "bedrock" {
+		if region == "" {
+			return &ExitError{Code: 2, Err: fmt.Errorf("region for provider %q is not configured (set AWS_REGION or add to config.toml)", provName)}
+		}
+		apiKey = region
+		baseURL = "" // Don't pass baseURL to bedrock
+	}
 
 	// Check for missing API key only for supported providers that require one.
 	// Unsupported providers fall through to provider.New() which returns a clear error.
-	if provider.Supported(provName) && provName != "ollama" && apiKey == "" {
+	if provider.Supported(provName) && provName != "ollama" && provName != "bedrock" && apiKey == "" {
 		envVar := config.APIKeyEnvVar(provName)
-		return &ExitError{Code: 3, Err: fmt.Errorf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar)}
+		return &ExitError{Code: 2, Err: fmt.Errorf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar)}
 	}
 
 	// Step 14: Create provider

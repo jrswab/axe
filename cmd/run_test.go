@@ -181,8 +181,8 @@ model = "anthropic/claude-sonnet-4-20250514"
 	if !errors.As(err, &exitErr) {
 		t.Fatalf("expected ExitError, got %T: %v", err, err)
 	}
-	if exitErr.Code != 3 {
-		t.Errorf("expected exit code 3, got %d", exitErr.Code)
+	if exitErr.Code != 2 {
+		t.Errorf("expected exit code 2, got %d", exitErr.Code)
 	}
 	if !strings.Contains(err.Error(), "ANTHROPIC_API_KEY") {
 		t.Errorf("expected error mentioning ANTHROPIC_API_KEY, got: %v", err)
@@ -1031,8 +1031,8 @@ model = "openai/gpt-4o"
 	if !errors.As(err, &exitErr) {
 		t.Fatalf("expected ExitError, got %T", err)
 	}
-	if exitErr.Code != 3 {
-		t.Errorf("expected exit code 3, got %d", exitErr.Code)
+	if exitErr.Code != 2 {
+		t.Errorf("expected exit code 2, got %d", exitErr.Code)
 	}
 }
 

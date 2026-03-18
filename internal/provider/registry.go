@@ -10,6 +10,7 @@ var supportedProviders = map[string]bool{
 	"opencode":  true,
 	"google":    true,
 	"minimax":   true,
+	"bedrock":   true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -62,7 +63,12 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		}
 		return NewMiniMax(apiKey, opts...)
 
+	case "bedrock":
+		// For bedrock, apiKey contains the region (set by cmd/run.go and cmd/gc.go)
+		// baseURL is not used for bedrock
+		return NewBedrock(apiKey)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock", providerName)
 	}
 }

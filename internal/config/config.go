@@ -14,6 +14,7 @@ import (
 type ProviderConfig struct {
 	APIKey  string `toml:"api_key"`
 	BaseURL string `toml:"base_url"`
+	Region  string `toml:"region"`
 }
 
 // GlobalConfig represents the parsed global config file.
@@ -100,6 +101,33 @@ func (c *GlobalConfig) ResolveBaseURL(providerName string) string {
 	if c.Providers != nil {
 		if pc, exists := c.Providers[providerName]; exists {
 			return pc.BaseURL
+		}
+	}
+
+	return ""
+}
+
+// ResolveRegion returns the region for the given provider (primarily for AWS Bedrock).
+// Resolution order: AWS_REGION > AWS_DEFAULT_REGION > config file > empty string.
+func (c *GlobalConfig) ResolveRegion(providerName string) string {
+	// Check standard AWS environment variables first
+	if v := os.Getenv("AWS_REGION"); v != "" {
+		return v
+	}
+	if v := os.Getenv("AWS_DEFAULT_REGION"); v != "" {
+		return v
+	}
+
+	// Check provider-specific env var
+	envVar := "AXE_" + strings.ToUpper(providerName) + "_REGION"
+	if v := os.Getenv(envVar); v != "" {
+		return v
+	}
+
+	// Check config file
+	if c.Providers != nil {
+		if pc, exists := c.Providers[providerName]; exists {
+			return pc.Region
 		}
 	}
 

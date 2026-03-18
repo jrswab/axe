@@ -36,3 +36,5 @@ release-notes.md
 .vscode/
 .opencode/
 .entire/
+.kiro/
+.agents/
