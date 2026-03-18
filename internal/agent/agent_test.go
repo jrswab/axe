@@ -1411,6 +1411,81 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 }
 
+func TestValidate_RetryMaxDelayMs_LessThanInitialDelayMs(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "anthropic/claude-sonnet-4-20250514",
+		Retry: RetryConfig{
+			InitialDelayMs: 500,
+			MaxDelayMs:     100,
+		},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error when max_delay_ms < initial_delay_ms, got nil")
+	}
+	want := "retry.max_delay_ms must be >= retry.initial_delay_ms"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_RetryMaxDelayMs_EqualToInitialDelayMs(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "anthropic/claude-sonnet-4-20250514",
+		Retry: RetryConfig{
+			InitialDelayMs: 500,
+			MaxDelayMs:     500,
+		},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error when max_delay_ms == initial_delay_ms, got %v", err)
+	}
+}
+
+func TestValidate_RetryMaxDelayMs_GreaterThanInitialDelayMs(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "anthropic/claude-sonnet-4-20250514",
+		Retry: RetryConfig{
+			InitialDelayMs: 500,
+			MaxDelayMs:     1000,
+		},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error when max_delay_ms > initial_delay_ms, got %v", err)
+	}
+}
+
+func TestValidate_RetryMaxDelayMs_ZeroWithInitialDelayMsSet(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "anthropic/claude-sonnet-4-20250514",
+		Retry: RetryConfig{
+			InitialDelayMs: 500,
+			MaxDelayMs:     0,
+		},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error when max_delay_ms=0 (use default), got %v", err)
+	}
+}
+
+func TestValidate_RetryInitialDelayMs_ZeroWithMaxDelayMsSet(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "anthropic/claude-sonnet-4-20250514",
+		Retry: RetryConfig{
+			InitialDelayMs: 0,
+			MaxDelayMs:     100,
+		},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error when initial_delay_ms=0 (use default), got %v", err)
+	}
+}
+
 func TestScaffold_IncludesRetryConfig(t *testing.T) {
 	out, err := Scaffold("test")
 	if err != nil {

@@ -139,6 +139,9 @@ func Validate(cfg *AgentConfig) error {
 	if cfg.Retry.MaxDelayMs < 0 {
 		return errors.New("retry.max_delay_ms must be non-negative")
 	}
+	if cfg.Retry.InitialDelayMs > 0 && cfg.Retry.MaxDelayMs > 0 && cfg.Retry.MaxDelayMs < cfg.Retry.InitialDelayMs {
+		return errors.New("retry.max_delay_ms must be >= retry.initial_delay_ms")
+	}
 
 	return nil
 }

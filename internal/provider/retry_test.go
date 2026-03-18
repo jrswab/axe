@@ -433,3 +433,73 @@ func TestRetrySend_SilentWhenNotVerbose(t *testing.T) {
 		t.Errorf("expected no output when not verbose, got %q", buf.String())
 	}
 }
+
+// --- Context cancellation error classification tests ---
+
+func TestRetrySend_ContextDeadlineExceeded(t *testing.T) {
+	// Create a mock provider that returns a retriable error
+	mock := &retryMockProvider{
+		errors: []error{
+			&ProviderError{Category: ErrCategoryRateLimit, Message: "rate limited"},
+			&ProviderError{Category: ErrCategoryRateLimit, Message: "rate limited"},
+			&ProviderError{Category: ErrCategoryRateLimit, Message: "rate limited"},
+		},
+	}
+	// Very short deadline (10ms) with long backoff (5000ms) ensures deadline fires during backoff
+	rp := NewRetry(mock, RetryConfig{MaxRetries: 5, InitialDelayMs: 5000, MaxDelayMs: 10000})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	_, err := rp.Send(ctx, &Request{})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	// Should be able to unwrap to ProviderError
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected error to be a *ProviderError (via errors.As), got %T: %v", err, err)
+	}
+
+	if provErr.Category != ErrCategoryTimeout {
+		t.Errorf("expected Category = ErrCategoryTimeout, got %s", provErr.Category)
+	}
+
+	// The underlying error should be context.DeadlineExceeded
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("expected error to wrap context.DeadlineExceeded (via errors.Is)")
+	}
+}
+
+func TestRetrySend_ContextCanceled_NotProviderError(t *testing.T) {
+	// Create a mock provider that returns a retriable error
+	mock := &retryMockProvider{
+		errors: []error{
+			&ProviderError{Category: ErrCategoryRateLimit, Message: "rate limited"},
+			&ProviderError{Category: ErrCategoryRateLimit, Message: "rate limited"},
+		},
+	}
+	rp := NewRetry(mock, RetryConfig{MaxRetries: 5, InitialDelayMs: 5000, MaxDelayMs: 10000})
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Cancel immediately
+	cancel()
+
+	_, err := rp.Send(ctx, &Request{})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	// Should NOT be a ProviderError - plain cancellation is not a provider error
+	var provErr *ProviderError
+	if errors.As(err, &provErr) {
+		t.Errorf("expected plain context.Canceled error, but got ProviderError: %v", err)
+	}
+
+	// The error should be context.Canceled
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected error to be context.Canceled, got %T: %v", err, err)
+	}
+}

@@ -65,7 +65,7 @@ func (r *RetryProvider) Send(ctx context.Context, req *Request) (*Response, erro
 
 		// Check context before sleeping
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, ctxCancelErr(ctx)
 		}
 
 		delay := computeDelay(attempt, r.cfg)
@@ -85,7 +85,7 @@ func (r *RetryProvider) Send(ctx context.Context, req *Request) (*Response, erro
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, ctxCancelErr(ctx)
 		}
 
 		r.attempts++
@@ -96,6 +96,20 @@ func (r *RetryProvider) Send(ctx context.Context, req *Request) (*Response, erro
 	}
 
 	return nil, err
+}
+
+// ctxCancelErr returns an appropriate error when the context is cancelled.
+// For DeadlineExceeded, it returns a ProviderError with ErrCategoryTimeout.
+// For plain Canceled, it returns ctx.Err() as-is.
+func ctxCancelErr(ctx context.Context) error {
+	if ctx.Err() == context.DeadlineExceeded {
+		return &ProviderError{
+			Category: ErrCategoryTimeout,
+			Message:  ctx.Err().Error(),
+			Err:      ctx.Err(),
+		}
+	}
+	return ctx.Err()
 }
 
 // isRetriable returns true if the error is a ProviderError with a retriable category.
