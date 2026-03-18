@@ -261,6 +261,12 @@ model = "provider/model-name"
 # [params]
 # temperature = 0.3
 # max_tokens = 4096
+
+# [retry]
+# max_retries = 0
+# backoff = "exponential"
+# initial_delay_ms = 500
+# max_delay_ms = 30000
 `
 	return tmpl, nil
 }

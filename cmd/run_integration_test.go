@@ -1905,3 +1905,102 @@ tools = ["write_file", "run_command"]
 		t.Errorf("expected stdout to NOT contain 'list_directory', got: %s", output)
 	}
 }
+
+func TestIntegration_JSONOutput_IncludesRetryAttempts(t *testing.T) {
+	resetRunCmd(t)
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("retry test response"),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "retry-json", `name = "retry-json"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "retry-json", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	retryAttempts, ok := result["retry_attempts"]
+	if !ok {
+		t.Fatal("JSON output missing 'retry_attempts' field")
+	}
+	// JSON numbers are float64
+	if retryAttempts.(float64) != 0 {
+		t.Errorf("expected retry_attempts=0, got %v", retryAttempts)
+	}
+}
+
+func TestIntegration_RetrySuccess_After429(t *testing.T) {
+	resetRunCmd(t)
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicErrorResponse(429, "rate_limit_error", "too many requests"),
+		testutil.AnthropicResponse("success after retry"),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "retry-429", `name = "retry-429"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[retry]
+max_retries = 2
+backoff = "fixed"
+initial_delay_ms = 1
+max_delay_ms = 1
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "retry-429", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	// Should have retried once
+	retryAttempts, ok := result["retry_attempts"]
+	if !ok {
+		t.Fatal("JSON output missing 'retry_attempts' field")
+	}
+	if retryAttempts.(float64) != 1 {
+		t.Errorf("expected retry_attempts=1, got %v", retryAttempts)
+	}
+
+	// Content should be from the successful response
+	if result["content"] != "success after retry" {
+		t.Errorf("expected content 'success after retry', got %q", result["content"])
+	}
+
+	// Mock should have received exactly 2 requests
+	if mock.RequestCount() != 2 {
+		t.Errorf("expected 2 requests to mock server, got %d", mock.RequestCount())
+	}
+}

@@ -227,6 +227,17 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		return &ExitError{Code: 1, Err: err}
 	}
 
+	// Step 14b: Wrap provider with retry decorator
+	retryProv := provider.NewRetry(prov, provider.RetryConfig{
+		MaxRetries:     cfg.Retry.MaxRetries,
+		Backoff:        cfg.Retry.Backoff,
+		InitialDelayMs: cfg.Retry.InitialDelayMs,
+		MaxDelayMs:     cfg.Retry.MaxDelayMs,
+		Verbose:        verbose,
+		Stderr:         cmd.ErrOrStderr(),
+	})
+	prov = retryProv
+
 	// Step 15: Build user message
 	userMessage := defaultUserMessage
 	if strings.TrimSpace(stdinContent) != "" {
@@ -477,6 +488,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			"tool_calls":        totalToolCalls,
 			"tool_call_details": allToolCallDetails,
 			"refused":           refusal.Detect(resp.Content),
+			"retry_attempts":    retryProv.Attempts(),
 		}
 		data, err := json.Marshal(envelope)
 		if err != nil {

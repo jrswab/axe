@@ -40,6 +40,12 @@ path = ""  # defaults to $XDG_DATA_HOME/axe/memory/<agent-name>/
 [params]
 temperature = 0.3
 max_tokens = 4096
+
+[retry]
+max_retries = 3
+backoff = "exponential"
+initial_delay_ms = 500
+max_delay_ms = 30000
 ```
 
 ## Fields
@@ -58,6 +64,10 @@ max_tokens = 4096
 | `memory.path` | string | no | Custom memory directory |
 | `params.temperature` | float | no | Model temperature |
 | `params.max_tokens` | int | no | Max output tokens |
+| `retry.max_retries` | int | no | Max retry attempts after initial request (default: 0) |
+| `retry.backoff` | string | no | Backoff strategy: "exponential", "linear", "fixed" (default: "exponential") |
+| `retry.initial_delay_ms` | int | no | Base delay in ms before first retry (default: 500) |
+| `retry.max_delay_ms` | int | no | Max delay cap in ms (default: 30000) |
 
 ## Stdin
 

@@ -5,6 +5,7 @@
   "model": "claude-sonnet-4-20250514",
   "output_tokens": 25,
   "refused": false,
+  "retry_attempts": 0,
   "stop_reason": "end_turn",
   "tool_call_details": [
     {

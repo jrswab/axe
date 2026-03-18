@@ -1410,3 +1410,22 @@ model = "anthropic/claude-sonnet-4-20250514"
 		t.Errorf("MaxDelayMs = %d, want 0", cfg.Retry.MaxDelayMs)
 	}
 }
+
+func TestScaffold_IncludesRetryConfig(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	checks := []string{
+		"# [retry]",
+		"# max_retries = 0",
+		`# backoff = "exponential"`,
+		"# initial_delay_ms = 500",
+		"# max_delay_ms = 30000",
+	}
+	for _, check := range checks {
+		if !strings.Contains(out, check) {
+			t.Errorf("scaffold output missing %q\nfull output:\n%s", check, out)
+		}
+	}
+}
