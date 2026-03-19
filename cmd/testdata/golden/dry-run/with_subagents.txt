@@ -4,6 +4,7 @@ Model:    anthropic/claude-sonnet-4-20250514
 Workdir:  {{WORKDIR}}
 Timeout:  120s
 Params:   temperature=0, max_tokens=0
+Budget:   0 tokens (0 = unlimited)
 
 --- System Prompt ---
 

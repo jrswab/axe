@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jrswab/axe/internal/agent"
+	"github.com/jrswab/axe/internal/budget"
 	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/mcpclient"
 	"github.com/jrswab/axe/internal/memory"
@@ -56,6 +57,7 @@ func init() {
 	runCmd.Flags().Bool("dry-run", false, "Show resolved context without calling the LLM")
 	runCmd.Flags().BoolP("verbose", "v", false, "Print debug info to stderr")
 	runCmd.Flags().Bool("json", false, "Wrap output in JSON with metadata")
+	runCmd.Flags().Int("max-tokens", 0, "Maximum total tokens (input+output) for the entire run (0 = unlimited)")
 	rootCmd.AddCommand(runCmd)
 }
 
@@ -202,9 +204,17 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
+	// Resolve effective budget
+	flagMaxTokens, _ := cmd.Flags().GetInt("max-tokens")
+	effectiveMaxTokens := cfg.Budget.MaxTokens
+	if flagMaxTokens > 0 {
+		effectiveMaxTokens = flagMaxTokens
+	}
+	tracker := budget.New(effectiveMaxTokens)
+
 	// Step 11: Dry-run mode
 	if dryRun {
-		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent, memoryEntries)
+		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent, memoryEntries, effectiveMaxTokens)
 	}
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Duration(timeout)*time.Second)
@@ -377,6 +387,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	var totalOutputTokens int
 	var totalToolCalls int
 	var allToolCallDetails []toolCallDetail
+	var budgetExceeded bool
 
 	if len(req.Tools) == 0 {
 		// Single-shot: no tools, no conversation loop (identical to M4)
@@ -390,16 +401,31 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		}
 		totalInputTokens = resp.InputTokens
 		totalOutputTokens = resp.OutputTokens
+		tracker.Add(resp.InputTokens, resp.OutputTokens)
+
+		if tracker.Exceeded() {
+			budgetExceeded = true
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "budget exceeded: used %d of %d tokens\n", tracker.Used(), tracker.Max())
+		}
 
 		if verbose {
 			durationMs := time.Since(start).Milliseconds()
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
-			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output\n", resp.InputTokens, resp.OutputTokens)
+			if tracker.Max() > 0 {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output (cumulative, budget: %d/%d)\n", resp.InputTokens, resp.OutputTokens, tracker.Used(), tracker.Max())
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output\n", resp.InputTokens, resp.OutputTokens)
+			}
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Stop:     %s\n", resp.StopReason)
 		}
 	} else {
 		// Conversation loop: handle tool calls
 		for turn := 0; turn < maxConversationTurns; turn++ {
+			// Check budget before making LLM call
+			if tracker.Exceeded() {
+				break
+			}
+
 			if verbose {
 				pendingToolCalls := 0
 				for _, m := range req.Messages {
@@ -421,6 +447,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 
 			totalInputTokens += resp.InputTokens
 			totalOutputTokens += resp.OutputTokens
+			tracker.Add(resp.InputTokens, resp.OutputTokens)
 
 			if verbose {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Received response: %s (%d tool calls)\n", turn+1, resp.StopReason, len(resp.ToolCalls))
@@ -428,6 +455,11 @@ func runAgent(cmd *cobra.Command, args []string) error {
 
 			// No tool calls: conversation is done
 			if len(resp.ToolCalls) == 0 {
+				break
+			}
+
+			// Stop before executing tools if budget is exceeded
+			if tracker.Exceeded() {
 				break
 			}
 
@@ -440,7 +472,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			req.Messages = append(req.Messages, assistantMsg)
 
 			// Execute tool calls
-			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, mcpRouter, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr(), workdir)
+			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, mcpRouter, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr(), workdir, tracker)
 			totalToolCalls += len(resp.ToolCalls)
 
 			if jsonOutput {
@@ -472,10 +504,20 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			return &ExitError{Code: 1, Err: fmt.Errorf("agent exceeded maximum conversation turns (%d)", maxConversationTurns)}
 		}
 
+		// Check if budget was exceeded
+		if tracker.Exceeded() {
+			budgetExceeded = true
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "budget exceeded: used %d of %d tokens\n", tracker.Used(), tracker.Max())
+		}
+
 		if verbose {
 			durationMs := time.Since(start).Milliseconds()
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
-			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output (cumulative)\n", totalInputTokens, totalOutputTokens)
+			if tracker.Max() > 0 {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output (cumulative, budget: %d/%d)\n", totalInputTokens, totalOutputTokens, tracker.Used(), tracker.Max())
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Tokens:   %d input, %d output (cumulative)\n", totalInputTokens, totalOutputTokens)
+			}
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Stop:     %s\n", resp.StopReason)
 		}
 	}
@@ -500,6 +542,11 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			"refused":           refusal.Detect(resp.Content),
 			"retry_attempts":    retryProv.Attempts(),
 		}
+		if tracker.Max() > 0 {
+			envelope["budget_max_tokens"] = tracker.Max()
+			envelope["budget_used_tokens"] = tracker.Used()
+			envelope["budget_exceeded"] = tracker.Exceeded()
+		}
 		data, err := json.Marshal(envelope)
 		if err != nil {
 			return &ExitError{Code: 1, Err: fmt.Errorf("failed to marshal JSON output: %w", err)}
@@ -508,6 +555,11 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	} else {
 		// Step 20: Default output
 		_, _ = fmt.Fprint(cmd.OutOrStdout(), resp.Content)
+	}
+
+	// Return exit code 4 if budget was exceeded (before memory append)
+	if budgetExceeded {
+		return &ExitError{Code: 4, Err: fmt.Errorf("budget exceeded: used %d of %d tokens", tracker.Used(), tracker.Max())}
 	}
 
 	// Step 21: Append memory entry after successful response
@@ -525,7 +577,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, systemPrompt, skillContent string, files []resolve.FileContent, stdinContent string, memoryEntries string) error {
+func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, systemPrompt, skillContent string, files []resolve.FileContent, stdinContent string, memoryEntries string, maxTokens int) error {
 	out := cmd.OutOrStdout()
 
 	_, _ = fmt.Fprintln(out, "=== Dry Run ===")
@@ -534,6 +586,7 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 	_, _ = fmt.Fprintf(out, "Workdir:  %s\n", workdir)
 	_, _ = fmt.Fprintf(out, "Timeout:  %ds\n", timeout)
 	_, _ = fmt.Fprintf(out, "Params:   temperature=%g, max_tokens=%d\n", cfg.Params.Temperature, cfg.Params.MaxTokens)
+	_, _ = fmt.Fprintf(out, "Budget:   %d tokens (0 = unlimited)\n", maxTokens)
 
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "--- System Prompt ---")
@@ -618,7 +671,7 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 
 // executeToolCalls dispatches tool calls and returns results.
 // When parallel is true and there are multiple calls, they run concurrently.
-func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string) []provider.ToolResult {
+func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string, budgetTracker *budget.BudgetTracker) []provider.ToolResult {
 	results := make([]provider.ToolResult, len(toolCalls))
 
 	execOpts := tool.ExecuteOptions{
@@ -631,6 +684,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		MCPRouter:     mcpRouter,
 		Verbose:       verbose,
 		Stderr:        stderr,
+		BudgetTracker: budgetTracker,
 	}
 
 	if len(toolCalls) == 1 || !parallel {

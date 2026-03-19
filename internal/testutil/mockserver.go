@@ -129,6 +129,12 @@ func AnthropicResponse(text string) MockLLMResponse {
 	return MockLLMResponse{StatusCode: 200, Body: body}
 }
 
+// AnthropicResponseWithTokens returns a MockLLMResponse with custom token counts.
+func AnthropicResponseWithTokens(text string, inputTokens, outputTokens int) MockLLMResponse {
+	body := fmt.Sprintf(`{"id":"msg_mock","type":"message","role":"assistant","content":[{"type":"text","text":%s}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":%d,"output_tokens":%d}}`, jsonString(text), inputTokens, outputTokens)
+	return MockLLMResponse{StatusCode: 200, Body: body}
+}
+
 // AnthropicToolUseResponse returns a MockLLMResponse with an Anthropic response
 // containing both a text block and tool_use blocks.
 func AnthropicToolUseResponse(text string, toolCalls []MockToolCall) MockLLMResponse {
@@ -141,6 +147,20 @@ func AnthropicToolUseResponse(text string, toolCalls []MockToolCall) MockLLMResp
 	}
 
 	body := fmt.Sprintf(`{"id":"msg_mock","type":"message","role":"assistant","content":[%s],"model":"claude-sonnet-4-20250514","stop_reason":"tool_use","usage":{"input_tokens":10,"output_tokens":20}}`, strings.Join(blocks, ","))
+	return MockLLMResponse{StatusCode: 200, Body: body}
+}
+
+// AnthropicToolUseResponseWithTokens returns a MockLLMResponse with tool calls and custom token counts.
+func AnthropicToolUseResponseWithTokens(text string, toolCalls []MockToolCall, inputTokens, outputTokens int) MockLLMResponse {
+	var blocks []string
+	blocks = append(blocks, fmt.Sprintf(`{"type":"text","text":%s}`, jsonString(text)))
+
+	for _, tc := range toolCalls {
+		inputJSON, _ := json.Marshal(tc.Input)
+		blocks = append(blocks, fmt.Sprintf(`{"type":"tool_use","id":%s,"name":%s,"input":%s}`, jsonString(tc.ID), jsonString(tc.Name), string(inputJSON)))
+	}
+
+	body := fmt.Sprintf(`{"id":"msg_mock","type":"message","role":"assistant","content":[%s],"model":"claude-sonnet-4-20250514","stop_reason":"tool_use","usage":{"input_tokens":%d,"output_tokens":%d}}`, strings.Join(blocks, ","), inputTokens, outputTokens)
 	return MockLLMResponse{StatusCode: 200, Body: body}
 }
 

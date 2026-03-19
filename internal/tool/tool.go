@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jrswab/axe/internal/agent"
+	"github.com/jrswab/axe/internal/budget"
 	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/mcpclient"
 	"github.com/jrswab/axe/internal/memory"
@@ -34,6 +35,7 @@ type ExecuteOptions struct {
 	MCPRouter     *mcpclient.Router
 	Verbose       bool
 	Stderr        io.Writer
+	BudgetTracker *budget.BudgetTracker
 }
 
 // CallAgentTool returns the call_agent tool definition for LLM tool calling.
@@ -340,11 +342,26 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 // runConversationLoop runs the multi-turn conversation loop for a sub-agent.
 // If the sub-agent has no tools, this is a single-shot call.
 func runConversationLoop(ctx context.Context, prov provider.Provider, req *provider.Request, cfg *agent.AgentConfig, registry *Registry, depth int, opts ExecuteOptions, toolWorkdir string) (*provider.Response, error) {
+	var lastResp *provider.Response
 	for turn := 0; turn < maxConversationTurns; turn++ {
+		// Check budget before making LLM call
+		if opts.BudgetTracker != nil && opts.BudgetTracker.Exceeded() {
+			if lastResp != nil {
+				return lastResp, nil
+			}
+			return nil, fmt.Errorf("budget exceeded before first LLM call")
+		}
+
 		resp, err := prov.Send(ctx, req)
 		if err != nil {
 			return nil, err
 		}
+
+		// Track token usage in budget
+		if opts.BudgetTracker != nil {
+			opts.BudgetTracker.Add(resp.InputTokens, resp.OutputTokens)
+		}
+		lastResp = resp
 
 		// No tool calls: we're done
 		if len(resp.ToolCalls) == 0 {
@@ -353,6 +370,11 @@ func runConversationLoop(ctx context.Context, prov provider.Provider, req *provi
 
 		// If no tools were sent, treat as done even if response has tool calls
 		if len(req.Tools) == 0 {
+			return resp, nil
+		}
+
+		// Stop before executing tools if budget is exceeded
+		if opts.BudgetTracker != nil && opts.BudgetTracker.Exceeded() {
 			return resp, nil
 		}
 
@@ -380,6 +402,7 @@ func runConversationLoop(ctx context.Context, prov provider.Provider, req *provi
 					MCPRouter:     nil,
 					Verbose:       opts.Verbose,
 					Stderr:        opts.Stderr,
+					BudgetTracker: opts.BudgetTracker,
 				}
 				results[i] = ExecuteCallAgent(ctx, tc, subOpts)
 			} else {

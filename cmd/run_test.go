@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/jrswab/axe/internal/testutil"
 )
 
 // resetRunCmd resets all run command flags and stdin to their defaults between tests.
@@ -26,6 +28,7 @@ func resetRunCmd(t *testing.T) {
 	_ = runCmd.Flags().Set("dry-run", "false")
 	_ = runCmd.Flags().Set("verbose", "false")
 	_ = runCmd.Flags().Set("json", "false")
+	_ = runCmd.Flags().Set("max-tokens", "0")
 	rootCmd.SetIn(os.Stdin)
 }
 
@@ -2541,5 +2544,325 @@ model = "openai/gpt-4o"
 	output := buf.String()
 	if !strings.Contains(output, "openai/gpt-4o") {
 		t.Errorf("expected 'openai/gpt-4o' in dry-run output, got %q", output)
+	}
+}
+
+// --- Phase 5: Token Budget Limits Tests ---
+
+func TestRun_BudgetExceeded_FlagOverridesToml(t *testing.T) {
+	resetRunCmd(t)
+
+	// Mock server returns 300 input + 200 output = 500 tokens
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithTokens("Hello from budget test", 300, 200),
+	})
+
+	setupRunTestAgent(t, "budget-flag", `name = "budget-flag"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[budget]
+max_tokens = 10000
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "budget-flag", "--max-tokens", "100"})
+
+	err := rootCmd.Execute()
+
+	// Should get exit code 4
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T: %v", err, err)
+	}
+	if exitErr.Code != 4 {
+		t.Errorf("expected exit code 4, got %d", exitErr.Code)
+	}
+
+	// Stderr should contain budget exceeded message
+	stderr := errBuf.String()
+	if !strings.Contains(stderr, "budget exceeded") {
+		t.Errorf("expected 'budget exceeded' in stderr, got %q", stderr)
+	}
+
+	// Stdout should still contain the response (partial result)
+	output := buf.String()
+	if !strings.Contains(output, "Hello from budget test") {
+		t.Errorf("expected response content in stdout, got %q", output)
+	}
+}
+
+func TestRun_BudgetUnlimited_NoExceeded(t *testing.T) {
+	resetRunCmd(t)
+
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithTokens("Hello unlimited", 5000, 5000),
+	})
+
+	setupRunTestAgent(t, "budget-unlimited", `name = "budget-unlimited"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "budget-unlimited"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error for unlimited budget, got %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Hello unlimited") {
+		t.Errorf("expected response content, got %q", output)
+	}
+}
+
+func TestRun_BudgetExceeded_ConversationLoop(t *testing.T) {
+	resetRunCmd(t)
+
+	// First response: tool call with 300+200=500 tokens
+	// Second response: text with 200+100=300 tokens (total: 800)
+	// Budget is 600, so after first call (500 tokens) we're under budget,
+	// tool executes, second call (300 more = 800 total) exceeds budget
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponseWithTokens("thinking", []testutil.MockToolCall{
+			{ID: "call_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+		}, 300, 200),
+		testutil.AnthropicResponseWithTokens("Done with tools", 200, 100),
+	})
+
+	setupRunTestAgent(t, "budget-loop", `name = "budget-loop"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["list_directory"]
+
+[budget]
+max_tokens = 600
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "budget-loop"})
+
+	err := rootCmd.Execute()
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T: %v", err, err)
+	}
+	if exitErr.Code != 4 {
+		t.Errorf("expected exit code 4, got %d", exitErr.Code)
+	}
+
+	stderr := errBuf.String()
+	if !strings.Contains(stderr, "budget exceeded") {
+		t.Errorf("expected 'budget exceeded' in stderr, got %q", stderr)
+	}
+}
+
+func TestRun_BudgetJSON_IncludesFields(t *testing.T) {
+	resetRunCmd(t)
+
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithTokens("JSON budget test", 100, 50),
+	})
+
+	setupRunTestAgent(t, "budget-json", `name = "budget-json"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "budget-json", "--json", "--max-tokens", "50000"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	// Check budget fields are present
+	for _, field := range []string{"budget_max_tokens", "budget_used_tokens", "budget_exceeded"} {
+		if _, ok := result[field]; !ok {
+			t.Errorf("JSON output missing field %q", field)
+		}
+	}
+
+	if result["budget_max_tokens"] != float64(50000) {
+		t.Errorf("budget_max_tokens = %v, want 50000", result["budget_max_tokens"])
+	}
+	if result["budget_exceeded"] != false {
+		t.Errorf("budget_exceeded = %v, want false", result["budget_exceeded"])
+	}
+}
+
+func TestRun_BudgetJSON_OmitsFieldsWhenUnlimited(t *testing.T) {
+	resetRunCmd(t)
+
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("No budget JSON"),
+	})
+
+	setupRunTestAgent(t, "budget-json-none", `name = "budget-json-none"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "budget-json-none", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	// Budget fields should NOT be present
+	for _, field := range []string{"budget_max_tokens", "budget_used_tokens", "budget_exceeded"} {
+		if _, ok := result[field]; ok {
+			t.Errorf("JSON output should NOT contain field %q when budget is unlimited", field)
+		}
+	}
+}
+
+func TestRun_BudgetTomlUsedWhenFlagZero(t *testing.T) {
+	resetRunCmd(t)
+
+	// Returns 3000+3000=6000 tokens, exceeding TOML budget of 5000
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithTokens("Over TOML budget", 3000, 3000),
+	})
+
+	setupRunTestAgent(t, "budget-toml", `name = "budget-toml"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[budget]
+max_tokens = 5000
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	// --max-tokens defaults to 0, so TOML value should be used
+	rootCmd.SetArgs([]string{"run", "budget-toml"})
+
+	err := rootCmd.Execute()
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T: %v", err, err)
+	}
+	if exitErr.Code != 4 {
+		t.Errorf("expected exit code 4, got %d", exitErr.Code)
+	}
+}
+
+func TestRun_BudgetExceeded_NoMemoryAppend(t *testing.T) {
+	resetRunCmd(t)
+
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithTokens("Budget exceeded response", 300, 200),
+	})
+
+	tmpDir := setupRunTestAgent(t, "budget-nomem", `name = "budget-nomem"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+
+[budget]
+max_tokens = 100
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "budget-nomem"})
+
+	err := rootCmd.Execute()
+
+	// Should get exit code 4
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T: %v", err, err)
+	}
+	if exitErr.Code != 4 {
+		t.Errorf("expected exit code 4, got %d", exitErr.Code)
+	}
+
+	// Memory file should NOT exist (or be empty)
+	memoryPath := filepath.Join(tmpDir, "data", "axe", "memory", "budget-nomem.md")
+	if _, err := os.Stat(memoryPath); err == nil {
+		data, _ := os.ReadFile(memoryPath)
+		if len(data) > 0 {
+			t.Errorf("expected no memory file content when budget exceeded, got %q", string(data))
+		}
+	}
+	// If file doesn't exist, that's also correct
+}
+
+func TestRun_BudgetVerbose_IncludesBudgetInfo(t *testing.T) {
+	resetRunCmd(t)
+
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithTokens("Verbose budget test", 100, 50),
+	})
+
+	setupRunTestAgent(t, "budget-verbose", `name = "budget-verbose"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "budget-verbose", "--verbose", "--max-tokens", "50000"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stderr := errBuf.String()
+	// Should contain budget info in the Tokens line
+	if !strings.Contains(stderr, "budget: 150/50000") {
+		t.Errorf("expected 'budget: 150/50000' in verbose stderr, got %q", stderr)
 	}
 }

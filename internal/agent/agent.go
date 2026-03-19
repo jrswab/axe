@@ -35,6 +35,11 @@ type RetryConfig struct {
 	MaxDelayMs     int    `toml:"max_delay_ms"`
 }
 
+// BudgetConfig holds budget sub-configuration for an agent.
+type BudgetConfig struct {
+	MaxTokens int `toml:"max_tokens"`
+}
+
 // SubAgentsConfig holds sub-agent execution configuration for an agent.
 type SubAgentsConfig struct {
 	MaxDepth int   `toml:"max_depth"`
@@ -66,6 +71,7 @@ type AgentConfig struct {
 	Memory        MemoryConfig      `toml:"memory"`
 	Params        ParamsConfig      `toml:"params"`
 	Retry         RetryConfig       `toml:"retry"`
+	Budget        BudgetConfig      `toml:"budget"`
 }
 
 // Validate checks that required fields are present in the agent configuration.
@@ -141,6 +147,10 @@ func Validate(cfg *AgentConfig) error {
 	}
 	if cfg.Retry.InitialDelayMs > 0 && cfg.Retry.MaxDelayMs > 0 && cfg.Retry.MaxDelayMs < cfg.Retry.InitialDelayMs {
 		return errors.New("retry.max_delay_ms must be >= retry.initial_delay_ms")
+	}
+
+	if cfg.Budget.MaxTokens < 0 {
+		return errors.New("budget.max_tokens must be non-negative")
 	}
 
 	return nil
@@ -270,6 +280,9 @@ model = "provider/model-name"
 # backoff = "exponential"
 # initial_delay_ms = 500
 # max_delay_ms = 30000
+
+# [budget]
+# max_tokens = 0
 `
 	return tmpl, nil
 }

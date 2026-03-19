@@ -1504,3 +1504,110 @@ func TestScaffold_IncludesRetryConfig(t *testing.T) {
 		}
 	}
 }
+
+// --- Phase 2 (Token Budget): Budget Config tests ---
+
+func TestValidate_BudgetMaxTokens_Negative(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Budget: BudgetConfig{MaxTokens: -1},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for negative budget.max_tokens, got nil")
+	}
+	want := "budget.max_tokens must be non-negative"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_BudgetMaxTokens_Zero(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Budget: BudgetConfig{MaxTokens: 0},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error for zero budget.max_tokens, got %v", err)
+	}
+}
+
+func TestValidate_BudgetMaxTokens_Positive(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Budget: BudgetConfig{MaxTokens: 10000},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error for positive budget.max_tokens, got %v", err)
+	}
+}
+
+func TestBudgetConfig_TOMLParsing(t *testing.T) {
+	input := `
+name = "test"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[budget]
+max_tokens = 5000
+`
+	var cfg AgentConfig
+	if _, err := tomlDecode(input, &cfg); err != nil {
+		t.Fatalf("failed to decode TOML: %v", err)
+	}
+	if cfg.Budget.MaxTokens != 5000 {
+		t.Errorf("Budget.MaxTokens = %d, want 5000", cfg.Budget.MaxTokens)
+	}
+}
+
+func TestBudgetConfig_TOMLParsing_Absent(t *testing.T) {
+	input := `
+name = "test"
+model = "anthropic/claude-sonnet-4-20250514"
+`
+	var cfg AgentConfig
+	if _, err := tomlDecode(input, &cfg); err != nil {
+		t.Fatalf("failed to decode TOML: %v", err)
+	}
+	if cfg.Budget.MaxTokens != 0 {
+		t.Errorf("Budget.MaxTokens = %d, want 0", cfg.Budget.MaxTokens)
+	}
+}
+
+func TestLoad_BudgetConfig(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+	tomlContent := `
+name = "budget-agent"
+model = "openai/gpt-4o"
+
+[budget]
+max_tokens = 8000
+`
+	writeAgentFile(t, agentsDir, "budget-agent", tomlContent)
+
+	cfg, err := Load("budget-agent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Budget.MaxTokens != 8000 {
+		t.Errorf("Budget.MaxTokens = %d, want 8000", cfg.Budget.MaxTokens)
+	}
+}
+
+func TestScaffold_IncludesBudgetConfig(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	checks := []string{
+		"# [budget]",
+		"# max_tokens = 0",
+	}
+	for _, check := range checks {
+		if !strings.Contains(out, check) {
+			t.Errorf("scaffold output missing %q\nfull output:\n%s", check, out)
+		}
+	}
+}
