@@ -24,7 +24,15 @@ var agentsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all agent configurations",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		agents, err := agent.List()
+		flagAgentsDir, _ := cmd.Flags().GetString("agents-dir")
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		searchDirs := agent.BuildSearchDirs(flagAgentsDir, cwd)
+		agents, err := agent.List(searchDirs)
 		if err != nil {
 			return err
 		}
@@ -50,7 +58,15 @@ var agentsShowCmd = &cobra.Command{
 	Short: "Show agent configuration details",
 	Args:  exactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := agent.Load(args[0])
+		flagAgentsDir, _ := cmd.Flags().GetString("agents-dir")
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		searchDirs := agent.BuildSearchDirs(flagAgentsDir, cwd)
+		cfg, err := agent.Load(args[0], searchDirs)
 		if err != nil {
 			return err
 		}
@@ -118,20 +134,41 @@ var agentsInitCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
+		flagAgentsDir, _ := cmd.Flags().GetString("agents-dir")
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
 		configDir, err := xdg.GetConfigDir()
 		if err != nil {
 			return err
 		}
 
-		agentsDir := filepath.Join(configDir, "agents")
-		path := filepath.Join(agentsDir, name+".toml")
+		var targetDir string
+		if flagAgentsDir != "" {
+			// Use the flag-provided directory
+			targetDir = flagAgentsDir
+		} else {
+			// Check if local axe/agents directory exists
+			localDir := filepath.Join(cwd, "axe", "agents")
+			if _, err := os.Stat(localDir); err == nil {
+				targetDir = localDir
+			} else {
+				// Fall back to global config dir
+				targetDir = filepath.Join(configDir, "agents")
+			}
+		}
+
+		if err := os.MkdirAll(targetDir, 0755); err != nil {
+			return fmt.Errorf("failed to create agents directory: %w", err)
+		}
+
+		path := filepath.Join(targetDir, name+".toml")
 
 		if _, err := os.Stat(path); err == nil {
 			return fmt.Errorf("agent config already exists: %s", path)
-		}
-
-		if err := os.MkdirAll(agentsDir, 0755); err != nil {
-			return fmt.Errorf("failed to create agents directory: %w", err)
 		}
 
 		content, err := agent.Scaffold(name)
@@ -160,14 +197,32 @@ var agentsEditCmd = &cobra.Command{
 
 		name := args[0]
 
+		flagAgentsDir, _ := cmd.Flags().GetString("agents-dir")
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		searchDirs := agent.BuildSearchDirs(flagAgentsDir, cwd)
+
 		configDir, err := xdg.GetConfigDir()
 		if err != nil {
 			return err
 		}
 
-		path := filepath.Join(configDir, "agents", name+".toml")
+		// Check searchDirs first, then fall back to global config dir
+		allDirs := append(searchDirs, filepath.Join(configDir, "agents"))
+		var path string
+		for _, dir := range allDirs {
+			candidate := filepath.Join(dir, name+".toml")
+			if _, err := os.Stat(candidate); err == nil {
+				path = candidate
+				break
+			}
+		}
 
-		if _, err := os.Stat(path); os.IsNotExist(err) {
+		if path == "" {
 			return fmt.Errorf("agent config not found: %s", name)
 		}
 
@@ -187,4 +242,6 @@ func init() {
 	agentsCmd.AddCommand(agentsInitCmd)
 	agentsCmd.AddCommand(agentsEditCmd)
 	rootCmd.AddCommand(agentsCmd)
+
+	agentsCmd.PersistentFlags().String("agents-dir", "", "Additional agents directory to search before global config")
 }

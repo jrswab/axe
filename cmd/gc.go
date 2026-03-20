@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/jrswab/axe/internal/agent"
@@ -39,6 +40,7 @@ func init() {
 	gcCmd.Flags().Bool("dry-run", false, "Analyze and print suggestions without trimming the memory file")
 	gcCmd.Flags().Bool("all", false, "Run GC on all agents that have memory.enabled = true")
 	gcCmd.Flags().String("model", "", "Override the model used for pattern detection (provider/model-name format)")
+	gcCmd.Flags().String("agents-dir", "", "Additional agents directory to search before global config")
 	rootCmd.AddCommand(gcCmd)
 }
 
@@ -53,18 +55,26 @@ func runGC(cmd *cobra.Command, args []string) error {
 		return &ExitError{Code: 1, Err: fmt.Errorf("agent name is required (or use --all)")}
 	}
 
+	// Build search directories for agent lookup
+	flagAgentsDir, _ := cmd.Flags().GetString("agents-dir")
+	cwd, err := os.Getwd()
+	if err != nil {
+		return &ExitError{Code: 2, Err: fmt.Errorf("failed to get working directory: %w", err)}
+	}
+	searchDirs := agent.BuildSearchDirs(flagAgentsDir, cwd)
+
 	if allFlag {
-		return runAllAgentsGC(cmd)
+		return runAllAgentsGC(cmd, searchDirs)
 	}
 
 	// Single-agent GC flow
 	agentName := args[0]
-	return runSingleAgentGC(cmd, agentName)
+	return runSingleAgentGC(cmd, agentName, searchDirs)
 }
 
-func runSingleAgentGC(cmd *cobra.Command, agentName string) error {
+func runSingleAgentGC(cmd *cobra.Command, agentName string, searchDirs []string) error {
 	// Step 1: Load agent config (Req 3.1)
-	cfg, err := agent.Load(agentName)
+	cfg, err := agent.Load(agentName, searchDirs)
 	if err != nil {
 		return &ExitError{Code: 2, Err: err}
 	}
@@ -195,9 +205,9 @@ func runSingleAgentGC(cmd *cobra.Command, agentName string) error {
 	return nil
 }
 
-func runAllAgentsGC(cmd *cobra.Command) error {
+func runAllAgentsGC(cmd *cobra.Command, searchDirs []string) error {
 	// Step 1: List all agents (Req 5.1)
-	agents, err := agent.List()
+	agents, err := agent.List(searchDirs)
 	if err != nil {
 		return &ExitError{Code: 2, Err: err}
 	}
@@ -220,7 +230,7 @@ func runAllAgentsGC(cmd *cobra.Command) error {
 	for _, cfg := range memoryAgents {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "=== GC: %s ===\n", cfg.Name)
 
-		if err := runSingleAgentGC(cmd, cfg.Name); err != nil {
+		if err := runSingleAgentGC(cmd, cfg.Name, searchDirs); err != nil {
 			// Per-agent failure: print error, continue (Req 5.5)
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error: gc failed for agent %q: %v\n", cfg.Name, err)
 			failCount++

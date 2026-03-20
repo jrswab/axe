@@ -13,6 +13,15 @@ import (
 	"github.com/jrswab/axe/internal/xdg"
 )
 
+// ValidationError represents an agent configuration validation failure.
+type ValidationError struct {
+	msg string
+}
+
+func (e *ValidationError) Error() string {
+	return e.msg
+}
+
 // MemoryConfig holds memory sub-configuration for an agent.
 type MemoryConfig struct {
 	Enabled    bool   `toml:"enabled"`
@@ -79,105 +88,95 @@ type AgentConfig struct {
 // without checking model.
 func Validate(cfg *AgentConfig) error {
 	if strings.TrimSpace(cfg.Name) == "" {
-		return errors.New("agent config missing required field: name")
+		return &ValidationError{msg: "agent config missing required field: name"}
 	}
 	if strings.TrimSpace(cfg.Model) == "" {
-		return errors.New("agent config missing required field: model")
+		return &ValidationError{msg: "agent config missing required field: model"}
 	}
 	if cfg.SubAgentsConf.MaxDepth < 0 {
-		return errors.New("sub_agents_config.max_depth must be non-negative")
+		return &ValidationError{msg: "sub_agents_config.max_depth must be non-negative"}
 	}
 	if cfg.SubAgentsConf.MaxDepth > 5 {
-		return errors.New("sub_agents_config.max_depth cannot exceed 5")
+		return &ValidationError{msg: "sub_agents_config.max_depth cannot exceed 5"}
 	}
 	if cfg.SubAgentsConf.Timeout < 0 {
-		return errors.New("sub_agents_config.timeout must be non-negative")
+		return &ValidationError{msg: "sub_agents_config.timeout must be non-negative"}
 	}
 	if cfg.Memory.LastN < 0 {
-		return errors.New("memory.last_n must be non-negative")
+		return &ValidationError{msg: "memory.last_n must be non-negative"}
 	}
 	if cfg.Memory.MaxEntries < 0 {
-		return errors.New("memory.max_entries must be non-negative")
+		return &ValidationError{msg: "memory.max_entries must be non-negative"}
 	}
 	validTools := toolname.ValidNames()
 	for _, name := range cfg.Tools {
 		if !validTools[name] {
-			return fmt.Errorf("unknown tool %q in tools config", name)
+			return &ValidationError{msg: fmt.Sprintf("unknown tool %q in tools config", name)}
 		}
 	}
 
 	seenMCPNames := make(map[string]struct{}, len(cfg.MCPServers))
 	for i, server := range cfg.MCPServers {
 		if strings.TrimSpace(server.Name) == "" {
-			return fmt.Errorf("mcp_servers[%d].name is required", i)
+			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].name is required", i)}
 		}
 		if strings.TrimSpace(server.URL) == "" {
-			return fmt.Errorf("mcp_servers[%d].url is required", i)
+			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url is required", i)}
 		}
 		parsedURL, err := url.ParseRequestURI(strings.TrimSpace(server.URL))
 		if err != nil {
-			return fmt.Errorf("mcp_servers[%d].url is invalid: %v", i, err)
+			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url is invalid: %v", i, err)}
 		}
 		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-			return fmt.Errorf("mcp_servers[%d].url must use http or https scheme, got %q", i, parsedURL.Scheme)
+			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url must use http or https scheme, got %q", i, parsedURL.Scheme)}
 		}
 		if parsedURL.Host == "" {
-			return fmt.Errorf("mcp_servers[%d].url must include a host", i)
+			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url must include a host", i)}
 		}
 		if server.Transport != "sse" && server.Transport != "streamable-http" {
-			return fmt.Errorf("mcp_servers[%d].transport must be one of: sse, streamable-http", i)
+			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].transport must be one of: sse, streamable-http", i)}
 		}
 		if _, exists := seenMCPNames[server.Name]; exists {
-			return fmt.Errorf("mcp_servers names must be unique: %q", server.Name)
+			return &ValidationError{msg: fmt.Sprintf("mcp_servers names must be unique: %q", server.Name)}
 		}
 		seenMCPNames[server.Name] = struct{}{}
 	}
 
 	if cfg.Retry.MaxRetries < 0 {
-		return errors.New("retry.max_retries must be non-negative")
+		return &ValidationError{msg: "retry.max_retries must be non-negative"}
 	}
 	if cfg.Retry.Backoff != "" && cfg.Retry.Backoff != "exponential" && cfg.Retry.Backoff != "linear" && cfg.Retry.Backoff != "fixed" {
-		return errors.New("retry.backoff must be one of: exponential, linear, fixed")
+		return &ValidationError{msg: "retry.backoff must be one of: exponential, linear, fixed"}
 	}
 	if cfg.Retry.InitialDelayMs < 0 {
-		return errors.New("retry.initial_delay_ms must be non-negative")
+		return &ValidationError{msg: "retry.initial_delay_ms must be non-negative"}
 	}
 	if cfg.Retry.MaxDelayMs < 0 {
-		return errors.New("retry.max_delay_ms must be non-negative")
+		return &ValidationError{msg: "retry.max_delay_ms must be non-negative"}
 	}
 	if cfg.Retry.InitialDelayMs > 0 && cfg.Retry.MaxDelayMs > 0 && cfg.Retry.MaxDelayMs < cfg.Retry.InitialDelayMs {
-		return errors.New("retry.max_delay_ms must be >= retry.initial_delay_ms")
+		return &ValidationError{msg: "retry.max_delay_ms must be >= retry.initial_delay_ms"}
 	}
 
 	if cfg.Budget.MaxTokens < 0 {
-		return errors.New("budget.max_tokens must be non-negative")
+		return &ValidationError{msg: "budget.max_tokens must be non-negative"}
 	}
 
 	return nil
 }
 
-// Load reads and parses an agent TOML configuration file by name.
-// The name parameter is the agent name without the .toml extension.
-func Load(name string) (*AgentConfig, error) {
-	configDir, err := xdg.GetConfigDir()
+// loadFromPath reads and parses an agent TOML configuration file from a specific path.
+// It returns the raw read/parse/validate errors (without any wrapping) so the caller
+// can handle them appropriately.
+func loadFromPath(path string) (*AgentConfig, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	path := filepath.Join(configDir, "agents", name+".toml")
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, fmt.Errorf("agent config not found: %s", name)
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read agent config %q: %w", name, err)
-	}
-
 	var cfg AgentConfig
 	if _, err := toml.Decode(string(data), &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse agent config %q: %w", name, err)
+		return nil, err
 	}
 
 	if err := Validate(&cfg); err != nil {
@@ -187,39 +186,109 @@ func Load(name string) (*AgentConfig, error) {
 	return &cfg, nil
 }
 
-// List returns all valid agent configurations from the agents directory.
-// Invalid files are silently skipped. If the agents directory does not exist,
-// an empty slice is returned.
-func List() ([]AgentConfig, error) {
+// Load reads and parses an agent TOML configuration file by name.
+// The name parameter is the agent name without the .toml extension.
+// searchDirs is a list of directories to search first, before falling back to the global XDG config dir.
+func Load(name string, searchDirs []string) (*AgentConfig, error) {
+	// Validate name: must be non-empty and must not contain path separators or traversal sequences
+	if strings.TrimSpace(name) == "" {
+		return nil, fmt.Errorf("agent name must not be empty")
+	}
+	if strings.ContainsAny(name, "/\\") || strings.Contains(name, "..") {
+		return nil, fmt.Errorf("agent name %q must not contain path separators or traversal sequences", name)
+	}
+	for _, dir := range searchDirs {
+		path := filepath.Join(dir, name+".toml")
+		cfg, err := loadFromPath(path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue // file doesn't exist in this dir, try next
+			}
+			// File exists but failed to load (parse error, validation error, etc.)
+			// Check if it's a validation error - pass through unchanged
+			var valErr *ValidationError
+			if errors.As(err, &valErr) {
+				return nil, err
+			}
+			// Wrap other errors with context
+			return nil, fmt.Errorf("failed to parse agent config %q: %w", name, err)
+		}
+		return cfg, nil
+	}
+
+	// Fall back to global XDG config dir
 	configDir, err := xdg.GetConfigDir()
 	if err != nil {
 		return nil, err
 	}
-
-	agentsDir := filepath.Join(configDir, "agents")
-
-	entries, err := os.ReadDir(agentsDir)
+	path := filepath.Join(configDir, "agents", name+".toml")
+	cfg, err := loadFromPath(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return []AgentConfig{}, nil
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("agent config not found: %s", name)
 		}
+		var valErr *ValidationError
+		if errors.As(err, &valErr) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("failed to parse agent config %q: %w", name, err)
+	}
+	return cfg, nil
+}
+
+// List returns all valid agent configurations from the agents directory.
+// Invalid files are silently skipped. If the agents directory does not exist,
+// an empty slice is returned.
+// searchDirs is a list of directories to search first, before falling back to the global XDG config dir.
+func List(searchDirs []string) ([]AgentConfig, error) {
+	seen := make(map[string]struct{})
+	var agents []AgentConfig
+
+	// Collect all directories to search: searchDirs first, then global XDG dir
+	var allDirs []string
+	allDirs = append(allDirs, searchDirs...)
+
+	configDir, err := xdg.GetConfigDir()
+	if err != nil {
 		return nil, err
 	}
+	allDirs = append(allDirs, filepath.Join(configDir, "agents"))
 
-	var agents []AgentConfig
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if !strings.HasSuffix(entry.Name(), ".toml") {
-			continue
-		}
-		name := strings.TrimSuffix(entry.Name(), ".toml")
-		cfg, err := Load(name)
+	// Process directories in order (earlier = higher precedence)
+	for _, agentsDir := range allDirs {
+		entries, err := os.ReadDir(agentsDir)
 		if err != nil {
-			continue // skip invalid files
+			// Silently skip non-existent directories
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
 		}
-		agents = append(agents, *cfg)
+
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			if !strings.HasSuffix(entry.Name(), ".toml") {
+				continue
+			}
+			name := strings.TrimSuffix(entry.Name(), ".toml")
+
+			// Skip if we've already seen this agent name (first occurrence wins)
+			if _, exists := seen[name]; exists {
+				continue
+			}
+
+			// Try to load from this specific path
+			path := filepath.Join(agentsDir, entry.Name())
+			cfg, err := loadFromPath(path)
+			if err != nil {
+				continue // skip invalid files
+			}
+
+			seen[name] = struct{}{}
+			agents = append(agents, *cfg)
+		}
 	}
 
 	return agents, nil
@@ -285,6 +354,18 @@ model = "provider/model-name"
 # max_tokens = 0
 `
 	return tmpl, nil
+}
+
+// BuildSearchDirs builds the search directories slice from a flag value and base directory.
+// If flagDir is non-empty, it is appended as the first element.
+// The auto-discovery path (baseDir/axe/agents) is always appended.
+func BuildSearchDirs(flagDir string, baseDir string) []string {
+	var dirs []string
+	if flagDir != "" {
+		dirs = append(dirs, flagDir)
+	}
+	dirs = append(dirs, filepath.Join(baseDir, "axe", "agents"))
+	return dirs
 }
 
 // tomlDecode is a package-level wrapper for toml.Decode, used by tests.

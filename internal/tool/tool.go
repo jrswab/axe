@@ -36,6 +36,8 @@ type ExecuteOptions struct {
 	Verbose       bool
 	Stderr        io.Writer
 	BudgetTracker *budget.BudgetTracker
+	AgentsDir     string // value of --agents-dir flag (may be empty)
+	AgentsBase    string // parent agent's resolved workdir (for auto-discovery)
 }
 
 // CallAgentTool returns the call_agent tool definition for LLM tool calling.
@@ -130,8 +132,9 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 
 	start := time.Now()
 
-	// Step 6: Load sub-agent config
-	cfg, err := agent.Load(agentName)
+	// Step 6: Load sub-agent config using parent's agents resolution context
+	searchDirs := agent.BuildSearchDirs(opts.AgentsDir, opts.AgentsBase)
+	cfg, err := agent.Load(agentName, searchDirs)
 	if err != nil {
 		return errorResult(call.ID, agentName, fmt.Sprintf("failed to load agent %q: %s", agentName, err), opts)
 	}
@@ -403,6 +406,8 @@ func runConversationLoop(ctx context.Context, prov provider.Provider, req *provi
 					Verbose:       opts.Verbose,
 					Stderr:        opts.Stderr,
 					BudgetTracker: opts.BudgetTracker,
+					AgentsDir:     opts.AgentsDir,
+					AgentsBase:    toolWorkdir, // sub-agent's workdir becomes the new base
 				}
 				results[i] = ExecuteCallAgent(ctx, tc, subOpts)
 			} else {
