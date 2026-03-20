@@ -8,10 +8,7 @@ on:
       - 'v*' # only version tags trigger a run
 
 permissions:
-  contents: write      # GoReleaser: create GitHub Release
-  packages: write      # Docker: push to GHCR
-  attestations: write  # Docker: build provenance attestation
-  id-token: write      # Docker: OIDC token for attestation signing
+  contents: write      # GoReleaser: create GitHub Release & checkout
 
 jobs:
   goreleaser:
@@ -40,7 +37,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   docker:
+    needs: [goreleaser]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read       # checkout
+      packages: write      # push to GHCR
+      attestations: write  # build provenance attestation
+      id-token: write      # OIDC token for attestation signing
     steps:
       - name: Checkout
         uses: actions/checkout@v4
