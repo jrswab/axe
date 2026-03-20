@@ -3,17 +3,42 @@ package tool
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/jrswab/axe/internal/hostcheck"
 	"github.com/jrswab/axe/internal/provider"
 )
 
+// fakeURLFetchResolver is a test-only Resolver that returns preset addresses.
+type fakeURLFetchResolver struct {
+	addrs []net.IPAddr
+	err   error
+}
+
+func (f *fakeURLFetchResolver) LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error) {
+	return f.addrs, f.err
+}
+
+// skipHostCheck bypasses the host check for tests that use httptest.NewServer
+// (which binds to 127.0.0.1, a private IP that would otherwise be rejected).
+func skipHostCheck(t *testing.T) {
+	t.Helper()
+	orig := urlFetchCheckHost
+	urlFetchCheckHost = func(ctx context.Context, hostname string, allowlist []string, resolver hostcheck.Resolver) (net.IP, error) {
+		return net.ParseIP("127.0.0.1"), nil
+	}
+	t.Cleanup(func() { urlFetchCheckHost = orig })
+}
+
 func TestURLFetch_Success(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("hello world"))
 	}))
@@ -101,6 +126,7 @@ func TestURLFetch_NoScheme(t *testing.T) {
 }
 
 func TestURLFetch_Non2xxStatus_404(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("not found"))
@@ -122,6 +148,7 @@ func TestURLFetch_Non2xxStatus_404(t *testing.T) {
 }
 
 func TestURLFetch_Non2xxStatus_500(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("internal error"))
@@ -143,6 +170,7 @@ func TestURLFetch_Non2xxStatus_500(t *testing.T) {
 }
 
 func TestURLFetch_LargeResponseTruncation(t *testing.T) {
+	skipHostCheck(t)
 	largeBody := strings.Repeat("A", 20000)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(largeBody))
@@ -167,6 +195,7 @@ func TestURLFetch_LargeResponseTruncation(t *testing.T) {
 }
 
 func TestURLFetch_ExactLimitNotTruncated(t *testing.T) {
+	skipHostCheck(t)
 	exactBody := strings.Repeat("B", 10000)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(exactBody))
@@ -188,6 +217,7 @@ func TestURLFetch_ExactLimitNotTruncated(t *testing.T) {
 }
 
 func TestURLFetch_ContextCancellation(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timer := time.NewTimer(10 * time.Second)
 		defer timer.Stop()
@@ -213,6 +243,7 @@ func TestURLFetch_ContextCancellation(t *testing.T) {
 }
 
 func TestURLFetch_ConnectionRefused(t *testing.T) {
+	skipHostCheck(t)
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("net.Listen error: %v", err)
@@ -234,6 +265,7 @@ func TestURLFetch_ConnectionRefused(t *testing.T) {
 }
 
 func TestURLFetch_CallIDPassthrough(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	}))
@@ -249,6 +281,7 @@ func TestURLFetch_CallIDPassthrough(t *testing.T) {
 }
 
 func TestURLFetch_EmptyResponseBody(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -266,6 +299,7 @@ func TestURLFetch_EmptyResponseBody(t *testing.T) {
 }
 
 func TestURLFetch_Non2xxWithLargeBody(t *testing.T) {
+	skipHostCheck(t)
 	largeBody := strings.Repeat("C", 20000)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -288,6 +322,7 @@ func TestURLFetch_Non2xxWithLargeBody(t *testing.T) {
 }
 
 func TestURLFetch_VerboseLog_SanitizesURL(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	}))
@@ -315,6 +350,7 @@ func TestURLFetch_VerboseLog_SanitizesURL(t *testing.T) {
 }
 
 func TestURLFetch_PerRequestTimeout(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Block longer than the per-request timeout
 		timer := time.NewTimer(2 * time.Second)
@@ -349,6 +385,7 @@ func TestURLFetch_PerRequestTimeout(t *testing.T) {
 }
 
 func TestURLFetch_ParentContextWinsOverPerRequestTimeout(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timer := time.NewTimer(2 * time.Second)
 		defer timer.Stop()
@@ -379,6 +416,7 @@ func TestURLFetch_ParentContextWinsOverPerRequestTimeout(t *testing.T) {
 }
 
 func TestURLFetch_FastResponseUnaffectedByTimeout(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("fast response"))
 	}))
@@ -476,6 +514,7 @@ func TestStripHTML_NoHTMLTags(t *testing.T) {
 // Phase 1B: urlFetchExecute integration tests
 
 func TestURLFetch_HTMLContentTypeStripsHTML(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte("<html><body><script>x</script><p>Visible</p></body></html>"))
@@ -495,6 +534,7 @@ func TestURLFetch_HTMLContentTypeStripsHTML(t *testing.T) {
 }
 
 func TestURLFetch_HTMLContentTypeWithCharset(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte("<p>Hello charset</p>"))
@@ -514,6 +554,7 @@ func TestURLFetch_HTMLContentTypeWithCharset(t *testing.T) {
 }
 
 func TestURLFetch_HTMLContentTypeCaseInsensitive(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "TEXT/HTML")
 		_, _ = w.Write([]byte("<p>Case test</p>"))
@@ -533,6 +574,7 @@ func TestURLFetch_HTMLContentTypeCaseInsensitive(t *testing.T) {
 }
 
 func TestURLFetch_NonHTMLContentTypeNotStripped(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"key": "<b>value</b>"}`))
@@ -553,6 +595,7 @@ func TestURLFetch_NonHTMLContentTypeNotStripped(t *testing.T) {
 }
 
 func TestURLFetch_PlainTextNotStripped(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte("<p>Not HTML</p>"))
@@ -572,6 +615,7 @@ func TestURLFetch_PlainTextNotStripped(t *testing.T) {
 }
 
 func TestURLFetch_MissingContentTypeNotStripped(t *testing.T) {
+	skipHostCheck(t)
 	// Note: Go's http.DetectContentType may auto-set Content-Type.
 	// We explicitly set it to empty to test the missing header case.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -594,6 +638,7 @@ func TestURLFetch_MissingContentTypeNotStripped(t *testing.T) {
 }
 
 func TestURLFetch_Non2xxHTMLStripped(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusNotFound)
@@ -620,6 +665,7 @@ func TestURLFetch_Non2xxHTMLStripped(t *testing.T) {
 }
 
 func TestURLFetch_Non2xxNonHTMLNotStripped(t *testing.T) {
+	skipHostCheck(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -643,6 +689,7 @@ func TestURLFetch_Non2xxNonHTMLNotStripped(t *testing.T) {
 }
 
 func TestURLFetch_HTMLStrippedBeforeTruncation(t *testing.T) {
+	skipHostCheck(t)
 	// Build HTML where raw size exceeds maxReadBytes but stripped text is small.
 	// 9950 bytes of CSS in a <style> tag + small visible text.
 	bigCSS := strings.Repeat("x", 9950)
@@ -666,5 +713,168 @@ func TestURLFetch_HTMLStrippedBeforeTruncation(t *testing.T) {
 	}
 	if !strings.Contains(result.Content, "Short text") {
 		t.Errorf("Content = %q, want contains %q", result.Content, "Short text")
+	}
+}
+
+// Phase 4: Allowlist and private IP tests
+
+func TestURLFetch_AllowlistPermitsMatchingHost(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer ts.Close()
+
+	// Extract hostname from test server URL (will be 127.0.0.1)
+	u, _ := url.Parse(ts.URL)
+	hostname := u.Hostname()
+
+	// Override host check: verify allowlist logic passes, bypass private IP check
+	// so the test server (127.0.0.1) is reachable.
+	orig := urlFetchCheckHost
+	urlFetchCheckHost = func(ctx context.Context, h string, allowlist []string, resolver hostcheck.Resolver) (net.IP, error) {
+		if !hostcheck.IsAllowed(h, allowlist) {
+			return nil, &net.AddrError{Err: "not in allowed_hosts", Addr: h}
+		}
+		return net.ParseIP("127.0.0.1"), nil
+	}
+	defer func() { urlFetchCheckHost = orig }()
+
+	entry := urlFetchEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "test-1",
+		Name:      "url_fetch",
+		Arguments: map[string]string{"url": ts.URL},
+	}, ExecContext{AllowedHosts: []string{hostname}})
+
+	if result.IsError {
+		t.Errorf("expected success, got error: %s", result.Content)
+	}
+}
+
+func TestURLFetch_AllowlistBlocksNonMatchingHost(t *testing.T) {
+	entry := urlFetchEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "test-2",
+		Name:      "url_fetch",
+		Arguments: map[string]string{"url": "https://blocked.example.com/page"},
+	}, ExecContext{AllowedHosts: []string{"allowed.example.com"}})
+
+	if !result.IsError {
+		t.Error("expected error for non-matching host")
+	}
+	if !strings.Contains(result.Content, "not in allowed_hosts") {
+		t.Errorf("expected 'not in allowed_hosts' in error, got: %s", result.Content)
+	}
+}
+
+func TestURLFetch_EmptyAllowlistPermitsAll(t *testing.T) {
+	skipHostCheck(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer ts.Close()
+
+	entry := urlFetchEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "test-3",
+		Name:      "url_fetch",
+		Arguments: map[string]string{"url": ts.URL},
+	}, ExecContext{})
+
+	if result.IsError {
+		t.Errorf("expected success with empty allowlist, got error: %s", result.Content)
+	}
+}
+
+func TestURLFetch_BlocksPrivateIP(t *testing.T) {
+	entry := urlFetchEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "test-4",
+		Name:      "url_fetch",
+		Arguments: map[string]string{"url": "http://192.168.1.1/data"},
+	}, ExecContext{})
+
+	if !result.IsError {
+		t.Error("expected error for private IP")
+	}
+	if !strings.Contains(result.Content, "private") {
+		t.Errorf("expected 'private' in error, got: %s", result.Content)
+	}
+}
+
+func TestURLFetch_BlocksLoopbackIP(t *testing.T) {
+	entry := urlFetchEntry()
+	// Override resolver to avoid actual DNS and return a loopback address
+	orig := urlFetchResolver
+	urlFetchResolver = &fakeURLFetchResolver{
+		addrs: []net.IPAddr{{IP: net.ParseIP("127.0.0.1")}},
+	}
+	defer func() { urlFetchResolver = orig }()
+
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "test-5",
+		Name:      "url_fetch",
+		Arguments: map[string]string{"url": "http://evil.example.com/steal"},
+	}, ExecContext{})
+
+	if !result.IsError {
+		t.Error("expected error for loopback IP")
+	}
+	if !strings.Contains(result.Content, "private") {
+		t.Errorf("expected 'private' in error, got: %s", result.Content)
+	}
+}
+
+func TestURLFetch_RedirectToDisallowedHostBlocked(t *testing.T) {
+	// Target server listens on 127.0.0.1; we'll reach it via "localhost" in the
+	// redirect URL so that source ("127.0.0.1") and target ("localhost") have
+	// distinct hostnames, letting the allowlist distinguish between them.
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte("should not reach here"))
+	}))
+	defer target.Close()
+
+	targetURL, _ := url.Parse(target.URL)
+	// Build redirect destination using "localhost" instead of "127.0.0.1".
+	redirectDest := "http://localhost:" + targetURL.Port() + "/secret"
+	targetHost := "localhost"
+
+	// Source server redirects to the localhost-addressed target.
+	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, redirectDest, http.StatusMovedPermanently)
+	}))
+	defer source.Close()
+
+	sourceURL, _ := url.Parse(source.URL)
+	sourceHost := sourceURL.Hostname() // "127.0.0.1"
+
+	// Override urlFetchCheckHost to simulate allowlist behavior:
+	// - source host ("127.0.0.1") is allowed → returns loopback IP
+	// - target host ("localhost") is not in allowlist → blocked
+	orig := urlFetchCheckHost
+	urlFetchCheckHost = func(ctx context.Context, hostname string, allowlist []string, resolver hostcheck.Resolver) (net.IP, error) {
+		if len(allowlist) > 0 && !hostcheck.IsAllowed(hostname, allowlist) {
+			return nil, fmt.Errorf("host %q is not in allowed_hosts", hostname)
+		}
+		return net.ParseIP("127.0.0.1"), nil
+	}
+	defer func() { urlFetchCheckHost = orig }()
+
+	entry := urlFetchEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:        "test-redirect",
+		Name:      "url_fetch",
+		Arguments: map[string]string{"url": source.URL + "/start"},
+	}, ExecContext{AllowedHosts: []string{sourceHost}})
+
+	// The redirect to "localhost" (not in allowlist) should be blocked.
+	if !result.IsError {
+		t.Errorf("expected error for redirect to disallowed host %s, got success: %s", targetHost, result.Content)
+	}
+	if !strings.Contains(result.Content, "not in allowed_hosts") {
+		t.Errorf("expected 'not in allowed_hosts' in error, got: %s", result.Content)
 	}
 }

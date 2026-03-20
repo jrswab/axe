@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"golang.org/x/net/html"
 
+	"github.com/jrswab/axe/internal/hostcheck"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/toolname"
 )
@@ -19,6 +21,14 @@ import (
 const maxReadBytes = 10000
 
 var urlFetchTimeout = 15 * time.Second
+
+// urlFetchResolver is the DNS resolver used for host validation.
+// Override in tests to inject fake DNS responses.
+var urlFetchResolver hostcheck.Resolver = net.DefaultResolver
+
+// urlFetchCheckHost is the host validation function.
+// Override in tests to bypass private IP / allowlist checks.
+var urlFetchCheckHost = hostcheck.CheckHost
 
 func truncateURL(urlStr string, maxLen int) string {
 	if len(urlStr) <= maxLen {
@@ -126,6 +136,12 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 		}
 	}
 
+	// Host allowlist and private IP check.
+	safeIP, hostErr := urlFetchCheckHost(ctx, parsedURL.Hostname(), ec.AllowedHosts, urlFetchResolver)
+	if hostErr != nil {
+		return provider.ToolResult{CallID: call.ID, Content: hostErr.Error(), IsError: true}
+	}
+
 	reqCtx, cancel := context.WithTimeout(ctx, urlFetchTimeout)
 	defer cancel()
 
@@ -134,7 +150,30 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 		return provider.ToolResult{CallID: call.ID, Content: err.Error(), IsError: true}
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: urlFetchTimeout,
+		Transport: &http.Transport{
+			DialContext: func(dialCtx context.Context, network, addr string) (net.Conn, error) {
+				_, port, _ := net.SplitHostPort(addr)
+				if safeIP != nil && port != "" {
+					return (&net.Dialer{}).DialContext(dialCtx, network, net.JoinHostPort(safeIP.String(), port))
+				}
+				return (&net.Dialer{}).DialContext(dialCtx, network, addr)
+			},
+		},
+		CheckRedirect: func(redirectReq *http.Request, via []*http.Request) error {
+			_, err := urlFetchCheckHost(redirectReq.Context(), redirectReq.URL.Hostname(), ec.AllowedHosts, urlFetchResolver)
+			if err != nil {
+				return err
+			}
+			if len(via) >= 10 {
+				return fmt.Errorf("too many redirects")
+			}
+			return nil
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return provider.ToolResult{CallID: call.ID, Content: err.Error(), IsError: true}
 	}

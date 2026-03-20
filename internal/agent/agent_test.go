@@ -1784,3 +1784,50 @@ func TestBuildSearchDirs_EmptyFlag_EmptyBase(t *testing.T) {
 		t.Errorf("dir[0] = %q, want %q", got[0], want)
 	}
 }
+
+func TestAllowedHosts_TOMLParsing(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantHosts []string
+		wantNil   bool
+	}{
+		{
+			name:      "with allowed_hosts",
+			input:     "name = \"test\"\nmodel = \"openai/gpt-4o\"\nallowed_hosts = [\"api.example.com\", \"docs.example.com\"]",
+			wantHosts: []string{"api.example.com", "docs.example.com"},
+		},
+		{
+			name:    "without allowed_hosts field",
+			input:   "name = \"test\"\nmodel = \"openai/gpt-4o\"",
+			wantNil: true,
+		},
+		{
+			name:      "empty allowed_hosts",
+			input:     "name = \"test\"\nmodel = \"openai/gpt-4o\"\nallowed_hosts = []",
+			wantHosts: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cfg AgentConfig
+			if _, err := tomlDecode(tt.input, &cfg); err != nil {
+				t.Fatalf("unexpected decode error: %v", err)
+			}
+			if tt.wantNil {
+				if cfg.AllowedHosts != nil {
+					t.Errorf("expected nil AllowedHosts, got %v", cfg.AllowedHosts)
+				}
+				return
+			}
+			if len(cfg.AllowedHosts) != len(tt.wantHosts) {
+				t.Fatalf("AllowedHosts length = %d, want %d", len(cfg.AllowedHosts), len(tt.wantHosts))
+			}
+			for i, got := range cfg.AllowedHosts {
+				if got != tt.wantHosts[i] {
+					t.Errorf("AllowedHosts[%d] = %q, want %q", i, got, tt.wantHosts[i])
+				}
+			}
+		})
+	}
+}

@@ -700,17 +700,18 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		BudgetTracker: budgetTracker,
 		AgentsDir:     agentsDir,
 		AgentsBase:    agentsBase,
+		AllowedHosts:  cfg.AllowedHosts,
 	}
 
 	if len(toolCalls) == 1 || !parallel {
 		// Sequential execution (also used for single call)
 		for i, tc := range toolCalls {
 			if mcpRouter != nil && mcpRouter.Has(tc.Name) {
-				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir)
+				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts)
 			} else if tc.Name == tool.CallAgentToolName {
 				results[i] = tool.ExecuteCallAgent(ctx, tc, execOpts)
 			} else {
-				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir)
+				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts)
 			}
 		}
 	} else {
@@ -724,11 +725,11 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 			go func(idx int, call provider.ToolCall) {
 				var res provider.ToolResult
 				if mcpRouter != nil && mcpRouter.Has(call.Name) {
-					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir)
+					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts)
 				} else if call.Name == tool.CallAgentToolName {
 					res = tool.ExecuteCallAgent(ctx, call, execOpts)
 				} else {
-					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir)
+					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts)
 				}
 				ch <- indexedResult{index: idx, result: res}
 			}(i, tc)
@@ -742,7 +743,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 	return results
 }
 
-func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.Registry, mcpRouter *mcpclient.Router, verbose bool, stderr io.Writer, workdir string) provider.ToolResult {
+func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.Registry, mcpRouter *mcpclient.Router, verbose bool, stderr io.Writer, workdir string, allowedHosts []string) provider.ToolResult {
 	if mcpRouter != nil && mcpRouter.Has(tc.Name) {
 		if verbose && stderr != nil {
 			if serverName, ok := mcpRouter.ServerName(tc.Name); ok {
@@ -756,7 +757,7 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.
 		return result
 	}
 
-	result, dispatchErr := registry.Dispatch(ctx, tc, tool.ExecContext{Workdir: workdir, Stderr: stderr, Verbose: verbose})
+	result, dispatchErr := registry.Dispatch(ctx, tc, tool.ExecContext{Workdir: workdir, Stderr: stderr, Verbose: verbose, AllowedHosts: allowedHosts})
 	if dispatchErr != nil {
 		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}
 	}

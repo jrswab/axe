@@ -74,6 +74,7 @@ type AgentConfig struct {
 	Files         []string          `toml:"files"`
 	Workdir       string            `toml:"workdir"`
 	Tools         []string          `toml:"tools"`
+	AllowedHosts  []string          `toml:"allowed_hosts"`
 	MCPServers    []MCPServerConfig `toml:"mcp_servers"`
 	SubAgents     []string          `toml:"sub_agents"`
 	SubAgentsConf SubAgentsConfig   `toml:"sub_agents_config"`

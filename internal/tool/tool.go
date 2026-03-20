@@ -38,6 +38,7 @@ type ExecuteOptions struct {
 	BudgetTracker *budget.BudgetTracker
 	AgentsDir     string // value of --agents-dir flag (may be empty)
 	AgentsBase    string // parent agent's resolved workdir (for auto-discovery)
+	AllowedHosts  []string
 }
 
 // CallAgentTool returns the call_agent tool definition for LLM tool calling.
@@ -143,6 +144,12 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 	provName, modelName, err := parseModel(cfg.Model)
 	if err != nil {
 		return errorResult(call.ID, agentName, fmt.Sprintf("invalid model for agent %q: %s", agentName, err), opts)
+	}
+
+	// Compute effective allowed hosts: sub-agent's own list wins, else inherit parent's
+	effectiveAllowedHosts := cfg.AllowedHosts
+	if len(effectiveAllowedHosts) == 0 {
+		effectiveAllowedHosts = opts.AllowedHosts
 	}
 
 	// Step 8: Resolve sub-agent's working directory, files, skill, system prompt
@@ -303,6 +310,7 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 	// Step 14: Run conversation loop (or single-shot if no tools)
 	runOpts := opts
 	runOpts.MCPRouter = mcpRouter
+	runOpts.AllowedHosts = effectiveAllowedHosts
 	resp, err := runConversationLoop(callCtx, prov, req, cfg, registry, newDepth, runOpts, workdir)
 	if err != nil {
 		durationMs := time.Since(start).Milliseconds()
@@ -408,6 +416,7 @@ func runConversationLoop(ctx context.Context, prov provider.Provider, req *provi
 					BudgetTracker: opts.BudgetTracker,
 					AgentsDir:     opts.AgentsDir,
 					AgentsBase:    toolWorkdir, // sub-agent's workdir becomes the new base
+					AllowedHosts:  opts.AllowedHosts,
 				}
 				results[i] = ExecuteCallAgent(ctx, tc, subOpts)
 			} else {
@@ -435,7 +444,7 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *Regis
 		return result
 	}
 
-	execCtx := ExecContext{Workdir: toolWorkdir, Stderr: opts.Stderr, Verbose: opts.Verbose}
+	execCtx := ExecContext{Workdir: toolWorkdir, Stderr: opts.Stderr, Verbose: opts.Verbose, AllowedHosts: opts.AllowedHosts}
 	result, dispatchErr := registry.Dispatch(ctx, tc, execCtx)
 	if dispatchErr != nil {
 		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}
