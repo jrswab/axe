@@ -226,3 +226,26 @@ The following tasks have dependencies:
 - **Task 5** (depends on Tasks 2 and 3): Thread `cfg.AllowedHosts` from the loaded agent config into `ExecContext` in the root agent run path.
 - **Task 6** (depends on Tasks 2 and 3): Add `AllowedHosts []string` to `ExecuteOptions`. Implement sub-agent propagation logic in `ExecuteCallAgent` and `runConversationLoop`.
 - **Task 7** (depends on Tasks 4, 5, and 6): Integration test covering: allowlist enforcement end-to-end, private IP blocking, sub-agent inheritance, and sub-agent explicit override.
+
+---
+
+## Post-Implementation Refinements
+
+The following changes were made after the initial implementation to improve testability and code quality. These do not alter any production behavior or security properties.
+
+### R14: Sub-agent allowlist inheritance is an exported, testable function
+
+The nil-vs-empty inheritance logic for `allowed_hosts` propagation (described in R10 and R11) is encapsulated in the exported function `EffectiveAllowedHosts(subAgent, parent []string) []string` in `internal/tool/tool.go`. `ExecuteCallAgent` calls this function rather than implementing the logic inline. This ensures the inheritance rule is tested directly against the production code path, not a duplicated copy.
+
+### R15: `url_fetch` host validation dependencies are injected, not global
+
+The `url_fetch` tool executor uses a `urlFetcher` struct (unexported, in `internal/tool/url_fetch.go`) that holds its DNS resolver, host-check function, and HTTP timeout as instance fields. The production constructor `newURLFetcher()` wires the same defaults previously held by package-level variables (`net.DefaultResolver`, `hostcheck.CheckHost`, `15s`). Tests construct per-test instances with injected fakes, eliminating mutable package-level state and enabling safe parallel test execution.
+
+### Affected files
+
+| File | Change |
+|---|---|
+| `internal/tool/tool.go` | Extracted `EffectiveAllowedHosts()` function; `ExecuteCallAgent` calls it |
+| `internal/tool/tool_test.go` | `TestEffectiveAllowedHosts` calls production function; uses `reflect.DeepEqual` for nil-aware slice comparison |
+| `internal/tool/url_fetch.go` | Replaced 3 mutable `var` declarations with `urlFetcher` struct and `newURLFetcher()` constructor |
+| `internal/tool/url_fetch_test.go` | Removed `skipHostCheck()` global-mutation helper; all tests use per-instance `urlFetcher` |

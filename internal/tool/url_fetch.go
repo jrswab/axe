@@ -20,16 +20,19 @@ import (
 
 const maxReadBytes = 10000
 
-// urlFetchTimeout is the per-request HTTP timeout.
-var urlFetchTimeout = 15 * time.Second
+type urlFetcher struct {
+	resolver  hostcheck.Resolver
+	checkHost func(ctx context.Context, hostname string, allowlist []string, resolver hostcheck.Resolver) (net.IP, error)
+	timeout   time.Duration
+}
 
-// urlFetchResolver is the DNS resolver used for host validation.
-// Override in tests to inject fake DNS responses.
-var urlFetchResolver hostcheck.Resolver = net.DefaultResolver
-
-// urlFetchCheckHost is the host validation function.
-// Override in tests to bypass private IP / allowlist checks.
-var urlFetchCheckHost = hostcheck.CheckHost
+func newURLFetcher() *urlFetcher {
+	return &urlFetcher{
+		resolver:  net.DefaultResolver,
+		checkHost: hostcheck.CheckHost,
+		timeout:   15 * time.Second,
+	}
+}
 
 func truncateURL(urlStr string, maxLen int) string {
 	if len(urlStr) <= maxLen {
@@ -57,9 +60,10 @@ func sanitizeURL(urlStr string) string {
 }
 
 func urlFetchEntry() ToolEntry {
+	f := newURLFetcher()
 	return ToolEntry{
 		Definition: urlFetchDefinition,
-		Execute:    urlFetchExecute,
+		Execute:    f.execute,
 	}
 }
 
@@ -105,7 +109,7 @@ func stripHTML(raw string) string {
 	return strings.Join(strings.Fields(b.String()), " ")
 }
 
-func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext) (result provider.ToolResult) {
+func (f *urlFetcher) execute(ctx context.Context, call provider.ToolCall, ec ExecContext) (result provider.ToolResult) {
 	urlStr := call.Arguments["url"]
 	statusCode := 0
 
@@ -137,11 +141,11 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 		}
 	}
 
-	reqCtx, cancel := context.WithTimeout(ctx, urlFetchTimeout)
+	reqCtx, cancel := context.WithTimeout(ctx, f.timeout)
 	defer cancel()
 
 	// Host allowlist and private IP check.
-	_, hostErr := urlFetchCheckHost(reqCtx, parsedURL.Hostname(), ec.AllowedHosts, urlFetchResolver)
+	_, hostErr := f.checkHost(reqCtx, parsedURL.Hostname(), ec.AllowedHosts, f.resolver)
 	if hostErr != nil {
 		return provider.ToolResult{CallID: call.ID, Content: hostErr.Error(), IsError: true}
 	}
@@ -152,14 +156,14 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 	}
 
 	client := &http.Client{
-		Timeout: urlFetchTimeout,
+		Timeout: f.timeout,
 		Transport: &http.Transport{
 			DialContext: func(dialCtx context.Context, network, addr string) (net.Conn, error) {
 				host, port, splitErr := net.SplitHostPort(addr)
 				if splitErr != nil {
 					return nil, splitErr
 				}
-				dialIP, checkErr := urlFetchCheckHost(dialCtx, host, ec.AllowedHosts, urlFetchResolver)
+				dialIP, checkErr := f.checkHost(dialCtx, host, ec.AllowedHosts, f.resolver)
 				if checkErr != nil {
 					return nil, checkErr
 				}

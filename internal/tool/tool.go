@@ -70,6 +70,16 @@ func CallAgentTool(allowedAgents []string) provider.Tool {
 	}
 }
 
+// EffectiveAllowedHosts returns the effective allowed hosts for a sub-agent.
+// If subAgent is non-nil (even if empty), it is used as-is.
+// If subAgent is nil, parent is inherited.
+func EffectiveAllowedHosts(subAgent, parent []string) []string {
+	if subAgent == nil {
+		return parent
+	}
+	return subAgent
+}
+
 // ExecuteCallAgent executes a call_agent tool call by loading and running a sub-agent.
 // It always returns a ToolResult (never an error). Errors are communicated via
 // ToolResult.Content and ToolResult.IsError fields.
@@ -146,12 +156,7 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		return errorResult(call.ID, agentName, fmt.Sprintf("invalid model for agent %q: %s", agentName, err), opts)
 	}
 
-	// Compute effective allowed hosts: sub-agent's own list wins (even if empty),
-	// else inherit parent's when not explicitly set (nil).
-	effectiveAllowedHosts := cfg.AllowedHosts
-	if effectiveAllowedHosts == nil {
-		effectiveAllowedHosts = opts.AllowedHosts
-	}
+	effectiveAllowedHosts := EffectiveAllowedHosts(cfg.AllowedHosts, opts.AllowedHosts)
 
 	// Step 8: Resolve sub-agent's working directory, files, skill, system prompt
 	workdir, err := resolve.Workdir("", cfg.Workdir)
