@@ -146,9 +146,10 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		return errorResult(call.ID, agentName, fmt.Sprintf("invalid model for agent %q: %s", agentName, err), opts)
 	}
 
-	// Compute effective allowed hosts: sub-agent's own list wins, else inherit parent's
+	// Compute effective allowed hosts: sub-agent's own list wins (even if empty),
+	// else inherit parent's when not explicitly set (nil).
 	effectiveAllowedHosts := cfg.AllowedHosts
-	if len(effectiveAllowedHosts) == 0 {
+	if effectiveAllowedHosts == nil {
 		effectiveAllowedHosts = opts.AllowedHosts
 	}
 

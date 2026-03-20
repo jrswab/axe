@@ -81,9 +81,12 @@ func CheckHost(ctx context.Context, hostname string, allowlist []string, resolve
 	}
 
 	// Step 3: DNS resolution.
+	if resolver == nil {
+		return nil, fmt.Errorf("no DNS resolver configured for host %q", hostname)
+	}
 	addrs, err := resolver.LookupIPAddr(ctx, hostname)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to resolve %q: %w", hostname, err)
 	}
 
 	// Step 4: reject if any resolved address is private.

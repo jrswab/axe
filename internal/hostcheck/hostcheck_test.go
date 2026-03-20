@@ -230,11 +230,18 @@ func TestCheckHost(t *testing.T) {
 			wantErr: "private address",
 		},
 		{
-			name:      "DNS resolution error is returned",
+			name:      "nil resolver returns error",
+			hostname:  "example.com",
+			allowlist: []string{},
+			resolver:  nil,
+			wantErr:   "no DNS resolver configured",
+		},
+		{
+			name:      "DNS resolution error is returned with hostname",
 			hostname:  "bad.example.com",
 			allowlist: []string{},
 			resolver:  &fakeResolver{err: fmt.Errorf("dns timeout")},
-			wantErr:   "dns timeout",
+			wantErr:   "failed to resolve",
 		},
 	}
 

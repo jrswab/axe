@@ -137,14 +137,14 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 		}
 	}
 
+	reqCtx, cancel := context.WithTimeout(ctx, urlFetchTimeout)
+	defer cancel()
+
 	// Host allowlist and private IP check.
-	safeIP, hostErr := urlFetchCheckHost(ctx, parsedURL.Hostname(), ec.AllowedHosts, urlFetchResolver)
+	_, hostErr := urlFetchCheckHost(reqCtx, parsedURL.Hostname(), ec.AllowedHosts, urlFetchResolver)
 	if hostErr != nil {
 		return provider.ToolResult{CallID: call.ID, Content: hostErr.Error(), IsError: true}
 	}
-
-	reqCtx, cancel := context.WithTimeout(ctx, urlFetchTimeout)
-	defer cancel()
 
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, urlStr, nil)
 	if err != nil {
@@ -155,17 +155,23 @@ func urlFetchExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 		Timeout: urlFetchTimeout,
 		Transport: &http.Transport{
 			DialContext: func(dialCtx context.Context, network, addr string) (net.Conn, error) {
-				_, port, _ := net.SplitHostPort(addr)
-				if safeIP != nil && port != "" {
-					return (&net.Dialer{}).DialContext(dialCtx, network, net.JoinHostPort(safeIP.String(), port))
+				host, port, splitErr := net.SplitHostPort(addr)
+				if splitErr != nil {
+					return nil, splitErr
+				}
+				dialIP, checkErr := urlFetchCheckHost(dialCtx, host, ec.AllowedHosts, urlFetchResolver)
+				if checkErr != nil {
+					return nil, checkErr
+				}
+				if dialIP != nil && port != "" {
+					return (&net.Dialer{}).DialContext(dialCtx, network, net.JoinHostPort(dialIP.String(), port))
 				}
 				return (&net.Dialer{}).DialContext(dialCtx, network, addr)
 			},
 		},
 		CheckRedirect: func(redirectReq *http.Request, via []*http.Request) error {
-			_, err := urlFetchCheckHost(redirectReq.Context(), redirectReq.URL.Hostname(), ec.AllowedHosts, urlFetchResolver)
-			if err != nil {
-				return err
+			if len(ec.AllowedHosts) > 0 && !hostcheck.IsAllowed(redirectReq.URL.Hostname(), ec.AllowedHosts) {
+				return fmt.Errorf("host %q is not in allowed_hosts", redirectReq.URL.Hostname())
 			}
 			if len(via) >= 10 {
 				return fmt.Errorf("too many redirects")

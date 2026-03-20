@@ -320,6 +320,9 @@ model = "provider/model-name"
 # Valid: list_directory, read_file, write_file, edit_file, run_command, url_fetch, web_search
 # tools = []
 
+# Restrict url_fetch to these hostnames (optional, omit to inherit parent's list)
+# allowed_hosts = []
+
 # Sub-agents this agent can invoke (optional)
 # sub_agents = []
 

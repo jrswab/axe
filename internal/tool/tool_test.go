@@ -835,6 +835,64 @@ enabled = true
 	}
 }
 
+// TestEffectiveAllowedHosts tests the nil-vs-empty-slice inheritance logic used in ExecuteCallAgent.
+// nil sub-agent AllowedHosts → inherit parent list; []string{} → use empty (clear parent list).
+func TestEffectiveAllowedHosts(t *testing.T) {
+	tests := []struct {
+		name     string
+		subAgent []string // cfg.AllowedHosts (nil or empty or populated)
+		parent   []string // opts.AllowedHosts
+		wantLen  int
+		wantNil  bool
+	}{
+		{
+			name:     "nil sub-agent inherits parent list",
+			subAgent: nil,
+			parent:   []string{"api.example.com"},
+			wantLen:  1,
+		},
+		{
+			name:     "empty sub-agent clears parent list",
+			subAgent: []string{},
+			parent:   []string{"api.example.com"},
+			wantLen:  0,
+		},
+		{
+			name:     "populated sub-agent uses own list",
+			subAgent: []string{"docs.example.com"},
+			parent:   []string{"api.example.com"},
+			wantLen:  1,
+		},
+		{
+			name:     "nil sub-agent with nil parent stays nil",
+			subAgent: nil,
+			parent:   nil,
+			wantNil:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Replicate the logic from ExecuteCallAgent
+			effective := tc.subAgent
+			if effective == nil {
+				effective = tc.parent
+			}
+
+			if tc.wantNil {
+				if effective != nil {
+					t.Errorf("expected nil, got %v", effective)
+				}
+				return
+			}
+
+			if len(effective) != tc.wantLen {
+				t.Errorf("expected len %d, got %d (%v)", tc.wantLen, len(effective), effective)
+			}
+		})
+	}
+}
+
 // TestExecuteCallAgent_LocalDirPropagated verifies that when AgentsBase is set,
 // sub-agent configs are loaded from AgentsBase/axe/agents/ before falling back to global config.
 func TestExecuteCallAgent_LocalDirPropagated(t *testing.T) {

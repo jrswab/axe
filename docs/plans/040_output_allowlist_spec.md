@@ -192,7 +192,7 @@ If the LLM provides a URL with a raw IP address (e.g., `http://192.168.1.1/data`
 
 ### E5: Sub-agent defines an empty list explicitly vs. not defining the field at all
 
-An `allowed_hosts = []` in a sub-agent TOML is treated as "not defined" — the parent's list is inherited. This is consistent with TOML semantics where an omitted field and an empty list are functionally equivalent for this feature. The inheritance rule triggers on "empty at load time," regardless of whether the field was explicitly set or defaulted.
+An omitted `allowed_hosts` field (nil at load time) causes the sub-agent to inherit the parent's list. An explicit `allowed_hosts = []` (non-nil, zero length) clears the parent's restrictions — the sub-agent operates with no host restriction, subject only to R3 (unconditional private IP blocking). This distinction allows operators to explicitly opt a sub-agent out of inherited restrictions when needed.
 
 ### E6: Root agent has no `allowed_hosts`; sub-agent has no `allowed_hosts`
 
