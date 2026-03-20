@@ -33,3 +33,10 @@ checksum:
 
 changelog:
   disable: true
+
+release:
+  footer: |
+    ## Docker
+    ```
+    docker pull ghcr.io/jrswab/axe:{{ .Version }}
+    ```
