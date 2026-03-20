@@ -105,7 +105,7 @@ The `url_fetch` built-in tool lets the LLM make HTTP GET requests to arbitrary U
 
 ### Phase 3 — Integration (depends on all of Phase 2)
 
-- [ ] **Task 7: Integration tests — `cmd/`**
+- [x] **Task 7: Integration tests — `cmd/`**
   - Add integration tests that compile the binary and run end-to-end, following the pattern in `cmd/run_integration_test.go`.
   - Test cases:
     - Agent with `allowed_hosts = ["httpbin.org"]` and `url_fetch` tool: LLM asked to fetch an allowed URL → succeeds.

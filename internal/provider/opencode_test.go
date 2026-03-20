@@ -33,6 +33,7 @@ func TestNewOpenCode_ValidAPIKey(t *testing.T) {
 	}
 	if p == nil {
 		t.Fatal("expected non-nil provider")
+		return
 	}
 	if p.baseURL != defaultOpenCodeBaseURL {
 		t.Errorf("expected baseURL %q, got %q", defaultOpenCodeBaseURL, p.baseURL)

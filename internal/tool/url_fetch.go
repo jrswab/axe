@@ -20,6 +20,7 @@ import (
 
 const maxReadBytes = 10000
 
+// urlFetchTimeout is the per-request HTTP timeout.
 var urlFetchTimeout = 15 * time.Second
 
 // urlFetchResolver is the DNS resolver used for host validation.
