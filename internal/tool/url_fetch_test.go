@@ -687,157 +687,173 @@ func TestURLFetch_HTMLStrippedBeforeTruncation(t *testing.T) {
 
 // Phase 4: Allowlist and private IP tests
 
-func TestURLFetch_AllowlistPermitsMatchingHost(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte("ok"))
-	}))
-	defer ts.Close()
+func TestURLFetch_AllowlistAndIPChecks(t *testing.T) {
+	tests := []struct {
+		name         string
+		setup        func(t *testing.T) (f *urlFetcher, call provider.ToolCall, ec ExecContext, cleanup func())
+		wantError    bool
+		wantContains string
+	}{
+		{
+			name: "allowlist permits matching host",
+			setup: func(t *testing.T) (*urlFetcher, provider.ToolCall, ExecContext, func()) {
+				t.Helper()
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(200)
+					_, _ = w.Write([]byte("ok"))
+				}))
+				u, _ := url.Parse(ts.URL)
+				hostname := u.Hostname()
 
-	// Extract hostname from test server URL (will be 127.0.0.1)
-	u, _ := url.Parse(ts.URL)
-	hostname := u.Hostname()
+				f := &urlFetcher{
+					resolver: net.DefaultResolver,
+					checkHost: func(_ context.Context, h string, allowlist []string, _ hostcheck.Resolver) (net.IP, error) {
+						if !hostcheck.IsAllowed(h, allowlist) {
+							return nil, &net.AddrError{Err: "not in allowed_hosts", Addr: h}
+						}
+						return net.ParseIP("127.0.0.1"), nil
+					},
+					timeout: 15 * time.Second,
+				}
+				call := provider.ToolCall{
+					ID:        "test-allow-match",
+					Name:      "url_fetch",
+					Arguments: map[string]string{"url": ts.URL},
+				}
+				ec := ExecContext{AllowedHosts: []string{hostname}}
+				return f, call, ec, ts.Close
+			},
+			wantError: false,
+		},
+		{
+			name: "allowlist blocks non-matching host",
+			setup: func(t *testing.T) (*urlFetcher, provider.ToolCall, ExecContext, func()) {
+				t.Helper()
+				f := newURLFetcher()
+				call := provider.ToolCall{
+					ID:        "test-allow-block",
+					Name:      "url_fetch",
+					Arguments: map[string]string{"url": "https://blocked.example.com/page"},
+				}
+				ec := ExecContext{AllowedHosts: []string{"allowed.example.com"}}
+				return f, call, ec, nil
+			},
+			wantError:    true,
+			wantContains: "not in allowed_hosts",
+		},
+		{
+			name: "empty allowlist permits all",
+			setup: func(t *testing.T) (*urlFetcher, provider.ToolCall, ExecContext, func()) {
+				t.Helper()
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(200)
+					_, _ = w.Write([]byte("ok"))
+				}))
+				f := newTestURLFetcher()
+				call := provider.ToolCall{
+					ID:        "test-empty-allow",
+					Name:      "url_fetch",
+					Arguments: map[string]string{"url": ts.URL},
+				}
+				return f, call, ExecContext{}, ts.Close
+			},
+			wantError: false,
+		},
+		{
+			name: "blocks private IP",
+			setup: func(t *testing.T) (*urlFetcher, provider.ToolCall, ExecContext, func()) {
+				t.Helper()
+				f := newURLFetcher()
+				call := provider.ToolCall{
+					ID:        "test-private-ip",
+					Name:      "url_fetch",
+					Arguments: map[string]string{"url": "http://192.168.1.1/data"},
+				}
+				return f, call, ExecContext{}, nil
+			},
+			wantError:    true,
+			wantContains: "private",
+		},
+		{
+			name: "blocks loopback via DNS",
+			setup: func(t *testing.T) (*urlFetcher, provider.ToolCall, ExecContext, func()) {
+				t.Helper()
+				f := &urlFetcher{
+					resolver: &fakeURLFetchResolver{
+						addrs: []net.IPAddr{{IP: net.ParseIP("127.0.0.1")}},
+					},
+					checkHost: hostcheck.CheckHost,
+					timeout:   15 * time.Second,
+				}
+				call := provider.ToolCall{
+					ID:        "test-loopback",
+					Name:      "url_fetch",
+					Arguments: map[string]string{"url": "http://evil.example.com/steal"},
+				}
+				return f, call, ExecContext{}, nil
+			},
+			wantError:    true,
+			wantContains: "private",
+		},
+		{
+			name: "redirect to disallowed host blocked",
+			setup: func(t *testing.T) (*urlFetcher, provider.ToolCall, ExecContext, func()) {
+				t.Helper()
+				target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(200)
+					_, _ = w.Write([]byte("should not reach here"))
+				}))
+				targetURL, _ := url.Parse(target.URL)
+				redirectDest := "http://localhost:" + targetURL.Port() + "/secret"
 
-	f := &urlFetcher{
-		resolver: net.DefaultResolver,
-		checkHost: func(_ context.Context, h string, allowlist []string, _ hostcheck.Resolver) (net.IP, error) {
-			if !hostcheck.IsAllowed(h, allowlist) {
-				return nil, &net.AddrError{Err: "not in allowed_hosts", Addr: h}
+				source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					http.Redirect(w, r, redirectDest, http.StatusMovedPermanently)
+				}))
+				sourceURL, _ := url.Parse(source.URL)
+				sourceHost := sourceURL.Hostname()
+
+				f := &urlFetcher{
+					resolver: net.DefaultResolver,
+					checkHost: func(_ context.Context, hostname string, allowlist []string, _ hostcheck.Resolver) (net.IP, error) {
+						if len(allowlist) > 0 && !hostcheck.IsAllowed(hostname, allowlist) {
+							return nil, fmt.Errorf("host %q is not in allowed_hosts", hostname)
+						}
+						return net.ParseIP("127.0.0.1"), nil
+					},
+					timeout: 15 * time.Second,
+				}
+				call := provider.ToolCall{
+					ID:        "test-redirect",
+					Name:      "url_fetch",
+					Arguments: map[string]string{"url": source.URL + "/start"},
+				}
+				ec := ExecContext{AllowedHosts: []string{sourceHost}}
+				cleanup := func() {
+					source.Close()
+					target.Close()
+				}
+				return f, call, ec, cleanup
+			},
+			wantError:    true,
+			wantContains: "not in allowed_hosts",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			f, call, ec, cleanup := tc.setup(t)
+			if cleanup != nil {
+				defer cleanup()
 			}
-			return net.ParseIP("127.0.0.1"), nil
-		},
-		timeout: 15 * time.Second,
-	}
-	result := f.execute(context.Background(), provider.ToolCall{
-		ID:        "test-1",
-		Name:      "url_fetch",
-		Arguments: map[string]string{"url": ts.URL},
-	}, ExecContext{AllowedHosts: []string{hostname}})
 
-	if result.IsError {
-		t.Errorf("expected success, got error: %s", result.Content)
-	}
-}
+			result := f.execute(context.Background(), call, ec)
 
-func TestURLFetch_AllowlistBlocksNonMatchingHost(t *testing.T) {
-	f := newURLFetcher()
-	result := f.execute(context.Background(), provider.ToolCall{
-		ID:        "test-2",
-		Name:      "url_fetch",
-		Arguments: map[string]string{"url": "https://blocked.example.com/page"},
-	}, ExecContext{AllowedHosts: []string{"allowed.example.com"}})
-
-	if !result.IsError {
-		t.Error("expected error for non-matching host")
-	}
-	if !strings.Contains(result.Content, "not in allowed_hosts") {
-		t.Errorf("expected 'not in allowed_hosts' in error, got: %s", result.Content)
-	}
-}
-
-func TestURLFetch_EmptyAllowlistPermitsAll(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte("ok"))
-	}))
-	defer ts.Close()
-
-	f := newTestURLFetcher()
-	result := f.execute(context.Background(), provider.ToolCall{
-		ID:        "test-3",
-		Name:      "url_fetch",
-		Arguments: map[string]string{"url": ts.URL},
-	}, ExecContext{})
-
-	if result.IsError {
-		t.Errorf("expected success with empty allowlist, got error: %s", result.Content)
-	}
-}
-
-func TestURLFetch_BlocksPrivateIP(t *testing.T) {
-	f := newURLFetcher()
-	result := f.execute(context.Background(), provider.ToolCall{
-		ID:        "test-4",
-		Name:      "url_fetch",
-		Arguments: map[string]string{"url": "http://192.168.1.1/data"},
-	}, ExecContext{})
-
-	if !result.IsError {
-		t.Error("expected error for private IP")
-	}
-	if !strings.Contains(result.Content, "private") {
-		t.Errorf("expected 'private' in error, got: %s", result.Content)
-	}
-}
-
-func TestURLFetch_BlocksLoopbackIP(t *testing.T) {
-	f := &urlFetcher{
-		resolver: &fakeURLFetchResolver{
-			addrs: []net.IPAddr{{IP: net.ParseIP("127.0.0.1")}},
-		},
-		checkHost: hostcheck.CheckHost,
-		timeout:   15 * time.Second,
-	}
-
-	result := f.execute(context.Background(), provider.ToolCall{
-		ID:        "test-5",
-		Name:      "url_fetch",
-		Arguments: map[string]string{"url": "http://evil.example.com/steal"},
-	}, ExecContext{})
-
-	if !result.IsError {
-		t.Error("expected error for loopback IP")
-	}
-	if !strings.Contains(result.Content, "private") {
-		t.Errorf("expected 'private' in error, got: %s", result.Content)
-	}
-}
-
-func TestURLFetch_RedirectToDisallowedHostBlocked(t *testing.T) {
-	// Target server listens on 127.0.0.1; we'll reach it via "localhost" in the
-	// redirect URL so that source ("127.0.0.1") and target ("localhost") have
-	// distinct hostnames, letting the allowlist distinguish between them.
-	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte("should not reach here"))
-	}))
-	defer target.Close()
-
-	targetURL, _ := url.Parse(target.URL)
-	// Build redirect destination using "localhost" instead of "127.0.0.1".
-	redirectDest := "http://localhost:" + targetURL.Port() + "/secret"
-	targetHost := "localhost"
-
-	// Source server redirects to the localhost-addressed target.
-	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, redirectDest, http.StatusMovedPermanently)
-	}))
-	defer source.Close()
-
-	sourceURL, _ := url.Parse(source.URL)
-	sourceHost := sourceURL.Hostname() // "127.0.0.1"
-
-	f := &urlFetcher{
-		resolver: net.DefaultResolver,
-		checkHost: func(_ context.Context, hostname string, allowlist []string, _ hostcheck.Resolver) (net.IP, error) {
-			if len(allowlist) > 0 && !hostcheck.IsAllowed(hostname, allowlist) {
-				return nil, fmt.Errorf("host %q is not in allowed_hosts", hostname)
+			if result.IsError != tc.wantError {
+				t.Fatalf("IsError = %v, want %v; content: %s", result.IsError, tc.wantError, result.Content)
 			}
-			return net.ParseIP("127.0.0.1"), nil
-		},
-		timeout: 15 * time.Second,
-	}
-	result := f.execute(context.Background(), provider.ToolCall{
-		ID:        "test-redirect",
-		Name:      "url_fetch",
-		Arguments: map[string]string{"url": source.URL + "/start"},
-	}, ExecContext{AllowedHosts: []string{sourceHost}})
-
-	// The redirect to "localhost" (not in allowlist) should be blocked.
-	if !result.IsError {
-		t.Errorf("expected error for redirect to disallowed host %s, got success: %s", targetHost, result.Content)
-	}
-	if !strings.Contains(result.Content, "not in allowed_hosts") {
-		t.Errorf("expected 'not in allowed_hosts' in error, got: %s", result.Content)
+			if tc.wantContains != "" && !strings.Contains(result.Content, tc.wantContains) {
+				t.Errorf("Content = %q, want substring %q", result.Content, tc.wantContains)
+			}
+		})
 	}
 }
