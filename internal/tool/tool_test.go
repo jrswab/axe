@@ -834,3 +834,112 @@ enabled = true
 		t.Errorf("expected no memory file at %s after error, but it exists", memPath)
 	}
 }
+
+// TestExecuteCallAgent_LocalDirPropagated verifies that when AgentsBase is set,
+// sub-agent configs are loaded from AgentsBase/axe/agents/ before falling back to global config.
+func TestExecuteCallAgent_LocalDirPropagated(t *testing.T) {
+	// Set up a temp XDG config dir (for fallback)
+	xdgDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", xdgDir)
+	xdgAgentsDir := filepath.Join(xdgDir, "axe", "agents")
+	if err := os.MkdirAll(xdgAgentsDir, 0755); err != nil {
+		t.Fatalf("failed to create XDG agents dir: %v", err)
+	}
+
+	// Set up a temp AgentsBase dir with a sub-agent in axe/agents/
+	agentsBaseDir := t.TempDir()
+	localAgentsDir := filepath.Join(agentsBaseDir, "axe", "agents")
+	if err := os.MkdirAll(localAgentsDir, 0755); err != nil {
+		t.Fatalf("failed to create local agents dir: %v", err)
+	}
+
+	// Start mock provider server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"id":    "msg_local",
+			"type":  "message",
+			"model": "claude-sonnet-4-20250514",
+			"role":  "assistant",
+			"content": []map[string]interface{}{
+				{"type": "text", "text": "Sub-agent result"},
+			},
+			"stop_reason": "end_turn",
+			"usage":       map[string]int{"input_tokens": 10, "output_tokens": 5},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Write a local-only agent in the local dir
+	writeToolTestAgent(t, localAgentsDir, "local-helper", `name = "local-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	// Write a global-only agent in XDG dir
+	writeToolTestAgent(t, xdgAgentsDir, "global-helper", `name = "global-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	// Test 1: With AgentsBase set, local agent should be found in local dir
+	call := provider.ToolCall{
+		ID:        "test-local-found",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "local-helper", "task": "do something"},
+	}
+	opts := ExecuteOptions{
+		AllowedAgents: []string{"local-helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+		AgentsBase:    agentsBaseDir, // This should find local-helper in agentsBaseDir/axe/agents/
+	}
+	result := ExecuteCallAgent(context.Background(), call, opts)
+	if result.IsError {
+		t.Fatalf("expected IsError=false for local agent, got error: %s", result.Content)
+	}
+
+	// Test 2: With AgentsBase set, fallback to XDG still works for global-only agents
+	call2 := provider.ToolCall{
+		ID:        "test-global-fallback",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "global-helper", "task": "do something"},
+	}
+	opts2 := ExecuteOptions{
+		AllowedAgents: []string{"global-helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+		AgentsBase:    agentsBaseDir, // Should fall back to XDG and find global-helper
+	}
+	result2 := ExecuteCallAgent(context.Background(), call2, opts2)
+	if result2.IsError {
+		t.Fatalf("expected IsError=false for global agent (fallback), got error: %s", result2.Content)
+	}
+
+	// Test 3: With AgentsBase set but NOT pointing to local dir, local agent should not be found
+	// (Using a different AgentsBase that doesn't have the agent)
+	otherBaseDir := t.TempDir()
+	call3 := provider.ToolCall{
+		ID:        "test-local-not-found",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "local-helper", "task": "do something"},
+	}
+	opts3 := ExecuteOptions{
+		AllowedAgents: []string{"local-helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+		AgentsBase:    otherBaseDir, // This dir doesn't have local-helper, so XDG fallback should fail too
+	}
+	result3 := ExecuteCallAgent(context.Background(), call3, opts3)
+	if !result3.IsError {
+		t.Fatal("expected IsError=true for agent not found")
+	}
+	if !strings.Contains(result3.Content, "failed to load agent") {
+		t.Errorf("Content = %q, want to contain 'failed to load agent'", result3.Content)
+	}
+}

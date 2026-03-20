@@ -122,7 +122,7 @@ max_tokens = 4096
 `
 	writeAgentFile(t, agentsDir, "full-agent", tomlContent)
 
-	cfg, err := Load("full-agent")
+	cfg, err := Load("full-agent", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -174,7 +174,7 @@ model = "openai/gpt-4o"
 `
 	writeAgentFile(t, agentsDir, "minimal", tomlContent)
 
-	cfg, err := Load("minimal")
+	cfg, err := Load("minimal", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -220,7 +220,7 @@ model = "openai/gpt-4o"
 func TestLoad_MissingFile(t *testing.T) {
 	_ = setupAgentsDir(t)
 
-	_, err := Load("nonexistent")
+	_, err := Load("nonexistent", nil)
 	if err == nil {
 		t.Fatal("expected error for missing file, got nil")
 	}
@@ -235,7 +235,7 @@ func TestLoad_MalformedTOML(t *testing.T) {
 
 	writeAgentFile(t, agentsDir, "bad", "this is not [valid toml =")
 
-	_, err := Load("bad")
+	_, err := Load("bad", nil)
 	if err == nil {
 		t.Fatal("expected error for malformed TOML, got nil")
 	}
@@ -249,7 +249,7 @@ func TestLoad_MissingName(t *testing.T) {
 
 	writeAgentFile(t, agentsDir, "noname", `model = "anthropic/claude-sonnet-4-20250514"`)
 
-	_, err := Load("noname")
+	_, err := Load("noname", nil)
 	if err == nil {
 		t.Fatal("expected validation error for missing name, got nil")
 	}
@@ -264,7 +264,7 @@ func TestLoad_MissingModel(t *testing.T) {
 
 	writeAgentFile(t, agentsDir, "nomodel", `name = "nomodel"`)
 
-	_, err := Load("nomodel")
+	_, err := Load("nomodel", nil)
 	if err == nil {
 		t.Fatal("expected validation error for missing model, got nil")
 	}
@@ -283,7 +283,7 @@ model = "anthropic/claude-sonnet-4-20250514"
 `
 	writeAgentFile(t, agentsDir, "wsname", tomlContent)
 
-	_, err := Load("wsname")
+	_, err := Load("wsname", nil)
 	if err == nil {
 		t.Fatal("expected validation error for whitespace name, got nil")
 	}
@@ -302,7 +302,7 @@ model = "   "
 `
 	writeAgentFile(t, agentsDir, "wsmodel", tomlContent)
 
-	_, err := Load("wsmodel")
+	_, err := Load("wsmodel", nil)
 	if err == nil {
 		t.Fatal("expected validation error for whitespace model, got nil")
 	}
@@ -317,7 +317,7 @@ model = "   "
 func TestList_EmptyDirectory(t *testing.T) {
 	_ = setupAgentsDir(t) // creates empty agents/
 
-	agents, err := List()
+	agents, err := List(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestList_NoDirectory(t *testing.T) {
 		t.Fatalf("failed to create axe dir: %v", err)
 	}
 
-	agents, err := List()
+	agents, err := List(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -349,7 +349,7 @@ func TestList_MultipleAgents(t *testing.T) {
 	writeAgentFile(t, agentsDir, "alpha", `name = "alpha"`+"\n"+`model = "openai/gpt-4o"`)
 	writeAgentFile(t, agentsDir, "beta", `name = "beta"`+"\n"+`model = "anthropic/claude-sonnet-4-20250514"`)
 
-	agents, err := List()
+	agents, err := List(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -364,7 +364,7 @@ func TestList_SkipsInvalidFiles(t *testing.T) {
 	writeAgentFile(t, agentsDir, "good", `name = "good"`+"\n"+`model = "openai/gpt-4o"`)
 	writeAgentFile(t, agentsDir, "bad", "not valid toml [[[")
 
-	agents, err := List()
+	agents, err := List(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -385,7 +385,7 @@ func TestList_IgnoresNonTOML(t *testing.T) {
 		t.Fatalf("failed to write .md file: %v", err)
 	}
 
-	agents, err := List()
+	agents, err := List(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -402,7 +402,7 @@ func TestList_IgnoresSubdirectories(t *testing.T) {
 		t.Fatalf("failed to create subdir: %v", err)
 	}
 
-	agents, err := List()
+	agents, err := List(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -428,7 +428,7 @@ timeout = 120
 `
 	writeAgentFile(t, agentsDir, "parent", tomlContent)
 
-	cfg, err := Load("parent")
+	cfg, err := Load("parent", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -454,7 +454,7 @@ sub_agents = ["helper"]
 `
 	writeAgentFile(t, agentsDir, "minimal-parent", tomlContent)
 
-	cfg, err := Load("minimal-parent")
+	cfg, err := Load("minimal-parent", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -547,7 +547,7 @@ max_entries = 50
 `
 	writeAgentFile(t, agentsDir, "mem-agent", tomlContent)
 
-	cfg, err := Load("mem-agent")
+	cfg, err := Load("mem-agent", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -575,7 +575,7 @@ model = "openai/gpt-4o"
 `
 	writeAgentFile(t, agentsDir, "no-mem", tomlContent)
 
-	cfg, err := Load("no-mem")
+	cfg, err := Load("no-mem", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -748,7 +748,7 @@ tools = ["read_file", "list_directory"]
 `
 	writeAgentFile(t, agentsDir, "tooled", tomlContent)
 
-	cfg, err := Load("tooled")
+	cfg, err := Load("tooled", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -773,7 +773,7 @@ model = "openai/gpt-4o"
 `
 	writeAgentFile(t, agentsDir, "no-tools", tomlContent)
 
-	cfg, err := Load("no-tools")
+	cfg, err := Load("no-tools", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -793,7 +793,7 @@ tools = []
 `
 	writeAgentFile(t, agentsDir, "empty-tools", tomlContent)
 
-	cfg, err := Load("empty-tools")
+	cfg, err := Load("empty-tools", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1145,7 +1145,7 @@ transport = "sse"
 `
 	writeAgentFile(t, agentsDir, "mcp-agent", tomlContent)
 
-	cfg, err := Load("mcp-agent")
+	cfg, err := Load("mcp-agent", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1185,7 +1185,7 @@ model = "openai/gpt-4o"
 `
 	writeAgentFile(t, agentsDir, "no-mcp", tomlContent)
 
-	cfg, err := Load("no-mcp")
+	cfg, err := Load("no-mcp", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1613,7 +1613,7 @@ max_tokens = 8000
 		t.Run(tc.name, func(t *testing.T) {
 			agentsDir := setupAgentsDir(t)
 			writeAgentFile(t, agentsDir, tc.agentName, tc.tomlContent)
-			cfg, err := Load(tc.agentName)
+			cfg, err := Load(tc.agentName, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -1642,5 +1642,145 @@ func TestScaffold_IncludesBudgetConfig(t *testing.T) {
 				t.Errorf("scaffold output missing %q\nfull output:\n%s", tc.want, out)
 			}
 		})
+	}
+}
+
+// --- Phase 1 Multi-Directory Search Tests ---
+
+func TestLoad_LocalDirTakesPrecedence(t *testing.T) {
+	// Setup global XDG dir
+	globalDir := setupAgentsDir(t)
+	// Setup local dir
+	localDir := filepath.Join(t.TempDir(), "local")
+	if err := os.MkdirAll(localDir, 0755); err != nil {
+		t.Fatalf("failed to create local dir: %v", err)
+	}
+
+	// Write agent to global dir
+	writeAgentFile(t, globalDir, "myagent", `name = "myagent"`+"\n"+`model = "openai/gpt-4o"`+"\n"+`description = "global version"`)
+	// Write agent to local dir (different description)
+	localAgentPath := filepath.Join(localDir, "myagent.toml")
+	if err := os.WriteFile(localAgentPath, []byte(`name = "myagent"`+"\n"+`model = "openai/gpt-4o"`+"\n"+`description = "local version"`), 0644); err != nil {
+		t.Fatalf("failed to write local agent file: %v", err)
+	}
+
+	// Load with local dir first - should get local version
+	cfg, err := Load("myagent", []string{localDir})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Description != "local version" {
+		t.Errorf("expected local version, got %q", cfg.Description)
+	}
+}
+
+func TestLoad_FallsBackToGlobal(t *testing.T) {
+	// Setup global XDG dir
+	globalDir := setupAgentsDir(t)
+	// Setup local dir (but don't put the agent there)
+	localDir := filepath.Join(t.TempDir(), "local")
+	if err := os.MkdirAll(localDir, 0755); err != nil {
+		t.Fatalf("failed to create local dir: %v", err)
+	}
+
+	// Write agent only to global dir
+	writeAgentFile(t, globalDir, "myagent", `name = "myagent"`+"\n"+`model = "openai/gpt-4o"`)
+
+	// Load with local dir first - should fall back to global
+	cfg, err := Load("myagent", []string{localDir})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Name != "myagent" {
+		t.Errorf("expected name 'myagent', got %q", cfg.Name)
+	}
+}
+
+func TestLoad_NonExistentSearchDir_Skipped(t *testing.T) {
+	// Setup global XDG dir
+	globalDir := setupAgentsDir(t)
+	// Non-existent local dir
+	nonExistentDir := filepath.Join(t.TempDir(), "doesnotexist")
+
+	// Write agent only to global dir
+	writeAgentFile(t, globalDir, "myagent", `name = "myagent"`+"\n"+`model = "openai/gpt-4o"`)
+
+	// Load with non-existent dir first - should skip and use global
+	cfg, err := Load("myagent", []string{nonExistentDir})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Name != "myagent" {
+		t.Errorf("expected name 'myagent', got %q", cfg.Name)
+	}
+}
+
+func TestLoad_EmptyName_ReturnsError(t *testing.T) {
+	_ = setupAgentsDir(t)
+	_, err := Load("", nil)
+	if err == nil {
+		t.Fatal("expected error for empty name, got nil")
+	}
+	if !strings.Contains(err.Error(), "must not be empty") {
+		t.Errorf("got %q, want error containing 'must not be empty'", err.Error())
+	}
+}
+
+func TestLoad_PathTraversal_ReturnsError(t *testing.T) {
+	_ = setupAgentsDir(t)
+	cases := []string{"../foo", "foo/bar", "foo\\bar", ".."}
+	for _, name := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := Load(name, nil)
+			if err == nil {
+				t.Fatalf("expected error for name %q, got nil", name)
+			}
+			if !strings.Contains(err.Error(), "must not contain path separators") {
+				t.Errorf("got %q, want error containing 'must not contain path separators'", err.Error())
+			}
+		})
+	}
+}
+
+func TestBuildSearchDirs_FlagAndBase(t *testing.T) {
+	flagDir := "/custom/agents"
+	baseDir := "/project"
+	got := BuildSearchDirs(flagDir, baseDir)
+	want := []string{"/custom/agents", "/project/axe/agents"}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 dirs, got %d: %v", len(got), got)
+	}
+	if got[0] != want[0] {
+		t.Errorf("dir[0] = %q, want %q", got[0], want[0])
+	}
+	if got[1] != want[1] {
+		t.Errorf("dir[1] = %q, want %q", got[1], want[1])
+	}
+}
+
+func TestBuildSearchDirs_NoFlag(t *testing.T) {
+	flagDir := ""
+	baseDir := "/project"
+	got := BuildSearchDirs(flagDir, baseDir)
+	want := []string{"/project/axe/agents"}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 dir, got %d: %v", len(got), got)
+	}
+	if got[0] != want[0] {
+		t.Errorf("dir[0] = %q, want %q", got[0], want[0])
+	}
+}
+
+func TestBuildSearchDirs_EmptyFlag_EmptyBase(t *testing.T) {
+	flagDir := ""
+	baseDir := ""
+	got := BuildSearchDirs(flagDir, baseDir)
+	want := "axe/agents"
+	if len(got) != 1 {
+		t.Fatalf("expected 1 dir, got %d: %v", len(got), got)
+	}
+	// filepath.Join("", "axe", "agents") returns "axe/agents" on Unix
+	if got[0] != want {
+		t.Errorf("dir[0] = %q, want %q", got[0], want)
 	}
 }

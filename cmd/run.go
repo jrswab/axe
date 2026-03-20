@@ -52,6 +52,7 @@ calling the LLM provider, and printing the response.`,
 func init() {
 	runCmd.Flags().String("skill", "", "Override the agent's default skill path")
 	runCmd.Flags().String("workdir", "", "Override the working directory")
+	runCmd.Flags().String("agents-dir", "", "Additional agents directory to search before global config")
 	runCmd.Flags().String("model", "", "Override the model (provider/model-name format)")
 	runCmd.Flags().Int("timeout", 120, "Request timeout in seconds")
 	runCmd.Flags().Bool("dry-run", false, "Show resolved context without calling the LLM")
@@ -98,8 +99,20 @@ func truncateOutput(s string) string {
 func runAgent(cmd *cobra.Command, args []string) error {
 	agentName := args[0]
 
+	// Get the agents-dir flag early (before workdir resolution)
+	flagAgentsDir, _ := cmd.Flags().GetString("agents-dir")
+
+	// Get current working directory for initial agent search
+	cwd, err := os.Getwd()
+	if err != nil {
+		return &ExitError{Code: 2, Err: fmt.Errorf("failed to get working directory: %w", err)}
+	}
+
+	// Build search directories using cwd as base (workdir not resolved yet)
+	searchDirs := agent.BuildSearchDirs(flagAgentsDir, cwd)
+
 	// Step 1: Load agent config
-	cfg, err := agent.Load(agentName)
+	cfg, err := agent.Load(agentName, searchDirs)
 	if err != nil {
 		return &ExitError{Code: 2, Err: err}
 	}
@@ -472,7 +485,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			req.Messages = append(req.Messages, assistantMsg)
 
 			// Execute tool calls
-			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, mcpRouter, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr(), workdir, tracker)
+			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, mcpRouter, depth, effectiveMaxDepth, parallel, verbose, cmd.ErrOrStderr(), workdir, tracker, flagAgentsDir, workdir)
 			totalToolCalls += len(resp.ToolCalls)
 
 			if jsonOutput {
@@ -671,7 +684,7 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 
 // executeToolCalls dispatches tool calls and returns results.
 // When parallel is true and there are multiple calls, they run concurrently.
-func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string, budgetTracker *budget.BudgetTracker) []provider.ToolResult {
+func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string, budgetTracker *budget.BudgetTracker, agentsDir string, agentsBase string) []provider.ToolResult {
 	results := make([]provider.ToolResult, len(toolCalls))
 
 	execOpts := tool.ExecuteOptions{
@@ -685,6 +698,8 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		Verbose:       verbose,
 		Stderr:        stderr,
 		BudgetTracker: budgetTracker,
+		AgentsDir:     agentsDir,
+		AgentsBase:    agentsBase,
 	}
 
 	if len(toolCalls) == 1 || !parallel {
