@@ -266,7 +266,7 @@ func TestSmoke_RunDryRun(t *testing.T) {
 	checks := []string{
 		"=== Dry Run ===",
 		"--- System Prompt ---",
-		"--- Stdin ---",
+		"--- User Message ---",
 	}
 	for _, check := range checks {
 		if !strings.Contains(stdout, check) {
@@ -279,19 +279,19 @@ func TestSmoke_RunDryRun(t *testing.T) {
 		t.Errorf("stdout does not contain model 'openai/gpt-4o': %q", stdout)
 	}
 
-	// Verify "(none)" appears in the Stdin section (no stdin was piped)
-	stdinIdx := strings.Index(stdout, "--- Stdin ---")
-	if stdinIdx >= 0 {
-		afterStdin := stdout[stdinIdx:]
-		nextSection := strings.Index(afterStdin[len("--- Stdin ---"):], "---")
-		var stdinSection string
+	// Verify "(default)" appears in the User Message section (no stdin or -p flag)
+	userMsgIdx := strings.Index(stdout, "--- User Message ---")
+	if userMsgIdx >= 0 {
+		afterUserMsg := stdout[userMsgIdx:]
+		nextSection := strings.Index(afterUserMsg[len("--- User Message ---"):], "---")
+		var userMsgSection string
 		if nextSection >= 0 {
-			stdinSection = afterStdin[:len("--- Stdin ---")+nextSection]
+			userMsgSection = afterUserMsg[:len("--- User Message ---")+nextSection]
 		} else {
-			stdinSection = afterStdin
+			userMsgSection = afterUserMsg
 		}
-		if !strings.Contains(stdinSection, "(none)") {
-			t.Errorf("Stdin section should contain '(none)' when no stdin is piped: %q", stdinSection)
+		if !strings.Contains(userMsgSection, "(default)") {
+			t.Errorf("User Message section should contain '(default)' when no stdin or -p is provided: %q", userMsgSection)
 		}
 	}
 
@@ -358,7 +358,7 @@ func TestSmoke_PipedStdinInDryRun(t *testing.T) {
 
 	checks := []string{
 		"=== Dry Run ===",
-		"--- Stdin ---",
+		"--- User Message ---",
 		"custom user input from stdin",
 	}
 	for _, check := range checks {
@@ -367,22 +367,22 @@ func TestSmoke_PipedStdinInDryRun(t *testing.T) {
 		}
 	}
 
-	// Verify "(none)" does NOT appear in the Stdin section
-	stdinIdx := strings.Index(stdout, "--- Stdin ---")
-	if stdinIdx >= 0 {
-		afterStdin := stdout[stdinIdx:]
-		nextSection := strings.Index(afterStdin[len("--- Stdin ---"):], "---")
-		var stdinSection string
+	// Verify "(default)" does NOT appear in the User Message section when stdin is piped
+	userMsgIdx := strings.Index(stdout, "--- User Message ---")
+	if userMsgIdx >= 0 {
+		afterUserMsg := stdout[userMsgIdx:]
+		nextSection := strings.Index(afterUserMsg[len("--- User Message ---"):], "---")
+		var userMsgSection string
 		if nextSection >= 0 {
-			stdinSection = afterStdin[:len("--- Stdin ---")+nextSection]
+			userMsgSection = afterUserMsg[:len("--- User Message ---")+nextSection]
 		} else {
-			stdinSection = afterStdin
+			userMsgSection = afterUserMsg
 		}
-		if strings.Contains(stdinSection, "(none)") {
-			t.Errorf("Stdin section should NOT contain '(none)' when stdin is piped: %q", stdinSection)
+		if strings.Contains(userMsgSection, "(default)") {
+			t.Errorf("User Message section should NOT contain '(default)' when stdin is piped: %q", userMsgSection)
 		}
 	} else {
-		t.Error("stdout does not contain '--- Stdin ---' section")
+		t.Error("stdout does not contain '--- User Message ---' section")
 	}
 
 	if stderr != "" {

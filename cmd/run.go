@@ -44,7 +44,12 @@ var runCmd = &cobra.Command{
 	Short: "Run an agent",
 	Long: `Run an agent by loading its TOML configuration, resolving all runtime
 context (working directory, file globs, skill, stdin), building a prompt,
-calling the LLM provider, and printing the response.`,
+calling the LLM provider, and printing the response.
+
+The user message is resolved in this order:
+  1. -p / --prompt flag (if non-empty and non-whitespace)
+  2. Piped stdin
+  3. Built-in default ("Execute the task described in your instructions.")`,
 	Args: exactArgs(1),
 	RunE: runAgent,
 }
@@ -58,6 +63,7 @@ func init() {
 	runCmd.Flags().Bool("dry-run", false, "Show resolved context without calling the LLM")
 	runCmd.Flags().BoolP("verbose", "v", false, "Print debug info to stderr")
 	runCmd.Flags().Bool("json", false, "Wrap output in JSON with metadata")
+	runCmd.Flags().StringP("prompt", "p", "", "Inline prompt to use as the user message (takes precedence over stdin; empty or whitespace is treated as absent)")
 	runCmd.Flags().Int("max-tokens", 0, "Maximum total tokens (input+output) for the entire run (0 = unlimited)")
 	rootCmd.AddCommand(runCmd)
 }
@@ -225,9 +231,19 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	}
 	tracker := budget.New(effectiveMaxTokens)
 
-	// Step 11: Dry-run mode
+	// Step 11a: Build user message
+	// Precedence: -p flag > piped stdin > default message
+	promptFlag, _ := cmd.Flags().GetString("prompt")
+	userMessage := defaultUserMessage
+	if strings.TrimSpace(promptFlag) != "" {
+		userMessage = promptFlag
+	} else if strings.TrimSpace(stdinContent) != "" {
+		userMessage = stdinContent
+	}
+
+	// Step 11b: Dry-run mode
 	if dryRun {
-		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, stdinContent, memoryEntries, effectiveMaxTokens)
+		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, userMessage, memoryEntries, effectiveMaxTokens)
 	}
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Duration(timeout)*time.Second)
@@ -270,12 +286,6 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		Stderr:         cmd.ErrOrStderr(),
 	})
 	prov = retryProv
-
-	// Step 15: Build user message
-	userMessage := defaultUserMessage
-	if strings.TrimSpace(stdinContent) != "" {
-		userMessage = stdinContent
-	}
 
 	// Step 16: Build request
 	req := &provider.Request{
@@ -590,7 +600,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, systemPrompt, skillContent string, files []resolve.FileContent, stdinContent string, memoryEntries string, maxTokens int) error {
+func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, systemPrompt, skillContent string, files []resolve.FileContent, userMessage string, memoryEntries string, maxTokens int) error {
 	out := cmd.OutOrStdout()
 
 	_, _ = fmt.Fprintln(out, "=== Dry Run ===")
@@ -624,11 +634,11 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 	}
 
 	_, _ = fmt.Fprintln(out)
-	_, _ = fmt.Fprintln(out, "--- Stdin ---")
-	if strings.TrimSpace(stdinContent) != "" {
-		_, _ = fmt.Fprintln(out, stdinContent)
+	_, _ = fmt.Fprintln(out, "--- User Message ---")
+	if userMessage != defaultUserMessage {
+		_, _ = fmt.Fprintln(out, userMessage)
 	} else {
-		_, _ = fmt.Fprintln(out, "(none)")
+		_, _ = fmt.Fprintln(out, "(default)")
 	}
 
 	if cfg.Memory.Enabled {

@@ -272,7 +272,23 @@ Config is read-write because `axe config init` and `axe agents init` write into 
 | `--dry-run` | false | Show resolved context without calling the LLM |
 | `--verbose` / `-v` | false | Print debug info (model, timing, tokens, retries) to stderr |
 | `--json` | false | Wrap output in a JSON envelope with metadata |
+| `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |
 | `--agents-dir <path>` | (auto-discover) | Override agent search directory |
+
+#### User Message Precedence
+
+The user message sent to the LLM is resolved in this order:
+
+1. **`-p` / `--prompt` flag** — If provided with a non-empty, non-whitespace value, it is used as the user message.
+2. **Piped stdin** — If `-p` is absent or empty/whitespace-only, piped stdin is used.
+3. **Built-in default** — If neither `-p` nor stdin provides content, the default message `"Execute the task described in your instructions."` is used.
+
+When `-p` is provided alongside piped stdin, the piped stdin is silently ignored (no warning is emitted). An empty or whitespace-only `-p` value is treated as absent and falls through to stdin, then the default.
+
+**Example:**
+```bash
+axe run my-agent -p "Summarize the README"
+```
 
 ### Exit Codes
 

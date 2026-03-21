@@ -47,8 +47,8 @@ Plain text, single line.
 --- Files (0) ---
 (none)
 
---- Stdin ---
-(none)
+--- User Message ---
+(default)
 
 --- Tools ---
 (none)

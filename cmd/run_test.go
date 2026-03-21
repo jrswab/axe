@@ -29,6 +29,7 @@ func resetRunCmd(t *testing.T) {
 	_ = runCmd.Flags().Set("verbose", "false")
 	_ = runCmd.Flags().Set("json", "false")
 	_ = runCmd.Flags().Set("max-tokens", "0")
+	_ = runCmd.Flags().Set("prompt", "")
 	rootCmd.SetIn(os.Stdin)
 }
 
@@ -2864,5 +2865,146 @@ model = "anthropic/claude-sonnet-4-20250514"
 	// Should contain budget info in the Tokens line
 	if !strings.Contains(stderr, "budget: 150/50000") {
 		t.Errorf("expected 'budget: 150/50000' in verbose stderr, got %q", stderr)
+	}
+}
+
+func TestRun_PromptFlag(t *testing.T) {
+	tests := []struct {
+		name            string
+		promptFlag      string // empty string means "don't set the flag"
+		setPromptFlag   bool   // true = explicitly set -p (even if empty/whitespace)
+		stdinContent    string
+		expectedMessage string
+	}{
+		{
+			name:            "prompt_flag_used",
+			promptFlag:      "hello from flag",
+			setPromptFlag:   true,
+			stdinContent:    "",
+			expectedMessage: "hello from flag",
+		},
+		{
+			name:            "prompt_flag_wins_over_stdin",
+			promptFlag:      "flag wins",
+			setPromptFlag:   true,
+			stdinContent:    "stdin content",
+			expectedMessage: "flag wins",
+		},
+		{
+			name:            "no_flag_stdin_used",
+			promptFlag:      "",
+			setPromptFlag:   false,
+			stdinContent:    "piped content",
+			expectedMessage: "piped content",
+		},
+		{
+			name:            "no_flag_no_stdin_default",
+			promptFlag:      "",
+			setPromptFlag:   false,
+			stdinContent:    "",
+			expectedMessage: "Execute the task described in your instructions.",
+		},
+		{
+			name:            "empty_flag_falls_through_to_stdin",
+			promptFlag:      "",
+			setPromptFlag:   true,
+			stdinContent:    "piped content",
+			expectedMessage: "piped content",
+		},
+		{
+			name:            "whitespace_flag_falls_through_to_stdin",
+			promptFlag:      "   ",
+			setPromptFlag:   true,
+			stdinContent:    "piped content",
+			expectedMessage: "piped content",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resetRunCmd(t)
+
+			var receivedBody string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body := new(bytes.Buffer)
+				_, _ = body.ReadFrom(r.Body)
+				receivedBody = body.String()
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(200)
+				_, _ = w.Write([]byte(`{
+					"id": "msg_test",
+					"type": "message",
+					"role": "assistant",
+					"content": [{"type": "text", "text": "response"}],
+					"model": "claude-sonnet-4-20250514",
+					"stop_reason": "end_turn",
+					"usage": {"input_tokens": 10, "output_tokens": 5}
+				}`))
+			}))
+			defer server.Close()
+
+			setupRunTestAgent(t, "prompt-agent", `name = "prompt-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+			t.Setenv("ANTHROPIC_API_KEY", "test-key")
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+			buf := new(bytes.Buffer)
+			errBuf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(errBuf)
+
+			args := []string{"run", "prompt-agent"}
+			if tc.setPromptFlag {
+				args = append(args, "-p", tc.promptFlag)
+			}
+
+			if tc.stdinContent != "" {
+				rootCmd.SetIn(strings.NewReader(tc.stdinContent))
+			}
+
+			rootCmd.SetArgs(args)
+			err := rootCmd.Execute()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !strings.Contains(receivedBody, tc.expectedMessage) {
+				t.Errorf("expected request body to contain %q, got %q", tc.expectedMessage, receivedBody)
+			}
+		})
+	}
+}
+
+func TestRun_DryRun_PromptFlag(t *testing.T) {
+	resetRunCmd(t)
+
+	setupRunTestAgent(t, "dryrun-prompt-agent", `name = "dryrun-prompt-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "dryrun-prompt-agent", "--dry-run", "-p", "my prompt"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "--- User Message ---") {
+		t.Errorf("expected output to contain '--- User Message ---', got:\n%s", output)
+	}
+
+	if !strings.Contains(output, "my prompt") {
+		t.Errorf("expected output to contain 'my prompt', got:\n%s", output)
+	}
+
+	if strings.Contains(output, "--- Stdin ---") {
+		t.Errorf("expected output NOT to contain '--- Stdin ---', got:\n%s", output)
 	}
 }
