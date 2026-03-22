@@ -3155,33 +3155,85 @@ enabled = true
 
 func TestRun_KeepArtifactsPreservesDirectory(t *testing.T) {
 	resetRunCmd(t)
-	server := startMockAnthropicServer(t)
-	defer server.Close()
 
-	artifactDir := t.TempDir()
-	nestedDir := filepath.Join(artifactDir, "test-nested")
-	_ = os.MkdirAll(nestedDir, 0755)
+	// Create a tool that will record artifact dir
+	var recordedArtifactDir string
+	var mu sync.Mutex
+
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		callCount++
+
+		// Capture the AXE_ARTIFACT_DIR from environment during the call
+		mu.Lock()
+		if dir := os.Getenv("AXE_ARTIFACT_DIR"); dir != "" && recordedArtifactDir == "" {
+			recordedArtifactDir = dir
+		}
+		mu.Unlock()
+
+		if callCount == 1 {
+			_, _ = w.Write([]byte(`{
+				"id": "msg_1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_1", "name": "list_directory", "input": {"path": "."}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			_, _ = w.Write([]byte(`{
+				"id": "msg_2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Done"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 10, "output_tokens": 5}
+			}`))
+		}
+	}))
+	defer server.Close()
 
 	setupRunTestAgent(t, "keep-artifact-agent", `name = "keep-artifact-agent"
 model = "anthropic/claude-sonnet-4-20250514"
+tools = ["list_directory"]
+
+[artifacts]
+enabled = true
 `)
 	t.Setenv("ANTHROPIC_API_KEY", "test-key")
 	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	// Clear any existing artifact dir env var
+	_ = os.Unsetenv("AXE_ARTIFACT_DIR")
 
 	buf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetErr(errBuf)
-	rootCmd.SetArgs([]string{"run", "keep-artifact-agent", "--artifact-dir", artifactDir, "--keep-artifacts"})
+	rootCmd.SetArgs([]string{"run", "keep-artifact-agent", "--keep-artifacts"})
 
 	err := rootCmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	// Get the captured artifact directory
+	mu.Lock()
+	dir := recordedArtifactDir
+	mu.Unlock()
+
+	if dir == "" {
+		t.Fatal("AXE_ARTIFACT_DIR was not set during the run")
+	}
+
 	// Verify the artifact directory still exists (preserved due to --keep-artifacts)
-	if _, err := os.Stat(artifactDir); os.IsNotExist(err) {
-		t.Errorf("expected artifact directory to be preserved, but it was removed")
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		t.Errorf("expected artifact directory %q to be preserved, but it was removed", dir)
+	}
+
+	// Verify stderr contains the preservation message
+	stderr := errBuf.String()
+	if !strings.Contains(stderr, "artifacts preserved:") {
+		t.Errorf("expected stderr to contain 'artifacts preserved:', got: %q", stderr)
 	}
 
 	// Clean up env var

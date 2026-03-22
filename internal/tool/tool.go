@@ -453,7 +453,14 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *Regis
 		return result
 	}
 
-	execCtx := ExecContext{Workdir: toolWorkdir, Stderr: opts.Stderr, Verbose: opts.Verbose, AllowedHosts: opts.AllowedHosts}
+	execCtx := ExecContext{
+		Workdir:         toolWorkdir,
+		Stderr:          opts.Stderr,
+		Verbose:         opts.Verbose,
+		AllowedHosts:    opts.AllowedHosts,
+		ArtifactDir:     opts.ArtifactDir,
+		ArtifactTracker: opts.ArtifactTracker,
+	}
 	result, dispatchErr := registry.Dispatch(ctx, tc, execCtx)
 	if dispatchErr != nil {
 		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}

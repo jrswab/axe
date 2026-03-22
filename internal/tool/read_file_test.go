@@ -550,7 +550,7 @@ func TestReadFile_Artifact(t *testing.T) {
 			artifactFile:   "secret content",
 			path:           "../escape",
 			wantError:      true,
-			errorSubstring: "path escapes",
+			errorSubstring: "path escapes artifact directory",
 		},
 		{
 			name:         "artifact_false_reads_from_workdir",

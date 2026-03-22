@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -298,6 +299,42 @@ func TestWriteFile_ByteCountAccurate(t *testing.T) {
 	}
 }
 
+func TestWriteFile_Artifact_VerboseLogging(t *testing.T) {
+	var stderr bytes.Buffer
+	tmpdir := t.TempDir()
+	artifactDir := t.TempDir()
+
+	tracker := artifact.NewTracker()
+
+	entry := writeFileEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:   "wf-artifact-verbose",
+		Name: "write_file",
+		Arguments: map[string]string{
+			"path":     "test.txt",
+			"content":  "hello artifact",
+			"artifact": "true",
+		},
+	}, ExecContext{
+		Workdir:         tmpdir,
+		ArtifactDir:     artifactDir,
+		ArtifactTracker: tracker,
+		Verbose:         true,
+		Stderr:          &stderr,
+	})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+
+	// Verify verbose log was written to stderr for artifact write
+	got := stderr.String()
+	want := `[tool] write_file: path "test.txt" (14 bytes) (success)` + "\n"
+	if got != want {
+		t.Errorf("verbose log: got %q, want %q", got, want)
+	}
+}
+
 func TestWriteFile_Artifact(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -347,7 +384,7 @@ func TestWriteFile_Artifact(t *testing.T) {
 		{
 			name:           "artifact false writes to workdir",
 			artifactArg:    "false",
-			artifactDir:    "",
+			artifactDir:    "artifact",
 			path:           "workdir.txt",
 			content:        "in workdir",
 			wantError:      false,
@@ -358,7 +395,7 @@ func TestWriteFile_Artifact(t *testing.T) {
 		{
 			name:           "artifact absent writes to workdir",
 			artifactArg:    "",
-			artifactDir:    "",
+			artifactDir:    "artifact",
 			path:           "nowhere.txt",
 			content:        "in workdir",
 			wantError:      false,

@@ -47,11 +47,6 @@ func writeFileDefinition() provider.Tool {
 func writeFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContext) (result provider.ToolResult) {
 	path := call.Arguments["path"]
 
-	// Check if artifact mode is requested.
-	if strings.EqualFold(call.Arguments["artifact"], "true") {
-		return writeFileArtifact(ctx, call, ec, path)
-	}
-
 	defer func() {
 		var summary string
 		if result.IsError {
@@ -61,6 +56,11 @@ func writeFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContex
 		}
 		toolVerboseLog(ec, toolname.WriteFile, result, summary)
 	}()
+
+	// Check if artifact mode is requested.
+	if strings.EqualFold(call.Arguments["artifact"], "true") {
+		return writeFileArtifact(ctx, call, ec, path)
+	}
 
 	// Empty path check.
 	if path == "" {

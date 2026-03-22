@@ -186,136 +186,155 @@ func TestListDirectory_MissingPathArgument(t *testing.T) {
 	}
 }
 
-func TestListDirectory_Artifact_TrueWithValidDir(t *testing.T) {
-	tmpdir := t.TempDir()
-	artifactDir := t.TempDir()
-
-	// Create files in artifact dir
-	if err := os.WriteFile(filepath.Join(artifactDir, "artifact.txt"), []byte("a"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Mkdir(filepath.Join(artifactDir, "build"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create files in workdir (should NOT be listed)
-	if err := os.WriteFile(filepath.Join(tmpdir, "work.txt"), []byte("w"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	entry := listDirectoryEntry()
-	result := entry.Execute(context.Background(), provider.ToolCall{
-		ID:   "test-artifact-1",
-		Name: "list_directory",
-		Arguments: map[string]string{
-			"path":     ".",
-			"artifact": "true",
+func TestListDirectory_Artifact(t *testing.T) {
+	tests := []struct {
+		name           string
+		artifactArg    string // value for "artifact" argument (empty = absent)
+		path           string
+		artifactDirSet bool // if true, use temp dir; if false, empty string
+		workdirFiles   []string
+		artifactFiles  []string
+		artifactDirs   []string
+		wantError      bool
+		wantContain    string // substring expected in Content
+		wantNotContain string // substring that must NOT appear in Content
+		wantExact      string // exact match for Content (after trimming)
+		wantLines      int    // expected number of lines
+		wantLine0      string
+		wantLine1      string
+	}{
+		{
+			name:           "true with valid dir lists artifact dir",
+			artifactArg:    "true",
+			path:           ".",
+			artifactDirSet: true,
+			workdirFiles:   []string{"work.txt"},
+			artifactFiles:  []string{"artifact.txt"},
+			artifactDirs:   []string{"build"},
+			wantError:      false,
+			wantLines:      2,
+			wantLine0:      "artifact.txt",
+			wantLine1:      "build/",
+			wantNotContain: "work.txt",
 		},
-	}, ExecContext{Workdir: tmpdir, ArtifactDir: artifactDir})
-
-	if result.IsError {
-		t.Fatalf("unexpected error: %s", result.Content)
-	}
-
-	lines := strings.Split(strings.TrimRight(result.Content, "\n"), "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 lines from artifact dir, got %d: %q", len(lines), result.Content)
-	}
-
-	// os.ReadDir returns lexicographic order
-	if lines[0] != "artifact.txt" {
-		t.Errorf("line 0: got %q, want %q", lines[0], "artifact.txt")
-	}
-	if lines[1] != "build/" {
-		t.Errorf("line 1: got %q, want %q", lines[1], "build/")
-	}
-}
-
-func TestListDirectory_Artifact_TrueWithEmptyArtifactDir(t *testing.T) {
-	tmpdir := t.TempDir()
-
-	entry := listDirectoryEntry()
-	result := entry.Execute(context.Background(), provider.ToolCall{
-		ID:   "test-artifact-2",
-		Name: "list_directory",
-		Arguments: map[string]string{
-			"path":     ".",
-			"artifact": "true",
+		{
+			name:           "true with path traversal escapes",
+			artifactArg:    "true",
+			path:           "../escape",
+			artifactDirSet: true,
+			wantError:      true,
+			wantContain:    "path escapes artifact directory",
 		},
-	}, ExecContext{Workdir: tmpdir, ArtifactDir: ""})
-
-	if !result.IsError {
-		t.Fatal("expected error when artifact=true but ArtifactDir is empty, got success")
-	}
-	if !strings.Contains(result.Content, "artifact directory not configured") {
-		t.Errorf("content %q should mention 'artifact directory not configured'", result.Content)
-	}
-}
-
-func TestListDirectory_Artifact_False(t *testing.T) {
-	tmpdir := t.TempDir()
-	artifactDir := t.TempDir()
-
-	// Create file in workdir (should be listed)
-	if err := os.WriteFile(filepath.Join(tmpdir, "work.txt"), []byte("w"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create file in artifact dir (should NOT be listed)
-	if err := os.WriteFile(filepath.Join(artifactDir, "artifact.txt"), []byte("a"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	entry := listDirectoryEntry()
-	result := entry.Execute(context.Background(), provider.ToolCall{
-		ID:   "test-artifact-3",
-		Name: "list_directory",
-		Arguments: map[string]string{
-			"path":     ".",
-			"artifact": "false",
+		{
+			name:           "true with empty artifact dir errors",
+			artifactArg:    "true",
+			path:           ".",
+			artifactDirSet: false,
+			wantError:      true,
+			wantContain:    "artifact directory not configured",
 		},
-	}, ExecContext{Workdir: tmpdir, ArtifactDir: artifactDir})
-
-	if result.IsError {
-		t.Fatalf("unexpected error: %s", result.Content)
-	}
-
-	want := "work.txt"
-	if strings.TrimRight(result.Content, "\n") != want {
-		t.Errorf("got %q, want %q (should list workdir, not artifact dir)", result.Content, want)
-	}
-}
-
-func TestListDirectory_Artifact_Absent(t *testing.T) {
-	tmpdir := t.TempDir()
-	artifactDir := t.TempDir()
-
-	// Create file in workdir (should be listed)
-	if err := os.WriteFile(filepath.Join(tmpdir, "work.txt"), []byte("w"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create file in artifact dir (should NOT be listed)
-	if err := os.WriteFile(filepath.Join(artifactDir, "artifact.txt"), []byte("a"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	entry := listDirectoryEntry()
-	result := entry.Execute(context.Background(), provider.ToolCall{
-		ID:   "test-artifact-4",
-		Name: "list_directory",
-		Arguments: map[string]string{
-			"path": ".",
-			// artifact parameter is absent
+		{
+			name:           "false lists workdir not artifact dir",
+			artifactArg:    "false",
+			path:           ".",
+			artifactDirSet: true,
+			workdirFiles:   []string{"work.txt"},
+			artifactFiles:  []string{"artifact.txt"},
+			wantError:      false,
+			wantExact:      "work.txt",
+			wantNotContain: "artifact.txt",
 		},
-	}, ExecContext{Workdir: tmpdir, ArtifactDir: artifactDir})
-
-	if result.IsError {
-		t.Fatalf("unexpected error: %s", result.Content)
+		{
+			name:           "absent lists workdir not artifact dir",
+			artifactArg:    "",
+			path:           ".",
+			artifactDirSet: true,
+			workdirFiles:   []string{"work.txt"},
+			artifactFiles:  []string{"artifact.txt"},
+			wantError:      false,
+			wantExact:      "work.txt",
+			wantNotContain: "artifact.txt",
+		},
 	}
 
-	want := "work.txt"
-	if strings.TrimRight(result.Content, "\n") != want {
-		t.Errorf("got %q, want %q (should list workdir when artifact param absent)", result.Content, want)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpdir := t.TempDir()
+
+			var artifactDir string
+			if tt.artifactDirSet {
+				artifactDir = t.TempDir()
+			}
+
+			// Create files in workdir
+			for _, f := range tt.workdirFiles {
+				if err := os.WriteFile(filepath.Join(tmpdir, f), []byte("w"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// Create files in artifact dir
+			for _, f := range tt.artifactFiles {
+				if err := os.WriteFile(filepath.Join(artifactDir, f), []byte("a"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// Create subdirs in artifact dir
+			for _, d := range tt.artifactDirs {
+				if err := os.Mkdir(filepath.Join(artifactDir, d), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			args := map[string]string{"path": tt.path}
+			if tt.artifactArg != "" {
+				args["artifact"] = tt.artifactArg
+			}
+
+			entry := listDirectoryEntry()
+			result := entry.Execute(context.Background(), provider.ToolCall{
+				ID:        "test-artifact-" + tt.name,
+				Name:      "list_directory",
+				Arguments: args,
+			}, ExecContext{Workdir: tmpdir, ArtifactDir: artifactDir})
+
+			if tt.wantError {
+				if !result.IsError {
+					t.Fatal("expected error, got success")
+				}
+				if tt.wantContain != "" && !strings.Contains(result.Content, tt.wantContain) {
+					t.Errorf("content %q should contain %q", result.Content, tt.wantContain)
+				}
+				return
+			}
+
+			if result.IsError {
+				t.Fatalf("unexpected error: %s", result.Content)
+			}
+
+			if tt.wantNotContain != "" && strings.Contains(result.Content, tt.wantNotContain) {
+				t.Errorf("content %q should not contain %q", result.Content, tt.wantNotContain)
+			}
+
+			if tt.wantExact != "" {
+				if got := strings.TrimRight(result.Content, "\n"); got != tt.wantExact {
+					t.Errorf("got %q, want %q", got, tt.wantExact)
+				}
+			}
+
+			if tt.wantLines > 0 {
+				lines := strings.Split(strings.TrimRight(result.Content, "\n"), "\n")
+				if len(lines) != tt.wantLines {
+					t.Fatalf("expected %d lines, got %d: %q", tt.wantLines, len(lines), result.Content)
+				}
+				if tt.wantLine0 != "" && lines[0] != tt.wantLine0 {
+					t.Errorf("line 0: got %q, want %q", lines[0], tt.wantLine0)
+				}
+				if tt.wantLine1 != "" && lines[1] != tt.wantLine1 {
+					t.Errorf("line 1: got %q, want %q", lines[1], tt.wantLine1)
+				}
+			}
+		})
 	}
 }
