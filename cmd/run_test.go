@@ -3188,26 +3188,44 @@ model = "anthropic/claude-sonnet-4-20250514"
 	_ = os.Unsetenv("AXE_ARTIFACT_DIR")
 }
 
-func TestRun_ArtifactsIncludedInJSON(t *testing.T) {
+func TestRun_ArtifactsIncludedInJSON_WhenActive(t *testing.T) {
 	resetRunCmd(t)
-	server := startMockAnthropicServer(t)
-	defer server.Close()
 
-	setupRunTestAgent(t, "json-artifact-agent", `name = "json-artifact-agent"
+	artifactDir := t.TempDir()
+
+	// Two responses: first a tool call with artifact flag, then final text
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Writing artifact.", []testutil.MockToolCall{
+			{ID: "tc_art1", Name: "write_file", Input: map[string]string{
+				"path":     "report.md",
+				"content":  "hello artifact",
+				"artifact": "true",
+			}},
+		}),
+		testutil.AnthropicResponse("Done writing artifact."),
+	})
+
+	tmpDir := setupRunTestAgent(t, "json-artifact-agent-active", `name = "json-artifact-agent-active"
 model = "anthropic/claude-sonnet-4-20250514"
+tools = ["write_file"]
+
+[artifacts]
+enabled = true
+dir = "`+artifactDir+`"
 `)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 	t.Setenv("ANTHROPIC_API_KEY", "test-key")
-	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
 
 	buf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetErr(errBuf)
-	rootCmd.SetArgs([]string{"run", "json-artifact-agent", "--json"})
+	rootCmd.SetArgs([]string{"run", "json-artifact-agent-active", "--json"})
 
 	err := rootCmd.Execute()
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v\nstderr: %s", err, errBuf.String())
 	}
 
 	var result map[string]interface{}
@@ -3215,8 +3233,79 @@ model = "anthropic/claude-sonnet-4-20250514"
 		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
 	}
 
-	// When no artifacts are configured, artifacts field should be absent or empty
-	// The JSON output should not fail
+	// Assert "artifacts" key exists
+	artifactsRaw, ok := result["artifacts"]
+	if !ok {
+		t.Fatalf("expected 'artifacts' key in JSON output, got keys: %v", getKeys(result))
+	}
+
+	// Assert "artifacts" is an array
+	artifacts, ok := artifactsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected 'artifacts' to be an array, got %T", artifactsRaw)
+	}
+
+	// Assert array has at least one entry
+	if len(artifacts) == 0 {
+		t.Fatalf("expected 'artifacts' array to have at least one entry, got empty array")
+	}
+
+	// Assert first entry has required keys: path, agent, size
+	firstArtifact, ok := artifacts[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected artifact to be an object, got %T", artifacts[0])
+	}
+
+	for _, key := range []string{"path", "agent", "size"} {
+		if _, ok := firstArtifact[key]; !ok {
+			t.Errorf("expected artifact to have '%s' key", key)
+		}
+	}
+}
+
+func TestRun_ArtifactsAbsentInJSON_WhenInactive(t *testing.T) {
+	resetRunCmd(t)
+
+	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("Simple response without artifacts."),
+	})
+
+	tmpDir := setupRunTestAgent(t, "json-artifact-agent-inactive", `name = "json-artifact-agent-inactive"
+model = "anthropic/claude-sonnet-4-20250514"
+`)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "json-artifact-agent-inactive", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v\nstderr: %s", err, errBuf.String())
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	// Assert "artifacts" key does NOT exist when artifacts are inactive
+	if _, ok := result["artifacts"]; ok {
+		t.Errorf("expected 'artifacts' key to be absent when artifacts are inactive, but it was present: %v", result["artifacts"])
+	}
+}
+
+// helper to get keys from a map
+func getKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func TestRun_ArtifactsTOMLDirSetting(t *testing.T) {

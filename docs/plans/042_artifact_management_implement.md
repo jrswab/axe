@@ -65,13 +65,13 @@ Axe agents currently produce text on stdout only; there is no structured way to 
 ### JSON Output
 
 - [x] `cmd/run.go`: `runAgent()` — in the JSON envelope construction (around line 558), after the existing fields: if artifact system is active, add `"artifacts": tracker.Entries()` to the envelope (as `[]map[string]interface{}` with keys `"path"`, `"agent"`, `"size"`). If artifact system is inactive, omit the field entirely.
-- [ ] `cmd/run_test.go` (or golden test): Verify `--json` output includes `"artifacts"` array when artifact system is active with at least one write; verify `"artifacts"` field is absent when artifact system is inactive
+- [x] `cmd/run_test.go` (or golden test): Verify `--json` output includes `"artifacts"` array when artifact system is active with at least one write; verify `"artifacts"` field is absent when artifact system is inactive
 
 ### Integration / Edge Cases
 
-- [ ] `cmd/run_integration_test.go`: Add integration test: agent with `[artifacts] enabled = true`, uses `write_file` with `artifact: "true"`, then `read_file` with `artifact: "true"` — verify round-trip works and `--json` output contains the artifact entry
-- [ ] `cmd/run_integration_test.go`: Add integration test: agent with no `[artifacts]` table — verify zero behavior change (no temp dirs created, no env var set, no `"artifacts"` field in JSON output)
-- [ ] `cmd/run_integration_test.go`: Add integration test: `--artifact-dir /tmp/test-artifacts-<random>` flag with no TOML config — verify system activates, directory is used, no cleanup (persistent)
-- [ ] `cmd/run_integration_test.go`: Add integration test: `write_file` with `artifact: "true"` when artifact system is inactive — verify error result is returned to LLM (not fatal), run continues
+- [x] `cmd/run_integration_test.go`: Add integration test: agent with `[artifacts] enabled = true`, uses `write_file` with `artifact: "true"`, then `read_file` with `artifact: "true"` — verify round-trip works and `--json` output contains the artifact entry
+- [x] `cmd/run_integration_test.go`: Add integration test: agent with no `[artifacts]` table — verify zero behavior change (no temp dirs created, no env var set, no `"artifacts"` field in JSON output)
+- [x] `cmd/run_integration_test.go`: Add integration test: `--artifact-dir /tmp/test-artifacts-<random>` flag with no TOML config — verify system activates, directory is used, no cleanup (persistent)
+- [x] `cmd/run_integration_test.go`: Add integration test: `write_file` with `artifact: "true"` when artifact system is inactive — verify error result is returned to LLM (not fatal), run continues
 
 ---
