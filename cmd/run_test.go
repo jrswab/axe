@@ -852,7 +852,7 @@ model = "anthropic/claude-sonnet-4-20250514"
 
 	// Debug info should be on stderr
 	stderr := errBuf.String()
-	for _, field := range []string{"Model:", "Workdir:", "Skill:", "Files:", "Stdin:", "Timeout:", "Params:", "Duration:", "Tokens:", "Stop:"} {
+	for _, field := range []string{"Model:", "Workdir:", "Skill:", "Files:", "Prompt:", "Timeout:", "Params:", "Duration:", "Tokens:", "Stop:"} {
 		if !strings.Contains(stderr, field) {
 			t.Errorf("verbose stderr missing %q\nfull stderr:\n%s", field, stderr)
 		}
@@ -2870,11 +2870,12 @@ model = "anthropic/claude-sonnet-4-20250514"
 
 func TestRun_PromptFlag(t *testing.T) {
 	tests := []struct {
-		name            string
-		promptFlag      string // empty string means "don't set the flag"
-		setPromptFlag   bool   // true = explicitly set -p (even if empty/whitespace)
-		stdinContent    string
-		expectedMessage string
+		name              string
+		promptFlag        string // empty string means "don't set the flag"
+		setPromptFlag     bool   // true = explicitly set -p (even if empty/whitespace)
+		stdinContent      string
+		expectedMessage   string
+		unexpectedMessage string // if non-empty, assert this does NOT appear in the request body
 	}{
 		{
 			name:            "prompt_flag_used",
@@ -2884,11 +2885,12 @@ func TestRun_PromptFlag(t *testing.T) {
 			expectedMessage: "hello from flag",
 		},
 		{
-			name:            "prompt_flag_wins_over_stdin",
-			promptFlag:      "flag wins",
-			setPromptFlag:   true,
-			stdinContent:    "stdin content",
-			expectedMessage: "flag wins",
+			name:              "prompt_flag_wins_over_stdin",
+			promptFlag:        "flag wins",
+			setPromptFlag:     true,
+			stdinContent:      "stdin content",
+			expectedMessage:   "flag wins",
+			unexpectedMessage: "stdin content",
 		},
 		{
 			name:            "no_flag_stdin_used",
@@ -2905,18 +2907,20 @@ func TestRun_PromptFlag(t *testing.T) {
 			expectedMessage: "Execute the task described in your instructions.",
 		},
 		{
-			name:            "empty_flag_falls_through_to_stdin",
-			promptFlag:      "",
-			setPromptFlag:   true,
-			stdinContent:    "piped content",
-			expectedMessage: "piped content",
+			name:              "empty_flag_falls_through_to_stdin",
+			promptFlag:        "",
+			setPromptFlag:     true,
+			stdinContent:      "piped content",
+			expectedMessage:   "piped content",
+			unexpectedMessage: "Execute the task described in your instructions.",
 		},
 		{
-			name:            "whitespace_flag_falls_through_to_stdin",
-			promptFlag:      "   ",
-			setPromptFlag:   true,
-			stdinContent:    "piped content",
-			expectedMessage: "piped content",
+			name:              "whitespace_flag_falls_through_to_stdin",
+			promptFlag:        "   ",
+			setPromptFlag:     true,
+			stdinContent:      "piped content",
+			expectedMessage:   "piped content",
+			unexpectedMessage: "Execute the task described in your instructions.",
 		},
 	}
 
@@ -2971,6 +2975,12 @@ model = "anthropic/claude-sonnet-4-20250514"
 
 			if !strings.Contains(receivedBody, tc.expectedMessage) {
 				t.Errorf("expected request body to contain %q, got %q", tc.expectedMessage, receivedBody)
+			}
+
+			if tc.unexpectedMessage != "" {
+				if strings.Contains(receivedBody, tc.unexpectedMessage) {
+					t.Errorf("expected request body NOT to contain %q when precedence applies, got %q", tc.unexpectedMessage, receivedBody)
+				}
 			}
 		})
 	}

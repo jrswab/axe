@@ -374,15 +374,17 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		if skillDisplay == "" {
 			skillDisplay = "(none)"
 		}
-		stdinDisplay := "no"
-		if strings.TrimSpace(stdinContent) != "" {
-			stdinDisplay = "yes"
+		promptSource := "default"
+		if strings.TrimSpace(promptFlag) != "" {
+			promptSource = "flag"
+		} else if strings.TrimSpace(stdinContent) != "" {
+			promptSource = "stdin"
 		}
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Model:    %s/%s\n", provName, modelName)
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Workdir:  %s\n", workdir)
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Skill:    %s\n", skillDisplay)
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Files:    %d file(s)\n", len(files))
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Stdin:    %s\n", stdinDisplay)
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Prompt:   %s\n", promptSource)
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Timeout:  %ds\n", timeout)
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Params:   temperature=%g, max_tokens=%d\n", cfg.Params.Temperature, cfg.Params.MaxTokens)
 		if cfg.Memory.Enabled {

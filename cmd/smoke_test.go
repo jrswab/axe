@@ -116,6 +116,22 @@ func replaceOrAppendEnv(environ []string, key, value string) []string {
 // Smoke Tests
 // ---------------------------------------------------------------------------
 
+// extractSection returns the content between the given header (e.g., "--- User Message ---")
+// and the next "---" delimiter, or the remainder of the string if no next delimiter exists.
+// Returns empty string if the header is not found.
+func extractSection(stdout, header string) string {
+	idx := strings.Index(stdout, header)
+	if idx < 0 {
+		return ""
+	}
+	after := stdout[idx:]
+	nextSection := strings.Index(after[len(header):], "---")
+	if nextSection >= 0 {
+		return after[:len(header)+nextSection]
+	}
+	return after
+}
+
 func TestSmoke_Version(t *testing.T) {
 	t.Parallel()
 
@@ -280,18 +296,9 @@ func TestSmoke_RunDryRun(t *testing.T) {
 	}
 
 	// Verify "(default)" appears in the User Message section (no stdin or -p flag)
-	userMsgIdx := strings.Index(stdout, "--- User Message ---")
-	if userMsgIdx >= 0 {
-		afterUserMsg := stdout[userMsgIdx:]
-		nextSection := strings.Index(afterUserMsg[len("--- User Message ---"):], "---")
-		var userMsgSection string
-		if nextSection >= 0 {
-			userMsgSection = afterUserMsg[:len("--- User Message ---")+nextSection]
-		} else {
-			userMsgSection = afterUserMsg
-		}
-		if !strings.Contains(userMsgSection, "(default)") {
-			t.Errorf("User Message section should contain '(default)' when no stdin or -p is provided: %q", userMsgSection)
+	if section := extractSection(stdout, "--- User Message ---"); section != "" {
+		if !strings.Contains(section, "(default)") {
+			t.Errorf("User Message section should contain '(default)' when no stdin or -p is provided: %q", section)
 		}
 	}
 
@@ -368,18 +375,9 @@ func TestSmoke_PipedStdinInDryRun(t *testing.T) {
 	}
 
 	// Verify "(default)" does NOT appear in the User Message section when stdin is piped
-	userMsgIdx := strings.Index(stdout, "--- User Message ---")
-	if userMsgIdx >= 0 {
-		afterUserMsg := stdout[userMsgIdx:]
-		nextSection := strings.Index(afterUserMsg[len("--- User Message ---"):], "---")
-		var userMsgSection string
-		if nextSection >= 0 {
-			userMsgSection = afterUserMsg[:len("--- User Message ---")+nextSection]
-		} else {
-			userMsgSection = afterUserMsg
-		}
-		if strings.Contains(userMsgSection, "(default)") {
-			t.Errorf("User Message section should NOT contain '(default)' when stdin is piped: %q", userMsgSection)
+	if section := extractSection(stdout, "--- User Message ---"); section != "" {
+		if strings.Contains(section, "(default)") {
+			t.Errorf("User Message section should NOT contain '(default)' when stdin is piped: %q", section)
 		}
 	} else {
 		t.Error("stdout does not contain '--- User Message ---' section")
