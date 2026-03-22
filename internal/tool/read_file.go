@@ -40,6 +40,11 @@ func readFileDefinition() provider.Tool {
 				Description: "Maximum number of lines to return. Defaults to 2000.",
 				Required:    false,
 			},
+			"artifact": {
+				Type:        "string",
+				Required:    false,
+				Description: `When "true", read from the artifact directory instead of the working directory.`,
+			},
 		},
 	}
 }
@@ -61,7 +66,19 @@ func readFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 		toolVerboseLog(ec, toolname.ReadFile, result, summary)
 	}()
 
-	resolved, err := validatePath(ec.Workdir, path)
+	// Determine which directory to resolve against.
+	baseDir := ec.Workdir
+	if strings.EqualFold(call.Arguments["artifact"], "true") {
+		if ec.ArtifactDir == "" {
+			return provider.ToolResult{
+				CallID:  call.ID,
+				Content: "artifact directory not configured for this agent",
+				IsError: true,
+			}
+		}
+		baseDir = ec.ArtifactDir
+	}
+	resolved, err := validatePath(baseDir, path)
 	if err != nil {
 		return provider.ToolResult{
 			CallID:  call.ID,

@@ -28,6 +28,11 @@ func listDirectoryDefinition() provider.Tool {
 				Description: "Relative path to the directory to list. Use \".\" to list the working directory root.",
 				Required:    true,
 			},
+			"artifact": {
+				Type:        "string",
+				Required:    false,
+				Description: `When "true", list the artifact directory instead of the working directory.`,
+			},
 		},
 	}
 }
@@ -45,7 +50,19 @@ func listDirectoryExecute(ctx context.Context, call provider.ToolCall, ec ExecCo
 		toolVerboseLog(ec, toolname.ListDirectory, result, summary)
 	}()
 
-	resolved, err := validatePath(ec.Workdir, path)
+	// Determine which directory to resolve against.
+	baseDir := ec.Workdir
+	if strings.EqualFold(call.Arguments["artifact"], "true") {
+		if ec.ArtifactDir == "" {
+			return provider.ToolResult{
+				CallID:  call.ID,
+				Content: "artifact directory not configured for this agent",
+				IsError: true,
+			}
+		}
+		baseDir = ec.ArtifactDir
+	}
+	resolved, err := validatePath(baseDir, path)
 	if err != nil {
 		return provider.ToolResult{
 			CallID:  call.ID,

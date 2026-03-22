@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/jrswab/axe/internal/artifact"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/toolname"
 )
 
 // ExecContext holds the minimal context needed by generic tool executors.
 type ExecContext struct {
-	Workdir      string
-	Stderr       io.Writer
-	Verbose      bool
-	AllowedHosts []string
+	Workdir         string
+	Stderr          io.Writer
+	Verbose         bool
+	AllowedHosts    []string
+	ArtifactDir     string
+	ArtifactTracker *artifact.Tracker
 }
 
 // ToolEntry holds a tool's definition and executor functions.

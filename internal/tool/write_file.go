@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/jrswab/axe/internal/artifact"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/toolname"
 )
@@ -33,12 +35,22 @@ func writeFileDefinition() provider.Tool {
 				Description: "The content to write to the file.",
 				Required:    false,
 			},
+			"artifact": {
+				Type:        "string",
+				Required:    false,
+				Description: `When "true", write to the artifact directory instead of the working directory.`,
+			},
 		},
 	}
 }
 
 func writeFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContext) (result provider.ToolResult) {
 	path := call.Arguments["path"]
+
+	// Check if artifact mode is requested.
+	if strings.EqualFold(call.Arguments["artifact"], "true") {
+		return writeFileArtifact(ctx, call, ec, path)
+	}
 
 	defer func() {
 		var summary string
@@ -133,6 +145,111 @@ func writeFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContex
 	return provider.ToolResult{
 		CallID:  call.ID,
 		Content: fmt.Sprintf("wrote %d bytes to %s", len(data), path),
+		IsError: false,
+	}
+}
+
+func writeFileArtifact(ctx context.Context, call provider.ToolCall, ec ExecContext, path string) provider.ToolResult {
+	if ec.ArtifactDir == "" {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: "artifact directory not configured for this agent",
+			IsError: true,
+		}
+	}
+
+	// Empty path check.
+	if path == "" {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: "path is required",
+			IsError: true,
+		}
+	}
+
+	// Absolute path check.
+	if filepath.IsAbs(path) {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: "absolute paths are not allowed",
+			IsError: true,
+		}
+	}
+
+	// Traversal fast-path check.
+	cleanArtifactDir := filepath.Clean(ec.ArtifactDir)
+	resolved := filepath.Clean(filepath.Join(cleanArtifactDir, path))
+
+	if !isWithinDir(resolved, cleanArtifactDir) {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: "path escapes artifact directory",
+			IsError: true,
+		}
+	}
+
+	// Create parent directories.
+	parent := filepath.Dir(resolved)
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: err.Error(),
+			IsError: true,
+		}
+	}
+
+	// Symlink escape check on parent directory.
+	evalParent, err := filepath.EvalSymlinks(parent)
+	if err != nil {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: err.Error(),
+			IsError: true,
+		}
+	}
+
+	evalArtifactDir, err := filepath.EvalSymlinks(cleanArtifactDir)
+	if err != nil {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: err.Error(),
+			IsError: true,
+		}
+	}
+
+	if !isWithinDir(evalParent, evalArtifactDir) {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: "path escapes artifact directory",
+			IsError: true,
+		}
+	}
+
+	// Extract content.
+	content := call.Arguments["content"]
+	data := []byte(content)
+
+	// Write file.
+	if err := os.WriteFile(resolved, data, 0o644); err != nil {
+		return provider.ToolResult{
+			CallID:  call.ID,
+			Content: err.Error(),
+			IsError: true,
+		}
+	}
+
+	// Record in tracker if available.
+	if ec.ArtifactTracker != nil {
+		ec.ArtifactTracker.Record(artifact.Entry{
+			Path:  path,
+			Agent: "",
+			Size:  int64(len(data)),
+		})
+	}
+
+	return provider.ToolResult{
+		CallID:  call.ID,
+		Content: fmt.Sprintf("wrote %d bytes to %s (artifact)", len(data), path),
 		IsError: false,
 	}
 }

@@ -1645,6 +1645,74 @@ func TestScaffold_IncludesBudgetConfig(t *testing.T) {
 	}
 }
 
+// --- Artifacts Config tests ---
+
+func TestValidate_Artifacts(t *testing.T) {
+	cases := []struct {
+		name    string
+		cfg     *AgentConfig
+		wantErr bool
+		wantMsg string
+	}{
+		{
+			name:    "dir set with enabled false",
+			cfg:     &AgentConfig{Name: "test", Model: "openai/gpt-4o", Artifacts: ArtifactsConfig{Enabled: false, Dir: "/tmp/artifacts"}},
+			wantErr: true,
+			wantMsg: "artifacts.dir is set but artifacts.enabled is false",
+		},
+		{
+			name:    "dir contains path traversal",
+			cfg:     &AgentConfig{Name: "test", Model: "openai/gpt-4o", Artifacts: ArtifactsConfig{Enabled: true, Dir: "../artifacts"}},
+			wantErr: true,
+			wantMsg: "artifacts.dir must not contain path traversal sequences",
+		},
+		{
+			name:    "dir set with enabled true",
+			cfg:     &AgentConfig{Name: "test", Model: "openai/gpt-4o", Artifacts: ArtifactsConfig{Enabled: true, Dir: "/tmp/artifacts"}},
+			wantErr: false,
+		},
+		{
+			name:    "no artifacts table (zero value)",
+			cfg:     &AgentConfig{Name: "test", Model: "openai/gpt-4o", Artifacts: ArtifactsConfig{}},
+			wantErr: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := Validate(tc.cfg)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tc.wantMsg) {
+					t.Errorf("got %q, want error containing %q", err.Error(), tc.wantMsg)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("expected no error, got %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestScaffold_IncludesArtifactsConfig(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	checks := []string{
+		"# [artifacts]",
+		"# enabled = false",
+		"# dir = \"\"",
+	}
+	for _, check := range checks {
+		if !strings.Contains(out, check) {
+			t.Errorf("scaffold output missing %q\nfull output:\n%s", check, out)
+		}
+	}
+}
+
 // --- Phase 1 Multi-Directory Search Tests ---
 
 func TestLoad_LocalDirTakesPrecedence(t *testing.T) {

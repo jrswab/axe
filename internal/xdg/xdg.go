@@ -39,3 +39,20 @@ func GetConfigDir() (string, error) {
 
 	return filepath.Join(configDir, "axe"), nil
 }
+
+// GetCacheDir returns the Axe cache directory path following the XDG Base
+// Directory specification. It resolves to $XDG_CACHE_HOME/axe if the
+// environment variable is set and non-empty. Otherwise it falls back to
+// $HOME/.cache/axe. It does NOT create the directory.
+func GetCacheDir() (string, error) {
+	if xdgCache := os.Getenv("XDG_CACHE_HOME"); xdgCache != "" {
+		return filepath.Join(xdgCache, "axe"), nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("unable to determine cache directory: %w", err)
+	}
+
+	return filepath.Join(homeDir, ".cache", "axe"), nil
+}
