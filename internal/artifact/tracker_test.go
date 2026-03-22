@@ -68,6 +68,10 @@ func TestEntriesReturnsCopy(t *testing.T) {
 	}
 
 	entries = append(entries, Entry{Path: "/another.txt"})
+	if len(entries) != 2 {
+		t.Errorf("Expected 2 entries in local slice after append, got %d", len(entries))
+	}
+
 	entries3 := tracker.Entries()
 	if len(entries3) != 1 {
 		t.Errorf("Appending to returned slice affected tracker: expected 1 entry, got %d", len(entries3))

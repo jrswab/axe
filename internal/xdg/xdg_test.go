@@ -198,7 +198,6 @@ func TestGetCacheDir(t *testing.T) {
 
 			if tt.unsetXDG {
 				t.Setenv("XDG_CACHE_HOME", "")
-				os.Unsetenv("XDG_CACHE_HOME")
 			} else {
 				t.Setenv("XDG_CACHE_HOME", tt.envXDG)
 			}
