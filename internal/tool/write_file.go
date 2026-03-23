@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,46 @@ import (
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/toolname"
 )
+
+// resolveWritePath validates and resolves a write path relative to baseDir.
+// It creates parent directories and checks for symlink escapes.
+func resolveWritePath(baseDir, path string) (resolved string, err error) {
+	if path == "" {
+		return "", errors.New("path is required")
+	}
+
+	if filepath.IsAbs(path) {
+		return "", errors.New("absolute paths are not allowed")
+	}
+
+	cleanBase := filepath.Clean(baseDir)
+	resolved = filepath.Clean(filepath.Join(cleanBase, path))
+
+	if !isWithinDir(resolved, cleanBase) {
+		return "", errors.New("path escapes workdir")
+	}
+
+	parent := filepath.Dir(resolved)
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		return "", err
+	}
+
+	evalParent, err := filepath.EvalSymlinks(parent)
+	if err != nil {
+		return "", err
+	}
+
+	evalBase, err := filepath.EvalSymlinks(cleanBase)
+	if err != nil {
+		return "", err
+	}
+
+	if !isWithinDir(evalParent, evalBase) {
+		return "", errors.New("path escapes workdir")
+	}
+
+	return resolved, nil
+}
 
 // writeFileEntry returns the ToolEntry for the write_file tool.
 func writeFileEntry() ToolEntry {
@@ -62,69 +103,12 @@ func writeFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContex
 		return writeFileArtifact(ctx, call, ec, path)
 	}
 
-	// Empty path check.
-	if path == "" {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "path is required",
-			IsError: true,
-		}
-	}
-
-	// Absolute path check.
-	if filepath.IsAbs(path) {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "absolute paths are not allowed",
-			IsError: true,
-		}
-	}
-
-	// Traversal fast-path check.
-	cleanWorkdir := filepath.Clean(ec.Workdir)
-	resolved := filepath.Clean(filepath.Join(cleanWorkdir, path))
-
-	if !isWithinDir(resolved, cleanWorkdir) {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "path escapes workdir",
-			IsError: true,
-		}
-	}
-
-	// Create parent directories.
-	parent := filepath.Dir(resolved)
-	if err := os.MkdirAll(parent, 0o755); err != nil {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: err.Error(),
-			IsError: true,
-		}
-	}
-
-	// Symlink escape check on parent directory.
-	evalParent, err := filepath.EvalSymlinks(parent)
+	// Validate and resolve the path.
+	resolved, err := resolveWritePath(ec.Workdir, path)
 	if err != nil {
 		return provider.ToolResult{
 			CallID:  call.ID,
 			Content: err.Error(),
-			IsError: true,
-		}
-	}
-
-	evalWorkdir, err := filepath.EvalSymlinks(cleanWorkdir)
-	if err != nil {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: err.Error(),
-			IsError: true,
-		}
-	}
-
-	if !isWithinDir(evalParent, evalWorkdir) {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "path escapes workdir",
 			IsError: true,
 		}
 	}
@@ -158,69 +142,17 @@ func writeFileArtifact(ctx context.Context, call provider.ToolCall, ec ExecConte
 		}
 	}
 
-	// Empty path check.
-	if path == "" {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "path is required",
-			IsError: true,
-		}
-	}
-
-	// Absolute path check.
-	if filepath.IsAbs(path) {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "absolute paths are not allowed",
-			IsError: true,
-		}
-	}
-
-	// Traversal fast-path check.
-	cleanArtifactDir := filepath.Clean(ec.ArtifactDir)
-	resolved := filepath.Clean(filepath.Join(cleanArtifactDir, path))
-
-	if !isWithinDir(resolved, cleanArtifactDir) {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "path escapes artifact directory",
-			IsError: true,
-		}
-	}
-
-	// Create parent directories.
-	parent := filepath.Dir(resolved)
-	if err := os.MkdirAll(parent, 0o755); err != nil {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: err.Error(),
-			IsError: true,
-		}
-	}
-
-	// Symlink escape check on parent directory.
-	evalParent, err := filepath.EvalSymlinks(parent)
+	// Validate and resolve the path.
+	resolved, err := resolveWritePath(ec.ArtifactDir, path)
 	if err != nil {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: err.Error(),
-			IsError: true,
+		msg := err.Error()
+		// Translate workdir error message to artifact directory
+		if strings.Contains(msg, "workdir") {
+			msg = strings.ReplaceAll(msg, "workdir", "artifact directory")
 		}
-	}
-
-	evalArtifactDir, err := filepath.EvalSymlinks(cleanArtifactDir)
-	if err != nil {
 		return provider.ToolResult{
 			CallID:  call.ID,
-			Content: err.Error(),
-			IsError: true,
-		}
-	}
-
-	if !isWithinDir(evalParent, evalArtifactDir) {
-		return provider.ToolResult{
-			CallID:  call.ID,
-			Content: "path escapes artifact directory",
+			Content: msg,
 			IsError: true,
 		}
 	}

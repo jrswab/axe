@@ -6,78 +6,106 @@ import (
 )
 
 func TestTracker(t *testing.T) {
-	t.Run("NewTracker returns non-nil with empty entries", func(t *testing.T) {
-		tracker := NewTracker()
-		if tracker == nil {
-			t.Fatal("NewTracker() returned nil")
-		}
+	tests := []struct {
+		name   string
+		setup  func() *Tracker
+		verify func(t *testing.T, tr *Tracker)
+	}{
+		{
+			name:  "NewTracker returns non-nil with empty entries",
+			setup: func() *Tracker { return NewTracker() },
+			verify: func(t *testing.T, tracker *Tracker) {
+				if tracker == nil {
+					t.Fatal("NewTracker() returned nil")
+				}
 
-		entries := tracker.Entries()
-		if len(entries) != 0 {
-			t.Errorf("Expected empty entries, got %d entries", len(entries))
-		}
-	})
+				entries := tracker.Entries()
+				if len(entries) != 0 {
+					t.Errorf("Expected empty entries, got %d entries", len(entries))
+				}
+			},
+		},
+		{
+			name: "Record appends entry",
+			setup: func() *Tracker {
+				tracker := NewTracker()
+				entry := Entry{
+					Path:  "/path/to/file.txt",
+					Agent: "test-agent",
+					Size:  1024,
+				}
+				tracker.Record(entry)
+				return tracker
+			},
+			verify: func(t *testing.T, tracker *Tracker) {
+				entry := Entry{
+					Path:  "/path/to/file.txt",
+					Agent: "test-agent",
+					Size:  1024,
+				}
 
-	t.Run("Record appends entry", func(t *testing.T) {
-		tracker := NewTracker()
-		entry := Entry{
-			Path:  "/path/to/file.txt",
-			Agent: "test-agent",
-			Size:  1024,
-		}
+				entries := tracker.Entries()
+				if len(entries) != 1 {
+					t.Errorf("Expected 1 entry, got %d", len(entries))
+				}
 
-		tracker.Record(entry)
+				if entries[0].Path != entry.Path {
+					t.Errorf("Expected Path %q, got %q", entry.Path, entries[0].Path)
+				}
 
-		entries := tracker.Entries()
-		if len(entries) != 1 {
-			t.Errorf("Expected 1 entry, got %d", len(entries))
-		}
+				if entries[0].Agent != entry.Agent {
+					t.Errorf("Expected Agent %q, got %q", entry.Agent, entries[0].Agent)
+				}
 
-		if entries[0].Path != entry.Path {
-			t.Errorf("Expected Path %q, got %q", entry.Path, entries[0].Path)
-		}
+				if entries[0].Size != entry.Size {
+					t.Errorf("Expected Size %d, got %d", entry.Size, entries[0].Size)
+				}
+			},
+		},
+		{
+			name: "Entries returns a copy",
+			setup: func() *Tracker {
+				tracker := NewTracker()
+				entry := Entry{
+					Path:  "/path/to/file.txt",
+					Agent: "test-agent",
+					Size:  1024,
+				}
+				tracker.Record(entry)
+				return tracker
+			},
+			verify: func(t *testing.T, tracker *Tracker) {
+				entries := tracker.Entries()
+				if len(entries) != 1 {
+					t.Fatalf("Expected 1 entry, got %d", len(entries))
+				}
 
-		if entries[0].Agent != entry.Agent {
-			t.Errorf("Expected Agent %q, got %q", entry.Agent, entries[0].Agent)
-		}
+				entries[0].Path = "/modified/path.txt"
 
-		if entries[0].Size != entry.Size {
-			t.Errorf("Expected Size %d, got %d", entry.Size, entries[0].Size)
-		}
-	})
+				entries2 := tracker.Entries()
+				if entries2[0].Path != "/path/to/file.txt" {
+					t.Errorf("Entries() did not return a copy - original was modified")
+				}
 
-	t.Run("Entries returns a copy", func(t *testing.T) {
-		tracker := NewTracker()
-		entry := Entry{
-			Path:  "/path/to/file.txt",
-			Agent: "test-agent",
-			Size:  1024,
-		}
+				entries = append(entries, Entry{Path: "/another.txt"})
+				if len(entries) != 2 {
+					t.Errorf("Expected 2 entries in local slice after append, got %d", len(entries))
+				}
 
-		tracker.Record(entry)
+				entries3 := tracker.Entries()
+				if len(entries3) != 1 {
+					t.Errorf("Appending to returned slice affected tracker: expected 1 entry, got %d", len(entries3))
+				}
+			},
+		},
+	}
 
-		entries := tracker.Entries()
-		if len(entries) != 1 {
-			t.Fatalf("Expected 1 entry, got %d", len(entries))
-		}
-
-		entries[0].Path = "/modified/path.txt"
-
-		entries2 := tracker.Entries()
-		if entries2[0].Path != "/path/to/file.txt" {
-			t.Errorf("Entries() did not return a copy - original was modified")
-		}
-
-		entries = append(entries, Entry{Path: "/another.txt"})
-		if len(entries) != 2 {
-			t.Errorf("Expected 2 entries in local slice after append, got %d", len(entries))
-		}
-
-		entries3 := tracker.Entries()
-		if len(entries3) != 1 {
-			t.Errorf("Appending to returned slice affected tracker: expected 1 entry, got %d", len(entries3))
-		}
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tr := tc.setup()
+			tc.verify(t, tr)
+		})
+	}
 
 	t.Run("Concurrent writes are safe", func(t *testing.T) {
 		tracker := NewTracker()
