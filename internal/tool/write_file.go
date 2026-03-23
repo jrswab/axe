@@ -145,11 +145,7 @@ func writeFileArtifact(ctx context.Context, call provider.ToolCall, ec ExecConte
 	// Validate and resolve the path.
 	resolved, err := resolveWritePath(ec.ArtifactDir, path)
 	if err != nil {
-		msg := err.Error()
-		// Translate workdir error message to artifact directory
-		if strings.Contains(msg, "workdir") {
-			msg = strings.ReplaceAll(msg, "workdir", "artifact directory")
-		}
+		msg := rewriteArtifactError(err.Error())
 		return provider.ToolResult{
 			CallID:  call.ID,
 			Content: msg,

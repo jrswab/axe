@@ -81,8 +81,8 @@ func readFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContext
 	resolved, err := validatePath(baseDir, path)
 	if err != nil {
 		msg := err.Error()
-		if strings.EqualFold(call.Arguments["artifact"], "true") && strings.Contains(msg, "workdir") {
-			msg = strings.ReplaceAll(msg, "workdir", "artifact directory")
+		if strings.EqualFold(call.Arguments["artifact"], "true") {
+			msg = rewriteArtifactError(msg)
 		}
 		return provider.ToolResult{
 			CallID:  call.ID,
