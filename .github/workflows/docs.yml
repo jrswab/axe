@@ -8,6 +8,8 @@ on:
       - "docs/src/**"
       - "docs/book.toml"
 
+  workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -42,6 +44,6 @@ jobs:
 
           # Sync — delete files on remote that no longer exist locally
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/deploy_key" \
             docs/book/ \
             "$SSH_USER@$SSH_HOST:$REMOTE_PATH/"
