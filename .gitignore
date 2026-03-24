@@ -38,3 +38,6 @@ release-notes.md
 .entire/
 .kiro/
 .agents/
+
+# Documentation Tools
+docs/book/

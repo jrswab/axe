@@ -1,0 +1,9 @@
+[book]
+title = "Axe Documentation"
+authors = ["Jaron Swab"]
+language = "en"
+src = "src"
+
+[output.html]
+git-repository-url = "https://github.com/jrswab/axe"
+edit-url-template = "https://github.com/jrswab/axe/edit/main/docs/src/{path}"
