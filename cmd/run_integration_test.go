@@ -2253,6 +2253,16 @@ dir = %q
 	if !strings.Contains(body2, "artifact content") {
 		t.Errorf("expected third request body to contain 'artifact content', got: %s", body2)
 	}
+
+	// Verify the artifact file was actually written to disk
+	artifactFile := filepath.Join(artifactDir, "report.md")
+	data, readErr := os.ReadFile(artifactFile)
+	if readErr != nil {
+		t.Fatalf("expected artifact file %q to exist on disk, got error: %v", artifactFile, readErr)
+	}
+	if !strings.Contains(string(data), "artifact content") {
+		t.Errorf("expected artifact file content to contain %q, got %q", "artifact content", string(data))
+	}
 }
 
 func TestIntegration_Artifacts_InactiveSystemToolError(t *testing.T) {
