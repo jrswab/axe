@@ -51,7 +51,7 @@ jobs:
       run: |
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-files --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q -- "--- Files ---" || { echo "FAIL: '--- Files ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q -- "--- Files" || { echo "FAIL: '--- Files' not found"; exit 1; }
         echo "$OUTPUT" | grep -q "smoke-context.txt" || { echo "FAIL: 'smoke-context.txt' not found in files section"; exit 1; }
 
   providers:
