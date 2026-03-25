@@ -194,7 +194,7 @@ jobs:
 
     - name: cfg-subagents
       run: |
-        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-subagents -p "Delegate to your sub-agent and report what it says.")
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-subagents -p "Call your sub-agent now.")
         echo "$OUTPUT"
         echo "$OUTPUT" | grep -q "sub-agent-ok" || { echo "FAIL: 'sub-agent-ok' not found"; exit 1; }
 
