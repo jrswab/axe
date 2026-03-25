@@ -121,16 +121,16 @@ jobs:
 
     - name: tool-write-file
       run: |
-        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-write-file -p "Write the text 'smoke-write-ok' to the file /tmp/smoke-write-test.txt")
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-write-file -p "Write the text 'smoke-write-ok' to the file smoke-write-test.txt")
         echo "$OUTPUT"
-        grep -q "smoke-write-ok" /tmp/smoke-write-test.txt || { echo "FAIL: write file content not found"; exit 1; }
+        grep -q "smoke-write-ok" smoke-write-test.txt || { echo "FAIL: write file content not found"; exit 1; }
 
     - name: tool-edit-file
       run: |
-        echo "original-content" > /tmp/smoke-edit-test.txt
-        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-edit-file -p "Edit the file /tmp/smoke-edit-test.txt: replace 'original-content' with 'edited-content'")
+        echo "original-content" > smoke-edit-test.txt
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-edit-file -p "Edit the file smoke-edit-test.txt: replace 'original-content' with 'edited-content'")
         echo "$OUTPUT"
-        grep -q "edited-content" /tmp/smoke-edit-test.txt || { echo "FAIL: edited content not found"; exit 1; }
+        grep -q "edited-content" smoke-edit-test.txt || { echo "FAIL: edited content not found"; exit 1; }
 
     - name: tool-run-cmd
       run: |
