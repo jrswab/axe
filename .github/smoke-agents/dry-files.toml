@@ -1,0 +1,4 @@
+name = "dry-files"
+model = "openai/gpt-4o"
+description = "Smoke test: dry-run with files"
+files = [".github/smoke-agents/smoke-context.txt"]

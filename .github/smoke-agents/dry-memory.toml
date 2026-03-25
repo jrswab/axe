@@ -1,0 +1,8 @@
+name = "dry-memory"
+model = "openai/gpt-4o"
+description = "Smoke test: dry-run with memory"
+
+[memory]
+enabled = true
+last_n = 5
+max_entries = 50

@@ -1,0 +1,8 @@
+name = "cfg-memory"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: memory config section"
+
+[memory]
+enabled = true
+last_n = 5
+max_entries = 50

@@ -1,0 +1,3 @@
+name = "pipe-basic"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: piped stdin input"

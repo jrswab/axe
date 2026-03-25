@@ -1,0 +1,4 @@
+name = "tool-web-search"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: web_search tool"
+tools = ["web_search"]

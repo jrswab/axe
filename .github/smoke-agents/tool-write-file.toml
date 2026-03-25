@@ -1,0 +1,4 @@
+name = "tool-write-file"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: write_file tool"
+tools = ["write_file"]

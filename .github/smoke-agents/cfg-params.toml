@@ -1,0 +1,7 @@
+name = "cfg-params"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: params config section"
+
+[params]
+temperature = 0.5
+max_tokens = 100

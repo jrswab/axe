@@ -1,0 +1,4 @@
+name = "cfg-sub-child"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: sub-agent child"
+system_prompt = "You are a simple responder. When called, reply with only: sub-agent-ok"

@@ -1,0 +1,3 @@
+name = "provider-openai"
+model = "openai/gpt-4o-mini"
+description = "Smoke test: OpenAI provider connectivity"
