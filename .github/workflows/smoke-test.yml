@@ -31,31 +31,32 @@ jobs:
       run: |
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-tools --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q "--- Tools ---" || { echo "FAIL: '--- Tools ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q -- "--- Tools ---" || { echo "FAIL: '--- Tools ---' not found"; exit 1; }
         echo "$OUTPUT" | grep -q "read_file" || { echo "FAIL: 'read_file' not found in tools section"; exit 1; }
 
     - name: dry-skill
       run: |
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-skill --skill "$(pwd)/.github/smoke-agents/skills/smoke-skill/SKILL.md" --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q "--- Skill ---" || { echo "FAIL: '--- Skill ---' not found"; exit 1; }
-        echo "$OUTPUT" | grep -A1 "--- Skill ---" | grep -q "(none)" && { echo "FAIL: skill section is '(none)'"; exit 1; } || true
+        echo "$OUTPUT" | grep -q -- "--- Skill ---" || { echo "FAIL: '--- Skill ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -A1 -- "--- Skill ---" | grep -q "(none)" && { echo "FAIL: skill section is '(none)'"; exit 1; } || true
 
     - name: dry-memory
       run: |
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-memory --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q "--- Memory ---" || { echo "FAIL: '--- Memory ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q -- "--- Memory ---" || { echo "FAIL: '--- Memory ---' not found"; exit 1; }
 
     - name: dry-files
       run: |
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-files --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q "--- Files ---" || { echo "FAIL: '--- Files ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q -- "--- Files ---" || { echo "FAIL: '--- Files ---' not found"; exit 1; }
         echo "$OUTPUT" | grep -q "smoke-context.txt" || { echo "FAIL: 'smoke-context.txt' not found in files section"; exit 1; }
 
   providers:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -91,6 +92,7 @@ jobs:
 
   tools:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
@@ -150,6 +152,7 @@ jobs:
 
   config-sections:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
     steps:
@@ -180,7 +183,7 @@ jobs:
         ./axe run --agents-dir .github/smoke-agents cfg-memory -p "Remember this: memory-smoke-test"
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-memory --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q "--- Memory ---" || { echo "FAIL: '--- Memory ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q -- "--- Memory ---" || { echo "FAIL: '--- Memory ---' not found"; exit 1; }
         echo "$OUTPUT" | grep -q "memory-smoke-test" || { echo "FAIL: memory entry not found in dry-run output"; exit 1; }
 
     - name: cfg-files
@@ -203,6 +206,7 @@ jobs:
 
   piped-input:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
     steps:
