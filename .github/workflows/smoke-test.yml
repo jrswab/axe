@@ -1,0 +1,229 @@
+# .github/workflows/smoke-test.yml
+name: Smoke Tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+
+jobs:
+
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build axe
+      run: go build -o axe .
+
+    - name: dry-basic
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-basic --dry-run -p "ping")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "=== Dry Run ===" || { echo "FAIL: '=== Dry Run ===' not found"; exit 1; }
+
+    - name: dry-tools
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-tools --dry-run -p "ping")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "--- Tools ---" || { echo "FAIL: '--- Tools ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q "read_file" || { echo "FAIL: 'read_file' not found in tools section"; exit 1; }
+
+    - name: dry-skill
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-skill --skill "$(pwd)/.github/smoke-agents/skills/smoke-skill/SKILL.md" --dry-run -p "ping")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "--- Skill ---" || { echo "FAIL: '--- Skill ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -A1 "--- Skill ---" | grep -q "(none)" && { echo "FAIL: skill section is '(none)'"; exit 1; } || true
+
+    - name: dry-memory
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-memory --dry-run -p "ping")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "--- Memory ---" || { echo "FAIL: '--- Memory ---' not found"; exit 1; }
+
+    - name: dry-files
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-files --dry-run -p "ping")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "--- Files ---" || { echo "FAIL: '--- Files ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q "smoke-context.txt" || { echo "FAIL: 'smoke-context.txt' not found in files section"; exit 1; }
+
+  providers:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build axe
+      run: go build -o axe .
+
+    - name: provider-anthropic
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents provider-anthropic -p "Reply with only the word: pong")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+    - name: provider-openai
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents provider-openai -p "Reply with only the word: pong")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+    - name: provider-opencode
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents provider-opencode -p "Reply with only the word: pong")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+  tools:
+    runs-on: ubuntu-latest
+    env:
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build axe
+      run: go build -o axe .
+
+    - name: tool-list-dir
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-list-dir -p "List the files in the current directory and tell me what you see.")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+    - name: tool-read-file
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-read-file -p "Read the file .github/smoke-agents/smoke-context.txt and tell me its contents.")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "smoke-context-loaded" || { echo "FAIL: 'smoke-context-loaded' not found"; exit 1; }
+
+    - name: tool-write-file
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-write-file -p "Write the text 'smoke-write-ok' to the file /tmp/smoke-write-test.txt")
+        echo "$OUTPUT"
+        grep -q "smoke-write-ok" /tmp/smoke-write-test.txt || { echo "FAIL: write file content not found"; exit 1; }
+
+    - name: tool-edit-file
+      run: |
+        echo "original-content" > /tmp/smoke-edit-test.txt
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-edit-file -p "Edit the file /tmp/smoke-edit-test.txt: replace 'original-content' with 'edited-content'")
+        echo "$OUTPUT"
+        grep -q "edited-content" /tmp/smoke-edit-test.txt || { echo "FAIL: edited content not found"; exit 1; }
+
+    - name: tool-run-cmd
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-run-cmd -p "Run the shell command: echo hello-smoke")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "hello-smoke" || { echo "FAIL: 'hello-smoke' not found"; exit 1; }
+
+    - name: tool-url-fetch
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-url-fetch -p "Fetch the URL https://example.com and tell me the page title.")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "Example Domain" || { echo "FAIL: 'Example Domain' not found"; exit 1; }
+
+    - name: tool-web-search
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents tool-web-search -p "Search the web for 'axe cli golang' and summarize what you find.")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+  config-sections:
+    runs-on: ubuntu-latest
+    env:
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build axe
+      run: go build -o axe .
+
+    - name: cfg-basic
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-basic -p "Reply with only the word: pong")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+    - name: cfg-skill
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-skill --skill "$(pwd)/.github/smoke-agents/skills/smoke-skill/SKILL.md" -p "Follow your instructions.")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "smoke-skill-loaded" || { echo "FAIL: 'smoke-skill-loaded' not found"; exit 1; }
+
+    - name: cfg-memory
+      run: |
+        ./axe run --agents-dir .github/smoke-agents cfg-memory -p "Remember this: memory-smoke-test"
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-memory --dry-run -p "ping")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "--- Memory ---" || { echo "FAIL: '--- Memory ---' not found"; exit 1; }
+        echo "$OUTPUT" | grep -q "memory-smoke-test" || { echo "FAIL: memory entry not found in dry-run output"; exit 1; }
+
+    - name: cfg-files
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-files -p "What does the context file say?")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "smoke-context-loaded" || { echo "FAIL: 'smoke-context-loaded' not found"; exit 1; }
+
+    - name: cfg-subagents
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-subagents -p "Delegate to your sub-agent and report what it says.")
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -q "sub-agent-ok" || { echo "FAIL: 'sub-agent-ok' not found"; exit 1; }
+
+    - name: cfg-params
+      run: |
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-params -p "Reply with only the word: pong")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+  piped-input:
+    runs-on: ubuntu-latest
+    env:
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build axe
+      run: go build -o axe .
+
+    - name: pipe-basic
+      run: |
+        OUTPUT=$(echo "pipe-smoke-input" | ./axe run --agents-dir .github/smoke-agents pipe-basic)
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
+
+    - name: pipe-with-prompt
+      run: |
+        OUTPUT=$(echo "context: pipe-smoke-context" | ./axe run --agents-dir .github/smoke-agents pipe-basic -p "Repeat back the context you were given.")
+        echo "$OUTPUT"
+        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
