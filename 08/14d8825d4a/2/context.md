@@ -1,0 +1,13 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Run these two commands and return their full output:
+
+1. `go build .` — to confirm the binary compiles
+2. `go test ./cmd/ -run TestVersion -count=1` — to verify version strings are consistent
+
+Return the output of both commands. If either fails, return the full error output.
+
