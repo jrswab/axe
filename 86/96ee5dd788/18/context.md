@@ -1,0 +1,22 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Verify each finding against the current code and only fix it if needed.
+
+In @.github/smoke-agents/dry-skill.toml around lines 1 - 3, Add the missing
+skill key to the TOML by adding a skill field named "skill" and set its value to
+point to the smoke skill definition (use the path skills/smoke-skill/SKILL.md as
+the value) so the config explicitly references the skill used by this agent.
+
+### Prompt 2
+
+Verify each finding against the current code and only fix it if needed.
+
+In @.github/smoke-agents/dry-skill.toml around lines 1 - 3, Add the missing
+skill key to the TOML by adding a skill field named "skill" and set its value to
+point to the smoke skill definition (use the path skills/smoke-skill/SKILL.md as
+the value) so the config explicitly references the skill used by this agent.
+
