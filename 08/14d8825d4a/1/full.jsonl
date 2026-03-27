@@ -1,0 +1,256 @@
+{
+  "info": {
+    "id": "ses_2d2e02884ffekmZwttwE2l1o40",
+    "slug": "sunny-otter",
+    "projectID": "f41eda22c31366c4dba329069ee3369b2d9dd378",
+    "directory": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+    "parentID": "ses_2d2e30311ffehT2JrilhfKT40R",
+    "title": "Review diff and commit (@general subagent)",
+    "version": "1.3.0",
+    "summary": {
+      "additions": 0,
+      "deletions": 0,
+      "files": 0
+    },
+    "permission": [
+      {
+        "permission": "todowrite",
+        "pattern": "*",
+        "action": "deny"
+      },
+      {
+        "permission": "todoread",
+        "pattern": "*",
+        "action": "deny"
+      },
+      {
+        "permission": "task",
+        "pattern": "*",
+        "action": "deny"
+      }
+    ],
+    "time": {
+      "created": 1774578554748,
+      "updated": 1774578557702
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1774578554757
+        },
+        "summary": {
+          "diffs": []
+        },
+        "agent": "general",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-sonnet-4-6"
+        },
+        "tools": {
+          "todowrite": false,
+          "todoread": false,
+          "task": false
+        },
+        "id": "msg_d2d1fd784001KPGHZsqgjBHSW5",
+        "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "Run `git diff` and return the full output so I can review the changes. Then run `git diff --stat` to show a summary. Do NOT commit yet — just show me the diff.",
+          "id": "prt_d2d1fd7850011TPhbIIsrj8MV1",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fd784001KPGHZsqgjBHSW5"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774578554764,
+          "completed": 1774578557659
+        },
+        "parentID": "msg_d2d1fd784001KPGHZsqgjBHSW5",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.0071604,
+        "tokens": {
+          "total": 13282,
+          "input": 3,
+          "output": 131,
+          "reasoning": 0,
+          "cache": {
+            "read": 12788,
+            "write": 360
+          }
+        },
+        "finish": "tool-calls",
+        "id": "msg_d2d1fd78c001nKy330hdMHeVAC",
+        "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "5ff1e6dcfa62479884b098032591a01a9ca4769f",
+          "id": "prt_d2d1fdfbc001WW8Hv4ytu9zTRM",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fd78c001nKy330hdMHeVAC"
+        },
+        {
+          "type": "tool",
+          "callID": "REDACTED",
+          "tool": "bash",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "git diff",
+              "description": "Show full unstaged diff"
+            },
+            "output": "diff --git a/CHANGELOG.md b/CHANGELOG.md\nindex d5c2408..bc6e725 100644\n--- a/CHANGELOG.md\n+++ b/CHANGELOG.md\n@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0\n \n ## [Unreleased]\n \n+## [1.6.1] - 2026-03-26\n+\n+### Fixed\n+- Resolve relative artifact dirs against agent workdir, not process CWD\n+\n ## [1.6.0] - 2026-03-24\n \n ### Added\n@@ -93,7 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0\n - staticcheck/errcheck lint issues\n - Duplicate error silencing, glob validation, and nil ExitError guard\n \n-[unreleased]: https://github.com/jrswab/axe/compare/v1.6.0...HEAD\n+[unreleased]: https://github.com/jrswab/axe/compare/v1.6.1...HEAD\n+[1.6.1]: https://github.com/jrswab/axe/compare/v1.6.0...v1.6.1\n [1.6.0]: https://github.com/jrswab/axe/compare/v1.5.0...v1.6.0\n [1.5.0]: https://github.com/jrswab/axe/compare/v1.4.0...v1.5.0\n [1.4.0]: https://github.com/jrswab/axe/compare/v1.3.0...v1.4.0\ndiff --git a/cmd/root.go b/cmd/root.go\nindex f467650..0d38420 100644\n--- a/cmd/root.go\n+++ b/cmd/root.go\n@@ -9,7 +9,7 @@ import (\n )\n \n // Version is the hardcoded version constant for the CLI.\n-const Version = \"1.6.0\"\n+const Version = \"1.6.1\"\n \n var rootCmd = &cobra.Command{\n \tUse:   \"axe\",\ndiff --git a/cmd/version_test.go b/cmd/version_test.go\nindex 53f59f2..1664979 100644\n--- a/cmd/version_test.go\n+++ b/cmd/version_test.go\n@@ -16,14 +16,14 @@ func TestVersionCommand_Output(t *testing.T) {\n \t}\n \n \tgot := buf.String()\n-\twant := \"axe version 1.6.0\\n\"\n+\twant := \"axe version 1.6.1\\n\"\n \tif got != want {\n \t\tt.Errorf(\"version output = %q, want %q\", got, want)\n \t}\n }\n \n func TestVersionConstant(t *testing.T) {\n-\tif Version != \"1.6.0\" {\n-\t\tt.Errorf(\"Version = %q, want %q\", Version, \"1.6.0\")\n+\tif Version != \"1.6.1\" {\n+\t\tt.Errorf(\"Version = %q, want %q\", Version, \"1.6.1\")\n \t}\n }\ndiff --git a/internal/mcpclient/mcpclient.go b/internal/mcpclient/mcpclient.go\nindex 752e9a8..6376eb6 100644\n--- a/internal/mcpclient/mcpclient.go\n+++ b/internal/mcpclient/mcpclient.go\n@@ -40,7 +40,7 @@ func Connect(ctx context.Context, cfg agent.MCPServerConfig) (*Client, error) {\n \t\treturn nil, fmt.Errorf(\"unsupported MCP transport %q\", cfg.Transport)\n \t}\n \n-\tclient := mcp.NewClient(&mcp.Implementation{Name: \"axe\", Version: \"1.6.0\"}, nil)\n+\tclient := mcp.NewClient(&mcp.Implementation{Name: \"axe\", Version: \"1.6.1\"}, nil)\n \tsession, err := client.Connect(ctx, transport, nil)\n \tif err != nil {\n \t\treturn nil, fmt.Errorf(\"connect MCP server %q: %w\", cfg.Name, err)\n",
+            "title": "Show full unstaged diff",
+            "metadata": {
+              "output": "diff --git a/CHANGELOG.md b/CHANGELOG.md\nindex d5c2408..bc6e725 100644\n--- a/CHANGELOG.md\n+++ b/CHANGELOG.md\n@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0\n \n ## [Unreleased]\n \n+## [1.6.1] - 2026-03-26\n+\n+### Fixed\n+- Resolve relative artifact dirs against agent workdir, not process CWD\n+\n ## [1.6.0] - 2026-03-24\n \n ### Added\n@@ -93,7 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0\n - staticcheck/errcheck lint issues\n - Duplicate error silencing, glob validation, and nil ExitError guard\n \n-[unreleased]: https://github.com/jrswab/axe/compare/v1.6.0...HEAD\n+[unreleased]: https://github.com/jrswab/axe/compare/v1.6.1...HEAD\n+[1.6.1]: https://github.com/jrswab/axe/compare/v1.6.0...v1.6.1\n [1.6.0]: https://github.com/jrswab/axe/compare/v1.5.0...v1.6.0\n [1.5.0]: https://github.com/jrswab/axe/compare/v1.4.0...v1.5.0\n [1.4.0]: https://github.com/jrswab/axe/compare/v1.3.0...v1.4.0\ndiff --git a/cmd/root.go b/cmd/root.go\nindex f467650..0d38420 100644\n--- a/cmd/root.go\n+++ b/cmd/root.go\n@@ -9,7 +9,7 @@ import (\n )\n \n // Version is the hardcoded version constant for the CLI.\n-const Version = \"1.6.0\"\n+const Version = \"1.6.1\"\n \n var rootCmd = &cobra.Command{\n \tUse:   \"axe\",\ndiff --git a/cmd/version_test.go b/cmd/version_test.go\nindex 53f59f2..1664979 100644\n--- a/cmd/version_test.go\n+++ b/cmd/version_test.go\n@@ -16,14 +16,14 @@ func TestVersionCommand_Output(t *testing.T) {\n \t}\n \n \tgot := buf.String()\n-\twant := \"axe version 1.6.0\\n\"\n+\twant := \"axe version 1.6.1\\n\"\n \tif got != want {\n \t\tt.Errorf(\"version output = %q, want %q\", got, want)\n \t}\n }\n \n func TestVersionConstant(t *testing.T) {\n-\tif Version != \"1.6.0\" {\n-\t\tt.Errorf(\"Version = %q, want %q\", Version, \"1.6.0\")\n+\tif Version != \"1.6.1\" {\n+\t\tt.Errorf(\"Version = %q, want %q\", Version, \"1.6.1\")\n \t}\n }\ndiff --git a/internal/mcpclient/mcpclient.go b/internal/mcpclient/mcpclient.go\nindex 752e9a8..6376eb6 100644\n--- a/internal/mcpclient/mcpclient.go\n+++ b/internal/mcpclient/mcpclient.go\n@@ -40,7 +40,7 @@ func Connect(ctx context.Context, cfg agent.MCPServerConfig) (*Client, error) {\n \t\treturn nil, fmt.Errorf(\"unsupported MCP transport %q\", cfg.Transport)\n \t}\n \n-\tclient := mcp.NewClient(&mcp.Implementation{Name: \"axe\", Version: \"1.6.0\"}, nil)\n+\tclient := mcp.NewClient(&mcp.Implementation{Name: \"axe\", Version: \"1.6.1\"}, nil)\n \tsession, err := client.Connect(ctx, transport, nil)\n \tif err != nil {\n \t\treturn nil, fmt.Errorf(\"connect MCP server %q: %w\", cfg.Name, err)\n",
+              "exit": 0,
+              "description": "Show full unstaged diff",
+              "truncated": false
+            },
+            "time": {
+              "start": 1774578557112,
+              "end": 1774578557184
+            }
+          },
+          "id": "prt_d2d1fdfbc002EeuMKqdLQRKMte",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fd78c001nKy330hdMHeVAC"
+        },
+        {
+          "type": "tool",
+          "callID": "toolu_011wgiR1JmPk1q1bX5X1WCBE",
+          "tool": "bash",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "git diff --stat",
+              "description": "Show diff summary stats"
+            },
+            "output": " CHANGELOG.md                    | 8 +++++++-\n cmd/root.go                     | 2 +-\n cmd/version_test.go             | 6 +++---\n internal/mcpclient/mcpclient.go | 2 +-\n 4 files changed, 12 insertions(+), 6 deletions(-)\n",
+            "title": "Show diff summary stats",
+            "metadata": {
+              "output": " CHANGELOG.md                    | 8 +++++++-\n cmd/root.go                     | 2 +-\n cmd/version_test.go             | 6 +++---\n internal/mcpclient/mcpclient.go | 2 +-\n 4 files changed, 12 insertions(+), 6 deletions(-)\n",
+              "exit": 0,
+              "description": "Show diff summary stats",
+              "truncated": false
+            },
+            "time": {
+              "start": 1774578557434,
+              "end": 1774578557508
+            }
+          },
+          "id": "prt_d2d1fe0c0001M8YK32olVWp7Jn",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fd78c001nKy330hdMHeVAC"
+        },
+        {
+          "type": "step-finish",
+          "reason": "tool-calls",
+          "snapshot": "5ff1e6dcfa62479884b098032591a01a9ca4769f",
+          "cost": 0.0071604,
+          "tokens": {
+            "total": 13282,
+            "input": 3,
+            "output": 131,
+            "reasoning": 0,
+            "cache": {
+              "read": 12788,
+              "write": 360
+            }
+          },
+          "id": "prt_d2d1fe2440019C37bZ37gTyxCs",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fd78c001nKy330hdMHeVAC"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774578557659,
+          "completed": 1774578564308
+        },
+        "parentID": "msg_d2d1fd784001KPGHZsqgjBHSW5",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.01444365,
+        "tokens": {
+          "total": 14916,
+          "input": 1,
+          "output": 344,
+          "reasoning": 0,
+          "cache": {
+            "read": 13148,
+            "write": 1423
+          }
+        },
+        "finish": "stop",
+        "id": "msg_d2d1fe2db001MLkG1Hl3h38fvq",
+        "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "5ff1e6dcfa62479884b098032591a01a9ca4769f",
+          "id": "prt_d2d1feae4001hcY5DDEhrrdvcC",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fe2db001MLkG1Hl3h38fvq"
+        },
+        {
+          "type": "text",
+          "text": "Here's what's staged/unstaged in the working tree:\n\n---\n\n## `git diff --stat`\n\n```\n CHANGELOG.md                    | 8 +++++++-\n cmd/root.go                     | 2 +-\n cmd/version_test.go             | 6 +++---\n internal/mcpclient/mcpclient.go | 2 +-\n 4 files changed, 12 insertions(+), 6 deletions(-)\n```\n\n---\n\n## Full Diff Summary\n\nThese look like version bump changes from `1.6.0` → `1.6.1`:\n\n| File | Change |\n|---|---|\n| `CHANGELOG.md` | Added `[1.6.1]` entry with a bug fix note; updated `[unreleased]` and added comparison link |\n| `cmd/root.go` | `Version` constant bumped to `\"1.6.1\"` |\n| `cmd/version_test.go` | Test assertions updated to expect `\"1.6.1\"` |\n| `internal/mcpclient/mcpclient.go` | MCP client implementation version bumped to `\"1.6.1\"` |\n\n**Changelog entry for the fix:**\n```\n### Fixed\n- Resolve relative artifact dirs against agent workdir, not process CWD\n```\n\nNo logic changes — purely a version bump + changelog. Let me know when you're ready to commit or tag.",
+          "time": {
+            "start": 1774578564095,
+            "end": 1774578564095
+          },
+          "id": "prt_d2d1feae4002omUWvdSY1t3umC",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fe2db001MLkG1Hl3h38fvq"
+        },
+        {
+          "type": "step-finish",
+          "reason": "stop",
+          "snapshot": "5ff1e6dcfa62479884b098032591a01a9ca4769f",
+          "cost": 0.01444365,
+          "tokens": {
+            "total": 14916,
+            "input": 1,
+            "output": 344,
+            "reasoning": 0,
+            "cache": {
+              "read": 13148,
+              "write": 1423
+            }
+          },
+          "id": "prt_d2d1ffc0e001A307GKHCGEE8Ny",
+          "sessionID": "ses_2d2e02884ffekmZwttwE2l1o40",
+          "messageID": "msg_d2d1fe2db001MLkG1Hl3h38fvq"
+        }
+      ]
+    }
+  ]
+}
