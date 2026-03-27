@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8696ee5dd788",
+  "session_id": "ses_2d30e29eaffe6ufXQHE4kTqKru",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-27T02:14:48.628105Z",
+  "branch": "ISS-56/relative-artifact-dirs",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "cmd/run.go",
+    "cmd/run_test.go",
+    "docs/plans/044_artifact_dir_workdir_fix_implement.md",
+    "docs/plans/044_artifact_dir_workdir_fix_spec.md"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "224993a5ccbf",
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 24796,
+    "cache_read_tokens": 38762,
+    "output_tokens": 1436,
+    "api_call_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-27T02:14:48.618267Z",
+    "agent_lines": 449,
+    "human_added": 0,
+    "human_modified": 6,
+    "human_removed": 0,
+    "total_committed": 455,
+    "agent_percentage": 98.68131868131869
+  }
+}
