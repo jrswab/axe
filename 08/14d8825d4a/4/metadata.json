@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "0814d8825d4a",
+  "session_id": "ses_2d2e1058dffe45gf87IN0JERar",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-27T02:30:03.150856Z",
+  "branch": "master",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "cmd/root.go",
+    "cmd/version_test.go",
+    "internal/mcpclient/mcpclient.go",
+    "CHANGELOG.md"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "07839ef207e4",
+  "initial_attribution": {
+    "calculated_at": "2026-03-27T02:30:03.1499Z",
+    "agent_lines": 12,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 12,
+    "agent_percentage": 100
+  }
+}
