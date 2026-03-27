@@ -1,0 +1,63 @@
+You are working in the axe project at `/Users/jaronswab/go/src/github.com/jrswab/axe`.
+
+**Task:** Add a new table-driven test function `TestRun_ArtifactDirWorkdirResolution` to `cmd/run_test.go`. Place it right after the existing `TestRun_ArtifactEnvVar` test (which ends around line 3122).
+
+**Context:** We're fixing a bug where relative `artifacts.dir` paths in TOML and relative `--artifact-dir` flag values are resolved against the process CWD instead of the agent's resolved `--workdir`. The tests should verify the correct behavior AFTER the fix is applied.
+
+**Existing test helpers you MUST use (already defined in the file):**
+- `resetRunCmd(t)` — resets all run command flags between tests
+- `startMockAnthropicServer(t)` — returns `*httptest.Server` with a mock Anthropic response
+- `setupRunTestAgent(t, name, toml string) string` — creates temp XDG config dir with agent TOML, returns tmpDir path
+- `rootCmd` — the root cobra command (already imported)
+
+**Required test cases (5 cases in one table):**
+
+1. **`relative TOML artifacts.dir resolves against --workdir`**
+   - TOML: `[artifacts] enabled = true` with `dir = "output"`
+   - Args: `["run", "artifact-workdir-agent", "--workdir", <tmpWorkdir>]`
+   - Assert: directory `<tmpWorkdir>/output` exists on disk
+
+2. **`absolute TOML artifacts.dir unaffected by --workdir`**
+   - TOML: `[artifacts] enabled = true` with `dir = "<absoluteTmpDir>"`
+   - Args: `["run", "artifact-workdir-agent", "--workdir", <otherTmpDir>]`
+   - Assert: directory `<absoluteTmpDir>` exists on disk (NOT `<otherTmpDir>/<absoluteTmpDir>`)
+
+3. **`relative --artifact-dir flag resolves against --workdir`**
+   - TOML: no `[artifacts]` block
+   - Args: `["run", "artifact-workdir-agent", "--artifact-dir", "output", "--workdir", <tmpWorkdir>]`
+   - Assert: directory `<tmpWorkdir>/output` exists on disk
+
+4. **`absolute --artifact-dir flag unaffected by --workdir`**
+   - TOML: no `[artifacts]` block
+   - Args: `["run", "artifact-workdir-agent", "--artifact-dir", <absoluteTmpDir>, "--workdir", <otherTmpDir>]`
+   - Assert: directory `<absoluteTmpDir>` exists on disk
+
+5. **`relative TOML artifacts.dir with no --workdir resolves against CWD`**
+   - TOML: `[artifacts] enabled = true` with `dir = "output"`
+   - Args: `["run", "artifact-workdir-agent"]` (no `--workdir` flag)
+   - Before execute: change to a temp dir using `os.Chdir(<tmpCwdDir>)` and defer restore of original CWD
+   - Assert: directory `<tmpCwdDir>/output` exists on disk
+
+**Each test case must:**
+- Use `t.TempDir()` for all temporary directories
+- Use agent name `"artifact-workdir-agent"` with model `"anthropic/claude-sonnet-4-20250514"`
+- Call `resetRunCmd(t)` at the start of each subtest
+- Set `ANTHROPIC_API_KEY` and `AXE_ANTHROPIC_BASE_URL` env vars using `t.Setenv()`
+- Unset `AXE_ARTIFACT_DIR` before execute with `_ = os.Unsetenv("AXE_ARTIFACT_DIR")`
+- Assert the expected directory exists via `os.Stat`
+- Clean up `AXE_ARTIFACT_DIR` after execute with `_ = os.Unsetenv("AXE_ARTIFACT_DIR")`
+
+**Pattern to follow:** Look at the existing `TestRun_ArtifactEnvVar` test in the file for the exact pattern. The new test should follow the same structure.
+
+**Important:** Use a struct with a `setup` function field for per-case setup (like creating temp dirs, setting up args) since each case needs different temp dirs. Or use a simpler approach where each case has `toml string`, `args func() []string`, and `expectedDir func() string` fields.
+
+**Do NOT modify any other file.** Only add the new test function to `cmd/run_test.go`.
+
+After writing the test, run ONLY the new test to confirm it compiles:
+```
+cd /Users/jaronswab/go/src/github.com/jrswab/axe && go test ./cmd/... -run TestRun_ArtifactDirWorkdirResolution -count=1 -v 2>&1 | head -80
+```
+
+The tests SHOULD FAIL (red phase of TDD) because the fix hasn't been applied yet. That's expected. Report back:
+1. The exact test function you wrote
+2. The test output showing the failures (or compilation errors if any)

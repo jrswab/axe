@@ -1,0 +1,663 @@
+{
+  "info": {
+    "id": "ses_2d2fc711cffekOVoIjdhrRErC8",
+    "slug": "swift-harbor",
+    "projectID": "f41eda22c31366c4dba329069ee3369b2d9dd378",
+    "directory": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+    "parentID": "ses_2d2fe73a5ffe7PjWL6SIgpD1JH",
+    "title": "Write artifact dir tests (@general subagent)",
+    "version": "1.3.0",
+    "summary": {
+      "additions": 0,
+      "deletions": 0,
+      "files": 0
+    },
+    "permission": [
+      {
+        "permission": "todowrite",
+        "pattern": "*",
+        "action": "deny"
+      },
+      {
+        "permission": "todoread",
+        "pattern": "*",
+        "action": "deny"
+      },
+      {
+        "permission": "task",
+        "pattern": "*",
+        "action": "deny"
+      }
+    ],
+    "time": {
+      "created": 1774576701155,
+      "updated": 1774576720174
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1774576701172
+        },
+        "summary": {
+          "diffs": []
+        },
+        "agent": "general",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-sonnet-4-6"
+        },
+        "tools": {
+          "todowrite": false,
+          "todoread": false,
+          "task": false
+        },
+        "id": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "You are working in the axe project at `/Users/jaronswab/go/src/github.com/jrswab/axe`.\n\n**Task:** Add a new table-driven test function `TestRun_ArtifactDirWorkdirResolution` to `cmd/run_test.go`. Place it right after the existing `TestRun_ArtifactEnvVar` test (which ends around line 3122).\n\n**Context:** We're fixing a bug where relative `artifacts.dir` paths in TOML and relative `--artifact-dir` flag values are resolved against the process CWD instead of the agent's resolved `--workdir`. The tests should verify the correct behavior AFTER the fix is applied.\n\n**Existing test helpers you MUST use (already defined in the file):**\n- `resetRunCmd(t)` — resets all run command flags between tests\n- `startMockAnthropicServer(t)` — returns `*httptest.Server` with a mock Anthropic response\n- `setupRunTestAgent(t, name, toml string) string` — creates temp XDG config dir with agent TOML, returns tmpDir path\n- `rootCmd` — the root cobra command (already imported)\n\n**Required test cases (5 cases in one table):**\n\n1. **`relative TOML artifacts.dir resolves against --workdir`**\n   - TOML: `[artifacts] enabled = true` with `dir = \"output\"`\n   - Args: `[\"run\", \"artifact-workdir-agent\", \"--workdir\", <tmpWorkdir>]`\n   - Assert: directory `<tmpWorkdir>/output` exists on disk\n\n2. **`absolute TOML artifacts.dir unaffected by --workdir`**\n   - TOML: `[artifacts] enabled = true` with `dir = \"<absoluteTmpDir>\"`\n   - Args: `[\"run\", \"artifact-workdir-agent\", \"--workdir\", <otherTmpDir>]`\n   - Assert: directory `<absoluteTmpDir>` exists on disk (NOT `<otherTmpDir>/<absoluteTmpDir>`)\n\n3. **`relative --artifact-dir flag resolves against --workdir`**\n   - TOML: no `[artifacts]` block\n   - Args: `[\"run\", \"artifact-workdir-agent\", \"--artifact-dir\", \"output\", \"--workdir\", <tmpWorkdir>]`\n   - Assert: directory `<tmpWorkdir>/output` exists on disk\n\n4. **`absolute --artifact-dir flag unaffected by --workdir`**\n   - TOML: no `[artifacts]` block\n   - Args: `[\"run\", \"artifact-workdir-agent\", \"--artifact-dir\", <absoluteTmpDir>, \"--workdir\", <otherTmpDir>]`\n   - Assert: directory `<absoluteTmpDir>` exists on disk\n\n5. **`relative TOML artifacts.dir with no --workdir resolves against CWD`**\n   - TOML: `[artifacts] enabled = true` with `dir = \"output\"`\n   - Args: `[\"run\", \"artifact-workdir-agent\"]` (no `--workdir` flag)\n   - Before execute: change to a temp dir using `os.Chdir(<tmpCwdDir>)` and defer restore of original CWD\n   - Assert: directory `<tmpCwdDir>/output` exists on disk\n\n**Each test case must:**\n- Use `t.TempDir()` for all temporary directories\n- Use agent name `\"artifact-workdir-agent\"` with model `\"anthropic/claude-sonnet-4-20250514\"`\n- Call `resetRunCmd(t)` at the start of each subtest\n- Set `ANTHROPIC_API_KEY` and `AXE_ANTHROPIC_BASE_URL` env vars using `t.Setenv()`\n- Unset `AXE_ARTIFACT_DIR` before execute with `_ = os.Unsetenv(\"AXE_ARTIFACT_DIR\")`\n- Assert the expected directory exists via `os.Stat`\n- Clean up `AXE_ARTIFACT_DIR` after execute with `_ = os.Unsetenv(\"AXE_ARTIFACT_DIR\")`\n\n**Pattern to follow:** Look at the existing `TestRun_ArtifactEnvVar` test in the file for the exact pattern. The new test should follow the same structure.\n\n**Important:** Use a struct with a `setup` function field for per-case setup (like creating temp dirs, setting up args) since each case needs different temp dirs. Or use a simpler approach where each case has `toml string`, `args func() []string`, and `expectedDir func() string` fields.\n\n**Do NOT modify any other file.** Only add the new test function to `cmd/run_test.go`.\n\nAfter writing the test, run ONLY the new test to confirm it compiles:\n```\ncd /Users/jaronswab/go/src/github.com/jrswab/axe && go test ./cmd/... -run TestRun_ArtifactDirWorkdirResolution -count=1 -v 2>&1 | head -80\n```\n\nThe tests SHOULD FAIL (red phase of TDD) because the fix hasn't been applied yet. That's expected. Report back:\n1. The exact test function you wrote\n2. The test output showing the failures (or compilation errors if any)\n",
+          "id": "prt_d2d038ef4001HDru43equrKVfc",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d038ef2001zebe5QzYMgeRkO"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774576701181,
+          "completed": 1774576704246
+        },
+        "parentID": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.01196865,
+        "tokens": {
+          "total": 14531,
+          "input": 2,
+          "output": 142,
+          "reasoning": 0,
+          "cache": {
+            "read": 12788,
+            "write": 1599
+          }
+        },
+        "finish": "tool-calls",
+        "id": "msg_d2d038efd0016Qods7UETFB9Wb",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "id": "prt_d2d0396230013rvoHe8tRVo7fa",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d038efd0016Qods7UETFB9Wb"
+        },
+        {
+          "type": "text",
+          "text": "I'll start by reading the existing test file to understand the patterns used, particularly around `TestRun_ArtifactEnvVar`.",
+          "time": {
+            "start": 1774576703353,
+            "end": 1774576703353
+          },
+          "id": "prt_d2d03962300208GN6WZKy9rXtG",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d038efd0016Qods7UETFB9Wb"
+        },
+        {
+          "type": "tool",
+          "callID": "toolu_018YPDqcEmm8V8U5sAzJABuo",
+          "tool": "bash",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "wc -l /Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go",
+              "description": "Check total line count of run_test.go"
+            },
+            "output": "    3412 /Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go\n",
+            "title": "Check total line count of run_test.go",
+            "metadata": {
+              "output": "    3412 /Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go\n",
+              "exit": 0,
+              "description": "Check total line count of run_test.go",
+              "truncated": false
+            },
+            "time": {
+              "start": 1774576704070,
+              "end": 1774576704090
+            }
+          },
+          "id": "prt_d2d03977b0011MqfUSf0nqNS3L",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d038efd0016Qods7UETFB9Wb"
+        },
+        {
+          "type": "step-finish",
+          "reason": "tool-calls",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "cost": 0.01196865,
+          "tokens": {
+            "total": 14531,
+            "input": 2,
+            "output": 142,
+            "reasoning": 0,
+            "cache": {
+              "read": 12788,
+              "write": 1599
+            }
+          },
+          "id": "prt_d2d039a5a001m00LLVxQQ4TUuy",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d038efd0016Qods7UETFB9Wb"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774576704247,
+          "completed": 1774576707017
+        },
+        "parentID": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.00679035,
+        "tokens": {
+          "total": 14696,
+          "input": 1,
+          "output": 117,
+          "reasoning": 0,
+          "cache": {
+            "read": 14387,
+            "write": 191
+          }
+        },
+        "finish": "tool-calls",
+        "id": "REDACTED",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "id": "prt_d2d03a344001gsNWt27IRvmD08",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "REDACTED"
+        },
+        {
+          "type": "tool",
+          "callID": "toolu_018YHewdY7uqy73erf5FFdzL",
+          "tool": "read",
+          "state": {
+            "status": "completed",
+            "input": {
+              "filePath": "/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go",
+              "offset": 3050,
+              "limit": 200
+            },
+            "output": "<path>/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go</path>\n<type>file</type>\n<content>3050: \t\t{\n3051: \t\t\tname: \"--artifact-dir flag creates artifact directory\",\n3052: \t\t\ttoml: `name = \"artifact-env-agent\"\n3053: model = \"anthropic/claude-sonnet-4-20250514\"\n3054: `,\n3055: \t\t\targs: func(artifactDir string) []string {\n3056: \t\t\t\treturn []string{\"run\", \"artifact-env-agent\", \"--artifact-dir\", artifactDir}\n3057: \t\t\t},\n3058: \t\t\twantDirStat: true,\n3059: \t\t},\n3060: \t\t{\n3061: \t\t\tname: \"TOML artifacts.dir creates artifact directory\",\n3062: \t\t\ttoml: `name = \"artifact-env-agent\"\n3063: model = \"anthropic/claude-sonnet-4-20250514\"\n3064: \n3065: [artifacts]\n3066: enabled = true\n3067: dir = \"PLACEHOLDER\"\n3068: `,\n3069: \t\t\targs: func(_ string) []string {\n3070: \t\t\t\treturn []string{\"run\", \"artifact-env-agent\"}\n3071: \t\t\t},\n3072: \t\t\twantDirStat: true,\n3073: \t\t},\n3074: \t\t{\n3075: \t\t\tname: \"no artifacts config leaves artifact directory unset\",\n3076: \t\t\ttoml: `name = \"artifact-env-agent\"\n3077: model = \"anthropic/claude-sonnet-4-20250514\"\n3078: `,\n3079: \t\t\targs: func(_ string) []string {\n3080: \t\t\t\treturn []string{\"run\", \"artifact-env-agent\"}\n3081: \t\t\t},\n3082: \t\t\twantDirStat: false,\n3083: \t\t},\n3084: \t}\n3085: \n3086: \tfor _, tt := range tests {\n3087: \t\tt.Run(tt.name, func(t *testing.T) {\n3088: \t\t\tresetRunCmd(t)\n3089: \t\t\tserver := startMockAnthropicServer(t)\n3090: \t\t\tdefer server.Close()\n3091: \n3092: \t\t\tartifactDir := t.TempDir()\n3093: \n3094: \t\t\t// Substitute PLACEHOLDER in TOML with the real temp dir\n3095: \t\t\ttoml := strings.ReplaceAll(tt.toml, \"PLACEHOLDER\", artifactDir)\n3096: \n3097: \t\t\tsetupRunTestAgent(t, \"artifact-env-agent\", toml)\n3098: \t\t\tt.Setenv(\"ANTHROPIC_API_KEY\", \"test-key\")\n3099: \t\t\tt.Setenv(\"AXE_ANTHROPIC_BASE_URL\", server.URL)\n3100: \t\t\t_ = os.Unsetenv(\"AXE_ARTIFACT_DIR\")\n3101: \n3102: \t\t\tbuf := new(bytes.Buffer)\n3103: \t\t\terrBuf := new(bytes.Buffer)\n3104: \t\t\trootCmd.SetOut(buf)\n3105: \t\t\trootCmd.SetErr(errBuf)\n3106: \t\t\trootCmd.SetArgs(tt.args(artifactDir))\n3107: \n3108: \t\t\terr := rootCmd.Execute()\n3109: \t\t\tif err != nil {\n3110: \t\t\t\tt.Fatalf(\"unexpected error: %v\", err)\n3111: \t\t\t}\n3112: \n3113: \t\t\tif tt.wantDirStat {\n3114: \t\t\t\tif _, err := os.Stat(artifactDir); os.IsNotExist(err) {\n3115: \t\t\t\t\tt.Errorf(\"expected artifact directory %q to exist\", artifactDir)\n3116: \t\t\t\t}\n3117: \t\t\t}\n3118: \n3119: \t\t\t_ = os.Unsetenv(\"AXE_ARTIFACT_DIR\")\n3120: \t\t})\n3121: \t}\n3122: }\n3123: \n3124: func TestRun_ArtifactsJSON(t *testing.T) {\n3125: \ttests := []struct {\n3126: \t\tname          string\n3127: \t\ttoml          string\n3128: \t\tresponses     func(artifactDir string) []testutil.MockLLMResponse\n3129: \t\targs          func(artifactDir string) []string\n3130: \t\twantArtifacts bool // true = \"artifacts\" key must be present with entries\n3131: \t}{\n3132: \t\t{\n3133: \t\t\tname: \"artifacts array present when system active and file written\",\n3134: \t\t\ttoml: `name = \"json-artifact-agent\"\n3135: model = \"anthropic/claude-sonnet-4-20250514\"\n3136: tools = [\"write_file\"]\n3137: \n3138: [artifacts]\n3139: enabled = true\n3140: dir = \"PLACEHOLDER\"\n3141: `,\n3142: \t\t\tresponses: func(_ string) []testutil.MockLLMResponse {\n3143: \t\t\t\treturn []testutil.MockLLMResponse{\n3144: \t\t\t\t\ttestutil.AnthropicToolUseResponse(\"Writing artifact.\", []testutil.MockToolCall{\n3145: \t\t\t\t\t\t{ID: \"tc_art1\", Name: \"write_file\", Input: map[string]string{\n3146: \t\t\t\t\t\t\t\"path\":     \"report.md\",\n3147: \t\t\t\t\t\t\t\"content\":  \"hello artifact\",\n3148: \t\t\t\t\t\t\t\"artifact\": \"true\",\n3149: \t\t\t\t\t\t}},\n3150: \t\t\t\t\t}),\n3151: \t\t\t\t\ttestutil.AnthropicResponse(\"Done writing artifact.\"),\n3152: \t\t\t\t}\n3153: \t\t\t},\n3154: \t\t\targs: func(_ string) []string {\n3155: \t\t\t\treturn []string{\"run\", \"json-artifact-agent\", \"--json\"}\n3156: \t\t\t},\n3157: \t\t\twantArtifacts: true,\n3158: \t\t},\n3159: \t\t{\n3160: \t\t\tname: \"artifacts key absent when system inactive\",\n3161: \t\t\ttoml: `name = \"json-artifact-agent\"\n3162: model = \"anthropic/claude-sonnet-4-20250514\"\n3163: `,\n3164: \t\t\tresponses: func(_ string) []testutil.MockLLMResponse {\n3165: \t\t\t\treturn []testutil.MockLLMResponse{\n3166: \t\t\t\t\ttestutil.AnthropicResponse(\"Simple response without artifacts.\"),\n3167: \t\t\t\t}\n3168: \t\t\t},\n3169: \t\t\targs: func(_ string) []string {\n3170: \t\t\t\treturn []string{\"run\", \"json-artifact-agent\", \"--json\"}\n3171: \t\t\t},\n3172: \t\t\twantArtifacts: false,\n3173: \t\t},\n3174: \t}\n3175: \n3176: \tfor _, tt := range tests {\n3177: \t\tt.Run(tt.name, func(t *testing.T) {\n3178: \t\t\tresetRunCmd(t)\n3179: \n3180: \t\t\tartifactDir := t.TempDir()\n3181: \t\t\ttoml := strings.ReplaceAll(tt.toml, \"PLACEHOLDER\", artifactDir)\n3182: \n3183: \t\t\tserver := testutil.NewMockLLMServer(t, tt.responses(artifactDir))\n3184: \n3185: \t\t\ttmpDir := setupRunTestAgent(t, \"json-artifact-agent\", toml)\n3186: \t\t\tt.Setenv(\"XDG_CONFIG_HOME\", tmpDir)\n3187: \t\t\tt.Setenv(\"ANTHROPIC_API_KEY\", \"test-key\")\n3188: \t\t\tt.Setenv(\"AXE_ANTHROPIC_BASE_URL\", server.URL())\n3189: \n3190: \t\t\tbuf := new(bytes.Buffer)\n3191: \t\t\terrBuf := new(bytes.Buffer)\n3192: \t\t\trootCmd.SetOut(buf)\n3193: \t\t\trootCmd.SetErr(errBuf)\n3194: \t\t\trootCmd.SetArgs(tt.args(artifactDir))\n3195: \n3196: \t\t\terr := rootCmd.Execute()\n3197: \t\t\tif err != nil {\n3198: \t\t\t\tt.Fatalf(\"unexpected error: %v\\nstderr: %s\", err, errBuf.String())\n3199: \t\t\t}\n3200: \n3201: \t\t\tvar result map[string]interface{}\n3202: \t\t\tif err := json.Unmarshal(buf.Bytes(), &result); err != nil {\n3203: \t\t\t\tt.Fatalf(\"output is not valid JSON: %v\\noutput: %q\", err, buf.String())\n3204: \t\t\t}\n3205: \n3206: \t\t\tif tt.wantArtifacts {\n3207: \t\t\t\tartifactsRaw, ok := result[\"artifacts\"]\n3208: \t\t\t\tif !ok {\n3209: \t\t\t\t\tt.Fatalf(\"expected 'artifacts' key in JSON output, got keys: %v\", mapKeys(result))\n3210: \t\t\t\t}\n3211: \t\t\t\tartifacts, ok := artifactsRaw.([]interface{})\n3212: \t\t\t\tif !ok {\n3213: \t\t\t\t\tt.Fatalf(\"expected 'artifacts' to be an array, got %T\", artifactsRaw)\n3214: \t\t\t\t}\n3215: \t\t\t\tif len(artifacts) == 0 {\n3216: \t\t\t\t\tt.Fatal(\"expected 'artifacts' array to have at least one entry\")\n3217: \t\t\t\t}\n3218: \t\t\t\tfirst, ok := artifacts[0].(map[string]interface{})\n3219: \t\t\t\tif !ok {\n3220: \t\t\t\t\tt.Fatalf(\"expected artifact entry to be an object, got %T\", artifacts[0])\n3221: \t\t\t\t}\n3222: \t\t\t\tfor _, key := range []string{\"path\", \"agent\", \"size\"} {\n3223: \t\t\t\t\tif _, ok := first[key]; !ok {\n3224: \t\t\t\t\t\tt.Errorf(\"expected artifact entry to have %q key\", key)\n3225: \t\t\t\t\t}\n3226: \t\t\t\t}\n3227: \t\t\t} else {\n3228: \t\t\t\tif _, ok := result[\"artifacts\"]; ok {\n3229: \t\t\t\t\tt.Error(\"expected 'artifacts' key to be absent when system inactive, but it was present\")\n3230: \t\t\t\t}\n3231: \t\t\t}\n3232: \n3233: \t\t\t_ = os.Unsetenv(\"AXE_ARTIFACT_DIR\")\n3234: \t\t})\n3235: \t}\n3236: }\n3237: \n3238: // helper to get keys from a map\n3239: func mapKeys(m map[string]interface{}) []string {\n3240: \tkeys := make([]string, 0, len(m))\n3241: \tfor k := range m {\n3242: \t\tkeys = append(keys, k)\n3243: \t}\n3244: \treturn keys\n3245: }\n3246: \n3247: func TestRun_AutoGeneratedArtifactsCleanedUp(t *testing.T) {\n3248: \tresetRunCmd(t)\n3249: \n\n(Showing lines 3050-3249 of 3412. Use offset=3250 to continue.)\n</content>",
+            "title": "cmd/run_test.go",
+            "metadata": {
+              "preview": "\t\t{\n\t\t\tname: \"--artifact-dir flag creates artifact directory\",\n\t\t\ttoml: `name = \"artifact-env-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\n`,\n\t\t\targs: func(artifactDir string) []string {\n\t\t\t\treturn []string{\"run\", \"artifact-env-agent\", \"--artifact-dir\", artifactDir}\n\t\t\t},\n\t\t\twantDirStat: true,\n\t\t},\n\t\t{\n\t\t\tname: \"TOML artifacts.dir creates artifact directory\",\n\t\t\ttoml: `name = \"artifact-env-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\n\n[artifacts]\nenabled = true\ndir = \"PLACEHOLDER\"\n`,\n\t\t\targs: func(_ string) []string {",
+              "truncated": true,
+              "loaded": []
+            },
+            "time": {
+              "start": 1774576706844,
+              "end": 1774576706859
+            }
+          },
+          "id": "prt_d2d03a344002rR3zvK8LaO3Nzq",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "REDACTED"
+        },
+        {
+          "type": "step-finish",
+          "reason": "tool-calls",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "cost": 0.00679035,
+          "tokens": {
+            "total": 14696,
+            "input": 1,
+            "output": 117,
+            "reasoning": 0,
+            "cache": {
+              "read": 14387,
+              "write": 191
+            }
+          },
+          "id": "prt_d2d03a52c001t97VAD5fLF6IDP",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "REDACTED"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774576707017,
+          "completed": 1774576710851
+        },
+        "parentID": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.0179514,
+        "tokens": {
+          "total": 17743,
+          "input": 1,
+          "output": 152,
+          "reasoning": 0,
+          "cache": {
+            "read": 14578,
+            "write": 3012
+          }
+        },
+        "finish": "tool-calls",
+        "id": "msg_d2d03a5c9001F16F2JWG0KBv0w",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "id": "prt_d2d03adef001eIk8lgm2RDf9CL",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03a5c9001F16F2JWG0KBv0w"
+        },
+        {
+          "type": "text",
+          "text": "Now let me read the `TestRun_ArtifactEnvVar` function from its beginning:",
+          "time": {
+            "start": 1774576709321,
+            "end": 1774576709321
+          },
+          "id": "prt_d2d03adf0001thvZa5qDYN4lWv",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03a5c9001F16F2JWG0KBv0w"
+        },
+        {
+          "type": "tool",
+          "callID": "toolu_014hg4Evhn3NrvF4ZEqRuzjB",
+          "tool": "bash",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "grep -n \"func TestRun_ArtifactEnvVar\" /Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go",
+              "description": "Find TestRun_ArtifactEnvVar start line"
+            },
+            "output": "3043:func TestRun_ArtifactEnvVar(t *testing.T) {\n",
+            "title": "Find TestRun_ArtifactEnvVar start line",
+            "metadata": {
+              "output": "3043:func TestRun_ArtifactEnvVar(t *testing.T) {\n",
+              "exit": 0,
+              "description": "Find TestRun_ArtifactEnvVar start line",
+              "truncated": false
+            },
+            "time": {
+              "start": 1774576710628,
+              "end": 1774576710667
+            }
+          },
+          "id": "prt_d2d03aed2001RbzzJT0Io6wH09",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03a5c9001F16F2JWG0KBv0w"
+        },
+        {
+          "type": "step-finish",
+          "reason": "tool-calls",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "cost": 0.0179514,
+          "tokens": {
+            "total": 17743,
+            "input": 1,
+            "output": 152,
+            "reasoning": 0,
+            "cache": {
+              "read": 14578,
+              "write": 3012
+            }
+          },
+          "id": "prt_d2d03b40c001DXlOfShjbTw42o",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03a5c9001F16F2JWG0KBv0w"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774576710852,
+          "completed": 1774576713492
+        },
+        "parentID": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.00774,
+        "tokens": {
+          "total": 17896,
+          "input": 1,
+          "output": 117,
+          "reasoning": 0,
+          "cache": {
+            "read": 17590,
+            "write": 188
+          }
+        },
+        "finish": "tool-calls",
+        "id": "msg_d2d03b4c40016xZIDkwIo272q4",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "id": "prt_d2d03bc47001AT6Lt8eCfQJTZ6",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03b4c40016xZIDkwIo272q4"
+        },
+        {
+          "type": "tool",
+          "callID": "REDACTED",
+          "tool": "read",
+          "state": {
+            "status": "completed",
+            "input": {
+              "filePath": "/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go",
+              "offset": 2990,
+              "limit": 135
+            },
+            "output": "<path>/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go</path>\n<type>file</type>\n<content>2990: }\n2991: \n2992: func TestRun_DryRun_PromptFlag(t *testing.T) {\n2993: \tresetRunCmd(t)\n2994: \n2995: \tsetupRunTestAgent(t, \"dryrun-prompt-agent\", `name = \"dryrun-prompt-agent\"\n2996: model = \"anthropic/claude-sonnet-4-20250514\"\n2997: `)\n2998: \n2999: \tbuf := new(bytes.Buffer)\n3000: \terrBuf := new(bytes.Buffer)\n3001: \trootCmd.SetOut(buf)\n3002: \trootCmd.SetErr(errBuf)\n3003: \trootCmd.SetArgs([]string{\"run\", \"dryrun-prompt-agent\", \"--dry-run\", \"-p\", \"my prompt\"})\n3004: \n3005: \terr := rootCmd.Execute()\n3006: \tif err != nil {\n3007: \t\tt.Fatalf(\"unexpected error: %v\", err)\n3008: \t}\n3009: \n3010: \toutput := buf.String()\n3011: \n3012: \tif !strings.Contains(output, \"--- User Message ---\") {\n3013: \t\tt.Errorf(\"expected output to contain '--- User Message ---', got:\\n%s\", output)\n3014: \t}\n3015: \n3016: \tif !strings.Contains(output, \"my prompt\") {\n3017: \t\tt.Errorf(\"expected output to contain 'my prompt', got:\\n%s\", output)\n3018: \t}\n3019: \n3020: \tif strings.Contains(output, \"--- Stdin ---\") {\n3021: \t\tt.Errorf(\"expected output NOT to contain '--- Stdin ---', got:\\n%s\", output)\n3022: \t}\n3023: }\n3024: \n3025: // --- Artifact Lifecycle Tests ---\n3026: \n3027: func TestRun_ArtifactFlagsExist(t *testing.T) {\n3028: \t// Verify --artifact-dir flag exists and accepts a string\n3029: \tif flag := runCmd.Flags().Lookup(\"artifact-dir\"); flag == nil {\n3030: \t\tt.Fatal(\"--artifact-dir flag not found\")\n3031: \t} else if flag.DefValue != \"\" {\n3032: \t\tt.Errorf(\"--artifact-dir default should be empty string, got %q\", flag.DefValue)\n3033: \t}\n3034: \n3035: \t// Verify --keep-artifacts flag exists and accepts a boolean\n3036: \tif flag := runCmd.Flags().Lookup(\"keep-artifacts\"); flag == nil {\n3037: \t\tt.Fatal(\"--keep-artifacts flag not found\")\n3038: \t} else if flag.DefValue != \"false\" {\n3039: \t\tt.Errorf(\"--keep-artifacts default should be false, got %q\", flag.DefValue)\n3040: \t}\n3041: }\n3042: \n3043: func TestRun_ArtifactEnvVar(t *testing.T) {\n3044: \ttests := []struct {\n3045: \t\tname        string\n3046: \t\ttoml        string\n3047: \t\targs        func(artifactDir string) []string\n3048: \t\twantDirStat bool // true = the dir should exist after run\n3049: \t}{\n3050: \t\t{\n3051: \t\t\tname: \"--artifact-dir flag creates artifact directory\",\n3052: \t\t\ttoml: `name = \"artifact-env-agent\"\n3053: model = \"anthropic/claude-sonnet-4-20250514\"\n3054: `,\n3055: \t\t\targs: func(artifactDir string) []string {\n3056: \t\t\t\treturn []string{\"run\", \"artifact-env-agent\", \"--artifact-dir\", artifactDir}\n3057: \t\t\t},\n3058: \t\t\twantDirStat: true,\n3059: \t\t},\n3060: \t\t{\n3061: \t\t\tname: \"TOML artifacts.dir creates artifact directory\",\n3062: \t\t\ttoml: `name = \"artifact-env-agent\"\n3063: model = \"anthropic/claude-sonnet-4-20250514\"\n3064: \n3065: [artifacts]\n3066: enabled = true\n3067: dir = \"PLACEHOLDER\"\n3068: `,\n3069: \t\t\targs: func(_ string) []string {\n3070: \t\t\t\treturn []string{\"run\", \"artifact-env-agent\"}\n3071: \t\t\t},\n3072: \t\t\twantDirStat: true,\n3073: \t\t},\n3074: \t\t{\n3075: \t\t\tname: \"no artifacts config leaves artifact directory unset\",\n3076: \t\t\ttoml: `name = \"artifact-env-agent\"\n3077: model = \"anthropic/claude-sonnet-4-20250514\"\n3078: `,\n3079: \t\t\targs: func(_ string) []string {\n3080: \t\t\t\treturn []string{\"run\", \"artifact-env-agent\"}\n3081: \t\t\t},\n3082: \t\t\twantDirStat: false,\n3083: \t\t},\n3084: \t}\n3085: \n3086: \tfor _, tt := range tests {\n3087: \t\tt.Run(tt.name, func(t *testing.T) {\n3088: \t\t\tresetRunCmd(t)\n3089: \t\t\tserver := startMockAnthropicServer(t)\n3090: \t\t\tdefer server.Close()\n3091: \n3092: \t\t\tartifactDir := t.TempDir()\n3093: \n3094: \t\t\t// Substitute PLACEHOLDER in TOML with the real temp dir\n3095: \t\t\ttoml := strings.ReplaceAll(tt.toml, \"PLACEHOLDER\", artifactDir)\n3096: \n3097: \t\t\tsetupRunTestAgent(t, \"artifact-env-agent\", toml)\n3098: \t\t\tt.Setenv(\"ANTHROPIC_API_KEY\", \"test-key\")\n3099: \t\t\tt.Setenv(\"AXE_ANTHROPIC_BASE_URL\", server.URL)\n3100: \t\t\t_ = os.Unsetenv(\"AXE_ARTIFACT_DIR\")\n3101: \n3102: \t\t\tbuf := new(bytes.Buffer)\n3103: \t\t\terrBuf := new(bytes.Buffer)\n3104: \t\t\trootCmd.SetOut(buf)\n3105: \t\t\trootCmd.SetErr(errBuf)\n3106: \t\t\trootCmd.SetArgs(tt.args(artifactDir))\n3107: \n3108: \t\t\terr := rootCmd.Execute()\n3109: \t\t\tif err != nil {\n3110: \t\t\t\tt.Fatalf(\"unexpected error: %v\", err)\n3111: \t\t\t}\n3112: \n3113: \t\t\tif tt.wantDirStat {\n3114: \t\t\t\tif _, err := os.Stat(artifactDir); os.IsNotExist(err) {\n3115: \t\t\t\t\tt.Errorf(\"expected artifact directory %q to exist\", artifactDir)\n3116: \t\t\t\t}\n3117: \t\t\t}\n3118: \n3119: \t\t\t_ = os.Unsetenv(\"AXE_ARTIFACT_DIR\")\n3120: \t\t})\n3121: \t}\n3122: }\n3123: \n3124: func TestRun_ArtifactsJSON(t *testing.T) {\n\n(Showing lines 2990-3124 of 3412. Use offset=3125 to continue.)\n</content>",
+            "title": "cmd/run_test.go",
+            "metadata": {
+              "preview": "}\n\nfunc TestRun_DryRun_PromptFlag(t *testing.T) {\n\tresetRunCmd(t)\n\n\tsetupRunTestAgent(t, \"dryrun-prompt-agent\", `name = \"dryrun-prompt-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\n`)\n\n\tbuf := new(bytes.Buffer)\n\terrBuf := new(bytes.Buffer)\n\trootCmd.SetOut(buf)\n\trootCmd.SetErr(errBuf)\n\trootCmd.SetArgs([]string{\"run\", \"dryrun-prompt-agent\", \"--dry-run\", \"-p\", \"my prompt\"})\n\n\terr := rootCmd.Execute()\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n",
+              "truncated": true,
+              "loaded": []
+            },
+            "time": {
+              "start": 1774576713293,
+              "end": 1774576713302
+            }
+          },
+          "id": "REDACTED",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03b4c40016xZIDkwIo272q4"
+        },
+        {
+          "type": "step-finish",
+          "reason": "tool-calls",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "cost": 0.00774,
+          "tokens": {
+            "total": 17896,
+            "input": 1,
+            "output": 117,
+            "reasoning": 0,
+            "cache": {
+              "read": 17590,
+              "write": 188
+            }
+          },
+          "id": "prt_d2d03be5f001UEDp5YtiarMO1p",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03b4c40016xZIDkwIo272q4"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774576713493,
+          "completed": 1774576717442
+        },
+        "parentID": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.0155589,
+        "tokens": {
+          "total": 20037,
+          "input": 1,
+          "output": 156,
+          "reasoning": 0,
+          "cache": {
+            "read": 17778,
+            "write": 2102
+          }
+        },
+        "finish": "tool-calls",
+        "id": "msg_d2d03bf150014YCTB9Z4rolPi9",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "id": "prt_d2d03c7410018DGS5YudQdnorT",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03bf150014YCTB9Z4rolPi9"
+        },
+        {
+          "type": "text",
+          "text": "Now let me look at `startMockAnthropicServer` and `setupRunTestAgent` to understand their signatures:",
+          "time": {
+            "start": 1774576716363,
+            "end": 1774576716363
+          },
+          "id": "prt_d2d03c741002My22U6XHVnf7jb",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03bf150014YCTB9Z4rolPi9"
+        },
+        {
+          "type": "tool",
+          "callID": "toolu_01FZGGAaFzUNG6HMN85jQeSU",
+          "tool": "bash",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "grep -n \"func startMockAnthropicServer\\|func setupRunTestAgent\\|func resetRunCmd\" /Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go",
+              "description": "Find helper function signatures"
+            },
+            "output": "22:func resetRunCmd(t *testing.T) {\n40:func setupRunTestAgent(t *testing.T, name, toml string) string {\n55:func startMockAnthropicServer(t *testing.T) *httptest.Server {\n2013:func startMockAnthropicServerCapture(t *testing.T, capturedBody *string, mu *sync.Mutex, responseText string) *httptest.Server {\n",
+            "title": "Find helper function signatures",
+            "metadata": {
+              "output": "22:func resetRunCmd(t *testing.T) {\n40:func setupRunTestAgent(t *testing.T, name, toml string) string {\n55:func startMockAnthropicServer(t *testing.T) *httptest.Server {\n2013:func startMockAnthropicServerCapture(t *testing.T, capturedBody *string, mu *sync.Mutex, responseText string) *httptest.Server {\n",
+              "exit": 0,
+              "description": "Find helper function signatures",
+              "truncated": false
+            },
+            "time": {
+              "start": 1774576717213,
+              "end": 1774576717259
+            }
+          },
+          "id": "prt_d2d03ca4d0016P0dT7YdXSIHuj",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03bf150014YCTB9Z4rolPi9"
+        },
+        {
+          "type": "step-finish",
+          "reason": "tool-calls",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "cost": 0.0155589,
+          "tokens": {
+            "total": 20037,
+            "input": 1,
+            "output": 156,
+            "reasoning": 0,
+            "cache": {
+              "read": 17778,
+              "write": 2102
+            }
+          },
+          "id": "prt_d2d03cde1001D7Ig7EAmSIpeoK",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03bf150014YCTB9Z4rolPi9"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774576717443,
+          "completed": 1774576720131
+        },
+        "parentID": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.008742,
+        "tokens": {
+          "total": 20273,
+          "input": 1,
+          "output": 116,
+          "reasoning": 0,
+          "cache": {
+            "read": 19880,
+            "write": 276
+          }
+        },
+        "finish": "tool-calls",
+        "id": "msg_d2d03ce83001GL6haqpCP3Lqzm",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": [
+        {
+          "type": "step-start",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "id": "prt_d2d03d691001rd2VHneu7v1Z3h",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03ce83001GL6haqpCP3Lqzm"
+        },
+        {
+          "type": "tool",
+          "callID": "REDACTED",
+          "tool": "read",
+          "state": {
+            "status": "completed",
+            "input": {
+              "filePath": "/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go",
+              "offset": 1,
+              "limit": 100
+            },
+            "output": "<path>/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/run_test.go</path>\n<type>file</type>\n<content>1: package cmd\n2: \n3: import (\n4: \t\"bytes\"\n5: \t\"encoding/json\"\n6: \t\"errors\"\n7: \t\"fmt\"\n8: \t\"net/http\"\n9: \t\"net/http/httptest\"\n10: \t\"os\"\n11: \t\"path/filepath\"\n12: \t\"strings\"\n13: \t\"sync\"\n14: \t\"testing\"\n15: \t\"time\"\n16: \t\"unicode/utf8\"\n17: \n18: \t\"github.com/jrswab/axe/internal/testutil\"\n19: )\n20: \n21: // resetRunCmd resets all run command flags and stdin to their defaults between tests.\n22: func resetRunCmd(t *testing.T) {\n23: \tt.Helper()\n24: \t_ = runCmd.Flags().Set(\"skill\", \"\")\n25: \t_ = runCmd.Flags().Set(\"workdir\", \"\")\n26: \t_ = runCmd.Flags().Set(\"agents-dir\", \"\")\n27: \t_ = runCmd.Flags().Set(\"model\", \"\")\n28: \t_ = runCmd.Flags().Set(\"timeout\", \"120\")\n29: \t_ = runCmd.Flags().Set(\"dry-run\", \"false\")\n30: \t_ = runCmd.Flags().Set(\"verbose\", \"false\")\n31: \t_ = runCmd.Flags().Set(\"json\", \"false\")\n32: \t_ = runCmd.Flags().Set(\"max-tokens\", \"0\")\n33: \t_ = runCmd.Flags().Set(\"prompt\", \"\")\n34: \t_ = runCmd.Flags().Set(\"artifact-dir\", \"\")\n35: \t_ = runCmd.Flags().Set(\"keep-artifacts\", \"false\")\n36: \trootCmd.SetIn(os.Stdin)\n37: }\n38: \n39: // helper: create a temp XDG config dir with an agent TOML file.\n40: func setupRunTestAgent(t *testing.T, name, toml string) string {\n41: \tt.Helper()\n42: \ttmpDir := t.TempDir()\n43: \tt.Setenv(\"XDG_CONFIG_HOME\", tmpDir)\n44: \tagentsDir := filepath.Join(tmpDir, \"axe\", \"agents\")\n45: \tif err := os.MkdirAll(agentsDir, 0755); err != nil {\n46: \t\tt.Fatalf(\"failed to create agents dir: %v\", err)\n47: \t}\n48: \tif err := os.WriteFile(filepath.Join(agentsDir, name+\".toml\"), []byte(toml), 0644); err != nil {\n49: \t\tt.Fatalf(\"failed to write agent file: %v\", err)\n50: \t}\n51: \treturn tmpDir\n52: }\n53: \n54: // helper: start a mock Anthropic API server returning a successful response.\n55: func startMockAnthropicServer(t *testing.T) *httptest.Server {\n56: \tt.Helper()\n57: \treturn httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n58: \t\tw.Header().Set(\"Content-Type\", \"application/json\")\n59: \t\tw.WriteHeader(200)\n60: \t\t_, _ = w.Write([]byte(`{\n61: \t\t\t\"id\": \"msg_test\",\n62: \t\t\t\"type\": \"message\",\n63: \t\t\t\"role\": \"assistant\",\n64: \t\t\t\"content\": [{\"type\": \"text\", \"text\": \"Hello from mock\"}],\n65: \t\t\t\"model\": \"claude-sonnet-4-20250514\",\n66: \t\t\t\"stop_reason\": \"end_turn\",\n67: \t\t\t\"usage\": {\"input_tokens\": 10, \"output_tokens\": 5}\n68: \t\t}`))\n69: \t}))\n70: }\n71: \n72: // --- Phase 11a: Command Registration and Flags ---\n73: \n74: func TestRun_NoArgs(t *testing.T) {\n75: \tresetRunCmd(t)\n76: \tbuf := new(bytes.Buffer)\n77: \terrBuf := new(bytes.Buffer)\n78: \trootCmd.SetOut(buf)\n79: \trootCmd.SetErr(errBuf)\n80: \trootCmd.SetArgs([]string{\"run\"})\n81: \n82: \terr := rootCmd.Execute()\n83: \tif err == nil {\n84: \t\tt.Fatal(\"expected error for missing args, got nil\")\n85: \t}\n86: \n87: \t// Error should be about exact args, not \"unknown command\"\n88: \tif strings.Contains(err.Error(), \"unknown command\") {\n89: \t\tt.Errorf(\"run command not registered; got 'unknown command' error: %v\", err)\n90: \t}\n91: }\n92: \n93: // --- Phase 11b: Model Parsing and Provider Validation ---\n94: \n95: func TestRun_InvalidModelFormat(t *testing.T) {\n96: \tresetRunCmd(t)\n97: \tsetupRunTestAgent(t, \"badmodel\", `name = \"badmodel\"\n98: model = \"noprefix\"\n99: `)\n100: \n\n(Showing lines 1-100 of 3412. Use offset=101 to continue.)\n</content>",
+            "title": "cmd/run_test.go",
+            "metadata": {
+              "preview": "package cmd\n\nimport (\n\t\"bytes\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"sync\"\n\t\"testing\"\n\t\"time\"\n\t\"unicode/utf8\"\n\n\t\"github.com/jrswab/axe/internal/testutil\"\n)\n",
+              "truncated": true,
+              "loaded": []
+            },
+            "time": {
+              "start": 1774576719932,
+              "end": 1774576719941
+            }
+          },
+          "id": "prt_d2d03d692001lVJGL2tMSHLL9i",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03ce83001GL6haqpCP3Lqzm"
+        },
+        {
+          "type": "step-finish",
+          "reason": "tool-calls",
+          "snapshot": "c5da0cb90f5f324420c988b1f4ab78f7ee6e31bc",
+          "cost": 0.008742,
+          "tokens": {
+            "total": 20273,
+            "input": 1,
+            "output": 116,
+            "reasoning": 0,
+            "cache": {
+              "read": 19880,
+              "write": 276
+            }
+          },
+          "id": "prt_d2d03d850001kZ5szZMkkIw5Fr",
+          "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8",
+          "messageID": "msg_d2d03ce83001GL6haqpCP3Lqzm"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "assistant",
+        "time": {
+          "created": 1774576720132,
+          "completed": 1774577001634
+        },
+        "error": {
+          "name": "MessageAbortedError",
+          "data": {
+            "message": "The operation was aborted."
+          }
+        },
+        "parentID": "msg_d2d038ef2001zebe5QzYMgeRkO",
+        "modelID": "claude-sonnet-4-6",
+        "providerID": "anthropic",
+        "mode": "general",
+        "agent": "general",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "id": "msg_d2d03d904001vXdco7P11VKwq7",
+        "sessionID": "ses_2d2fc711cffekOVoIjdhrRErC8"
+      },
+      "parts": []
+    }
+  ]
+}
