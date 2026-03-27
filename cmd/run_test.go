@@ -3121,6 +3121,168 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 }
 
+func TestRun_ArtifactDirWorkdirResolution(t *testing.T) {
+	const agentName = "artifact-workdir-agent"
+	const baseToml = `name = "artifact-workdir-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`
+
+	t.Run("relative TOML artifacts.dir resolves against --workdir", func(t *testing.T) {
+		resetRunCmd(t)
+		server := startMockAnthropicServer(t)
+		defer server.Close()
+
+		tmpWorkdir := t.TempDir()
+		toml := baseToml + `[artifacts]
+enabled = true
+dir = "output"
+`
+		setupRunTestAgent(t, agentName, toml)
+		t.Setenv("ANTHROPIC_API_KEY", "test-key")
+		t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+		rootCmd.SetOut(new(bytes.Buffer))
+		rootCmd.SetErr(new(bytes.Buffer))
+		rootCmd.SetArgs([]string{"run", agentName, "--workdir", tmpWorkdir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		wantDir := filepath.Join(tmpWorkdir, "output")
+		if _, statErr := os.Stat(wantDir); os.IsNotExist(statErr) {
+			t.Errorf("expected artifact directory %q to exist", wantDir)
+		}
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+	})
+
+	t.Run("absolute TOML artifacts.dir unaffected by --workdir", func(t *testing.T) {
+		resetRunCmd(t)
+		server := startMockAnthropicServer(t)
+		defer server.Close()
+
+		absoluteDir := t.TempDir()
+		otherWorkdir := t.TempDir()
+		toml := baseToml + `[artifacts]
+enabled = true
+dir = "` + absoluteDir + `"
+`
+		setupRunTestAgent(t, agentName, toml)
+		t.Setenv("ANTHROPIC_API_KEY", "test-key")
+		t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+		rootCmd.SetOut(new(bytes.Buffer))
+		rootCmd.SetErr(new(bytes.Buffer))
+		rootCmd.SetArgs([]string{"run", agentName, "--workdir", otherWorkdir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if _, statErr := os.Stat(absoluteDir); os.IsNotExist(statErr) {
+			t.Errorf("expected artifact directory %q to exist", absoluteDir)
+		}
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+	})
+
+	t.Run("relative --artifact-dir flag resolves against --workdir", func(t *testing.T) {
+		resetRunCmd(t)
+		server := startMockAnthropicServer(t)
+		defer server.Close()
+
+		tmpWorkdir := t.TempDir()
+		setupRunTestAgent(t, agentName, baseToml)
+		t.Setenv("ANTHROPIC_API_KEY", "test-key")
+		t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+		rootCmd.SetOut(new(bytes.Buffer))
+		rootCmd.SetErr(new(bytes.Buffer))
+		rootCmd.SetArgs([]string{"run", agentName, "--artifact-dir", "output", "--workdir", tmpWorkdir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		wantDir := filepath.Join(tmpWorkdir, "output")
+		if _, statErr := os.Stat(wantDir); os.IsNotExist(statErr) {
+			t.Errorf("expected artifact directory %q to exist", wantDir)
+		}
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+	})
+
+	t.Run("absolute --artifact-dir flag unaffected by --workdir", func(t *testing.T) {
+		resetRunCmd(t)
+		server := startMockAnthropicServer(t)
+		defer server.Close()
+
+		absoluteDir := t.TempDir()
+		otherWorkdir := t.TempDir()
+		setupRunTestAgent(t, agentName, baseToml)
+		t.Setenv("ANTHROPIC_API_KEY", "test-key")
+		t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+		rootCmd.SetOut(new(bytes.Buffer))
+		rootCmd.SetErr(new(bytes.Buffer))
+		rootCmd.SetArgs([]string{"run", agentName, "--artifact-dir", absoluteDir, "--workdir", otherWorkdir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if _, statErr := os.Stat(absoluteDir); os.IsNotExist(statErr) {
+			t.Errorf("expected artifact directory %q to exist", absoluteDir)
+		}
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+	})
+
+	t.Run("relative TOML artifacts.dir with no --workdir resolves against CWD", func(t *testing.T) {
+		resetRunCmd(t)
+		server := startMockAnthropicServer(t)
+		defer server.Close()
+
+		tmpCwdDir := t.TempDir()
+		toml := baseToml + `[artifacts]
+enabled = true
+dir = "output"
+`
+		setupRunTestAgent(t, agentName, toml)
+		t.Setenv("ANTHROPIC_API_KEY", "test-key")
+		t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+		origDir, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("failed to get cwd: %v", err)
+		}
+		if err := os.Chdir(tmpCwdDir); err != nil {
+			t.Fatalf("failed to chdir: %v", err)
+		}
+		defer func() { _ = os.Chdir(origDir) }()
+
+		rootCmd.SetOut(new(bytes.Buffer))
+		rootCmd.SetErr(new(bytes.Buffer))
+		rootCmd.SetArgs([]string{"run", agentName})
+
+		if err := rootCmd.Execute(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		wantDir := filepath.Join(tmpCwdDir, "output")
+		if _, statErr := os.Stat(wantDir); os.IsNotExist(statErr) {
+			t.Errorf("expected artifact directory %q to exist", wantDir)
+		}
+		_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+	})
+}
+
 func TestRun_ArtifactsJSON(t *testing.T) {
 	tests := []struct {
 		name          string

@@ -173,11 +173,21 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	// 3. TOML artifacts.enabled = true with no dir → auto-generate
 	// 4. None → inactive
 	if flagArtifactDir != "" {
-		artifactDir = flagArtifactDir
+		expanded, expandErr := resolve.ExpandPath(flagArtifactDir)
+		if expandErr != nil {
+			return &ExitError{Code: 2, Err: fmt.Errorf("failed to resolve --artifact-dir: %w", expandErr)}
+		}
+		if !filepath.IsAbs(expanded) {
+			expanded = filepath.Join(workdir, expanded)
+		}
+		artifactDir = expanded
 	} else if cfg.Artifacts.Enabled && cfg.Artifacts.Dir != "" {
-		expanded, expandErr := resolve.Workdir("", cfg.Artifacts.Dir)
+		expanded, expandErr := resolve.ExpandPath(cfg.Artifacts.Dir)
 		if expandErr != nil {
 			return &ExitError{Code: 2, Err: fmt.Errorf("failed to resolve artifacts.dir: %w", expandErr)}
+		}
+		if !filepath.IsAbs(expanded) {
+			expanded = filepath.Join(workdir, expanded)
 		}
 		artifactDir = expanded
 	} else if cfg.Artifacts.Enabled {
