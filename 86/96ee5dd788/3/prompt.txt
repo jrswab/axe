@@ -1,0 +1,12 @@
+Run the following command in `/Users/jaronswab/go/src/github.com/jrswab/axe`:
+
+```
+make check-diff
+```
+
+Report:
+1. Whether it passed or failed
+2. If failed, the specific error output
+3. If there's no `check-diff` target in the Makefile, report that
+
+Do NOT modify any files.
