@@ -1,0 +1,4 @@
+name = "tool-edit-file"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: edit_file tool"
+tools = ["edit_file", "read_file"]

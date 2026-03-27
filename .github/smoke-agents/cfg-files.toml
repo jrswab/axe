@@ -1,0 +1,4 @@
+name = "cfg-files"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: files config section"
+files = [".github/smoke-agents/smoke-context.txt"]

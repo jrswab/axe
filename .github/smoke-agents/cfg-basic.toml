@@ -1,0 +1,3 @@
+name = "cfg-basic"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: basic config (name + model only)"

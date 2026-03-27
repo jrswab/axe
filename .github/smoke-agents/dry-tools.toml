@@ -1,0 +1,4 @@
+name = "dry-tools"
+model = "openai/gpt-4o"
+description = "Smoke test: dry-run with tools"
+tools = ["read_file", "list_directory"]

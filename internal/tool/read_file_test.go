@@ -512,3 +512,115 @@ func TestReadFile_NestedPath(t *testing.T) {
 		t.Errorf("Content:\ngot  %q\nwant %q", result.Content, want)
 	}
 }
+
+func TestReadFile_Artifact(t *testing.T) {
+	tests := []struct {
+		name           string
+		artifactArg    string
+		artifactDir    string
+		workdirFile    string
+		artifactFile   string
+		path           string
+		wantContent    string
+		wantError      bool
+		errorSubstring string
+	}{
+		{
+			name:         "artifact_true_reads_from_artifact_dir",
+			artifactArg:  "true",
+			artifactDir:  "artifact",
+			workdirFile:  "workdir content",
+			artifactFile: "artifact content",
+			path:         "test.txt",
+			wantContent:  "1: artifact content",
+		},
+		{
+			name:           "artifact_true_no_dir_configured_error",
+			artifactArg:    "true",
+			artifactDir:    "",
+			workdirFile:    "workdir content",
+			path:           "test.txt",
+			wantError:      true,
+			errorSubstring: "artifact directory not configured",
+		},
+		{
+			name:           "artifact_true_path_traversal_error",
+			artifactArg:    "true",
+			artifactDir:    "artifact",
+			artifactFile:   "secret content",
+			path:           "../escape",
+			wantError:      true,
+			errorSubstring: "path escapes artifact directory",
+		},
+		{
+			name:         "artifact_false_reads_from_workdir",
+			artifactArg:  "false",
+			artifactDir:  "artifact",
+			workdirFile:  "workdir content",
+			artifactFile: "artifact content",
+			path:         "test.txt",
+			wantContent:  "1: workdir content",
+		},
+		{
+			name:         "artifact_absent_reads_from_workdir",
+			artifactArg:  "",
+			artifactDir:  "artifact",
+			workdirFile:  "workdir content",
+			artifactFile: "artifact content",
+			path:         "test.txt",
+			wantContent:  "1: workdir content",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpdir := t.TempDir()
+			artifactDir := ""
+
+			// Create workdir file
+			if err := os.WriteFile(filepath.Join(tmpdir, "test.txt"), []byte(tt.workdirFile), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			// Create artifact dir and file if specified
+			if tt.artifactDir != "" {
+				artifactDir = filepath.Join(tmpdir, tt.artifactDir)
+				if err := os.MkdirAll(artifactDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(artifactDir, "test.txt"), []byte(tt.artifactFile), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			entry := readFileEntry()
+			args := map[string]string{"path": tt.path}
+			if tt.artifactArg != "" {
+				args["artifact"] = tt.artifactArg
+			}
+
+			result := entry.Execute(context.Background(), provider.ToolCall{
+				ID:        "rf-artifact",
+				Name:      "read_file",
+				Arguments: args,
+			}, ExecContext{Workdir: tmpdir, ArtifactDir: artifactDir})
+
+			if tt.wantError {
+				if !result.IsError {
+					t.Fatalf("expected error, got success with content: %s", result.Content)
+				}
+				if !strings.Contains(result.Content, tt.errorSubstring) {
+					t.Errorf("Content %q should contain %q", result.Content, tt.errorSubstring)
+				}
+				return
+			}
+
+			if result.IsError {
+				t.Fatalf("unexpected error: %s", result.Content)
+			}
+			if result.Content != tt.wantContent {
+				t.Errorf("Content:\ngot  %q\nwant %q", result.Content, tt.wantContent)
+			}
+		})
+	}
+}

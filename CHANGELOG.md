@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.6.0] - 2026-03-24
+
+### Added
+- Artifact management system (#47)
+- Inline prompt flag for `axe run` (#46)
+- mdBook documentation site and deploy workflow (#50)
+
+### Changed
+- Expanded release skill with version bump, README, and GHCR steps
+
 ## [1.5.0] - 2026-03-20
 
 ### Added
@@ -81,6 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - staticcheck/errcheck lint issues
 - Duplicate error silencing, glob validation, and nil ExitError guard
 
+[unreleased]: https://github.com/jrswab/axe/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/jrswab/axe/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/jrswab/axe/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/jrswab/axe/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/jrswab/axe/compare/v1.2.0...v1.3.0

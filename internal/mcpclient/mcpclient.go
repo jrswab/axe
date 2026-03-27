@@ -40,7 +40,7 @@ func Connect(ctx context.Context, cfg agent.MCPServerConfig) (*Client, error) {
 		return nil, fmt.Errorf("unsupported MCP transport %q", cfg.Transport)
 	}
 
-	client := mcp.NewClient(&mcp.Implementation{Name: "axe", Version: "1.5.0"}, nil)
+	client := mcp.NewClient(&mcp.Implementation{Name: "axe", Version: "1.6.0"}, nil)
 	session, err := client.Connect(ctx, transport, nil)
 	if err != nil {
 		return nil, fmt.Errorf("connect MCP server %q: %w", cfg.Name, err)

@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jrswab/axe/internal/artifact"
 	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
@@ -994,5 +995,70 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 	if !strings.Contains(result3.Content, "failed to load agent") {
 		t.Errorf("Content = %q, want to contain 'failed to load agent'", result3.Content)
+	}
+}
+
+// TestDispatchToolCall_PassesArtifactContext verifies that dispatchToolCall passes
+// ArtifactDir and ArtifactTracker from ExecuteOptions to ExecContext.
+func TestDispatchToolCall_PassesArtifactContext(t *testing.T) {
+	// Register a test tool that captures the ExecContext
+	var capturedEC ExecContext
+	registry := NewRegistry()
+	registry.Register("test_artifact_capture", ToolEntry{
+		Definition: func() provider.Tool {
+			return provider.Tool{
+				Name:        "test_artifact_capture",
+				Description: "Captures ExecContext for testing",
+				Parameters:  map[string]provider.ToolParameter{},
+			}
+		},
+		Execute: func(ctx context.Context, call provider.ToolCall, ec ExecContext) provider.ToolResult {
+			capturedEC = ec
+			return provider.ToolResult{CallID: call.ID, Content: "captured"}
+		},
+	})
+
+	// Create artifact tracker and directory for testing
+	artifactDir := "/tmp/test-artifacts"
+	tracker := &artifact.Tracker{}
+
+	// Build ExecuteOptions with artifact fields
+	opts := ExecuteOptions{
+		Verbose:         true,
+		Stderr:          os.Stderr,
+		AllowedHosts:    []string{"example.com"},
+		ArtifactDir:     artifactDir,
+		ArtifactTracker: tracker,
+	}
+
+	// Create a tool call
+	tc := provider.ToolCall{
+		ID:        "test-artifact-1",
+		Name:      "test_artifact_capture",
+		Arguments: map[string]string{},
+	}
+
+	// Call dispatchToolCall (the function we're testing)
+	result := dispatchToolCall(context.Background(), tc, registry, opts, "/tmp/workdir")
+
+	// Verify result is not an error
+	if result.IsError {
+		t.Fatalf("expected no error, got: %s", result.Content)
+	}
+
+	// Verify artifact fields were passed through to ExecContext
+	if capturedEC.ArtifactDir != artifactDir {
+		t.Errorf("ArtifactDir = %q, want %q", capturedEC.ArtifactDir, artifactDir)
+	}
+	if capturedEC.ArtifactTracker != tracker {
+		t.Error("ArtifactTracker not passed through to ExecContext")
+	}
+
+	// Verify other fields are also set correctly
+	if capturedEC.Workdir != "/tmp/workdir" {
+		t.Errorf("Workdir = %q, want %q", capturedEC.Workdir, "/tmp/workdir")
+	}
+	if !capturedEC.Verbose {
+		t.Error("Verbose = false, want true")
 	}
 }

@@ -1,0 +1,4 @@
+name = "tool-run-cmd"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: run_command tool"
+tools = ["run_command"]

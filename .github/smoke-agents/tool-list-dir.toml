@@ -1,0 +1,4 @@
+name = "tool-list-dir"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: list_directory tool"
+tools = ["list_directory"]

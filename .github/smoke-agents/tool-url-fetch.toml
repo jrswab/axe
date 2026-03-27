@@ -1,0 +1,4 @@
+name = "tool-url-fetch"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: url_fetch tool"
+tools = ["url_fetch"]

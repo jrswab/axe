@@ -1,0 +1,9 @@
+name = "cfg-subagents"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: sub_agents config section"
+sub_agents = ["cfg-sub-child"]
+
+[sub_agents_config]
+max_depth = 2
+parallel = true
+timeout = 60

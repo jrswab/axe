@@ -1,0 +1,3 @@
+name = "cfg-skill"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: skill config section"

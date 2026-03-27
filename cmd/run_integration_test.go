@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -2169,5 +2170,143 @@ allowed_hosts = ["api.example.com"]
 	// Should be blocked by allowlist check (raw IP doesn't match hostname "api.example.com")
 	if !strings.Contains(body, "not in allowed_hosts") {
 		t.Errorf("expected 'not in allowed_hosts' error for raw IP, got:\n%s", body)
+	}
+}
+
+// --- Phase 19: Artifact Management Tests ---
+
+func TestIntegration_Artifacts_WriteReadRoundTrip(t *testing.T) {
+	resetRunCmd(t)
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Writing artifact.", []testutil.MockToolCall{
+			{ID: "tc_w1", Name: "write_file", Input: map[string]string{"path": "report.md", "content": "artifact content", "artifact": "true"}},
+		}),
+		testutil.AnthropicToolUseResponse("Reading artifact.", []testutil.MockToolCall{
+			{ID: "tc_r1", Name: "read_file", Input: map[string]string{"path": "report.md", "artifact": "true"}},
+		}),
+		testutil.AnthropicResponse("Round-trip complete."),
+	})
+
+	artifactDir := t.TempDir()
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "artifact-roundtrip", fmt.Sprintf(`name = "artifact-roundtrip"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["write_file", "read_file"]
+[artifacts]
+enabled = true
+dir = %q
+`, artifactDir))
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "artifact-roundtrip", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+
+	var result map[string]interface{}
+	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+		t.Fatalf("expected valid JSON output, got parse error: %v\nraw: %q", jsonErr, buf.String())
+	}
+
+	// Check "artifacts" key exists
+	artifactsRaw, ok := result["artifacts"]
+	if !ok {
+		t.Fatalf("expected JSON output to contain 'artifacts' key")
+	}
+
+	artifacts, ok := artifactsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected artifacts to be array, got %T", artifactsRaw)
+	}
+
+	if len(artifacts) < 1 {
+		t.Errorf("expected at least 1 artifact entry, got %d", len(artifacts))
+	}
+
+	// Check artifact entry has correct path
+	entry, ok := artifacts[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected artifact[0] to be object, got %T", artifacts[0])
+	}
+
+	if path, ok := entry["path"].(string); !ok || path != "report.md" {
+		t.Errorf("expected artifact path 'report.md', got %v", entry["path"])
+	}
+
+	// Second LLM request body should contain "wrote" and "(artifact)"
+	body1 := mock.Requests[1].Body
+	if !strings.Contains(body1, "wrote") || !strings.Contains(body1, "(artifact)") {
+		t.Errorf("expected second request body to contain 'wrote' and '(artifact)', got: %s", body1)
+	}
+
+	// Third LLM request body should contain "artifact content"
+	body2 := mock.Requests[2].Body
+	if !strings.Contains(body2, "artifact content") {
+		t.Errorf("expected third request body to contain 'artifact content', got: %s", body2)
+	}
+
+	// Verify the artifact file was actually written to disk
+	artifactFile := filepath.Join(artifactDir, "report.md")
+	data, readErr := os.ReadFile(artifactFile)
+	if readErr != nil {
+		t.Fatalf("expected artifact file %q to exist on disk, got error: %v", artifactFile, readErr)
+	}
+	if !strings.Contains(string(data), "artifact content") {
+		t.Errorf("expected artifact file content to contain %q, got %q", "artifact content", string(data))
+	}
+}
+
+func TestIntegration_Artifacts_InactiveSystemToolError(t *testing.T) {
+	resetRunCmd(t)
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Trying artifact write.", []testutil.MockToolCall{
+			{ID: "tc_err1", Name: "write_file", Input: map[string]string{"path": "test.md", "content": "hello", "artifact": "true"}},
+		}),
+		testutil.AnthropicResponse("Got the error, continuing."),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "inactive-artifact", `name = "inactive-artifact"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["write_file"]
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	// Clear artifact-related env vars
+	t.Setenv("AXE_ARTIFACT_DIR", "")
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "inactive-artifact"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+
+	// Output should contain the final response
+	output := buf.String()
+	if !strings.Contains(output, "Got the error, continuing.") {
+		t.Errorf("expected output to contain 'Got the error, continuing.', got: %s", output)
+	}
+
+	// Second LLM request body should contain the error message
+	body1 := mock.Requests[1].Body
+	if !strings.Contains(body1, "artifact directory not configured for this agent") {
+		t.Errorf("expected second request body to contain 'artifact directory not configured for this agent', got: %s", body1)
 	}
 }

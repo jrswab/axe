@@ -1,0 +1,4 @@
+name = "tool-read-file"
+model = "opencode/minimax-m2.5"
+description = "Smoke test: read_file tool"
+tools = ["read_file"]

@@ -23,6 +23,7 @@ func resetRunCmd(t *testing.T) {
 	t.Helper()
 	_ = runCmd.Flags().Set("skill", "")
 	_ = runCmd.Flags().Set("workdir", "")
+	_ = runCmd.Flags().Set("agents-dir", "")
 	_ = runCmd.Flags().Set("model", "")
 	_ = runCmd.Flags().Set("timeout", "120")
 	_ = runCmd.Flags().Set("dry-run", "false")
@@ -30,6 +31,8 @@ func resetRunCmd(t *testing.T) {
 	_ = runCmd.Flags().Set("json", "false")
 	_ = runCmd.Flags().Set("max-tokens", "0")
 	_ = runCmd.Flags().Set("prompt", "")
+	_ = runCmd.Flags().Set("artifact-dir", "")
+	_ = runCmd.Flags().Set("keep-artifacts", "false")
 	rootCmd.SetIn(os.Stdin)
 }
 
@@ -3017,4 +3020,393 @@ model = "anthropic/claude-sonnet-4-20250514"
 	if strings.Contains(output, "--- Stdin ---") {
 		t.Errorf("expected output NOT to contain '--- Stdin ---', got:\n%s", output)
 	}
+}
+
+// --- Artifact Lifecycle Tests ---
+
+func TestRun_ArtifactFlagsExist(t *testing.T) {
+	// Verify --artifact-dir flag exists and accepts a string
+	if flag := runCmd.Flags().Lookup("artifact-dir"); flag == nil {
+		t.Fatal("--artifact-dir flag not found")
+	} else if flag.DefValue != "" {
+		t.Errorf("--artifact-dir default should be empty string, got %q", flag.DefValue)
+	}
+
+	// Verify --keep-artifacts flag exists and accepts a boolean
+	if flag := runCmd.Flags().Lookup("keep-artifacts"); flag == nil {
+		t.Fatal("--keep-artifacts flag not found")
+	} else if flag.DefValue != "false" {
+		t.Errorf("--keep-artifacts default should be false, got %q", flag.DefValue)
+	}
+}
+
+func TestRun_ArtifactEnvVar(t *testing.T) {
+	tests := []struct {
+		name        string
+		toml        string
+		args        func(artifactDir string) []string
+		wantDirStat bool // true = the dir should exist after run
+	}{
+		{
+			name: "--artifact-dir flag creates artifact directory",
+			toml: `name = "artifact-env-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+			args: func(artifactDir string) []string {
+				return []string{"run", "artifact-env-agent", "--artifact-dir", artifactDir}
+			},
+			wantDirStat: true,
+		},
+		{
+			name: "TOML artifacts.dir creates artifact directory",
+			toml: `name = "artifact-env-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[artifacts]
+enabled = true
+dir = "PLACEHOLDER"
+`,
+			args: func(_ string) []string {
+				return []string{"run", "artifact-env-agent"}
+			},
+			wantDirStat: true,
+		},
+		{
+			name: "no artifacts config leaves artifact directory unset",
+			toml: `name = "artifact-env-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+			args: func(_ string) []string {
+				return []string{"run", "artifact-env-agent"}
+			},
+			wantDirStat: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetRunCmd(t)
+			server := startMockAnthropicServer(t)
+			defer server.Close()
+
+			artifactDir := t.TempDir()
+
+			// Substitute PLACEHOLDER in TOML with the real temp dir
+			toml := strings.ReplaceAll(tt.toml, "PLACEHOLDER", artifactDir)
+
+			setupRunTestAgent(t, "artifact-env-agent", toml)
+			t.Setenv("ANTHROPIC_API_KEY", "test-key")
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+			_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+			buf := new(bytes.Buffer)
+			errBuf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(errBuf)
+			rootCmd.SetArgs(tt.args(artifactDir))
+
+			err := rootCmd.Execute()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.wantDirStat {
+				if _, err := os.Stat(artifactDir); os.IsNotExist(err) {
+					t.Errorf("expected artifact directory %q to exist", artifactDir)
+				}
+			}
+
+			_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+		})
+	}
+}
+
+func TestRun_ArtifactsJSON(t *testing.T) {
+	tests := []struct {
+		name          string
+		toml          string
+		responses     func(artifactDir string) []testutil.MockLLMResponse
+		args          func(artifactDir string) []string
+		wantArtifacts bool // true = "artifacts" key must be present with entries
+	}{
+		{
+			name: "artifacts array present when system active and file written",
+			toml: `name = "json-artifact-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["write_file"]
+
+[artifacts]
+enabled = true
+dir = "PLACEHOLDER"
+`,
+			responses: func(_ string) []testutil.MockLLMResponse {
+				return []testutil.MockLLMResponse{
+					testutil.AnthropicToolUseResponse("Writing artifact.", []testutil.MockToolCall{
+						{ID: "tc_art1", Name: "write_file", Input: map[string]string{
+							"path":     "report.md",
+							"content":  "hello artifact",
+							"artifact": "true",
+						}},
+					}),
+					testutil.AnthropicResponse("Done writing artifact."),
+				}
+			},
+			args: func(_ string) []string {
+				return []string{"run", "json-artifact-agent", "--json"}
+			},
+			wantArtifacts: true,
+		},
+		{
+			name: "artifacts key absent when system inactive",
+			toml: `name = "json-artifact-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+			responses: func(_ string) []testutil.MockLLMResponse {
+				return []testutil.MockLLMResponse{
+					testutil.AnthropicResponse("Simple response without artifacts."),
+				}
+			},
+			args: func(_ string) []string {
+				return []string{"run", "json-artifact-agent", "--json"}
+			},
+			wantArtifacts: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetRunCmd(t)
+
+			artifactDir := t.TempDir()
+			toml := strings.ReplaceAll(tt.toml, "PLACEHOLDER", artifactDir)
+
+			server := testutil.NewMockLLMServer(t, tt.responses(artifactDir))
+
+			tmpDir := setupRunTestAgent(t, "json-artifact-agent", toml)
+			t.Setenv("XDG_CONFIG_HOME", tmpDir)
+			t.Setenv("ANTHROPIC_API_KEY", "test-key")
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+			buf := new(bytes.Buffer)
+			errBuf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(errBuf)
+			rootCmd.SetArgs(tt.args(artifactDir))
+
+			err := rootCmd.Execute()
+			if err != nil {
+				t.Fatalf("unexpected error: %v\nstderr: %s", err, errBuf.String())
+			}
+
+			var result map[string]interface{}
+			if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+				t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+			}
+
+			if tt.wantArtifacts {
+				artifactsRaw, ok := result["artifacts"]
+				if !ok {
+					t.Fatalf("expected 'artifacts' key in JSON output, got keys: %v", mapKeys(result))
+				}
+				artifacts, ok := artifactsRaw.([]interface{})
+				if !ok {
+					t.Fatalf("expected 'artifacts' to be an array, got %T", artifactsRaw)
+				}
+				if len(artifacts) == 0 {
+					t.Fatal("expected 'artifacts' array to have at least one entry")
+				}
+				first, ok := artifacts[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected artifact entry to be an object, got %T", artifacts[0])
+				}
+				for _, key := range []string{"path", "agent", "size"} {
+					if _, ok := first[key]; !ok {
+						t.Errorf("expected artifact entry to have %q key", key)
+					}
+				}
+			} else {
+				if _, ok := result["artifacts"]; ok {
+					t.Error("expected 'artifacts' key to be absent when system inactive, but it was present")
+				}
+			}
+
+			_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+		})
+	}
+}
+
+// helper to get keys from a map
+func mapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func TestRun_AutoGeneratedArtifactsCleanedUp(t *testing.T) {
+	resetRunCmd(t)
+
+	// Create a tool that will record artifact dir
+	var recordedArtifactDir string
+	var mu sync.Mutex
+
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		callCount++
+
+		// Capture the AXE_ARTIFACT_DIR from environment during the call
+		mu.Lock()
+		if dir := os.Getenv("AXE_ARTIFACT_DIR"); dir != "" && recordedArtifactDir == "" {
+			recordedArtifactDir = dir
+		}
+		mu.Unlock()
+
+		if callCount == 1 {
+			_, _ = w.Write([]byte(`{
+				"id": "msg_1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_1", "name": "list_directory", "input": {"path": "."}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			_, _ = w.Write([]byte(`{
+				"id": "msg_2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Done"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 10, "output_tokens": 5}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "auto-artifact-agent", `name = "auto-artifact-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["list_directory"]
+
+[artifacts]
+enabled = true
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	// Clear any existing artifact dir env var
+	_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "auto-artifact-agent"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify artifact directory was cleaned up (auto-generated dirs are removed)
+	mu.Lock()
+	dir := recordedArtifactDir
+	mu.Unlock()
+
+	if dir == "" {
+		t.Fatal("AXE_ARTIFACT_DIR was not set during the run")
+	}
+
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Errorf("expected artifact directory %q to be cleaned up, but it still exists", dir)
+	}
+
+	// Clean up env var
+	_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+}
+
+func TestRun_KeepArtifactsPreservesDirectory(t *testing.T) {
+	resetRunCmd(t)
+
+	// Create a tool that will record artifact dir
+	var recordedArtifactDir string
+	var mu sync.Mutex
+
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		callCount++
+
+		// Capture the AXE_ARTIFACT_DIR from environment during the call
+		mu.Lock()
+		if dir := os.Getenv("AXE_ARTIFACT_DIR"); dir != "" && recordedArtifactDir == "" {
+			recordedArtifactDir = dir
+		}
+		mu.Unlock()
+
+		if callCount == 1 {
+			_, _ = w.Write([]byte(`{
+				"id": "msg_1", "type": "message", "role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "toolu_1", "name": "list_directory", "input": {"path": "."}}
+				],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			_, _ = w.Write([]byte(`{
+				"id": "msg_2", "type": "message", "role": "assistant",
+				"content": [{"type": "text", "text": "Done"}],
+				"model": "claude-sonnet-4-20250514", "stop_reason": "end_turn",
+				"usage": {"input_tokens": 10, "output_tokens": 5}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "keep-artifact-agent", `name = "keep-artifact-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["list_directory"]
+
+[artifacts]
+enabled = true
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	// Clear any existing artifact dir env var
+	_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "keep-artifact-agent", "--keep-artifacts"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Get the captured artifact directory
+	mu.Lock()
+	dir := recordedArtifactDir
+	mu.Unlock()
+
+	if dir == "" {
+		t.Fatal("AXE_ARTIFACT_DIR was not set during the run")
+	}
+
+	// Verify the artifact directory still exists (preserved due to --keep-artifacts)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		t.Errorf("expected artifact directory %q to be preserved, but it was removed", dir)
+	}
+
+	// Verify stderr contains the preservation message
+	stderr := errBuf.String()
+	if !strings.Contains(stderr, "artifacts preserved:") {
+		t.Errorf("expected stderr to contain 'artifacts preserved:', got: %q", stderr)
+	}
+
+	// Clean up env var
+	_ = os.Unsetenv("AXE_ARTIFACT_DIR")
 }

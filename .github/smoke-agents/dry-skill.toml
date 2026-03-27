@@ -1,0 +1,3 @@
+name = "dry-skill"
+model = "openai/gpt-4o"
+description = "Smoke test: dry-run with skill"

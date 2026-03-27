@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jrswab/axe/internal/agent"
+	"github.com/jrswab/axe/internal/artifact"
 	"github.com/jrswab/axe/internal/budget"
 	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/mcpclient"
@@ -26,19 +27,21 @@ const maxConversationTurns = 50
 
 // ExecuteOptions holds configuration for executing a call_agent tool call.
 type ExecuteOptions struct {
-	AllowedAgents []string
-	ParentModel   string
-	Depth         int
-	MaxDepth      int
-	Timeout       int
-	GlobalConfig  *config.GlobalConfig
-	MCPRouter     *mcpclient.Router
-	Verbose       bool
-	Stderr        io.Writer
-	BudgetTracker *budget.BudgetTracker
-	AgentsDir     string // value of --agents-dir flag (may be empty)
-	AgentsBase    string // parent agent's resolved workdir (for auto-discovery)
-	AllowedHosts  []string
+	AllowedAgents   []string
+	ParentModel     string
+	Depth           int
+	MaxDepth        int
+	Timeout         int
+	GlobalConfig    *config.GlobalConfig
+	MCPRouter       *mcpclient.Router
+	Verbose         bool
+	Stderr          io.Writer
+	BudgetTracker   *budget.BudgetTracker
+	AgentsDir       string // value of --agents-dir flag (may be empty)
+	AgentsBase      string // parent agent's resolved workdir (for auto-discovery)
+	AllowedHosts    []string
+	ArtifactDir     string
+	ArtifactTracker *artifact.Tracker
 }
 
 // CallAgentTool returns the call_agent tool definition for LLM tool calling.
@@ -450,7 +453,14 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *Regis
 		return result
 	}
 
-	execCtx := ExecContext{Workdir: toolWorkdir, Stderr: opts.Stderr, Verbose: opts.Verbose, AllowedHosts: opts.AllowedHosts}
+	execCtx := ExecContext{
+		Workdir:         toolWorkdir,
+		Stderr:          opts.Stderr,
+		Verbose:         opts.Verbose,
+		AllowedHosts:    opts.AllowedHosts,
+		ArtifactDir:     opts.ArtifactDir,
+		ArtifactTracker: opts.ArtifactTracker,
+	}
 	result, dispatchErr := registry.Dispatch(ctx, tc, execCtx)
 	if dispatchErr != nil {
 		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}

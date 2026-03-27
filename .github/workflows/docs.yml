@@ -1,0 +1,42 @@
+name: Deploy Docs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install mdBook
+        run: |
+          MDBOOK_VERSION="0.4.40"
+          curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+            | tar -xz -C /usr/local/bin
+
+      - name: Build docs
+        run: mdbook build docs/
+
+      - name: Deploy via rsync
+        env:
+          SSH_KEY: ${{ secrets.DOCS_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DOCS_SSH_HOST }}
+          SSH_USER: ${{ secrets.DOCS_SSH_USER }}
+          REMOTE_PATH: ${{ secrets.DOCS_REMOTE_PATH }}
+        run: |
+          # Write the private key
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Trust the host
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+          # Sync — delete files on remote that no longer exist locally
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            docs/book/ \
+            "$SSH_USER@$SSH_HOST:$REMOTE_PATH/"

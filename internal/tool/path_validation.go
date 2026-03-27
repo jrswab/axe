@@ -54,3 +54,9 @@ func validatePath(workdir, relPath string) (string, error) {
 
 	return evalResolved, nil
 }
+
+// rewriteArtifactError rewrites "workdir" to "artifact directory" in error
+// messages returned from validatePath when operating in artifact mode.
+func rewriteArtifactError(msg string) string {
+	return strings.ReplaceAll(msg, "workdir", "artifact directory")
+}

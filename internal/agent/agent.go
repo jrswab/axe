@@ -49,6 +49,12 @@ type BudgetConfig struct {
 	MaxTokens int `toml:"max_tokens"`
 }
 
+// ArtifactsConfig holds artifact sub-configuration for an agent.
+type ArtifactsConfig struct {
+	Enabled bool   `toml:"enabled"`
+	Dir     string `toml:"dir"`
+}
+
 // SubAgentsConfig holds sub-agent execution configuration for an agent.
 type SubAgentsConfig struct {
 	MaxDepth int   `toml:"max_depth"`
@@ -82,6 +88,7 @@ type AgentConfig struct {
 	Params        ParamsConfig      `toml:"params"`
 	Retry         RetryConfig       `toml:"retry"`
 	Budget        BudgetConfig      `toml:"budget"`
+	Artifacts     ArtifactsConfig   `toml:"artifacts"`
 }
 
 // Validate checks that required fields are present in the agent configuration.
@@ -161,6 +168,13 @@ func Validate(cfg *AgentConfig) error {
 
 	if cfg.Budget.MaxTokens < 0 {
 		return &ValidationError{msg: "budget.max_tokens must be non-negative"}
+	}
+
+	if cfg.Artifacts.Dir != "" && !cfg.Artifacts.Enabled {
+		return &ValidationError{msg: "artifacts.dir is set but artifacts.enabled is false"}
+	}
+	if strings.Contains(cfg.Artifacts.Dir, "..") {
+		return &ValidationError{msg: "artifacts.dir must not contain path traversal sequences"}
 	}
 
 	return nil
@@ -356,6 +370,10 @@ model = "provider/model-name"
 
 # [budget]
 # max_tokens = 0
+
+# [artifacts]
+# enabled = false
+# dir = ""
 `
 	return tmpl, nil
 }
