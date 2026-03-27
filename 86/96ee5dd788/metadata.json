@@ -17,6 +17,13 @@
       "context": "/86/96ee5dd788/0/context.md",
       "content_hash": "/86/96ee5dd788/0/content_hash.txt",
       "prompt": "/86/96ee5dd788/0/prompt.txt"
+    },
+    {
+      "metadata": "/86/96ee5dd788/1/metadata.json",
+      "transcript": "/86/96ee5dd788/1/full.jsonl",
+      "context": "",
+      "content_hash": "/86/96ee5dd788/1/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
