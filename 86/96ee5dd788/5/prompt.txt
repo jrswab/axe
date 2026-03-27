@@ -1,0 +1,21 @@
+## Task: Code Review of Current Changes
+
+Working directory: `/Users/jaronswab/go/src/github.com/jrswab/axe`
+
+### Steps
+
+1. Run `git diff HEAD` to get the current changes.
+2. Do a full code review on the diff:
+   - Evaluate whether each change makes sense in the broader system.
+   - Confirm the code does what it's intended to do, especially for user-facing or critical paths.
+   - Prioritize clear variable and function names, simple logic, and minimal complexity.
+   - Ensure tests are meaningful, cover edge cases, and fail when the code breaks. Tests should be as maintainable as production code.
+   - Avoid nitpicks that block progress unless they are critical. Use "nit" labels for minor style issues and mark non-blocking feedback clearly.
+   - Check for: bugs, security issues, code drift, performance bottlenecks, poor maintainability.
+3. Return a markdown list where each item includes:
+   - A prompt for an LLM coding agent to fix the code. This prompt MUST be specific and only address the fix needed.
+   - Mention the file name prepended with `@` in the prompt.
+
+If there are no issues, return "No issues found."
+
+Do NOT modify any files. This is a read-only review task.
