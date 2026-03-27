@@ -1,0 +1,42 @@
+Update the file CHANGELOG.md for the v1.6.1 release. Today's date is 2026-03-26.
+
+The current file starts like this:
+
+```
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [1.6.0] - 2026-03-24
+...
+```
+
+And at the bottom has reference links starting with:
+```
+[unreleased]: https://github.com/jrswab/axe/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/jrswab/axe/compare/v1.5.0...v1.6.0
+```
+
+Make these changes:
+
+1. **Add the new release section** between `## [Unreleased]` and `## [1.6.0]`. Insert:
+
+```
+## [1.6.1] - 2026-03-26
+
+### Fixed
+- Resolve relative artifact dirs against agent workdir, not process CWD
+```
+
+Make sure there's a blank line before and after this new section.
+
+2. **Update the reference links** at the bottom:
+   - Change `[unreleased]` to compare against v1.6.1: `[unreleased]: https://github.com/jrswab/axe/compare/v1.6.1...HEAD`
+   - Add a new link for 1.6.1 right after the unreleased link: `[1.6.1]: https://github.com/jrswab/axe/compare/v1.6.0...v1.6.1`
+
+Do NOT change anything else in the file. Return the first 20 lines and last 10 lines of the updated file so I can verify.
