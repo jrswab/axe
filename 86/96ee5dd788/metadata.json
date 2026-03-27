@@ -3,7 +3,7 @@
   "checkpoint_id": "8696ee5dd788",
   "strategy": "manual-commit",
   "branch": "ISS-56/relative-artifact-dirs",
-  "checkpoints_count": 3,
+  "checkpoints_count": 4,
   "files_touched": [
     "cmd/run.go",
     "cmd/run_test.go",
@@ -73,13 +73,20 @@
       "context": "",
       "content_hash": "/86/96ee5dd788/8/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/86/96ee5dd788/9/metadata.json",
+      "transcript": "/86/96ee5dd788/9/full.jsonl",
+      "context": "/86/96ee5dd788/9/context.md",
+      "content_hash": "/86/96ee5dd788/9/content_hash.txt",
+      "prompt": "/86/96ee5dd788/9/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 18,
-    "cache_creation_tokens": 13303,
-    "cache_read_tokens": 186381,
-    "output_tokens": 2917,
-    "api_call_count": 13
+    "input_tokens": 22,
+    "cache_creation_tokens": 23224,
+    "cache_read_tokens": 193024,
+    "output_tokens": 4905,
+    "api_call_count": 15
   }
 }
