@@ -1,0 +1,34 @@
+Working directory: `/Users/jaronswab/go/src/github.com/jrswab/axe`
+
+Stage and commit all current changes with this exact commit message (use `git commit -m` with the message below). Stage all changed files first with `git add -A`.
+
+Commit message (pass as a single string to `git commit -m`):
+
+```
+fix: resolve relative artifact dirs against agent workdir, not process CWD
+
+Relative artifacts.dir paths (both from TOML config and --artifact-dir
+flag) were resolved by the OS using the process's current working directory
+instead of the agent's resolved --workdir. This caused artifact output to
+land in the wrong location whenever a caller passed --workdir or set
+workdir in the agent TOML.
+
+The fix expands tilde and env vars with resolve.ExpandPath, then joins any
+remaining relative path against the resolved workdir using
+filepath.Join(workdir, expanded). Absolute paths pass through unchanged.
+The same logic is applied consistently to both the --artifact-dir flag and
+the TOML artifacts.dir field.
+
+resolve.ExpandPath is now used directly instead of the semantically
+misleading resolve.Workdir("", ...) wrapper, making the intent explicit.
+
+Five test cases are added in TestRun_ArtifactDirWorkdirResolution covering:
+relative TOML path joined to --workdir, absolute TOML path unaffected by
+--workdir, relative --artifact-dir flag joined to --workdir, absolute
+--artifact-dir flag unaffected by --workdir, and relative TOML path
+resolved against CWD when no --workdir is given.
+
+Closes #56
+```
+
+After committing, run `git log --oneline -1` to confirm the commit was created. Report the commit hash and message.

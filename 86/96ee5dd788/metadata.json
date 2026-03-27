@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8696ee5dd788",
+  "strategy": "manual-commit",
+  "branch": "ISS-56/relative-artifact-dirs",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "cmd/run.go",
+    "cmd/run_test.go",
+    "docs/plans/044_artifact_dir_workdir_fix_implement.md",
+    "docs/plans/044_artifact_dir_workdir_fix_spec.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/86/96ee5dd788/0/metadata.json",
+      "transcript": "/86/96ee5dd788/0/full.jsonl",
+      "context": "/86/96ee5dd788/0/context.md",
+      "content_hash": "/86/96ee5dd788/0/content_hash.txt",
+      "prompt": "/86/96ee5dd788/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 1
+  }
+}
