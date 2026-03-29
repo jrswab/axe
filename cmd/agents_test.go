@@ -640,58 +640,59 @@ model = "openai/gpt-4o"
 	}
 }
 
-// --- Top-level Timeout field tests (TDD red phase) ---
+// --- Top-level Timeout field tests ---
 
-func TestAgentsShow_TopLevelTimeout(t *testing.T) {
-	agentsDir := setupTestAgentsDir(t)
-
-	toml := `name = "timeout-test"
+func TestAgentsShow_TopLevelTimeout_Table(t *testing.T) {
+	tests := []struct {
+		name           string
+		toml           string
+		expectContains bool
+	}{
+		{
+			name: "timeout-test",
+			toml: `name = "timeout-test"
 model = "openai/gpt-4o"
 timeout = 300
-`
-	writeTestAgent(t, agentsDir, "timeout-test", toml)
-
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(new(bytes.Buffer))
-	rootCmd.SetArgs([]string{"agents", "show", "timeout-test"})
-
-	err := rootCmd.Execute()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	output := buf.String()
-	if !strings.Contains(output, "Timeout:") {
-		t.Errorf("show output missing 'Timeout:'\nfull output:\n%s", output)
-	}
-	if !strings.Contains(output, "300") {
-		t.Errorf("show output missing '300'\nfull output:\n%s", output)
-	}
-}
-
-func TestAgentsShow_TopLevelTimeoutOmittedWhenZero(t *testing.T) {
-	agentsDir := setupTestAgentsDir(t)
-
-	toml := `name = "no-timeout"
+`,
+			expectContains: true,
+		},
+		{
+			name: "no-timeout",
+			toml: `name = "no-timeout"
 model = "openai/gpt-4o"
-`
-	writeTestAgent(t, agentsDir, "no-timeout", toml)
-
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(new(bytes.Buffer))
-	rootCmd.SetArgs([]string{"agents", "show", "no-timeout"})
-
-	err := rootCmd.Execute()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+`,
+			expectContains: false,
+		},
 	}
 
-	output := buf.String()
-	// Top-level Timeout field should NOT be shown when zero/default
-	if strings.Contains(output, "Timeout:") {
-		t.Errorf("show output should not contain 'Timeout:' when timeout is not set\nfull output:\n%s", output)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			agentsDir := setupTestAgentsDir(t)
+			writeTestAgent(t, agentsDir, tc.name, tc.toml)
+
+			buf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(new(bytes.Buffer))
+			rootCmd.SetArgs([]string{"agents", "show", tc.name})
+
+			err := rootCmd.Execute()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			output := buf.String()
+			hasTimeout := strings.Contains(output, "Timeout:")
+			if hasTimeout != tc.expectContains {
+				if tc.expectContains {
+					t.Errorf("show output missing 'Timeout:'\nfull output:\n%s", output)
+				} else {
+					t.Errorf("show output should not contain 'Timeout:' when timeout is not set\nfull output:\n%s", output)
+				}
+			}
+			if tc.expectContains && !strings.Contains(output, "300") {
+				t.Errorf("show output missing '300'\nfull output:\n%s", output)
+			}
+		})
 	}
 }
 

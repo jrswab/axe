@@ -3579,123 +3579,86 @@ enabled = true
 
 // --- TOML Timeout Tests ---
 
-func TestRun_TomlTimeoutUsedWhenFlagAbsent(t *testing.T) {
-	resetRunCmd(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(3 * time.Second)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{
-			"id": "msg_test",
-			"type": "message",
-			"role": "assistant",
-			"content": [{"type": "text", "text": "Hello from mock"}],
-			"model": "claude-sonnet-4-20250514",
-			"stop_reason": "end_turn",
-			"usage": {"input_tokens": 10, "output_tokens": 5}
-		}`))
-	}))
-	defer server.Close()
+func TestRun_TimeoutPrecedence(t *testing.T) {
+	// The mock server sleeps for 2 seconds so that a timeout=1 will fire
+	// but a timeout=120 (or 300) will succeed.
+	const serverSleep = 2 * time.Second
 
-	setupRunTestAgent(t, "toml-timeout-agent", `name = "toml-timeout-agent"
-model = "anthropic/claude-sonnet-4-20250514"
-timeout = 1
-`)
-	t.Setenv("ANTHROPIC_API_KEY", "test-key")
-	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
-
-	buf := new(bytes.Buffer)
-	errBuf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(errBuf)
-	// Do NOT pass --timeout flag - TOML value should be used
-	rootCmd.SetArgs([]string{"run", "toml-timeout-agent"})
-
-	err := rootCmd.Execute()
-	if err == nil {
-		t.Fatal("expected error for timeout, got nil")
+	tests := []struct {
+		name           string
+		tomlTimeout    int
+		flagTimeout    string // empty string means flag is not passed
+		expectExitCode int    // 0 = success, 3 = timeout
+	}{
+		{
+			name:           "toml timeout used when flag absent",
+			tomlTimeout:    1,
+			flagTimeout:    "",
+			expectExitCode: 3,
+		},
+		{
+			name:           "flag timeout overrides toml timeout",
+			tomlTimeout:    300,
+			flagTimeout:    "1",
+			expectExitCode: 3,
+		},
+		{
+			name:           "flag timeout default value overrides toml",
+			tomlTimeout:    1,
+			flagTimeout:    "120",
+			expectExitCode: 0,
+		},
 	}
 
-	var exitErr *ExitError
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("expected ExitError, got %T: %v", err, err)
-	}
-	if exitErr.Code != 3 {
-		t.Errorf("expected exit code 3 (timeout), got %d", exitErr.Code)
-	}
-}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resetRunCmd(t)
 
-func TestRun_FlagTimeoutOverridesTomlTimeout(t *testing.T) {
-	resetRunCmd(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(3 * time.Second)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{
-			"id": "msg_test",
-			"type": "message",
-			"role": "assistant",
-			"content": [{"type": "text", "text": "Hello from mock"}],
-			"model": "claude-sonnet-4-20250514",
-			"stop_reason": "end_turn",
-			"usage": {"input_tokens": 10, "output_tokens": 5}
-		}`))
-	}))
-	defer server.Close()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				time.Sleep(serverSleep)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(200)
+				_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"Hello from mock"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
+			}))
+			defer server.Close()
 
-	setupRunTestAgent(t, "flag-timeout-agent", `name = "flag-timeout-agent"
-model = "anthropic/claude-sonnet-4-20250514"
-timeout = 300
-`)
-	t.Setenv("ANTHROPIC_API_KEY", "test-key")
-	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+			agentName := fmt.Sprintf("timeout-precedence-%s", strings.ReplaceAll(tc.name, " ", "-"))
+			tomlContent := fmt.Sprintf("name = %q\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntimeout = %d\n", agentName, tc.tomlTimeout)
+			setupRunTestAgent(t, agentName, tomlContent)
 
-	buf := new(bytes.Buffer)
-	errBuf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(errBuf)
-	// Pass --timeout 1 to override TOML value of 300
-	rootCmd.SetArgs([]string{"run", "flag-timeout-agent", "--timeout", "1"})
+			t.Setenv("ANTHROPIC_API_KEY", "test-key")
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
 
-	err := rootCmd.Execute()
-	if err == nil {
-		t.Fatal("expected error for timeout, got nil")
-	}
+			buf := new(bytes.Buffer)
+			errBuf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(errBuf)
 
-	var exitErr *ExitError
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("expected ExitError, got %T: %v", err, err)
-	}
-	if exitErr.Code != 3 {
-		t.Errorf("expected exit code 3 (timeout), got %d", exitErr.Code)
-	}
-}
+			args := []string{"run", agentName}
+			if tc.flagTimeout != "" {
+				args = append(args, "--timeout", tc.flagTimeout)
+			}
+			rootCmd.SetArgs(args)
 
-func TestRun_FlagTimeoutDefaultValueOverridesToml(t *testing.T) {
-	resetRunCmd(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"Hello from mock"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
-	}))
-	defer server.Close()
+			err := rootCmd.Execute()
 
-	setupRunTestAgent(t, "flag-default-timeout-agent", `name = "flag-default-timeout-agent"
-model = "anthropic/claude-sonnet-4-20250514"
-timeout = 1
-`)
-	t.Setenv("ANTHROPIC_API_KEY", "test-key")
-	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+			if tc.expectExitCode == 0 {
+				if err != nil {
+					t.Fatalf("expected success (no timeout), got error: %v", err)
+				}
+				return
+			}
 
-	buf := new(bytes.Buffer)
-	errBuf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(errBuf)
-	// Pass --timeout 120 explicitly to override TOML value of 1
-	rootCmd.SetArgs([]string{"run", "flag-default-timeout-agent", "--timeout", "120"})
-
-	err := rootCmd.Execute()
-	if err != nil {
-		t.Fatalf("expected success (no timeout), got error: %v", err)
+			if err == nil {
+				t.Fatal("expected error for timeout, got nil")
+			}
+			var exitErr *ExitError
+			if !errors.As(err, &exitErr) {
+				t.Fatalf("expected ExitError, got %T: %v", err, err)
+			}
+			if exitErr.Code != tc.expectExitCode {
+				t.Errorf("expected exit code %d (timeout), got %d", tc.expectExitCode, exitErr.Code)
+			}
+		})
 	}
 }

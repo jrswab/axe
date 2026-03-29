@@ -99,13 +99,15 @@ var agentsShowCmd = &cobra.Command{
 		}
 		if len(cfg.SubAgents) > 0 {
 			_, _ = fmt.Fprintf(w, "%-16s%s\n", "Sub-Agents:", strings.Join(cfg.SubAgents, ", "))
-			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Max Depth:", cfg.SubAgentsConf.MaxDepth)
-			parallelDisplay := true // default
-			if cfg.SubAgentsConf.Parallel != nil {
-				parallelDisplay = *cfg.SubAgentsConf.Parallel
+			if cfg.SubAgentsConf.MaxDepth != 0 {
+				_, _ = fmt.Fprintf(w, "%-16s%d\n", "Max Depth:", cfg.SubAgentsConf.MaxDepth)
 			}
-			_, _ = fmt.Fprintf(w, "%-16s%v\n", "Parallel:", parallelDisplay)
-			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Sub-Agent Timeout:", cfg.SubAgentsConf.Timeout)
+			if cfg.SubAgentsConf.Parallel != nil {
+				_, _ = fmt.Fprintf(w, "%-16s%v\n", "Parallel:", *cfg.SubAgentsConf.Parallel)
+			}
+			if cfg.SubAgentsConf.Timeout != 0 {
+				_, _ = fmt.Fprintf(w, "%-16s%d\n", "Sub-Agent Timeout:", cfg.SubAgentsConf.Timeout)
+			}
 		}
 		if cfg.Memory.Enabled {
 			_, _ = fmt.Fprintf(w, "%-16s%v\n", "Memory Enabled:", cfg.Memory.Enabled)
