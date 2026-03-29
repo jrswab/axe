@@ -9,22 +9,26 @@
   "stop_reason": "end_turn",
   "tool_call_details": [
     {
+      "duration_ms": "{{TOOL_DURATION_MS}}",
       "input": {
         "agent": "basic",
         "task": "hello"
       },
       "is_error": false,
       "name": "call_agent",
-      "output": "{{TOOL_OUTPUT}}"
+      "output": "{{TOOL_OUTPUT}}",
+      "turn": 0
     },
     {
+      "duration_ms": "{{TOOL_DURATION_MS}}",
       "input": {
         "agent": "with_skill",
         "task": "hello"
       },
       "is_error": false,
       "name": "call_agent",
-      "output": "{{TOOL_OUTPUT}}"
+      "output": "{{TOOL_OUTPUT}}",
+      "turn": 0
     }
   ],
   "tool_calls": 2

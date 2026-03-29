@@ -265,7 +265,7 @@ Status key: `[ ]` not started · `[-]` in progress · `[x]` done
 - [x] 043: Create smoke-test agent TOML files, skill file, and context file in `.github/smoke-agents/`
 - [ ] 044: Create `dry-run` CI job — validate `--dry-run` output for each agent type (no API keys required)
 - [ ] 045: Create `providers` CI job — verify Anthropic, OpenAI, and OpenCode connectivity with minimal prompts
-- [ ] 046: Create `tools` CI job — exercise all 7 built-in tools via OpenCode/minimax-m2.5
+- [x] 046: Create `tools` CI job — exercise all 7 built-in tools via OpenCode/minimax-m2.5
 - [ ] 047: Create `config-sections` CI job — verify TOML config parsing for basic, skill, memory, files, sub_agents, and params
 - [ ] 048: Create `piped-input` CI job — verify stdin piping works across multiple scenarios
 - [ ] 049: Assemble all jobs into `.github/workflows/smoke-test.yml` with proper secret injection and triggers

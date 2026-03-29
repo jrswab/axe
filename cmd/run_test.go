@@ -3662,3 +3662,245 @@ func TestRun_TimeoutPrecedence(t *testing.T) {
 		})
 	}
 }
+
+// TestRun_ToolCallDetails_ParallelSameTurn tests that tool_call_details correctly
+// captures multiple parallel tool calls in the same turn with proper turn and duration values.
+func TestRun_ToolCallDetails_ParallelSameTurn(t *testing.T) {
+	resetRunCmd(t)
+
+	var mu sync.Mutex
+	callCount := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		callCount++
+		currentCall := callCount
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		if currentCall == 1 {
+			// First call: return two parallel tool calls (both list_directory)
+			_, _ = w.Write([]byte(`{
+				"id": "msg_1",
+				"type": "message",
+				"role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "tc_1", "name": "list_directory", "input": {"path": "."}},
+					{"type": "tool_use", "id": "tc_2", "name": "list_directory", "input": {"path": "."}}
+				],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+		} else {
+			// Second call: final text response
+			_, _ = w.Write([]byte(`{
+				"id": "msg_2",
+				"type": "message",
+				"role": "assistant",
+				"content": [{"type": "text", "text": "done"}],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "end_turn",
+				"usage": {"input_tokens": 10, "output_tokens": 5}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "parallel-tool-details", "name = \"parallel-tool-details\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"list_directory\"]\n")
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "parallel-tool-details", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	// Assert 1: tool_call_details has exactly 2 entries
+	detailsRaw, ok := result["tool_call_details"]
+	if !ok {
+		t.Fatalf("expected tool_call_details field to be present")
+	}
+	details, ok := detailsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details to be array, got %T", detailsRaw)
+	}
+	if len(details) != 2 {
+		t.Fatalf("expected tool_call_details length 2, got %d", len(details))
+	}
+
+	// Assert 2: Both entries have turn == 0 (same turn, parallel calls)
+	for i, raw := range details {
+		entry, ok := raw.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected tool_call_details[%d] to be object, got %T", i, raw)
+		}
+		turn, ok := entry["turn"].(float64)
+		if !ok {
+			t.Fatalf("expected tool_call_details[%d].turn to be number, got %T", i, entry["turn"])
+		}
+		if int(turn) != 0 {
+			t.Errorf("expected tool_call_details[%d].turn=0, got %v", i, turn)
+		}
+	}
+
+	// Assert 3: Each entry has its own duration_ms value (both non-negative numbers)
+	for i, raw := range details {
+		entry, ok := raw.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected tool_call_details[%d] to be object, got %T", i, raw)
+		}
+		durationMs, ok := entry["duration_ms"].(float64)
+		if !ok {
+			t.Fatalf("expected tool_call_details[%d].duration_ms to be number, got %T", i, entry["duration_ms"])
+		}
+		if durationMs < 0 {
+			t.Errorf("expected tool_call_details[%d].duration_ms >= 0, got %v", i, durationMs)
+		}
+	}
+}
+
+// TestRun_ToolCallDetails_TurnAndDuration tests that tool_call_details correctly captures
+// turn numbers and duration_ms across multiple tool call turns.
+func TestRun_ToolCallDetails_TurnAndDuration(t *testing.T) {
+	resetRunCmd(t)
+
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if callCount == 0 {
+			callCount++
+			_, _ = w.Write([]byte(`{
+				"id": "msg_1",
+				"type": "message",
+				"role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "tc_1", "name": "list_directory", "input": {"path": "."}}
+				],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+			return
+		}
+		if callCount == 1 {
+			callCount++
+			_, _ = w.Write([]byte(`{
+				"id": "msg_2",
+				"type": "message",
+				"role": "assistant",
+				"content": [
+					{"type": "tool_use", "id": "tc_2", "name": "list_directory", "input": {"path": "."}}
+				],
+				"model": "claude-sonnet-4-20250514",
+				"stop_reason": "tool_use",
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{
+			"id": "msg_3",
+			"type": "message",
+			"role": "assistant",
+			"content": [{"type": "text", "text": "done"}],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "turn-duration-agent", `name = "turn-duration-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["list_directory"]
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "turn-duration-agent", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output is not valid JSON: %v\noutput: %q", err, buf.String())
+	}
+
+	detailsRaw, ok := result["tool_call_details"]
+	if !ok {
+		t.Fatalf("expected tool_call_details field to be present")
+	}
+	details, ok := detailsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details to be array, got %T", detailsRaw)
+	}
+	if len(details) != 2 {
+		t.Fatalf("expected tool_call_details length 2, got %d", len(details))
+	}
+
+	// Check first entry
+	entry0, ok := details[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details[0] to be object, got %T", details[0])
+	}
+	if turn, ok := entry0["turn"].(float64); !ok || turn != 0 {
+		t.Fatalf("expected tool_call_details[0].turn == 0, got %v", entry0["turn"])
+	}
+	if _, ok := entry0["duration_ms"]; !ok {
+		t.Fatalf("expected tool_call_details[0] to have duration_ms")
+	}
+	if _, ok := entry0["name"]; !ok {
+		t.Fatalf("expected tool_call_details[0] to have name")
+	}
+	if _, ok := entry0["input"]; !ok {
+		t.Fatalf("expected tool_call_details[0] to have input")
+	}
+	if _, ok := entry0["output"]; !ok {
+		t.Fatalf("expected tool_call_details[0] to have output")
+	}
+	if _, ok := entry0["is_error"]; !ok {
+		t.Fatalf("expected tool_call_details[0] to have is_error")
+	}
+
+	// Check second entry
+	entry1, ok := details[1].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected tool_call_details[1] to be object, got %T", details[1])
+	}
+	if turn, ok := entry1["turn"].(float64); !ok || turn != 1 {
+		t.Fatalf("expected tool_call_details[1].turn == 1, got %v", entry1["turn"])
+	}
+	if _, ok := entry1["duration_ms"]; !ok {
+		t.Fatalf("expected tool_call_details[1] to have duration_ms")
+	}
+	if _, ok := entry1["name"]; !ok {
+		t.Fatalf("expected tool_call_details[1] to have name")
+	}
+	if _, ok := entry1["input"]; !ok {
+		t.Fatalf("expected tool_call_details[1] to have input")
+	}
+	if _, ok := entry1["output"]; !ok {
+		t.Fatalf("expected tool_call_details[1] to have output")
+	}
+	if _, ok := entry1["is_error"]; !ok {
+		t.Fatalf("expected tool_call_details[1] to have is_error")
+	}
+}

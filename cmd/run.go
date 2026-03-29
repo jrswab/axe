@@ -37,10 +37,17 @@ const maxConversationTurns = 50
 const maxToolOutputBytes = 1024
 
 type toolCallDetail struct {
-	Name    string            `json:"name"`
-	Input   map[string]string `json:"input"`
-	Output  string            `json:"output"`
-	IsError bool              `json:"is_error"`
+	Name       string            `json:"name"`
+	Input      map[string]string `json:"input"`
+	Output     string            `json:"output"`
+	IsError    bool              `json:"is_error"`
+	Turn       int               `json:"turn"`
+	DurationMs int64             `json:"duration_ms"`
+}
+
+type toolExecResult struct {
+	Result   provider.ToolResult
+	Duration time.Duration
 }
 
 var runCmd = &cobra.Command{
@@ -591,18 +598,24 @@ func runAgent(cmd *cobra.Command, args []string) error {
 					}
 
 					allToolCallDetails = append(allToolCallDetails, toolCallDetail{
-						Name:    tc.Name,
-						Input:   input,
-						Output:  truncateOutput(results[i].Content),
-						IsError: results[i].IsError,
+						Name:       tc.Name,
+						Input:      input,
+						Output:     truncateOutput(results[i].Result.Content),
+						IsError:    results[i].Result.IsError,
+						Turn:       turn,
+						DurationMs: results[i].Duration.Milliseconds(),
 					})
 				}
 			}
 
 			// Append tool result message
+			toolResults := make([]provider.ToolResult, len(results))
+			for i, r := range results {
+				toolResults[i] = r.Result
+			}
 			toolMsg := provider.Message{
 				Role:        "tool",
-				ToolResults: results,
+				ToolResults: toolResults,
 			}
 			req.Messages = append(req.Messages, toolMsg)
 		}
@@ -791,8 +804,8 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 
 // executeToolCalls dispatches tool calls and returns results.
 // When parallel is true and there are multiple calls, they run concurrently.
-func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string, budgetTracker *budget.BudgetTracker, agentsDir string, agentsBase string, artifactDir string, artifactTracker *artifact.Tracker) []provider.ToolResult {
-	results := make([]provider.ToolResult, len(toolCalls))
+func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string, budgetTracker *budget.BudgetTracker, agentsDir string, agentsBase string, artifactDir string, artifactTracker *artifact.Tracker) []toolExecResult {
+	results := make([]toolExecResult, len(toolCalls))
 
 	execOpts := tool.ExecuteOptions{
 		AllowedAgents:   cfg.SubAgents,
@@ -815,23 +828,27 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 	if len(toolCalls) == 1 || !parallel {
 		// Sequential execution (also used for single call)
 		for i, tc := range toolCalls {
+			start := time.Now()
+			var r provider.ToolResult
 			if mcpRouter != nil && mcpRouter.Has(tc.Name) {
-				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker)
+				r = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker)
 			} else if tc.Name == tool.CallAgentToolName {
-				results[i] = tool.ExecuteCallAgent(ctx, tc, execOpts)
+				r = tool.ExecuteCallAgent(ctx, tc, execOpts)
 			} else {
-				results[i] = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker)
+				r = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker)
 			}
+			results[i] = toolExecResult{Result: r, Duration: time.Since(start)}
 		}
 	} else {
 		// Parallel execution
 		type indexedResult struct {
 			index  int
-			result provider.ToolResult
+			result toolExecResult
 		}
 		ch := make(chan indexedResult, len(toolCalls))
 		for i, tc := range toolCalls {
 			go func(idx int, call provider.ToolCall) {
+				start := time.Now()
 				var res provider.ToolResult
 				if mcpRouter != nil && mcpRouter.Has(call.Name) {
 					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker)
@@ -840,7 +857,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 				} else {
 					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker)
 				}
-				ch <- indexedResult{index: idx, result: res}
+				ch <- indexedResult{index: idx, result: toolExecResult{Result: res, Duration: time.Since(start)}}
 			}(i, tc)
 		}
 		for range toolCalls {

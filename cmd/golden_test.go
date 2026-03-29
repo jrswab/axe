@@ -87,6 +87,9 @@ func maskJSONOutput(output string) string {
 			if _, hasOutput := entry["output"]; hasOutput {
 				entry["output"] = "{{TOOL_OUTPUT}}"
 			}
+			if _, hasDuration := entry["duration_ms"]; hasDuration {
+				entry["duration_ms"] = "{{TOOL_DURATION_MS}}"
+			}
 		}
 	}
 
@@ -422,6 +425,22 @@ func TestMaskJSONOutput(t *testing.T) {
 				// Should end with newline.
 				if !strings.HasSuffix(got, "\n") {
 					t.Errorf("expected trailing newline, got:\n%q", got)
+				}
+			},
+		},
+		{
+			name:  "masks tool_call_details duration_ms",
+			input: `{"model":"gpt-4o","duration_ms":1,"tool_call_details":[{"name":"read_file","input":{"path":"a.txt"},"output":"text","is_error":false,"turn":0,"duration_ms":42}]}` ,
+			check: func(t *testing.T, got string) {
+				if !strings.Contains(got, `"duration_ms": "{{TOOL_DURATION_MS}}"`) {
+					t.Errorf("expected tool_call_details duration_ms to be masked, got:\n%s", got)
+				}
+				// turn should NOT be masked - it should remain a number
+				if strings.Contains(got, `"turn": "{{`) {
+					t.Errorf("expected turn to NOT be masked, got:\n%s", got)
+				}
+				if !strings.Contains(got, `"turn": 0`) {
+					t.Errorf("expected turn to be preserved as number 0, got:\n%s", got)
 				}
 			},
 		},

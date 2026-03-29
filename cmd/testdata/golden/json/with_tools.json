@@ -9,12 +9,14 @@
   "stop_reason": "stop",
   "tool_call_details": [
     {
+      "duration_ms": "{{TOOL_DURATION_MS}}",
       "input": {
         "path": "."
       },
       "is_error": false,
       "name": "list_directory",
-      "output": "{{TOOL_OUTPUT}}"
+      "output": "{{TOOL_OUTPUT}}",
+      "turn": 0
     }
   ],
   "tool_calls": 1

@@ -982,6 +982,14 @@ model = "anthropic/claude-sonnet-4-20250514"
 	if isError, ok := entry["is_error"].(bool); !ok || isError {
 		t.Fatalf("expected tool_call_details[0].is_error to be false, got %v", entry["is_error"])
 	}
+	// Assert turn is 0 (first and only tool call turn)
+	if turnVal, ok := entry["turn"].(float64); !ok || turnVal != 0 {
+		t.Fatalf("expected tool_call_details[0].turn to be 0, got %v", entry["turn"])
+	}
+	// Assert duration_ms is a non-negative number
+	if durationVal, ok := entry["duration_ms"].(float64); !ok || durationVal < 0 {
+		t.Fatalf("expected tool_call_details[0].duration_ms to be non-negative number, got %v", entry["duration_ms"])
+	}
 	if out, ok := entry["output"].(string); !ok || out == "" {
 		t.Fatalf("expected tool_call_details[0].output to be non-empty string, got %v", entry["output"])
 	}
@@ -1684,7 +1692,7 @@ tools = ["read_file", "list_directory", "run_command"]
 		if !ok {
 			t.Fatalf("expected tool_call_details[%d] to be object, got %T", i, raw)
 		}
-		for _, key := range []string{"name", "input", "output", "is_error"} {
+		for _, key := range []string{"name", "input", "output", "is_error", "turn", "duration_ms"} {
 			if _, ok := entry[key]; !ok {
 				t.Fatalf("expected tool_call_details[%d] to include key %q", i, key)
 			}
@@ -1694,6 +1702,14 @@ tools = ["read_file", "list_directory", "run_command"]
 		}
 		if isError, ok := entry["is_error"].(bool); !ok || isError {
 			t.Fatalf("expected tool_call_details[%d].is_error=false, got %v", i, entry["is_error"])
+		}
+		// Assert turn is a non-negative number (all 3 tool calls happen in turn 0 since they're sequential in one LLM response)
+		if turnVal, ok := entry["turn"].(float64); !ok || turnVal < 0 {
+			t.Fatalf("expected tool_call_details[%d].turn to be non-negative number, got %v", i, entry["turn"])
+		}
+		// Assert duration_ms is a non-negative number
+		if durationVal, ok := entry["duration_ms"].(float64); !ok || durationVal < 0 {
+			t.Fatalf("expected tool_call_details[%d].duration_ms to be non-negative number, got %v", i, entry["duration_ms"])
 		}
 	}
 
