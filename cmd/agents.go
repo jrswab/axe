@@ -91,6 +91,9 @@ var agentsShowCmd = &cobra.Command{
 		if cfg.Workdir != "" {
 			_, _ = fmt.Fprintf(w, "%-16s%s\n", "Workdir:", cfg.Workdir)
 		}
+		if cfg.Timeout > 0 {
+			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Timeout:", cfg.Timeout)
+		}
 		if len(cfg.Tools) > 0 {
 			_, _ = fmt.Fprintf(w, "%-16s%s\n", "Tools:", strings.Join(cfg.Tools, ", "))
 		}
@@ -102,7 +105,7 @@ var agentsShowCmd = &cobra.Command{
 				parallelDisplay = *cfg.SubAgentsConf.Parallel
 			}
 			_, _ = fmt.Fprintf(w, "%-16s%v\n", "Parallel:", parallelDisplay)
-			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Timeout:", cfg.SubAgentsConf.Timeout)
+			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Sub-Agent Timeout:", cfg.SubAgentsConf.Timeout)
 		}
 		if cfg.Memory.Enabled {
 			_, _ = fmt.Fprintf(w, "%-16s%v\n", "Memory Enabled:", cfg.Memory.Enabled)

@@ -295,7 +295,13 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	}
 
 	// Flags
-	timeout, _ := cmd.Flags().GetInt("timeout")
+	timeout := 120
+	if cfg.Timeout > 0 {
+		timeout = cfg.Timeout
+	}
+	if cmd.Flags().Changed("timeout") {
+		timeout, _ = cmd.Flags().GetInt("timeout")
+	}
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	jsonOutput, _ := cmd.Flags().GetBool("json")

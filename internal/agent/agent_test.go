@@ -1645,7 +1645,77 @@ func TestScaffold_IncludesBudgetConfig(t *testing.T) {
 	}
 }
 
-// --- Artifacts Config tests ---
+// --- TopLevel Timeout Tests ---
+
+func TestLoad_TopLevelTimeout(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "timeout-agent"
+model = "openai/gpt-4o"
+timeout = 300
+`
+	writeAgentFile(t, agentsDir, "timeout-agent", tomlContent)
+
+	cfg, err := Load("timeout-agent", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Timeout != 300 {
+		t.Errorf("Timeout = %d, want 300", cfg.Timeout)
+	}
+}
+
+func TestValidate_TopLevelTimeoutNegative(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:    "x",
+		Model:   "p/m",
+		Timeout: -1,
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for timeout=-1, got nil")
+	}
+	want := "timeout must be non-negative"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_TopLevelTimeoutZeroAndPositive(t *testing.T) {
+	tests := []struct {
+		name    string
+		timeout int
+	}{
+		{name: "zero", timeout: 0},
+		{name: "positive", timeout: 300},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &AgentConfig{
+				Name:    "x",
+				Model:   "p/m",
+				Timeout: tc.timeout,
+			}
+			err := Validate(cfg)
+			if err != nil {
+				t.Fatalf("expected no error for timeout=%d, got %v", tc.timeout, err)
+			}
+		})
+	}
+}
+
+func TestScaffold_IncludesTopLevelTimeout(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "# timeout = 120") {
+		t.Errorf("scaffold output missing '# timeout = 120'\nfull output:\n%s", out)
+	}
+}
 
 func TestValidate_Artifacts(t *testing.T) {
 	cases := []struct {

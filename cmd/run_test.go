@@ -25,7 +25,7 @@ func resetRunCmd(t *testing.T) {
 	_ = runCmd.Flags().Set("workdir", "")
 	_ = runCmd.Flags().Set("agents-dir", "")
 	_ = runCmd.Flags().Set("model", "")
-	_ = runCmd.Flags().Set("timeout", "120")
+	// Don't preset timeout - let it use default so Changed() detection works
 	_ = runCmd.Flags().Set("dry-run", "false")
 	_ = runCmd.Flags().Set("verbose", "false")
 	_ = runCmd.Flags().Set("json", "false")
@@ -33,6 +33,10 @@ func resetRunCmd(t *testing.T) {
 	_ = runCmd.Flags().Set("prompt", "")
 	_ = runCmd.Flags().Set("artifact-dir", "")
 	_ = runCmd.Flags().Set("keep-artifacts", "false")
+	// Reset the Changed state for timeout flag so TOML timeout values can be used
+	if f := runCmd.Flags().Lookup("timeout"); f != nil {
+		f.Changed = false
+	}
 	rootCmd.SetIn(os.Stdin)
 }
 
@@ -3571,4 +3575,127 @@ enabled = true
 
 	// Clean up env var
 	_ = os.Unsetenv("AXE_ARTIFACT_DIR")
+}
+
+// --- TOML Timeout Tests ---
+
+func TestRun_TomlTimeoutUsedWhenFlagAbsent(t *testing.T) {
+	resetRunCmd(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(3 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{
+			"id": "msg_test",
+			"type": "message",
+			"role": "assistant",
+			"content": [{"type": "text", "text": "Hello from mock"}],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "toml-timeout-agent", `name = "toml-timeout-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+timeout = 1
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	// Do NOT pass --timeout flag - TOML value should be used
+	rootCmd.SetArgs([]string{"run", "toml-timeout-agent"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for timeout, got nil")
+	}
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T: %v", err, err)
+	}
+	if exitErr.Code != 3 {
+		t.Errorf("expected exit code 3 (timeout), got %d", exitErr.Code)
+	}
+}
+
+func TestRun_FlagTimeoutOverridesTomlTimeout(t *testing.T) {
+	resetRunCmd(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(3 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{
+			"id": "msg_test",
+			"type": "message",
+			"role": "assistant",
+			"content": [{"type": "text", "text": "Hello from mock"}],
+			"model": "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "flag-timeout-agent", `name = "flag-timeout-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+timeout = 300
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	// Pass --timeout 1 to override TOML value of 300
+	rootCmd.SetArgs([]string{"run", "flag-timeout-agent", "--timeout", "1"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for timeout, got nil")
+	}
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected ExitError, got %T: %v", err, err)
+	}
+	if exitErr.Code != 3 {
+		t.Errorf("expected exit code 3 (timeout), got %d", exitErr.Code)
+	}
+}
+
+func TestRun_FlagTimeoutDefaultValueOverridesToml(t *testing.T) {
+	resetRunCmd(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"Hello from mock"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
+	}))
+	defer server.Close()
+
+	setupRunTestAgent(t, "flag-default-timeout-agent", `name = "flag-default-timeout-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+timeout = 1
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	// Pass --timeout 120 explicitly to override TOML value of 1
+	rootCmd.SetArgs([]string{"run", "flag-default-timeout-agent", "--timeout", "120"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected success (no timeout), got error: %v", err)
+	}
 }

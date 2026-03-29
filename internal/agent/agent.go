@@ -79,6 +79,7 @@ type AgentConfig struct {
 	Skill         string            `toml:"skill"`
 	Files         []string          `toml:"files"`
 	Workdir       string            `toml:"workdir"`
+	Timeout       int               `toml:"timeout"`
 	Tools         []string          `toml:"tools"`
 	AllowedHosts  []string          `toml:"allowed_hosts"`
 	MCPServers    []MCPServerConfig `toml:"mcp_servers"`
@@ -109,6 +110,9 @@ func Validate(cfg *AgentConfig) error {
 	}
 	if cfg.SubAgentsConf.Timeout < 0 {
 		return &ValidationError{msg: "sub_agents_config.timeout must be non-negative"}
+	}
+	if cfg.Timeout < 0 {
+		return &ValidationError{msg: "timeout must be non-negative"}
 	}
 	if cfg.Memory.LastN < 0 {
 		return &ValidationError{msg: "memory.last_n must be non-negative"}
@@ -329,6 +333,9 @@ model = "provider/model-name"
 
 # Working directory (optional)
 # workdir = ""
+
+# Run timeout in seconds (optional, default: 120)
+# timeout = 120
 
 # Tools this agent can use (optional)
 # Valid: list_directory, read_file, write_file, edit_file, run_command, url_fetch, web_search
