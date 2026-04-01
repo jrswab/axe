@@ -1,0 +1,46 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "ca90381ec047",
+  "strategy": "manual-commit",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "cmd/run.go",
+    "cmd/testdata/golden/dry-run/basic.txt",
+    "cmd/testdata/golden/dry-run/with_files.txt",
+    "cmd/testdata/golden/dry-run/with_memory.txt",
+    "cmd/testdata/golden/dry-run/with_skill.txt",
+    "cmd/testdata/golden/dry-run/with_subagents.txt",
+    "cmd/testdata/golden/dry-run/with_tools.txt",
+    "docs/plans/ISS-59_m1_core_types_sse_parser_spec.md",
+    "docs/plans/ISS-59_m1_implement.md",
+    "docs/plans/ISS-59_m2_implement.md",
+    "docs/plans/ISS-59_m2_openai_streaming_spec.md",
+    "docs/plans/ISS-59_streaming_milestones.md",
+    "internal/agent/agent.go",
+    "internal/agent/agent_test.go",
+    "internal/provider/openai.go",
+    "internal/provider/openai_test.go",
+    "internal/provider/retry.go",
+    "internal/provider/retry_test.go",
+    "internal/provider/sse.go",
+    "internal/provider/sse_test.go",
+    "internal/provider/stream.go",
+    "internal/provider/stream_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ca/90381ec047/0/metadata.json",
+      "transcript": "/ca/90381ec047/0/full.jsonl",
+      "content_hash": "/ca/90381ec047/0/content_hash.txt",
+      "prompt": "/ca/90381ec047/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 2
+  }
+}
