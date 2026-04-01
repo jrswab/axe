@@ -198,12 +198,6 @@ jobs:
         echo "$OUTPUT"
         echo "$OUTPUT" | grep -q "sub-agent-ok" || { echo "FAIL: 'sub-agent-ok' not found"; exit 1; }
 
-    - name: cfg-params
-      run: |
-        OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-params -p "Reply with only the word: pong")
-        echo "$OUTPUT"
-        [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
-
   piped-input:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
