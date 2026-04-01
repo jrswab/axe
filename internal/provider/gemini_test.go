@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -844,6 +846,424 @@ func TestGemini_Send_UnparseableErrorBody(t *testing.T) {
 	// Should fall back to HTTP status text
 	if provErr.Message != "Internal Server Error" {
 		t.Errorf("expected 'Internal Server Error', got %q", provErr.Message)
+	}
+}
+
+// --- Streaming Tests ---
+
+func geminiSSEChunk(jsonData string) string {
+	return "data: " + jsonData + "\n\n"
+}
+
+func TestGemini_SendStream_RequestFormat(t *testing.T) {
+	var capturedPath string
+	var capturedAPIKey string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path + "?" + r.URL.RawQuery
+		capturedAPIKey = r.Header.Get("x-goog-api-key")
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":"hi"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":2}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	for {
+		_, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+	}
+
+	expectedPath := "/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse"
+	if capturedPath != expectedPath {
+		t.Errorf("expected path %q, got %q", expectedPath, capturedPath)
+	}
+	if capturedAPIKey != "test-key" {
+		t.Errorf("expected API key 'test-key', got %q", capturedAPIKey)
+	}
+}
+
+func TestGemini_SendStream_TextDeltas(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":"Hello"}]}}]}`))
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":" "}]}}]}`))
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":"world"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":20}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// 3 text + 1 done
+	if len(events) != 4 {
+		t.Fatalf("expected 4 events, got %d", len(events))
+	}
+
+	if events[0].Type != StreamEventText || events[0].Text != "Hello" {
+		t.Errorf("event 0: expected text 'Hello', got type=%s text=%q", events[0].Type, events[0].Text)
+	}
+	if events[1].Type != StreamEventText || events[1].Text != " " {
+		t.Errorf("event 1: expected text ' ', got type=%s text=%q", events[1].Type, events[1].Text)
+	}
+	if events[2].Type != StreamEventText || events[2].Text != "world" {
+		t.Errorf("event 2: expected text 'world', got type=%s text=%q", events[2].Type, events[2].Text)
+	}
+	if events[3].Type != StreamEventDone {
+		t.Errorf("event 3: expected done, got type=%s", events[3].Type)
+	}
+	if events[3].StopReason != "STOP" {
+		t.Errorf("expected stop reason 'STOP', got %q", events[3].StopReason)
+	}
+	if events[3].InputTokens != 10 {
+		t.Errorf("expected 10 input tokens, got %d", events[3].InputTokens)
+	}
+	if events[3].OutputTokens != 20 {
+		t.Errorf("expected 20 output tokens, got %d", events[3].OutputTokens)
+	}
+}
+
+func TestGemini_SendStream_ToolCalls(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"name":"get_weather","args":{"city":"NYC"}}}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":3}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Weather?"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// tool_start + tool_end + done = 3
+	if len(events) != 3 {
+		t.Fatalf("expected 3 events, got %d: %+v", len(events), events)
+	}
+
+	if events[0].Type != StreamEventToolStart || events[0].ToolName != "get_weather" {
+		t.Errorf("event 0: expected tool_start get_weather, got type=%s name=%s", events[0].Type, events[0].ToolName)
+	}
+	if events[0].ToolCallID != "gemini_0" {
+		t.Errorf("event 0: expected ID 'gemini_0', got %q", events[0].ToolCallID)
+	}
+	if events[1].Type != StreamEventToolEnd || events[1].ToolCallID != "gemini_0" {
+		t.Errorf("event 1: expected tool_end gemini_0, got type=%s id=%s", events[1].Type, events[1].ToolCallID)
+	}
+	if events[2].Type != StreamEventDone {
+		t.Errorf("event 2: expected done, got type=%s", events[2].Type)
+	}
+}
+
+func TestGemini_SendStream_MixedTextAndToolCalls(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":"Let me check"},{"functionCall":{"name":"search","args":{"q":"test"}}}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":3}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Search"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// text + tool_start + tool_end + done = 4
+	if len(events) != 4 {
+		t.Fatalf("expected 4 events, got %d", len(events))
+	}
+
+	if events[0].Type != StreamEventText || events[0].Text != "Let me check" {
+		t.Errorf("event 0: expected text, got type=%s", events[0].Type)
+	}
+	if events[1].Type != StreamEventToolStart {
+		t.Errorf("event 1: expected tool_start, got type=%s", events[1].Type)
+	}
+	if events[2].Type != StreamEventToolEnd {
+		t.Errorf("event 2: expected tool_end, got type=%s", events[2].Type)
+	}
+	if events[3].Type != StreamEventDone {
+		t.Errorf("event 3: expected done, got type=%s", events[3].Type)
+	}
+}
+
+func TestGemini_SendStream_EmptyTextPart(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":""}]}}]}`))
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":"Hello"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":2}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// 1 text + 1 done (empty text skipped)
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got %d", len(events))
+	}
+	if events[0].Type != StreamEventText || events[0].Text != "Hello" {
+		t.Errorf("event 0: expected text 'Hello', got type=%s text=%q", events[0].Type, events[0].Text)
+	}
+}
+
+func TestGemini_SendStream_NoCandidates(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[]}`))
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":"Hello"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":2}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// 1 text + 1 done (empty candidates skipped)
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got %d", len(events))
+	}
+}
+
+func TestGemini_SendStream_UsageInMiddleChunk(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":"Hello"}]}}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":1}}`))
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"text":" world"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":10}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// 2 text + 1 done
+	if len(events) != 3 {
+		t.Fatalf("expected 3 events, got %d", len(events))
+	}
+
+	done := events[2]
+	if done.Type != StreamEventDone {
+		t.Fatalf("expected done event, got %s", done.Type)
+	}
+	if done.OutputTokens != 10 {
+		t.Errorf("expected latest output tokens 10, got %d", done.OutputTokens)
+	}
+}
+
+func TestGemini_SendStream_ErrorResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(`{"error":{"code":401,"message":"Invalid API key","status":"UNAUTHENTICATED"}}`))
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("bad-key", WithGeminiBaseURL(server.URL))
+	_, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T", err)
+	}
+	if provErr.Category != ErrCategoryAuth {
+		t.Errorf("expected ErrCategoryAuth, got %s", provErr.Category)
+	}
+}
+
+func TestGemini_SendStream_MalformedSSE(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, "data: not valid json\n\n")
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error from SendStream: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	_, err = stream.Next()
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryServer {
+		t.Errorf("expected ErrCategoryServer, got %s", provErr.Category)
+	}
+}
+
+func TestGemini_SendStream_ContextCancelled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	g, _ := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	stream, err := g.SendStream(ctx, &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		var provErr *ProviderError
+		if !errors.As(err, &provErr) {
+			t.Fatalf("expected ProviderError, got %T", err)
+		}
+		if provErr.Category != ErrCategoryTimeout {
+			t.Errorf("expected ErrCategoryTimeout, got %s", provErr.Category)
+		}
+		return
+	}
+	defer func() { _ = stream.Close() }()
+
+	for {
+		_, err := stream.Next()
+		if err == nil {
+			continue
+		}
+		if err == io.EOF {
+			t.Fatal("expected timeout error, got EOF")
+		}
+		var provErr *ProviderError
+		if !errors.As(err, &provErr) {
+			t.Fatalf("expected ProviderError, got %T: %v", err, err)
+		}
+		if provErr.Category != ErrCategoryTimeout {
+			t.Errorf("expected ErrCategoryTimeout, got %s", provErr.Category)
+		}
+		break
 	}
 }
 

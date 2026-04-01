@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -104,6 +105,7 @@ type ollamaResponse struct {
 		Content   string               `json:"content"`
 		ToolCalls []ollamaToolCallWire `json:"tool_calls"`
 	} `json:"message"`
+	Done            bool   `json:"done"`
 	DoneReason      string `json:"done_reason"`
 	PromptEvalCount int    `json:"prompt_eval_count"`
 	EvalCount       int    `json:"eval_count"`
@@ -325,6 +327,182 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 		OutputTokens: apiResp.EvalCount,
 		StopReason:   apiResp.DoneReason,
 	}, nil
+}
+
+// SendStream makes a streaming completion request to the Ollama Chat API.
+func (o *Ollama) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
+	var messages []Message
+	if req.System != "" {
+		messages = append(messages, Message{Role: "system", Content: req.System})
+	}
+	messages = append(messages, req.Messages...)
+
+	body := ollamaRequest{
+		Model:    req.Model,
+		Messages: convertToOllamaMessages(messages),
+		Stream:   true,
+	}
+
+	var opts ollamaOptions
+	hasOpts := false
+	if req.Temperature != 0 {
+		temp := req.Temperature
+		opts.Temperature = &temp
+		hasOpts = true
+	}
+	if req.MaxTokens != 0 {
+		mt := req.MaxTokens
+		opts.NumPredict = &mt
+		hasOpts = true
+	}
+	if hasOpts {
+		body.Options = &opts
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToOllamaTools(req.Tools)
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/api/chat", bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := o.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryTimeout,
+				Message:  ctx.Err().Error(),
+				Err:      ctx.Err(),
+			}
+		}
+		if isConnectionRefused(err) {
+			return nil, &ProviderError{
+				Category: ErrCategoryServer,
+				Message:  fmt.Sprintf("connection refused: is Ollama running? (expected at %s)", o.baseURL),
+				Err:      err,
+			}
+		}
+		return nil, &ProviderError{
+			Category: ErrCategoryServer,
+			Message:  err.Error(),
+			Err:      err,
+		}
+	}
+
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		respBody, err := io.ReadAll(httpResp.Body)
+		_ = httpResp.Body.Close()
+		if err != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryServer,
+				Message:  fmt.Sprintf("failed to read error response: %s", err),
+				Err:      err,
+			}
+		}
+		return nil, o.handleErrorResponse(httpResp.StatusCode, respBody)
+	}
+
+	scanner := bufio.NewScanner(httpResp.Body)
+	toolCallIdx := 0
+	var pending []StreamEvent
+
+	nextFunc := func() (StreamEvent, error) {
+		for {
+			if len(pending) > 0 {
+				ev := pending[0]
+				pending = pending[1:]
+				return ev, nil
+			}
+
+			if !scanner.Scan() {
+				if ctx.Err() != nil {
+					return StreamEvent{}, &ProviderError{
+						Category: ErrCategoryTimeout,
+						Message:  ctx.Err().Error(),
+						Err:      ctx.Err(),
+					}
+				}
+				if err := scanner.Err(); err != nil {
+					return StreamEvent{}, &ProviderError{
+						Category: ErrCategoryServer,
+						Message:  fmt.Sprintf("stream read error: %s", err),
+						Err:      err,
+					}
+				}
+				return StreamEvent{}, io.EOF
+			}
+
+			line := scanner.Text()
+			if line == "" {
+				continue
+			}
+
+			var chunk ollamaResponse
+			if err := json.Unmarshal([]byte(line), &chunk); err != nil {
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  fmt.Sprintf("failed to parse streaming chunk: %s", err),
+					Err:      err,
+				}
+			}
+
+			if len(chunk.Message.ToolCalls) > 0 {
+				for _, tc := range chunk.Message.ToolCalls {
+					args := make(map[string]string)
+					for k, v := range tc.Function.Arguments {
+						args[k] = fmt.Sprintf("%v", v)
+					}
+					id := fmt.Sprintf("ollama_%d", toolCallIdx)
+					toolCallIdx++
+					pending = append(pending, StreamEvent{
+						Type:       StreamEventToolStart,
+						ToolCallID: id,
+						ToolName:   tc.Function.Name,
+						ToolInput:  mustMarshal(args),
+					})
+					pending = append(pending, StreamEvent{
+						Type:       StreamEventToolEnd,
+						ToolCallID: id,
+					})
+				}
+				continue
+			}
+
+			if chunk.Done {
+				return StreamEvent{
+					Type:         StreamEventDone,
+					StopReason:   chunk.DoneReason,
+					InputTokens:  chunk.PromptEvalCount,
+					OutputTokens: chunk.EvalCount,
+				}, nil
+			}
+
+			if chunk.Message.Content != "" {
+				return StreamEvent{
+					Type: StreamEventText,
+					Text: chunk.Message.Content,
+				}, nil
+			}
+
+			continue
+		}
+	}
+
+	return NewEventStream(httpResp.Body, nextFunc), nil
+}
+
+func mustMarshal(v interface{}) string {
+	b, _ := json.Marshal(v)
+	return string(b)
 }
 
 // handleErrorResponse maps HTTP error responses to ProviderError.

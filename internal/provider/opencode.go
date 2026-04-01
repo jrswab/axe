@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -315,6 +316,495 @@ func (o *OpenCode) sendClaude(ctx context.Context, req *Request) (*Response, err
 	}
 
 	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Streaming
+// ---------------------------------------------------------------------------
+
+// SendStream dispatches the streaming request by model prefix.
+func (o *OpenCode) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
+	switch {
+	case strings.HasPrefix(req.Model, "claude-"):
+		return o.streamClaude(ctx, req)
+	case strings.HasPrefix(req.Model, "gpt-"):
+		return o.streamGPT(ctx, req)
+	default:
+		return o.streamChatCompletions(ctx, req)
+	}
+}
+
+// --- Claude (Anthropic Messages) streaming ---
+
+type ocAnthropicStreamRequest struct {
+	Model       string               `json:"model"`
+	MaxTokens   int                  `json:"max_tokens"`
+	Messages    []ocAnthropicMessage `json:"messages"`
+	System      string               `json:"system,omitempty"`
+	Temperature *float64             `json:"temperature,omitempty"`
+	Tools       []ocAnthropicToolDef `json:"tools,omitempty"`
+	Stream      bool                 `json:"stream"`
+}
+
+func (o *OpenCode) streamClaude(ctx context.Context, req *Request) (*EventStream, error) {
+	maxTokens := req.MaxTokens
+	if maxTokens == 0 {
+		maxTokens = 4096
+	}
+
+	body := ocAnthropicStreamRequest{
+		Model:     req.Model,
+		MaxTokens: maxTokens,
+		Messages:  convertToOCAnthropicMessages(req.Messages),
+		System:    req.System,
+		Stream:    true,
+	}
+
+	if req.Temperature != 0 {
+		t := req.Temperature
+		body.Temperature = &t
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToOCAnthropicTools(req.Tools)
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to marshal request: %s", err)}
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/v1/messages", bytes.NewReader(data))
+	if err != nil {
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to create request: %s", err)}
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+o.apiKey)
+	httpReq.Header.Set("anthropic-version", "2023-06-01")
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := o.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{Category: ErrCategoryTimeout, Message: ctx.Err().Error()}
+		}
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: err.Error()}
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to read error response: %s", err)}
+		}
+		return nil, mapOCAnthropicHTTPError(resp.StatusCode, respBody)
+	}
+
+	parser := NewSSEParser(resp.Body)
+	var inputTokens int
+	blocks := make(map[int]anthropicBlockInfo)
+
+	nextFunc := func() (StreamEvent, error) {
+		for {
+			sseEvent, err := parser.Next()
+			if err != nil {
+				if ctx.Err() != nil {
+					return StreamEvent{}, &ProviderError{Category: ErrCategoryTimeout, Message: ctx.Err().Error(), Err: ctx.Err()}
+				}
+				if err == io.EOF {
+					return StreamEvent{}, io.EOF
+				}
+				return StreamEvent{}, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("stream read error: %s", err), Err: err}
+			}
+
+			var event anthropicStreamEvent
+			if err := json.Unmarshal([]byte(sseEvent.Data), &event); err != nil {
+				return StreamEvent{}, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse streaming event: %s", err), Err: err}
+			}
+
+			switch event.Type {
+			case "message_start":
+				if event.Message != nil && event.Message.Usage != nil {
+					inputTokens = event.Message.Usage.InputTokens
+				}
+				continue
+			case "content_block_start":
+				if event.ContentBlock != nil {
+					blocks[event.Index] = anthropicBlockInfo{typ: event.ContentBlock.Type, id: event.ContentBlock.ID, name: event.ContentBlock.Name}
+					if event.ContentBlock.Type == "tool_use" {
+						return StreamEvent{Type: StreamEventToolStart, ToolCallID: event.ContentBlock.ID, ToolName: event.ContentBlock.Name}, nil
+					}
+				}
+				continue
+			case "content_block_delta":
+				if event.Delta == nil {
+					continue
+				}
+				block, ok := blocks[event.Index]
+				if !ok {
+					continue
+				}
+				switch event.Delta.Type {
+				case "text_delta":
+					if event.Delta.Text == "" {
+						continue
+					}
+					return StreamEvent{Type: StreamEventText, Text: event.Delta.Text}, nil
+				case "input_json_delta":
+					if event.Delta.PartialJSON == "" {
+						continue
+					}
+					return StreamEvent{Type: StreamEventToolDelta, ToolCallID: block.id, ToolInput: event.Delta.PartialJSON}, nil
+				}
+				continue
+			case "content_block_stop":
+				block, ok := blocks[event.Index]
+				if ok && block.typ == "tool_use" {
+					return StreamEvent{Type: StreamEventToolEnd, ToolCallID: block.id}, nil
+				}
+				continue
+			case "message_delta":
+				var stopReason string
+				if event.Delta != nil {
+					stopReason = event.Delta.StopReason
+				}
+				var outputTokens int
+				if event.Usage != nil {
+					outputTokens = event.Usage.OutputTokens
+				}
+				return StreamEvent{Type: StreamEventDone, StopReason: stopReason, InputTokens: inputTokens, OutputTokens: outputTokens}, nil
+			case "message_stop":
+				return StreamEvent{}, io.EOF
+			case "ping":
+				continue
+			case "error":
+				if event.Error != nil {
+					return StreamEvent{}, &ProviderError{Category: mapStreamErrorType(event.Error.Type), Message: event.Error.Message}
+				}
+				return StreamEvent{}, &ProviderError{Category: ErrCategoryServer, Message: "unknown stream error"}
+			default:
+				continue
+			}
+		}
+	}
+
+	return NewEventStream(resp.Body, nextFunc), nil
+}
+
+// --- GPT (OpenAI Responses API) streaming ---
+
+type ocResponsesStreamRequest struct {
+	Model           string            `json:"model"`
+	Input           []interface{}     `json:"input"`
+	Temperature     *float64          `json:"temperature,omitempty"`
+	MaxOutputTokens *int              `json:"max_output_tokens,omitempty"`
+	Tools           []ocOpenAIToolDef `json:"tools,omitempty"`
+	Stream          bool              `json:"stream"`
+}
+
+type ocRespStreamEvent struct {
+	Type   string          `json:"type"`
+	ItemID string          `json:"item_id,omitempty"`
+	Item   json.RawMessage `json:"item,omitempty"`
+	Delta  string          `json:"delta,omitempty"`
+	Response json.RawMessage `json:"response,omitempty"`
+}
+
+type ocRespStreamItem struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type ocRespStreamResponse struct {
+	Usage struct {
+		InputTokens  int `json:"input_tokens"`
+		OutputTokens int `json:"output_tokens"`
+	} `json:"usage"`
+}
+
+func (o *OpenCode) streamGPT(ctx context.Context, req *Request) (*EventStream, error) {
+	body := ocResponsesStreamRequest{
+		Model:  req.Model,
+		Input:  convertToOCResponsesMessages(req),
+		Stream: true,
+	}
+
+	if req.Temperature != 0 {
+		t := req.Temperature
+		body.Temperature = &t
+	}
+
+	if req.MaxTokens != 0 {
+		mt := req.MaxTokens
+		body.MaxOutputTokens = &mt
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToOCOpenAITools(req.Tools)
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to marshal request: %s", err)}
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/v1/responses", bytes.NewReader(data))
+	if err != nil {
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to create request: %s", err)}
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+o.apiKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := o.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{Category: ErrCategoryTimeout, Message: ctx.Err().Error()}
+		}
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: err.Error()}
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to read error response: %s", err)}
+		}
+		return nil, mapOCOpenAIHTTPError(resp.StatusCode, respBody)
+	}
+
+	parser := NewSSEParser(resp.Body)
+
+	nextFunc := func() (StreamEvent, error) {
+		for {
+			sseEvent, err := parser.Next()
+			if err != nil {
+				if ctx.Err() != nil {
+					return StreamEvent{}, &ProviderError{Category: ErrCategoryTimeout, Message: ctx.Err().Error(), Err: ctx.Err()}
+				}
+				if err == io.EOF {
+					return StreamEvent{}, io.EOF
+				}
+				return StreamEvent{}, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("stream read error: %s", err), Err: err}
+			}
+
+			if sseEvent.Data == "[DONE]" {
+				return StreamEvent{}, io.EOF
+			}
+
+			var event ocRespStreamEvent
+			if err := json.Unmarshal([]byte(sseEvent.Data), &event); err != nil {
+				return StreamEvent{}, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse streaming event: %s", err), Err: err}
+			}
+
+			switch event.Type {
+			case "response.content_part.delta":
+				if event.Delta == "" {
+					continue
+				}
+				return StreamEvent{Type: StreamEventText, Text: event.Delta}, nil
+
+			case "response.output_item.added":
+				var item ocRespStreamItem
+				if err := json.Unmarshal(event.Item, &item); err != nil {
+					continue
+				}
+				if item.Type == "function_call" {
+					return StreamEvent{Type: StreamEventToolStart, ToolCallID: item.ID, ToolName: item.Name}, nil
+				}
+				continue
+
+			case "response.function_call_arguments.delta":
+				return StreamEvent{Type: StreamEventToolDelta, ToolCallID: event.ItemID, ToolInput: event.Delta}, nil
+
+			case "response.output_item.done":
+				var item ocRespStreamItem
+				if err := json.Unmarshal(event.Item, &item); err != nil {
+					continue
+				}
+				if item.Type == "function_call" {
+					return StreamEvent{Type: StreamEventToolEnd, ToolCallID: item.ID}, nil
+				}
+				continue
+
+			case "response.completed":
+				var respObj ocRespStreamResponse
+				if err := json.Unmarshal(event.Response, &respObj); err == nil {
+					return StreamEvent{
+						Type:         StreamEventDone,
+						InputTokens:  respObj.Usage.InputTokens,
+						OutputTokens: respObj.Usage.OutputTokens,
+					}, nil
+				}
+				return StreamEvent{Type: StreamEventDone}, nil
+
+			default:
+				continue
+			}
+		}
+	}
+
+	return NewEventStream(resp.Body, nextFunc), nil
+}
+
+// --- Chat Completions streaming ---
+
+type ocChatStreamRequest struct {
+	Model         string             `json:"model"`
+	Messages      []ocChatMessage    `json:"messages"`
+	Temperature   *float64           `json:"temperature,omitempty"`
+	MaxTokens     *int               `json:"max_tokens,omitempty"`
+	Tools         []ocOpenAIToolDef  `json:"tools,omitempty"`
+	Stream        bool               `json:"stream"`
+	StreamOptions *ocStreamOptions   `json:"stream_options,omitempty"`
+}
+
+type ocStreamOptions struct {
+	IncludeUsage bool `json:"include_usage"`
+}
+
+func (o *OpenCode) streamChatCompletions(ctx context.Context, req *Request) (*EventStream, error) {
+	body := ocChatStreamRequest{
+		Model:         req.Model,
+		Messages:      convertToOCChatMessages(req),
+		Stream:        true,
+		StreamOptions: &ocStreamOptions{IncludeUsage: true},
+	}
+
+	if req.Temperature != 0 {
+		t := req.Temperature
+		body.Temperature = &t
+	}
+
+	if req.MaxTokens != 0 {
+		mt := req.MaxTokens
+		body.MaxTokens = &mt
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToOCOpenAITools(req.Tools)
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to marshal request: %s", err)}
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/v1/chat/completions", bytes.NewReader(data))
+	if err != nil {
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to create request: %s", err)}
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+o.apiKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := o.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{Category: ErrCategoryTimeout, Message: ctx.Err().Error()}
+		}
+		return nil, &ProviderError{Category: ErrCategoryServer, Message: err.Error()}
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to read error response: %s", err)}
+		}
+		return nil, mapOCOpenAIHTTPError(resp.StatusCode, respBody)
+	}
+
+	parser := NewSSEParser(resp.Body)
+	toolCalls := make(map[int]struct{ id, name string })
+	var finishReason string
+	var gotUsage bool
+	var pendingToolEnds []StreamEvent
+
+	nextFunc := func() (StreamEvent, error) {
+		for {
+			if len(pendingToolEnds) > 0 {
+				ev := pendingToolEnds[0]
+				pendingToolEnds = pendingToolEnds[1:]
+				return ev, nil
+			}
+
+			sseEvent, err := parser.Next()
+			if err != nil {
+				if ctx.Err() != nil {
+					return StreamEvent{}, &ProviderError{Category: ErrCategoryTimeout, Message: ctx.Err().Error(), Err: ctx.Err()}
+				}
+				if err == io.EOF {
+					return StreamEvent{}, io.EOF
+				}
+				return StreamEvent{}, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("stream read error: %s", err), Err: err}
+			}
+
+			if sseEvent.Data == "[DONE]" {
+				if !gotUsage {
+					return StreamEvent{Type: StreamEventDone, StopReason: finishReason}, nil
+				}
+				return StreamEvent{}, io.EOF
+			}
+
+			var chunk openaiStreamChunk
+			if err := json.Unmarshal([]byte(sseEvent.Data), &chunk); err != nil {
+				return StreamEvent{}, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse streaming chunk: %s", err), Err: err}
+			}
+
+			if len(chunk.Choices) == 0 {
+				if chunk.Usage != nil {
+					gotUsage = true
+					return StreamEvent{
+						Type:         StreamEventDone,
+						InputTokens:  chunk.Usage.PromptTokens,
+						OutputTokens: chunk.Usage.CompletionTokens,
+						StopReason:   finishReason,
+					}, nil
+				}
+				continue
+			}
+
+			choice := chunk.Choices[0]
+
+			if choice.Delta.Content != nil && *choice.Delta.Content != "" {
+				return StreamEvent{Type: StreamEventText, Text: *choice.Delta.Content}, nil
+			}
+
+			if len(choice.Delta.ToolCalls) > 0 {
+				tc := choice.Delta.ToolCalls[0]
+				if tc.ID != "" {
+					toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: tc.Function.Name}
+					return StreamEvent{Type: StreamEventToolStart, ToolCallID: tc.ID, ToolName: tc.Function.Name}, nil
+				}
+				info := toolCalls[tc.Index]
+				args := ""
+				if tc.Function != nil {
+					args = tc.Function.Arguments
+				}
+				return StreamEvent{Type: StreamEventToolDelta, ToolCallID: info.id, ToolInput: args}, nil
+			}
+
+			if choice.FinishReason != nil {
+				fr := *choice.FinishReason
+				finishReason = fr
+				if fr == "tool_calls" {
+					indices := make([]int, 0, len(toolCalls))
+					for idx := range toolCalls {
+						indices = append(indices, idx)
+					}
+					sort.Ints(indices)
+					for _, idx := range indices {
+						info := toolCalls[idx]
+						pendingToolEnds = append(pendingToolEnds, StreamEvent{Type: StreamEventToolEnd, ToolCallID: info.id})
+					}
+				}
+				continue
+			}
+
+			continue
+		}
+	}
+
+	return NewEventStream(resp.Body, nextFunc), nil
 }
 
 // ---------------------------------------------------------------------------

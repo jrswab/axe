@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1076,6 +1077,329 @@ func TestOpenCode_Send_ChatCompletions_ServerError(t *testing.T) {
 		Messages: []Message{{Role: "user", Content: "hi"}},
 	})
 	assertProviderError(t, err, ErrCategoryServer)
+}
+
+// ---------------------------------------------------------------------------
+// Streaming Tests
+// ---------------------------------------------------------------------------
+
+func sseData(jsonStr string) string {
+	return "data: " + jsonStr + "\n\n"
+}
+
+func TestOpenCode_SendStream_ClaudeRoute(t *testing.T) {
+	var capturedPath string
+	var capturedBody []byte
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		capturedBody, _ = readBody(r)
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, sseData(`{"type":"message_start","message":{"id":"msg_1","usage":{"input_tokens":10}}}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"content_block_start","index":0,"content_block":{"type":"text"}}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello"}}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"content_block_stop","index":0}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"message_stop"}`))
+	}))
+	defer srv.Close()
+
+	p, _ := NewOpenCode("zen-key", WithOpenCodeBaseURL(srv.URL))
+	stream, err := p.SendStream(context.Background(), &Request{
+		Model:    "claude-sonnet-4-6",
+		Messages: []Message{{Role: "user", Content: "hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	if capturedPath != "/v1/messages" {
+		t.Errorf("expected path '/v1/messages', got %q", capturedPath)
+	}
+	if !strings.Contains(string(capturedBody), `"stream":true`) {
+		t.Errorf("expected stream:true in body, got %s", capturedBody)
+	}
+
+	// text + done = 2
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got %d: %+v", len(events), events)
+	}
+	if events[0].Type != StreamEventText || events[0].Text != "Hello" {
+		t.Errorf("event 0: expected text 'Hello', got type=%s text=%q", events[0].Type, events[0].Text)
+	}
+	if events[1].Type != StreamEventDone {
+		t.Errorf("event 1: expected done, got type=%s", events[1].Type)
+	}
+	if events[1].InputTokens != 10 {
+		t.Errorf("expected 10 input tokens, got %d", events[1].InputTokens)
+	}
+	if events[1].OutputTokens != 5 {
+		t.Errorf("expected 5 output tokens, got %d", events[1].OutputTokens)
+	}
+}
+
+func TestOpenCode_SendStream_GPTRoute(t *testing.T) {
+	var capturedPath string
+	var capturedBody []byte
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		capturedBody, _ = readBody(r)
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, sseData(`{"type":"response.content_part.delta","delta":"Hello"}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"response.output_item.added","item":{"type":"function_call","id":"fc_1","name":"read_file"}}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"response.function_call_arguments.delta","item_id":"fc_1","delta":"{\"path\":\"/tmp\"}"}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"response.output_item.done","item":{"type":"function_call","id":"fc_1"}}`))
+		_, _ = fmt.Fprint(w, sseData(`{"type":"response.completed","response":{"usage":{"input_tokens":8,"output_tokens":4}}}`))
+		_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	p, _ := NewOpenCode("zen-key", WithOpenCodeBaseURL(srv.URL))
+	stream, err := p.SendStream(context.Background(), &Request{
+		Model:    "gpt-5",
+		Messages: []Message{{Role: "user", Content: "hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	if capturedPath != "/v1/responses" {
+		t.Errorf("expected path '/v1/responses', got %q", capturedPath)
+	}
+	if !strings.Contains(string(capturedBody), `"stream":true`) {
+		t.Errorf("expected stream:true in body, got %s", capturedBody)
+	}
+
+	// text + tool_start + tool_delta + tool_end + done = 5
+	if len(events) != 5 {
+		t.Fatalf("expected 5 events, got %d: %+v", len(events), events)
+	}
+	if events[0].Type != StreamEventText || events[0].Text != "Hello" {
+		t.Errorf("event 0: expected text, got type=%s", events[0].Type)
+	}
+	if events[1].Type != StreamEventToolStart || events[1].ToolName != "read_file" {
+		t.Errorf("event 1: expected tool_start read_file, got type=%s name=%s", events[1].Type, events[1].ToolName)
+	}
+	if events[2].Type != StreamEventToolDelta {
+		t.Errorf("event 2: expected tool_delta, got type=%s", events[2].Type)
+	}
+	if events[3].Type != StreamEventToolEnd || events[3].ToolCallID != "fc_1" {
+		t.Errorf("event 3: expected tool_end fc_1, got type=%s id=%s", events[3].Type, events[3].ToolCallID)
+	}
+	if events[4].Type != StreamEventDone {
+		t.Errorf("event 4: expected done, got type=%s", events[4].Type)
+	}
+	if events[4].InputTokens != 8 {
+		t.Errorf("expected 8 input tokens, got %d", events[4].InputTokens)
+	}
+}
+
+func TestOpenCode_SendStream_ChatCompletionsRoute(t *testing.T) {
+	var capturedPath string
+	var capturedBody []byte
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		capturedBody, _ = readBody(r)
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, sseData(`{"choices":[{"index":0,"delta":{"content":"Hello"}}]}`))
+		_, _ = fmt.Fprint(w, sseData(`{"choices":[{"index":0,"delta":{"content":" world"}}]}`))
+		_, _ = fmt.Fprint(w, sseData(`{"choices":[{"index":0,"finish_reason":"stop","delta":{}}]}`))
+		_, _ = fmt.Fprint(w, sseData(`{"choices":[],"usage":{"prompt_tokens":12,"completion_tokens":6}}`))
+		_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	p, _ := NewOpenCode("zen-key", WithOpenCodeBaseURL(srv.URL))
+	stream, err := p.SendStream(context.Background(), &Request{
+		Model:    "kimi-k2",
+		Messages: []Message{{Role: "user", Content: "hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	if capturedPath != "/v1/chat/completions" {
+		t.Errorf("expected path '/v1/chat/completions', got %q", capturedPath)
+	}
+	if !strings.Contains(string(capturedBody), `"stream":true`) {
+		t.Errorf("expected stream:true in body, got %s", capturedBody)
+	}
+	if !strings.Contains(string(capturedBody), `"stream_options"`) {
+		t.Errorf("expected stream_options in body, got %s", capturedBody)
+	}
+
+	// 2 text + 1 done = 3
+	if len(events) != 3 {
+		t.Fatalf("expected 3 events, got %d: %+v", len(events), events)
+	}
+	if events[0].Type != StreamEventText || events[0].Text != "Hello" {
+		t.Errorf("event 0: expected text 'Hello', got type=%s text=%q", events[0].Type, events[0].Text)
+	}
+	if events[1].Type != StreamEventText || events[1].Text != " world" {
+		t.Errorf("event 1: expected text ' world', got type=%s text=%q", events[1].Type, events[1].Text)
+	}
+	if events[2].Type != StreamEventDone {
+		t.Errorf("event 2: expected done, got type=%s", events[2].Type)
+	}
+	if events[2].InputTokens != 12 {
+		t.Errorf("expected 12 input tokens, got %d", events[2].InputTokens)
+	}
+	if events[2].OutputTokens != 6 {
+		t.Errorf("expected 6 output tokens, got %d", events[2].OutputTokens)
+	}
+}
+
+func TestOpenCode_SendStream_UnknownModelFallsThrough(t *testing.T) {
+	var capturedPath string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, sseData(`{"choices":[{"index":0,"delta":{"content":"ok"}}]}`))
+		_, _ = fmt.Fprint(w, sseData(`{"choices":[{"index":0,"finish_reason":"stop","delta":{}}]}`))
+		_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	p, _ := NewOpenCode("zen-key", WithOpenCodeBaseURL(srv.URL))
+	stream, err := p.SendStream(context.Background(), &Request{
+		Model:    "mistral-7b",
+		Messages: []Message{{Role: "user", Content: "hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	for {
+		_, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+	}
+
+	if capturedPath != "/v1/chat/completions" {
+		t.Errorf("expected path '/v1/chat/completions', got %q", capturedPath)
+	}
+}
+
+func TestOpenCode_SendStream_ErrorResponse(t *testing.T) {
+	routes := []struct {
+		model string
+		name  string
+	}{
+		{"claude-sonnet-4-6", "claude"},
+		{"gpt-5", "gpt"},
+		{"kimi-k2", "chat"},
+	}
+
+	for _, tc := range routes {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusUnauthorized)
+			}))
+			defer srv.Close()
+
+			p, _ := NewOpenCode("bad-key", WithOpenCodeBaseURL(srv.URL))
+			_, err := p.SendStream(context.Background(), &Request{
+				Model:    tc.model,
+				Messages: []Message{{Role: "user", Content: "hi"}},
+			})
+			assertProviderError(t, err, ErrCategoryAuth)
+		})
+	}
+}
+
+func TestOpenCode_SendStream_ContextCancelled(t *testing.T) {
+	routes := []struct {
+		model string
+		name  string
+	}{
+		{"claude-sonnet-4-6", "claude"},
+		{"gpt-5", "gpt"},
+		{"kimi-k2", "chat"},
+	}
+
+	for _, tc := range routes {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.(http.Flusher).Flush()
+				<-r.Context().Done()
+			}))
+			defer srv.Close()
+
+			p, _ := NewOpenCode("zen-key", WithOpenCodeBaseURL(srv.URL))
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			defer cancel()
+
+			stream, err := p.SendStream(ctx, &Request{
+				Model:    tc.model,
+				Messages: []Message{{Role: "user", Content: "hi"}},
+			})
+			if err != nil {
+				assertProviderError(t, err, ErrCategoryTimeout)
+				return
+			}
+			defer func() { _ = stream.Close() }()
+
+			for {
+				_, err := stream.Next()
+				if err == nil {
+					continue
+				}
+				if err == io.EOF {
+					t.Fatal("expected timeout error, got EOF")
+				}
+				assertProviderError(t, err, ErrCategoryTimeout)
+				break
+			}
+		})
+	}
 }
 
 // ---------------------------------------------------------------------------

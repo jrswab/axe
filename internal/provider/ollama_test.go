@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -808,6 +809,313 @@ func TestOllama_Send_ToolResultMessage(t *testing.T) {
 				t.Errorf("expected content 'Another result', got %v", msg["content"])
 			}
 		}
+	}
+}
+
+// --- Streaming Tests ---
+
+func TestOllama_SendStream_RequestFormat(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotStream interface{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+
+		body, _ := io.ReadAll(r.Body)
+		var req map[string]interface{}
+		_ = json.Unmarshal(body, &req)
+		gotStream = req["stream"]
+
+		// Return NDJSON: one text chunk then done
+		_, _ = fmt.Fprintln(w, `{"message":{"content":"hi"},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":""},"done":true,"done_reason":"stop","prompt_eval_count":5,"eval_count":2}`)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	// Drain the stream
+	for {
+		_, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+	}
+
+	if gotMethod != "POST" {
+		t.Errorf("expected POST, got %s", gotMethod)
+	}
+	if gotPath != "/api/chat" {
+		t.Errorf("expected /api/chat, got %s", gotPath)
+	}
+	if gotStream != true {
+		t.Errorf("expected stream=true, got %v", gotStream)
+	}
+}
+
+func TestOllama_SendStream_TextDeltas(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintln(w, `{"message":{"content":"Hello"},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":" "},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":"world"},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":""},"done":true,"done_reason":"stop","prompt_eval_count":10,"eval_count":20}`)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// Expect 3 text events + 1 done
+	if len(events) != 4 {
+		t.Fatalf("expected 4 events, got %d", len(events))
+	}
+
+	if events[0].Type != StreamEventText || events[0].Text != "Hello" {
+		t.Errorf("event 0: expected text 'Hello', got type=%s text=%q", events[0].Type, events[0].Text)
+	}
+	if events[1].Type != StreamEventText || events[1].Text != " " {
+		t.Errorf("event 1: expected text ' ', got type=%s text=%q", events[1].Type, events[1].Text)
+	}
+	if events[2].Type != StreamEventText || events[2].Text != "world" {
+		t.Errorf("event 2: expected text 'world', got type=%s text=%q", events[2].Type, events[2].Text)
+	}
+	if events[3].Type != StreamEventDone {
+		t.Errorf("event 3: expected done, got type=%s", events[3].Type)
+	}
+	if events[3].StopReason != "stop" {
+		t.Errorf("expected stop reason 'stop', got %q", events[3].StopReason)
+	}
+	if events[3].InputTokens != 10 {
+		t.Errorf("expected 10 input tokens, got %d", events[3].InputTokens)
+	}
+	if events[3].OutputTokens != 20 {
+		t.Errorf("expected 20 output tokens, got %d", events[3].OutputTokens)
+	}
+}
+
+func TestOllama_SendStream_ToolCalls(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintln(w, `{"message":{"content":"","tool_calls":[{"function":{"name":"get_weather","arguments":{"city":"NYC"}}},{"function":{"name":"get_time","arguments":{"tz":"EST"}}}]},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":""},"done":true,"done_reason":"stop","prompt_eval_count":8,"eval_count":4}`)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "What's the weather?"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// 2 tool calls × (start + end) + 1 done = 5 events
+	if len(events) != 5 {
+		t.Fatalf("expected 5 events, got %d: %+v", len(events), events)
+	}
+
+	if events[0].Type != StreamEventToolStart || events[0].ToolName != "get_weather" {
+		t.Errorf("event 0: expected tool_start get_weather, got type=%s name=%s", events[0].Type, events[0].ToolName)
+	}
+	if events[0].ToolCallID != "ollama_0" {
+		t.Errorf("event 0: expected ID 'ollama_0', got %q", events[0].ToolCallID)
+	}
+	if events[1].Type != StreamEventToolEnd || events[1].ToolCallID != "ollama_0" {
+		t.Errorf("event 1: expected tool_end ollama_0, got type=%s id=%s", events[1].Type, events[1].ToolCallID)
+	}
+	if events[2].Type != StreamEventToolStart || events[2].ToolName != "get_time" {
+		t.Errorf("event 2: expected tool_start get_time, got type=%s name=%s", events[2].Type, events[2].ToolName)
+	}
+	if events[2].ToolCallID != "ollama_1" {
+		t.Errorf("event 2: expected ID 'ollama_1', got %q", events[2].ToolCallID)
+	}
+	if events[3].Type != StreamEventToolEnd || events[3].ToolCallID != "ollama_1" {
+		t.Errorf("event 3: expected tool_end ollama_1, got type=%s id=%s", events[3].Type, events[3].ToolCallID)
+	}
+	if events[4].Type != StreamEventDone {
+		t.Errorf("event 4: expected done, got type=%s", events[4].Type)
+	}
+}
+
+func TestOllama_SendStream_EmptyContent(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintln(w, `{"message":{"content":""},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":"Hello"},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":""},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":""},"done":true,"done_reason":"stop","prompt_eval_count":5,"eval_count":3}`)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// Only 1 text event (empty content skipped) + 1 done = 2
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got %d", len(events))
+	}
+	if events[0].Type != StreamEventText || events[0].Text != "Hello" {
+		t.Errorf("event 0: expected text 'Hello', got type=%s text=%q", events[0].Type, events[0].Text)
+	}
+	if events[1].Type != StreamEventDone {
+		t.Errorf("event 1: expected done, got type=%s", events[1].Type)
+	}
+}
+
+func TestOllama_SendStream_ErrorResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(500)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.SendStream(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T", err)
+	}
+	if provErr.Category != ErrCategoryServer {
+		t.Errorf("expected ErrCategoryServer, got %s", provErr.Category)
+	}
+}
+
+func TestOllama_SendStream_MalformedJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintln(w, `not valid json at all`)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error from SendStream: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	_, err = stream.Next()
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryServer {
+		t.Errorf("expected ErrCategoryServer, got %s", provErr.Category)
+	}
+}
+
+func TestOllama_SendStream_ContextCancelled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	stream, err := o.SendStream(ctx, &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		var provErr *ProviderError
+		if !errors.As(err, &provErr) {
+			t.Fatalf("expected ProviderError, got %T", err)
+		}
+		if provErr.Category != ErrCategoryTimeout {
+			t.Errorf("expected ErrCategoryTimeout, got %s", provErr.Category)
+		}
+		return
+	}
+	defer func() { _ = stream.Close() }()
+
+	for {
+		_, err := stream.Next()
+		if err == nil {
+			continue
+		}
+		if err == io.EOF {
+			t.Fatal("expected timeout error, got EOF")
+		}
+		var provErr *ProviderError
+		if !errors.As(err, &provErr) {
+			t.Fatalf("expected ProviderError, got %T: %v", err, err)
+		}
+		if provErr.Category != ErrCategoryTimeout {
+			t.Errorf("expected ErrCategoryTimeout, got %s", provErr.Category)
+		}
+		break
 	}
 }
 

@@ -41,7 +41,7 @@ Implement `SendStream()` on the Anthropic provider. Anthropic SSE uses
 typed events (`message_start`, `content_block_delta`, etc.) that map to
 the same `StreamEvent` types.
 
-### M5 — Remaining Provider Streaming
+### M5 — Remaining Provider Streaming ✅
 
 Implement `SendStream()` on Ollama (NDJSON), Gemini (SSE), MiniMax
 (Anthropic-compatible SSE), and OpenCode (delegates to underlying route).

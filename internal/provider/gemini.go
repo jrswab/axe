@@ -378,6 +378,185 @@ func (g *Gemini) Send(ctx context.Context, req *Request) (*Response, error) {
 	return resp, nil
 }
 
+// SendStream makes a streaming completion request to the Google Gemini API.
+func (g *Gemini) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
+	body := geminiRequest{
+		Contents: convertToGeminiContents(req.Messages),
+	}
+
+	if req.System != "" {
+		body.SystemInstruction = &geminiSystemInstruction{
+			Parts: []geminiPart{{Text: req.System}},
+		}
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToGeminiTools(req.Tools)
+	}
+
+	var genCfg geminiGenerationConfig
+	hasGenCfg := false
+	if req.Temperature != 0 {
+		temp := req.Temperature
+		genCfg.Temperature = &temp
+		hasGenCfg = true
+	}
+	if req.MaxTokens != 0 {
+		mt := req.MaxTokens
+		genCfg.MaxOutputTokens = &mt
+		hasGenCfg = true
+	}
+	if hasGenCfg {
+		body.GenerationConfig = &genCfg
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/v1beta/models/%s:streamGenerateContent?alt=sse", g.baseURL, req.Model)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("x-goog-api-key", g.apiKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := g.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryTimeout,
+				Message:  ctx.Err().Error(),
+				Err:      ctx.Err(),
+			}
+		}
+		return nil, &ProviderError{
+			Category: ErrCategoryServer,
+			Message:  err.Error(),
+			Err:      err,
+		}
+	}
+
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		respBody, err := io.ReadAll(httpResp.Body)
+		_ = httpResp.Body.Close()
+		if err != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryServer,
+				Message:  fmt.Sprintf("failed to read error response: %s", err),
+				Err:      err,
+			}
+		}
+		return nil, g.handleErrorResponse(httpResp.StatusCode, respBody)
+	}
+
+	parser := NewSSEParser(httpResp.Body)
+	toolCallIdx := 0
+	var finishReason string
+	var inputTokens, outputTokens int
+	doneEmitted := false
+	var pending []StreamEvent
+
+	nextFunc := func() (StreamEvent, error) {
+		for {
+			if len(pending) > 0 {
+				ev := pending[0]
+				pending = pending[1:]
+				return ev, nil
+			}
+
+			sseEvent, err := parser.Next()
+			if err != nil {
+				if ctx.Err() != nil {
+					return StreamEvent{}, &ProviderError{
+						Category: ErrCategoryTimeout,
+						Message:  ctx.Err().Error(),
+						Err:      ctx.Err(),
+					}
+				}
+				if err == io.EOF {
+					if !doneEmitted {
+						doneEmitted = true
+						return StreamEvent{
+							Type:         StreamEventDone,
+							StopReason:   finishReason,
+							InputTokens:  inputTokens,
+							OutputTokens: outputTokens,
+						}, nil
+					}
+					return StreamEvent{}, io.EOF
+				}
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  fmt.Sprintf("stream read error: %s", err),
+					Err:      err,
+				}
+			}
+
+			var chunk geminiResponse
+			if err := json.Unmarshal([]byte(sseEvent.Data), &chunk); err != nil {
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  fmt.Sprintf("failed to parse streaming chunk: %s", err),
+					Err:      err,
+				}
+			}
+
+			if chunk.UsageMetadata != nil {
+				inputTokens = chunk.UsageMetadata.PromptTokenCount
+				outputTokens = chunk.UsageMetadata.CandidatesTokenCount
+			}
+
+			if len(chunk.Candidates) == 0 {
+				continue
+			}
+
+			candidate := chunk.Candidates[0]
+			if candidate.FinishReason != "" {
+				finishReason = candidate.FinishReason
+			}
+
+			if candidate.Content == nil {
+				continue
+			}
+
+			for _, part := range candidate.Content.Parts {
+				if part.FunctionCall != nil {
+					args := make(map[string]string)
+					for k, v := range part.FunctionCall.Args {
+						args[k] = fmt.Sprintf("%v", v)
+					}
+					id := fmt.Sprintf("gemini_%d", toolCallIdx)
+					toolCallIdx++
+					argsJSON, _ := json.Marshal(args)
+					pending = append(pending, StreamEvent{
+						Type:       StreamEventToolStart,
+						ToolCallID: id,
+						ToolName:   part.FunctionCall.Name,
+						ToolInput:  string(argsJSON),
+					})
+					pending = append(pending, StreamEvent{
+						Type:       StreamEventToolEnd,
+						ToolCallID: id,
+					})
+				} else if part.Text != "" {
+					pending = append(pending, StreamEvent{
+						Type: StreamEventText,
+						Text: part.Text,
+					})
+				}
+			}
+
+			continue
+		}
+	}
+
+	return NewEventStream(httpResp.Body, nextFunc), nil
+}
+
 // handleErrorResponse maps HTTP error responses to ProviderError.
 func (g *Gemini) handleErrorResponse(status int, body []byte) *ProviderError {
 	message := http.StatusText(status)
