@@ -3,7 +3,7 @@
   "checkpoint_id": "ca90381ec047",
   "strategy": "manual-commit",
   "branch": "ISS-59/enable-response-streaming",
-  "checkpoints_count": 11,
+  "checkpoints_count": 12,
   "files_touched": [
     "cmd/run.go",
     "cmd/testdata/golden/dry-run/basic.txt",
@@ -58,13 +58,19 @@
       "transcript": "/ca/90381ec047/4/full.jsonl",
       "content_hash": "/ca/90381ec047/4/content_hash.txt",
       "prompt": "/ca/90381ec047/4/prompt.txt"
+    },
+    {
+      "metadata": "/ca/90381ec047/5/metadata.json",
+      "transcript": "/ca/90381ec047/5/full.jsonl",
+      "content_hash": "/ca/90381ec047/5/content_hash.txt",
+      "prompt": "/ca/90381ec047/5/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 14,
-    "cache_creation_tokens": 157514,
-    "cache_read_tokens": 457316,
-    "output_tokens": 1313,
-    "api_call_count": 12
+    "input_tokens": 15,
+    "cache_creation_tokens": 159559,
+    "cache_read_tokens": 537973,
+    "output_tokens": 1431,
+    "api_call_count": 13
   }
 }
