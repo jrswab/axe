@@ -241,8 +241,6 @@ func GeminiErrorResponse(statusCode int, message string) MockLLMResponse {
 	return MockLLMResponse{StatusCode: statusCode, Body: body}
 }
 
-// OpenAIStreamResponse returns a MockLLMResponse with SSE-formatted OpenAI
-// streaming chunks for a text-only response.
 // AnthropicStreamResponse returns a MockLLMResponse with SSE-formatted
 // Anthropic streaming events for a text-only response.
 func AnthropicStreamResponse(text string, inputTokens, outputTokens int) MockLLMResponse {
