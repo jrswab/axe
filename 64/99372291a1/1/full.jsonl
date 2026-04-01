@@ -1,0 +1,254 @@
+{
+  "info": {
+    "id": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+    "slug": "calm-planet",
+    "projectID": "f41eda22c31366c4dba329069ee3369b2d9dd378",
+    "directory": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+    "title": "Create implementation guide",
+    "version": "1.3.10",
+    "summary": {
+      "additions": 0,
+      "deletions": 0,
+      "files": 0
+    },
+    "time": {
+      "created": 1775061214648,
+      "updated": 1775061229849
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775061214658
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d49e4a5be001fmxuI1ZRZIHSRE",
+        "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "## Objective\nCreate an implementation guide from a specification document.\n**DO NOT do the work.** ONLY produce the implementation guide as defined below.\n\n## Requirements\n- If docs/plans/ISS-59_m4_anthropic_streaming_spec.md is empty or omitted, pull the latest `*_spec.md` from `docs/plans/` and verify it with the user.\n- Read the spec's **Context & Constraints** before writing tasks. Do not re-derive or re-evaluate decisions already made there.\n- Each task must reference the exact file path and function/method (e.g. `internal/handler/auth.go: UpdateUser()`).\n- Each task must be implementable and testable in isolation.\n- Tasks ordered by dependency and priority.\n- If anything is unclear, ask — then update the spec to match.\n- Specifiy which parts of the implementation checklist can be done in parallel.\n- Place the file in `docs/plans/` with the name `xxx_nnn_implement.md`\n  - \"xxx\" = linear id matching the spec file\n  - \"nnn\" = task to achieve\n\n## Testing Rules\n- Test real code, not mocks. If deleting the code under test doesn't break the test, the test adds no value.\n- Mock at the router level only for auth gating, input validation, and error propagation.\n\n## Document Structure\n\n### Section 1: Context Summary\nOne paragraph summarizing the *why* behind this implementation, drawn from the spec's Context & Constraints. Anchors the executing agent without needing to re-read the spec.\n\n### Section 2: Implementation Checklist\n- `- [ ] {Task description}` format\n- Exact file path and function/method on each task\n- Include test tasks alongside implementation tasks",
+          "id": "prt_d49e4a5c3001BW0PC6Z9Bj5JsY",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5be001fmxuI1ZRZIHSRE"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d49e4a5be001fmxuI1ZRZIHSRE",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.06305025,
+        "tokens": {
+          "total": 85899,
+          "input": 1,
+          "output": 230,
+          "reasoning": 0,
+          "cache": {
+            "write": 2515,
+            "read": 83153
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775061214664,
+          "completed": 1775061303618
+        },
+        "finish": "stop",
+        "id": "msg_d49e4a5c8001KNQniTKojZOY2f",
+        "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu"
+      },
+      "parts": [
+        {
+          "snapshot": "3e2b2a887f23824cb1217b32e84dcf59aeb3dbf8",
+          "type": "step-start",
+          "id": "prt_d49e4bfd8001o9NDyO2UyLrfWh",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "\n\nLet me start by reading the spec file and understanding the current codebase state.",
+          "time": {
+            "start": 1775061222155,
+            "end": 1775061222155
+          },
+          "id": "prt_d49e4bfd9001hHVoo08a15jAL4",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "reasoning",
+          "text": "Now let me read the relevant source files to get exact function signatures and line numbers for the implementation guide.",
+          "time": {
+            "start": 1775061225562,
+            "end": 1775061226385
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "ErUCClkIDBgCKkBNlczArYDy0jvGe/M3nfBwqqtF+bwWNs8RdO7pLxGAVvCxK2J+L+OTMEXf+gc9nSPRh4ZnspKGXO5GxyjoKMheMg9jbGF1ZGUtb3B1cy00LTY4ABIMVwnShYYr6yzIEnxqGgwoZ1NyFavgFF2MtC4iMF/DC9yl68j5g+HscBb7DHnW8+ExokC3Fj79vQSuab+9i38UBx2DFXO7/YUTY4RUriqJARBBax0kd+Tmla/Z3OInHVRcg/kByBPhPTp1JcREuiUu8yRs1GuqwvnSoo9Vxkh/N0yY0CdmTZ4c2mdsmnP+ZPKyfghmtUXcYPWj7ip1PL90uzihUFpvdEmDsJBxBvd8bm8PZTlvhJEJUlOmS/jBg8kN/WjB1jQ/04aB/rWsZQB+RbZHrVjUaxpGGAE="
+            }
+          },
+          "id": "prt_d49e4d05a0018VwVJq0EDjWCdZ",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "Now let me read the key source files to get exact function signatures and line numbers.",
+          "time": {
+            "start": 1775061227017,
+            "end": 1775061227017
+          },
+          "id": "prt_d49e4d393001W0lI3eJy5wvxO1",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "reasoning",
+          "text": "Now let me check the provider error categories to make sure I reference them correctly.",
+          "time": {
+            "start": 1775061230904,
+            "end": 1775061231969
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EpICClkIDBgCKkCfk38uUPecvDjRBAfY4iaiU1xjKHvwzoEFu4dvcbhtmHMlFHrVUITYEkB91Qkdc+4bwvWVCY+hR7/H7pvV7v40Mg9jbGF1ZGUtb3B1cy00LTY4ABIMt4eLziG+bZ76XAQqGgykL2hUnil0Nd5AAUYiMLwMDps+aBNiX+t/3d6wd75LK9ZgO+8amO4IQx/IPx8oY9KI380elA6Tuhc6cchzYipnRCTrgkW7/Yg/GxF7GdZDBn9vVH1ydVHlwH42u6wNcHqioYD+PdW11/eTPXrOTTprtITUIScgjt77sbbPhmgOBPaJMCbxy5Q/p9lfW0zEDveQqBacBPi5UzFBFtqrKi4xiKgW92v+wxgB"
+            }
+          },
+          "id": "prt_d49e4e538001f5y8knM6ifVVeV",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "Let me check the error categories available.",
+          "time": {
+            "start": 1775061232229,
+            "end": 1775061232229
+          },
+          "id": "prt_d49e4e96a0015blhD4uWYK8esw",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "Now let me check the existing test file for the Anthropic provider to understand the test patterns.",
+          "time": {
+            "start": 1775061235836,
+            "end": 1775061235836
+          },
+          "id": "prt_d49e4f4db00199CAeqsedadEDh",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "reasoning",
+          "text": "Let me check the OpenAI streaming tests to see the test patterns used there.",
+          "time": {
+            "start": 1775061239128,
+            "end": 1775061239982
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EocCClkIDBgCKkADzXnnxoiev8GLtdhGooRx0P+cx0UFQiGBNWGwc1iHj9VFtM9OGpjuSVIzQSyNOT44i5CVHESFP6w8BUkS7Ij0Mg9jbGF1ZGUtb3B1cy00LTY4ABIMwftNaAtLkvmcUTmgGgwV/RZJf+n8X5UI8swiMBFrM4aFf5HMWmBkN7EdoVkCUrgKqRxP2w4ZsqXDkEMdftXX3PqHccMWYMh5ZwLp+ipcEsY9Jn5sAQ7ve3CVk/fYH1O3sEArbhB3MpmXd9hXSJ8yizOA+fwDIl4J3rEhAA0PvVMuqCVjF8HaFo9bdIrfMauCKjgNpqod6febLF2MLbuLVUIEKjH1I0yCNyQYAQ=="
+            }
+          },
+          "id": "prt_d49e50558001hid9FJPfjRZKhL",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "Let me find the OpenAI streaming tests.",
+          "time": {
+            "start": 1775061240485,
+            "end": 1775061240485
+          },
+          "id": "prt_d49e508b10014um45AHTkzR0iF",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "I have all the information I need. Let me write the implementation guide.",
+          "time": {
+            "start": 1775061244204,
+            "end": 1775061244204
+          },
+          "id": "prt_d49e515940012wdMD5BcqaET79",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "Implementation guide written to `docs/plans/ISS-59_m4_anthropic_streaming_implement.md`.\n\n**Summary:** 19 tasks across 9 groups, all sequential. The guide covers:\n\n1. **Wire format types** — streaming envelope structs + unmarshal tests\n2. **Error mapping** — `mapStreamErrorType()` for mid-stream SSE errors\n3. **`SendStream()` method** — the core implementation with closure state and SSE-to-StreamEvent mapping\n4. **Request construction tests** — stream flag, defaults, omit-empty\n5. **Pre-stream error tests** — HTTP errors, context cancellation\n6. **Text streaming tests** — full text SSE sequence\n7. **Tool call streaming tests** — tool start/delta/end sequence\n8. **Mixed block tests** — interleaved text + tool blocks\n9. **Edge case tests** — ping, mid-stream error, empty deltas, malformed JSON, unknown index, missing message_start",
+          "time": {
+            "start": 1775061302839,
+            "end": 1775061302839
+          },
+          "id": "prt_d49e5ec25001QqxSAjMHhTWxLO",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "text",
+          "text": "\n\nFiles changed:\n- wrote docs/plans/ISS-59_m4_anthropic_streaming_implement.md",
+          "time": {
+            "start": 1775061303416,
+            "end": 1775061303416
+          },
+          "id": "prt_d49e60077001eH1S9UYed1pDuV",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "76b2806d90beac68639134662ec0f0b91dcdde82",
+          "type": "step-finish",
+          "tokens": {
+            "total": 85899,
+            "input": 1,
+            "output": 230,
+            "reasoning": 0,
+            "cache": {
+              "write": 2515,
+              "read": 83153
+            }
+          },
+          "cost": 0.06305025,
+          "id": "prt_d49e60079001PjoNP1rv0HSs7t",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        },
+        {
+          "type": "patch",
+          "hash": "3e2b2a887f23824cb1217b32e84dcf59aeb3dbf8",
+          "files": [
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/docs/plans/ISS-59_m4_anthropic_streaming_implement.md"
+          ],
+          "id": "prt_d49e60141001e5K9Sg9A9OBYa6",
+          "sessionID": "ses_2b61b5a47ffeVs57Q2juvHevKu",
+          "messageID": "msg_d49e4a5c8001KNQniTKojZOY2f"
+        }
+      ]
+    }
+  ]
+}

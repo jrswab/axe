@@ -3,8 +3,9 @@
   "checkpoint_id": "6499372291a1",
   "strategy": "manual-commit",
   "branch": "ISS-59/enable-response-streaming",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
+    "docs/plans/ISS-59_m4_anthropic_streaming_implement.md",
     "docs/plans/ISS-59_streaming_milestones.md",
     "internal/provider/anthropic.go",
     "internal/provider/anthropic_stream_test.go",
@@ -17,13 +18,19 @@
       "transcript": "/64/99372291a1/0/full.jsonl",
       "content_hash": "/64/99372291a1/0/content_hash.txt",
       "prompt": "/64/99372291a1/0/prompt.txt"
+    },
+    {
+      "metadata": "/64/99372291a1/1/metadata.json",
+      "transcript": "/64/99372291a1/1/full.jsonl",
+      "content_hash": "/64/99372291a1/1/content_hash.txt",
+      "prompt": "/64/99372291a1/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 4,
-    "cache_creation_tokens": 57338,
-    "cache_read_tokens": 100518,
-    "output_tokens": 462,
-    "api_call_count": 2
+    "input_tokens": 5,
+    "cache_creation_tokens": 59853,
+    "cache_read_tokens": 183671,
+    "output_tokens": 692,
+    "api_call_count": 3
   }
 }
