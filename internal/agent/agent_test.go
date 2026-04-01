@@ -1106,6 +1106,47 @@ func TestValidate_MCPServers_ValidTransports(t *testing.T) {
 	}
 }
 
+func TestStreamField_TOMLRoundTrip(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	t.Run("stream=true round-trips through Load", func(t *testing.T) {
+		writeAgentFile(t, agentsDir, "stream-on", `name = "stream-on"
+model = "openai/gpt-4o"
+stream = true
+`)
+		cfg, err := Load("stream-on", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !cfg.Stream {
+			t.Error("expected Stream=true, got false")
+		}
+	})
+
+	t.Run("default is false when omitted", func(t *testing.T) {
+		writeAgentFile(t, agentsDir, "stream-off", `name = "stream-off"
+model = "openai/gpt-4o"
+`)
+		cfg, err := Load("stream-off", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Stream {
+			t.Error("expected Stream=false (default), got true")
+		}
+	})
+}
+
+func TestScaffold_ContainsStreamField(t *testing.T) {
+	out, err := Scaffold("test-agent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "# stream = false") {
+		t.Error("Scaffold output should contain commented-out stream field")
+	}
+}
+
 func TestValidate_MCPServers_DuplicateNames(t *testing.T) {
 	cfg := &AgentConfig{
 		Name:  "test",

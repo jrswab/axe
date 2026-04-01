@@ -1,0 +1,42 @@
+# ISS-59 M2 — OpenAI Provider Streaming: Implementation Guide
+
+Spec: [ISS-59_m2_openai_streaming_spec.md](ISS-59_m2_openai_streaming_spec.md)
+
+## Section 1: Context Summary
+
+The OpenAI provider needs a `SendStream()` method so that Axe can keep nginx connections alive during long-running LLM calls and (in M3) print tokens as they arrive. The M1 milestone already landed the `StreamEvent`, `EventStream`, `StreamProvider`, and `SSEParser` primitives. This milestone wires them together: the OpenAI provider sends `stream: true` in the request, parses the SSE response using `SSEParser`, tracks tool call fragments by index, and maps each chunk to the appropriate `StreamEvent` — all without modifying existing buffered behavior or retry logic.
+
+## Section 2: Implementation Checklist
+
+All tasks are sequential — each depends on the one before it.
+
+### Task 1: Add streaming chunk deserialization types
+
+- [x] `internal/provider/openai.go`: Add unexported structs for the streaming wire format: `openaiStreamChunk` (with `Model`, `Choices []openaiStreamChoice`, `Usage *openaiStreamUsage`), `openaiStreamChoice` (with `Index`, `Delta openaiStreamDelta`, `FinishReason *string`), `openaiStreamDelta` (with `Content *string`, `Role string`, `ToolCalls []openaiStreamToolCall`), `openaiStreamToolCall` (with `Index int`, `ID string`, `Type string`, `Function *openaiStreamToolCallFunction`), `openaiStreamToolCallFunction` (with `Name string`, `Arguments string`), and `openaiStreamUsage` (with `PromptTokens int`, `CompletionTokens int`). All fields use `json` tags. These are separate from the existing `openaiResponse` type.
+
+### Task 2: Extend the request struct for streaming fields
+
+- [x] `internal/provider/openai.go`: Add `Stream bool` and `StreamOptions *openaiStreamOptions` fields (with `json:"stream,omitempty"` and `json:"stream_options,omitempty"` tags) to the existing `openaiRequest` struct. Add an unexported `openaiStreamOptions` struct with `IncludeUsage bool` (`json:"include_usage"`). Existing `Send()` behavior is unchanged because `Stream` defaults to `false` and is omitted from the JSON.
+- [x] `internal/provider/openai_test.go`: Add a test `TestOpenAI_Send_DoesNotSetStreamField` — use an `httptest.Server` that captures the request body, call `Send()`, and assert the JSON body does NOT contain a `"stream"` key.
+
+### Task 3: Implement `SendStream()` on `OpenAI`
+
+- [x] `internal/provider/openai.go`: Add method `func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, error)`. Build the request body identically to `Send()` (reuse `convertToOpenAIMessages`, `convertToOpenAITools`, same temperature/max_tokens logic) but set `Stream: true` and `StreamOptions: &openaiStreamOptions{IncludeUsage: true}`. POST to `o.baseURL + "/chat/completions"` with the same headers. On context cancellation before response, return `ProviderError{Category: ErrCategoryTimeout}`. On non-2xx status, read the body, close it, and return via `handleErrorResponse()`. On 2xx, construct and return `NewEventStream(httpResp.Body, nextFunc)` where `nextFunc` is a closure (implemented in Task 4).
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_RequestFormat` — use `httptest.Server` that captures the request body and responds with a minimal valid SSE stream (`data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":1}}\n\ndata: [DONE]\n\n`). Assert: method is POST, path is `/chat/completions`, `Authorization` header is `Bearer {key}`, body JSON contains `"stream": true` and `"stream_options": {"include_usage": true}`.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_ErrorResponse` — server returns 401 with JSON error body. Assert `SendStream()` returns a `ProviderError` with `ErrCategoryAuth`.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_ContextCancelled` — server delays 2s, context has 50ms timeout. Assert `SendStream()` returns `ProviderError` with `ErrCategoryTimeout`.
+
+### Task 4: Implement the `nextFunc` closure (SSE-to-StreamEvent mapping)
+
+- [x] `internal/provider/openai.go`: Implement the `nextFunc` closure inside `SendStream()`. It creates an `SSEParser` from the response body. The closure maintains: a `toolCalls map[int]struct{id, name string}` for index tracking, a `finishReason string` for the stop reason, and a `gotUsage bool` flag. On each call: (1) call `parser.Next()` to get the next `SSEEvent`; (2) if the parser returns an error, check `ctx.Err()` — if context is done, return `ProviderError{ErrCategoryTimeout}`, else return `ProviderError{ErrCategoryServer}` wrapping the read error; (3) if `sseEvent.Data == "[DONE]"`, emit `StreamEventDone` with stored `finishReason` and zero tokens if `!gotUsage`, else return `io.EOF`; (4) JSON-unmarshal `sseEvent.Data` into `openaiStreamChunk` — on parse failure return `ProviderError{ErrCategoryServer}`; (5) if `len(chunk.Choices) == 0` and `chunk.Usage != nil`, set `gotUsage = true`, return `StreamEvent{Type: StreamEventDone, InputTokens, OutputTokens, StopReason: finishReason}`; (6) if `len(chunk.Choices) == 0`, loop back to step 1; (7) process `choices[0]`: if `delta.Content` is non-nil and non-empty, return `StreamEvent{Type: StreamEventText, Text: *delta.Content}`; if `delta.ToolCalls` is non-empty, process the first entry — if `ID` is present, store in `toolCalls` map and return `StreamEventToolStart`, else look up ID by index and return `StreamEventToolDelta`; if `FinishReason` is non-nil and `== "tool_calls"`, emit `StreamEventToolEnd` for each tracked tool call (by ascending index), store finish reason, loop back; if `FinishReason` is non-nil (any other value), store it, loop back; otherwise loop back.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_TextDeltas` — server sends 3 text delta chunks + finish + usage + `[DONE]`. Call `SendStream()`, then call `Next()` repeatedly. Assert: 3 `StreamEventText` events with correct text, then `StreamEventDone` with correct tokens and `StopReason: "stop"`, then `io.EOF`. Defer `stream.Close()`.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_ToolCall` — server sends: tool_start chunk (index 0, id "call_1", name "read_file"), 2 tool_delta chunks (index 0, arguments fragments), finish chunk (finish_reason "tool_calls"), usage chunk, `[DONE]`. Assert event sequence: `StreamEventToolStart` (ID "call_1", Name "read_file"), 2x `StreamEventToolDelta` (ID "call_1", correct fragments), `StreamEventToolEnd` (ID "call_1"), `StreamEventDone`.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_MultipleToolCalls` — server sends: tool_start for index 0 ("call_a", "read_file"), tool_start for index 1 ("call_b", "write_file"), delta for index 0, delta for index 1, finish "tool_calls", usage, `[DONE]`. Assert: two `StreamEventToolStart` events, two `StreamEventToolDelta` events with correct IDs, two `StreamEventToolEnd` events (index 0 then 1), then `StreamEventDone`.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_EmptyContent` — server sends a chunk with `"content": ""` followed by a chunk with `"content": "hello"`, finish, usage, `[DONE]`. Assert only one `StreamEventText` event (the empty one is skipped).
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_NoUsageChunk` — server sends text delta, finish "stop", `[DONE]` (no usage chunk). Assert: `StreamEventText`, `StreamEventDone` with `InputTokens: 0`, `OutputTokens: 0`, `StopReason: "stop"`, then `io.EOF`.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_MalformedJSON` — server sends `data: {not json}\n\n`. Assert `Next()` returns a `ProviderError` with `ErrCategoryServer`.
+- [x] `internal/provider/openai_test.go`: Add test `TestOpenAI_SendStream_FinishReasonLength` — server sends text delta, finish with `"length"`, usage, `[DONE]`. Assert `StreamEventDone` has `StopReason: "length"`.
+
+### Task 5: Verify `RetryProvider` delegation
+
+- [x] `internal/provider/retry_test.go`: Add test `TestRetryProvider_SendStream_DelegatesToOpenAI` — create a real `OpenAI` pointed at an `httptest.Server` serving a minimal SSE stream, wrap in `NewRetry()`, call `SendStream()`. Assert: returns an `EventStream`, first `Next()` yields expected event, `Close()` succeeds. This validates the full `RetryProvider` → `OpenAI` → `SSEParser` → `EventStream` chain.

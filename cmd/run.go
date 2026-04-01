@@ -78,6 +78,7 @@ func init() {
 	runCmd.Flags().Int("max-tokens", 0, "Maximum total tokens (input+output) for the entire run (0 = unlimited)")
 	runCmd.Flags().String("artifact-dir", "", "Override or set the artifact directory (activates artifact system)")
 	runCmd.Flags().Bool("keep-artifacts", false, "Preserve auto-generated artifact directories after the run")
+	runCmd.Flags().Bool("stream", false, "Enable streaming responses from the LLM provider")
 	rootCmd.AddCommand(runCmd)
 }
 
@@ -313,6 +314,12 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
+	streamEnabled := cfg.Stream
+	if cmd.Flags().Changed("stream") {
+		streamEnabled, _ = cmd.Flags().GetBool("stream")
+	}
+	_ = streamEnabled
+
 	// Resolve effective budget
 	flagMaxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	effectiveMaxTokens := cfg.Budget.MaxTokens
@@ -333,7 +340,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 
 	// Step 11b: Dry-run mode
 	if dryRun {
-		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, systemPrompt, skillContent, files, userMessage, memoryEntries, effectiveMaxTokens)
+		return printDryRun(cmd, cfg, provName, modelName, workdir, timeout, streamEnabled, systemPrompt, skillContent, files, userMessage, memoryEntries, effectiveMaxTokens)
 	}
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Duration(timeout)*time.Second)
@@ -710,7 +717,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, systemPrompt, skillContent string, files []resolve.FileContent, userMessage string, memoryEntries string, maxTokens int) error {
+func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName, workdir string, timeout int, streamEnabled bool, systemPrompt, skillContent string, files []resolve.FileContent, userMessage string, memoryEntries string, maxTokens int) error {
 	out := cmd.OutOrStdout()
 
 	_, _ = fmt.Fprintln(out, "=== Dry Run ===")
@@ -720,6 +727,11 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 	_, _ = fmt.Fprintf(out, "Timeout:  %ds\n", timeout)
 	_, _ = fmt.Fprintf(out, "Params:   temperature=%g, max_tokens=%d\n", cfg.Params.Temperature, cfg.Params.MaxTokens)
 	_, _ = fmt.Fprintf(out, "Budget:   %d tokens (0 = unlimited)\n", maxTokens)
+	streamVal := "no"
+	if streamEnabled {
+		streamVal = "yes"
+	}
+	_, _ = fmt.Fprintf(out, "Stream:   %s\n", streamVal)
 
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "--- System Prompt ---")

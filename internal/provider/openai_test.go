@@ -896,6 +896,530 @@ func TestOpenAI_Send_ToolResultMessage(t *testing.T) {
 	}
 }
 
+func TestOpenAI_Send_DoesNotSetStreamField(t *testing.T) {
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &gotBody)
+
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":   "gpt-4o",
+			"choices": []map[string]interface{}{{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"}},
+			"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, ok := gotBody["stream"]; ok {
+		t.Error("Send() request body should NOT contain 'stream' key")
+	}
+	if _, ok := gotBody["stream_options"]; ok {
+		t.Error("Send() request body should NOT contain 'stream_options' key")
+	}
+}
+
+// --- SendStream tests ---
+
+func TestOpenAI_SendStream_RequestFormat(t *testing.T) {
+	var gotMethod, gotPath, gotAuth string
+	var gotBody map[string]json.RawMessage
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &gotBody)
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: {\"choices\":[],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}\n\ndata: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	// Drain the stream
+	for {
+		_, err := stream.Next()
+		if err != nil {
+			break
+		}
+	}
+
+	if gotMethod != "POST" {
+		t.Errorf("expected POST, got %s", gotMethod)
+	}
+	if gotPath != "/chat/completions" {
+		t.Errorf("expected /chat/completions, got %s", gotPath)
+	}
+	if gotAuth != "Bearer test-key" {
+		t.Errorf("expected 'Bearer test-key', got %q", gotAuth)
+	}
+
+	var streamVal bool
+	if err := json.Unmarshal(gotBody["stream"], &streamVal); err != nil {
+		t.Fatalf("failed to parse stream field: %v", err)
+	}
+	if !streamVal {
+		t.Error("expected stream to be true")
+	}
+
+	var streamOpts map[string]interface{}
+	if err := json.Unmarshal(gotBody["stream_options"], &streamOpts); err != nil {
+		t.Fatalf("failed to parse stream_options: %v", err)
+	}
+	if streamOpts["include_usage"] != true {
+		t.Errorf("expected include_usage to be true, got %v", streamOpts["include_usage"])
+	}
+}
+
+func TestOpenAI_SendStream_ErrorResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(`{"error":{"message":"Invalid API key","type":"invalid_request_error","code":"invalid_api_key"}}`))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("bad-key", WithOpenAIBaseURL(server.URL))
+	_, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryAuth {
+		t.Errorf("expected ErrCategoryAuth, got %s", provErr.Category)
+	}
+}
+
+func TestOpenAI_SendStream_ContextCancelled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, err := o.SendStream(ctx, &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryTimeout {
+		t.Errorf("expected ErrCategoryTimeout, got %s", provErr.Category)
+	}
+}
+
+func TestOpenAI_SendStream_TextDeltas(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\" world\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"!\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	// Event 1: text "Hello"
+	ev, err := stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error on event 1: %v", err)
+	}
+	if ev.Type != StreamEventText || ev.Text != "Hello" {
+		t.Errorf("event 1: got type=%q text=%q, want type=%q text=%q", ev.Type, ev.Text, StreamEventText, "Hello")
+	}
+
+	// Event 2: text " world"
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error on event 2: %v", err)
+	}
+	if ev.Type != StreamEventText || ev.Text != " world" {
+		t.Errorf("event 2: got type=%q text=%q, want type=%q text=%q", ev.Type, ev.Text, StreamEventText, " world")
+	}
+
+	// Event 3: text "!"
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error on event 3: %v", err)
+	}
+	if ev.Type != StreamEventText || ev.Text != "!" {
+		t.Errorf("event 3: got type=%q text=%q, want type=%q text=%q", ev.Type, ev.Text, StreamEventText, "!")
+	}
+
+	// Event 4: done with usage
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error on event 4: %v", err)
+	}
+	if ev.Type != StreamEventDone {
+		t.Errorf("event 4: got type=%q, want %q", ev.Type, StreamEventDone)
+	}
+	if ev.InputTokens != 10 {
+		t.Errorf("event 4: InputTokens=%d, want 10", ev.InputTokens)
+	}
+	if ev.OutputTokens != 5 {
+		t.Errorf("event 4: OutputTokens=%d, want 5", ev.OutputTokens)
+	}
+	if ev.StopReason != "stop" {
+		t.Errorf("event 4: StopReason=%q, want %q", ev.StopReason, "stop")
+	}
+
+	// Event 5: io.EOF
+	_, err = stream.Next()
+	if err != io.EOF {
+		t.Errorf("expected io.EOF, got %v", err)
+	}
+}
+
+func TestOpenAI_SendStream_ToolCall(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"read_file\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{\\\"pa\"}}]},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"th\\\": \\\"f.go\\\"}\"}}]},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	// Event 1: tool start
+	ev, err := stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventToolStart {
+		t.Errorf("event 1: type=%q, want %q", ev.Type, StreamEventToolStart)
+	}
+	if ev.ToolCallID != "call_1" {
+		t.Errorf("event 1: ToolCallID=%q, want %q", ev.ToolCallID, "call_1")
+	}
+	if ev.ToolName != "read_file" {
+		t.Errorf("event 1: ToolName=%q, want %q", ev.ToolName, "read_file")
+	}
+
+	// Event 2: tool delta
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventToolDelta {
+		t.Errorf("event 2: type=%q, want %q", ev.Type, StreamEventToolDelta)
+	}
+	if ev.ToolCallID != "call_1" {
+		t.Errorf("event 2: ToolCallID=%q, want %q", ev.ToolCallID, "call_1")
+	}
+	if ev.ToolInput != "{\"pa" {
+		t.Errorf("event 2: ToolInput=%q, want %q", ev.ToolInput, "{\"pa")
+	}
+
+	// Event 3: tool delta
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventToolDelta {
+		t.Errorf("event 3: type=%q, want %q", ev.Type, StreamEventToolDelta)
+	}
+	if ev.ToolInput != "th\": \"f.go\"}" {
+		t.Errorf("event 3: ToolInput=%q, want %q", ev.ToolInput, "th\": \"f.go\"}")
+	}
+
+	// Event 4: tool end
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventToolEnd {
+		t.Errorf("event 4: type=%q, want %q", ev.Type, StreamEventToolEnd)
+	}
+	if ev.ToolCallID != "call_1" {
+		t.Errorf("event 4: ToolCallID=%q, want %q", ev.ToolCallID, "call_1")
+	}
+
+	// Event 5: done
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventDone {
+		t.Errorf("event 5: type=%q, want %q", ev.Type, StreamEventDone)
+	}
+
+	// Event 6: EOF
+	_, err = stream.Next()
+	if err != io.EOF {
+		t.Errorf("expected io.EOF, got %v", err)
+	}
+}
+
+func TestOpenAI_SendStream_MultipleToolCalls(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"type\":\"function\",\"function\":{\"name\":\"read_file\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":1,\"id\":\"call_b\",\"type\":\"function\",\"function\":{\"name\":\"write_file\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{\\\"p\\\":\\\"a\\\"}\"}}]},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":1,\"function\":{\"arguments\":\"{\\\"q\\\":\\\"b\\\"}\"}}]},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	// Collect all events
+	var events []StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		events = append(events, ev)
+	}
+
+	// Expected: tool_start(call_a), tool_start(call_b), tool_delta(call_a), tool_delta(call_b), tool_end(call_a), tool_end(call_b), done
+	if len(events) != 7 {
+		t.Fatalf("got %d events, want 7", len(events))
+	}
+
+	if events[0].Type != StreamEventToolStart || events[0].ToolCallID != "call_a" || events[0].ToolName != "read_file" {
+		t.Errorf("event 0: %+v", events[0])
+	}
+	if events[1].Type != StreamEventToolStart || events[1].ToolCallID != "call_b" || events[1].ToolName != "write_file" {
+		t.Errorf("event 1: %+v", events[1])
+	}
+	if events[2].Type != StreamEventToolDelta || events[2].ToolCallID != "call_a" {
+		t.Errorf("event 2: %+v", events[2])
+	}
+	if events[3].Type != StreamEventToolDelta || events[3].ToolCallID != "call_b" {
+		t.Errorf("event 3: %+v", events[3])
+	}
+	if events[4].Type != StreamEventToolEnd || events[4].ToolCallID != "call_a" {
+		t.Errorf("event 4: %+v", events[4])
+	}
+	if events[5].Type != StreamEventToolEnd || events[5].ToolCallID != "call_b" {
+		t.Errorf("event 5: %+v", events[5])
+	}
+	if events[6].Type != StreamEventDone {
+		t.Errorf("event 6: %+v", events[6])
+	}
+}
+
+func TestOpenAI_SendStream_EmptyContent(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"hello\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	ev, err := stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventText || ev.Text != "hello" {
+		t.Errorf("got type=%q text=%q, want type=%q text=%q", ev.Type, ev.Text, StreamEventText, "hello")
+	}
+
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventDone {
+		t.Errorf("got type=%q, want %q", ev.Type, StreamEventDone)
+	}
+
+	_, err = stream.Next()
+	if err != io.EOF {
+		t.Errorf("expected io.EOF, got %v", err)
+	}
+}
+
+func TestOpenAI_SendStream_NoUsageChunk(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"hi\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	ev, err := stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventText {
+		t.Errorf("got type=%q, want %q", ev.Type, StreamEventText)
+	}
+
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventDone {
+		t.Errorf("got type=%q, want %q", ev.Type, StreamEventDone)
+	}
+	if ev.InputTokens != 0 || ev.OutputTokens != 0 {
+		t.Errorf("expected zero tokens, got input=%d output=%d", ev.InputTokens, ev.OutputTokens)
+	}
+	if ev.StopReason != "stop" {
+		t.Errorf("StopReason=%q, want %q", ev.StopReason, "stop")
+	}
+
+	_, err = stream.Next()
+	if err != io.EOF {
+		t.Errorf("expected io.EOF, got %v", err)
+	}
+}
+
+func TestOpenAI_SendStream_MalformedJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {not json}\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	_, err = stream.Next()
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryServer {
+		t.Errorf("expected ErrCategoryServer, got %s", provErr.Category)
+	}
+}
+
+func TestOpenAI_SendStream_FinishReasonLength(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"hi\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":100}}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	// Skip text event
+	_, _ = stream.Next()
+
+	ev, err := stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ev.Type != StreamEventDone {
+		t.Errorf("got type=%q, want %q", ev.Type, StreamEventDone)
+	}
+	if ev.StopReason != "length" {
+		t.Errorf("StopReason=%q, want %q", ev.StopReason, "length")
+	}
+}
+
 func TestOpenAI_Send_AssistantToolCallMessage(t *testing.T) {
 	var gotBody map[string]json.RawMessage
 

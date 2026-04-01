@@ -112,6 +112,19 @@ func ctxCancelErr(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// SendStream delegates to the inner provider's SendStream if it implements StreamProvider.
+// No retry wrapping is applied to streaming requests.
+func (r *RetryProvider) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
+	sp, ok := r.inner.(StreamProvider)
+	if !ok {
+		return nil, &ProviderError{
+			Category: ErrCategoryBadRequest,
+			Message:  "inner provider does not support streaming",
+		}
+	}
+	return sp.SendStream(ctx, req)
+}
+
 // isRetriable returns true if the error is a ProviderError with a retriable category.
 func isRetriable(err error) bool {
 	if err == nil {

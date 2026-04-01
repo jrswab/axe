@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 )
 
 const (
@@ -58,11 +59,13 @@ func NewOpenAI(apiKey string, opts ...OpenAIOption) (*OpenAI, error) {
 
 // openaiRequest is the JSON body sent to the OpenAI Chat Completions API.
 type openaiRequest struct {
-	Model       string          `json:"model"`
-	Messages    []openaiMessage `json:"messages"`
-	Temperature *float64        `json:"temperature,omitempty"`
-	MaxTokens   *int            `json:"max_completion_tokens,omitempty"`
-	Tools       []openaiToolDef `json:"tools,omitempty"`
+	Model         string               `json:"model"`
+	Messages      []openaiMessage      `json:"messages"`
+	Temperature   *float64             `json:"temperature,omitempty"`
+	MaxTokens     *int                 `json:"max_completion_tokens,omitempty"`
+	Tools         []openaiToolDef      `json:"tools,omitempty"`
+	Stream        bool                 `json:"stream,omitempty"`
+	StreamOptions *openaiStreamOptions `json:"stream_options,omitempty"`
 }
 
 // openaiMessage is the wire format for a message in the OpenAI API.
@@ -342,6 +345,246 @@ func (o *OpenAI) handleErrorResponse(status int, body []byte) *ProviderError {
 		Status:   status,
 		Message:  message,
 	}
+}
+
+// SendStream makes a streaming completion request to the OpenAI Chat Completions API.
+func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
+	var messages []Message
+	if req.System != "" {
+		messages = append(messages, Message{Role: "system", Content: req.System})
+	}
+	messages = append(messages, req.Messages...)
+
+	body := openaiRequest{
+		Model:         req.Model,
+		Messages:      convertToOpenAIMessages(messages),
+		Stream:        true,
+		StreamOptions: &openaiStreamOptions{IncludeUsage: true},
+	}
+
+	if req.Temperature != 0 {
+		temp := req.Temperature
+		body.Temperature = &temp
+	}
+
+	if req.MaxTokens != 0 {
+		mt := req.MaxTokens
+		body.MaxTokens = &mt
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToOpenAITools(req.Tools)
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/chat/completions", bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Authorization", "Bearer "+o.apiKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := o.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryTimeout,
+				Message:  ctx.Err().Error(),
+				Err:      ctx.Err(),
+			}
+		}
+		return nil, &ProviderError{
+			Category: ErrCategoryServer,
+			Message:  err.Error(),
+			Err:      err,
+		}
+	}
+
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		respBody, err := io.ReadAll(httpResp.Body)
+		_ = httpResp.Body.Close()
+		if err != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryServer,
+				Message:  fmt.Sprintf("failed to read error response: %s", err),
+				Err:      err,
+			}
+		}
+		return nil, o.handleErrorResponse(httpResp.StatusCode, respBody)
+	}
+
+	parser := NewSSEParser(httpResp.Body)
+	toolCalls := make(map[int]struct{ id, name string })
+	var finishReason string
+	var gotUsage bool
+	var pendingToolEnds []StreamEvent
+
+	nextFunc := func() (StreamEvent, error) {
+		for {
+			if len(pendingToolEnds) > 0 {
+				ev := pendingToolEnds[0]
+				pendingToolEnds = pendingToolEnds[1:]
+				return ev, nil
+			}
+
+			sseEvent, err := parser.Next()
+			if err != nil {
+				if ctx.Err() != nil {
+					return StreamEvent{}, &ProviderError{
+						Category: ErrCategoryTimeout,
+						Message:  ctx.Err().Error(),
+						Err:      ctx.Err(),
+					}
+				}
+				if err == io.EOF {
+					return StreamEvent{}, io.EOF
+				}
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  fmt.Sprintf("stream read error: %s", err),
+					Err:      err,
+				}
+			}
+
+			if sseEvent.Data == "[DONE]" {
+				if !gotUsage {
+					return StreamEvent{
+						Type:       StreamEventDone,
+						StopReason: finishReason,
+					}, nil
+				}
+				return StreamEvent{}, io.EOF
+			}
+
+			var chunk openaiStreamChunk
+			if err := json.Unmarshal([]byte(sseEvent.Data), &chunk); err != nil {
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  fmt.Sprintf("failed to parse streaming chunk: %s", err),
+					Err:      err,
+				}
+			}
+
+			if len(chunk.Choices) == 0 {
+				if chunk.Usage != nil {
+					gotUsage = true
+					return StreamEvent{
+						Type:         StreamEventDone,
+						InputTokens:  chunk.Usage.PromptTokens,
+						OutputTokens: chunk.Usage.CompletionTokens,
+						StopReason:   finishReason,
+					}, nil
+				}
+				continue
+			}
+
+			choice := chunk.Choices[0]
+
+			if choice.Delta.Content != nil && *choice.Delta.Content != "" {
+				return StreamEvent{
+					Type: StreamEventText,
+					Text: *choice.Delta.Content,
+				}, nil
+			}
+
+			if len(choice.Delta.ToolCalls) > 0 {
+				tc := choice.Delta.ToolCalls[0]
+				if tc.ID != "" {
+					toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: tc.Function.Name}
+					return StreamEvent{
+						Type:       StreamEventToolStart,
+						ToolCallID: tc.ID,
+						ToolName:   tc.Function.Name,
+					}, nil
+				}
+				info := toolCalls[tc.Index]
+				args := ""
+				if tc.Function != nil {
+					args = tc.Function.Arguments
+				}
+				return StreamEvent{
+					Type:       StreamEventToolDelta,
+					ToolCallID: info.id,
+					ToolInput:  args,
+				}, nil
+			}
+
+			if choice.FinishReason != nil {
+				fr := *choice.FinishReason
+				finishReason = fr
+				if fr == "tool_calls" {
+					indices := make([]int, 0, len(toolCalls))
+					for idx := range toolCalls {
+						indices = append(indices, idx)
+					}
+					sort.Ints(indices)
+					for _, idx := range indices {
+						info := toolCalls[idx]
+						pendingToolEnds = append(pendingToolEnds, StreamEvent{
+							Type:       StreamEventToolEnd,
+							ToolCallID: info.id,
+						})
+					}
+				}
+				continue
+			}
+
+			continue
+		}
+	}
+
+	return NewEventStream(httpResp.Body, nextFunc), nil
+}
+
+// openaiStreamChunk represents a single SSE chunk from the OpenAI streaming API.
+type openaiStreamChunk struct {
+	Model   string               `json:"model"`
+	Choices []openaiStreamChoice `json:"choices"`
+	Usage   *openaiStreamUsage   `json:"usage,omitempty"`
+}
+
+// openaiStreamChoice is a single choice entry in a streaming chunk.
+type openaiStreamChoice struct {
+	Index        int               `json:"index"`
+	Delta        openaiStreamDelta `json:"delta"`
+	FinishReason *string           `json:"finish_reason"`
+}
+
+// openaiStreamDelta is the delta object within a streaming choice.
+type openaiStreamDelta struct {
+	Content   *string                   `json:"content,omitempty"`
+	Role      string                    `json:"role,omitempty"`
+	ToolCalls []openaiStreamToolCall    `json:"tool_calls,omitempty"`
+}
+
+// openaiStreamToolCall is a tool call entry within a streaming delta.
+type openaiStreamToolCall struct {
+	Index    int                             `json:"index"`
+	ID       string                          `json:"id,omitempty"`
+	Type     string                          `json:"type,omitempty"`
+	Function *openaiStreamToolCallFunction   `json:"function,omitempty"`
+}
+
+// openaiStreamToolCallFunction holds function info within a streaming tool call.
+type openaiStreamToolCallFunction struct {
+	Name      string `json:"name,omitempty"`
+	Arguments string `json:"arguments,omitempty"`
+}
+
+// openaiStreamUsage holds token usage info from the streaming usage chunk.
+type openaiStreamUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+}
+
+// openaiStreamOptions controls streaming behavior in the request.
+type openaiStreamOptions struct {
+	IncludeUsage bool `json:"include_usage"`
 }
 
 // mapStatusToCategory maps HTTP status codes to error categories.

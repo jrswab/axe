@@ -80,6 +80,7 @@ type AgentConfig struct {
 	Files         []string          `toml:"files"`
 	Workdir       string            `toml:"workdir"`
 	Timeout       int               `toml:"timeout"`
+	Stream        bool              `toml:"stream"`
 	Tools         []string          `toml:"tools"`
 	AllowedHosts  []string          `toml:"allowed_hosts"`
 	MCPServers    []MCPServerConfig `toml:"mcp_servers"`
@@ -336,6 +337,9 @@ model = "provider/model-name"
 
 # Run timeout in seconds (optional, default: 120)
 # timeout = 120
+
+# Enable streaming responses (optional, default: false)
+# stream = false
 
 # Tools this agent can use (optional)
 # Valid: list_directory, read_file, write_file, edit_file, run_command, url_fetch, web_search

@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -501,5 +504,101 @@ func TestRetrySend_ContextCanceled_NotProviderError(t *testing.T) {
 	// The error should be context.Canceled
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("expected error to be context.Canceled, got %T: %v", err, err)
+	}
+}
+
+// --- SendStream delegation tests ---
+
+// streamMockProvider implements both Provider and StreamProvider.
+type streamMockProvider struct {
+	retryMockProvider
+	streamResult *EventStream
+	streamErr    error
+}
+
+func (m *streamMockProvider) SendStream(_ context.Context, _ *Request) (*EventStream, error) {
+	return m.streamResult, m.streamErr
+}
+
+func TestRetrySendStream_DelegatesToStreamProvider(t *testing.T) {
+	pr, pw := io.Pipe()
+	go func() { _ = pw.Close() }()
+
+	es := NewEventStream(pr, func() (StreamEvent, error) {
+		return StreamEvent{Type: StreamEventDone}, nil
+	})
+
+	mock := &streamMockProvider{streamResult: es}
+	rp := NewRetry(mock, RetryConfig{MaxRetries: 3})
+
+	got, err := rp.SendStream(context.Background(), &Request{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != es {
+		t.Error("expected SendStream to return the inner provider's EventStream")
+	}
+	_ = got.Close()
+}
+
+func TestRetryProvider_SendStream_DelegatesToOpenAI(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"hi\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2}}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	openai, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("unexpected error creating OpenAI: %v", err)
+	}
+
+	rp := NewRetry(openai, RetryConfig{MaxRetries: 3})
+	stream, err := rp.SendStream(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	ev, err := stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error on Next(): %v", err)
+	}
+	if ev.Type != StreamEventText || ev.Text != "hi" {
+		t.Errorf("got type=%q text=%q, want type=%q text=%q", ev.Type, ev.Text, StreamEventText, "hi")
+	}
+
+	ev, err = stream.Next()
+	if err != nil {
+		t.Fatalf("unexpected error on Next(): %v", err)
+	}
+	if ev.Type != StreamEventDone {
+		t.Errorf("got type=%q, want %q", ev.Type, StreamEventDone)
+	}
+	if ev.InputTokens != 5 || ev.OutputTokens != 2 {
+		t.Errorf("got tokens input=%d output=%d, want 5/2", ev.InputTokens, ev.OutputTokens)
+	}
+}
+
+func TestRetrySendStream_NonStreamProviderReturnsError(t *testing.T) {
+	mock := &retryMockProvider{}
+	rp := NewRetry(mock, RetryConfig{MaxRetries: 3})
+
+	_, err := rp.SendStream(context.Background(), &Request{})
+	if err == nil {
+		t.Fatal("expected error for non-StreamProvider, got nil")
+	}
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T", err)
+	}
+	if provErr.Category != ErrCategoryBadRequest {
+		t.Errorf("got category %s, want bad_request", provErr.Category)
 	}
 }
