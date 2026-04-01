@@ -1,0 +1,76 @@
+Verify each finding against the current code and only fix it if needed.
+
+Inline comments:
+In `@internal/provider/ollama.go`:
+- Around line 458-478: The streaming handler loses Ollama tool call arguments
+because Ollama sends only StreamEventToolStart (with ToolInput) and
+StreamEventToolEnd but no StreamEventToolDelta, and drainEventStream currently
+only accumulates arguments from ToolDelta events before executeToolCalls; update
+drainEventStream to treat StreamEventToolStart.ToolInput as a fallback for tool
+arguments when no ToolDelta events are received (i.e., when you see a
+StreamEvent with Type==StreamEventToolStart and ToolInput set, store that as the
+tool's argument payload keyed by ToolCallID so executeToolCalls receives
+arguments even if no ToolDelta arrived), or alternatively ensure the Ollama path
+that builds StreamEvent emits a StreamEventToolDelta with the same content —
+implement the former fallback in drainEventStream to be safe and reference
+StreamEvent, StreamEventToolStart, StreamEventToolDelta, ToolCallID, and
+executeToolCalls when making the change.
+
+---
+
+Nitpick comments:
+In `@cmd/run.go`:
+- Around line 1027-1044: The JSON unmarshal failure in the
+provider.StreamEventToolEnd branch is currently silent; update that branch so
+when json.Unmarshal(&parsed) returns an error you log a warning including the
+raw string and the jsonErr (but still fall back to an empty args map). Locate
+the code that reads pc.args.String(), the parsed map loop, and the append to
+toolCalls (and delete from pending) and add a conditional log write on error; if
+drainEventStream cannot see verbose/stderr, pass a verbose flag and an io.Writer
+(stderr) into drainEventStream (or use the existing logger) so the warning is
+only emitted in verbose mode. Ensure behavior and symbols (pending,
+ev.ToolCallID, pc.args.String(), toolCalls append) remain unchanged aside from
+the logging.
+- Around line 603-629: The repetition of prov.(provider.StreamProvider) inside
+the loop is unnecessary when streamEnabled (set from SupportsStream()) is true;
+capture the type assertion once before the conversation loop (e.g., sp, streamOk
+:= prov.(provider.StreamProvider)) and then inside the loop use
+sp.SendStream(...) when streamEnabled && streamOk, falling back to
+prov.Send(...) otherwise; keep existing handling of streamErr, drainEventStream,
+jsonOutput, streamedText and mapProviderError intact so behavior doesn't change.
+
+In `@internal/provider/ollama.go`:
+- Around line 503-506: mustMarshal currently discards json.Marshal errors;
+update the function (mustMarshal) to check the error return, and when err != nil
+either log the error (e.g., use log.Printf or the package logger) and return an
+empty string or otherwise fail fast (panic) depending on intended semantics;
+include a short comment explaining why ignoring or failing is safe for the
+expected input type (map[string]string) so the behavior is explicit.
+
+In `@internal/provider/opencode.go`:
+- Around line 504-510: Adjust the minor formatting inconsistency in the
+ocRespStreamEvent struct by aligning the Response field with the other fields
+(ocRespStreamEvent.Response) so the field name, type, and struct tag column up
+consistently with Type, ItemID, Item, and Delta; update the spacing between
+"Response", its type json.RawMessage, and the struct tag to match the existing
+alignment style used in that struct.
+
+In `@internal/provider/retry.go`:
+- Around line 121-132: The SendStream method on RetryProvider intentionally
+bypasses retry logic and delegates directly to the inner provider
+(RetryProvider.SendStream), which makes streaming requests susceptible to
+transient errors that surface immediately (see error mapping in
+cmd/run.go:mapProviderError); update the codebase docs and CLI help to clearly
+state this trade-off—add a brief explanation to the SendStream comment and the
+--stream CLI flag/help text indicating streaming mode does not retry transient
+errors (rate limits, timeouts, server overload) so users understand reduced
+resilience and can choose non-streaming mode when they want retries.
+
+In `@internal/provider/sse.go`:
+- Around line 14-20: The SSEParser currently uses bufio.NewScanner in
+NewSSEParser which imposes a 64KB token limit and can fail on very large
+single-line SSE payloads; to fix, allocate the scanner to a local variable in
+NewSSEParser and call scanner.Buffer with a larger max token size (for example
+256KB or configurable) before returning the SSEParser, or alternatively replace
+the scanner with a bufio.Reader-based parser if unbounded lines are required;
+update NewSSEParser and references to SSEParser/scanner accordingly.
