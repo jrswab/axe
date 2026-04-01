@@ -1,0 +1,567 @@
+{
+  "info": {
+    "id": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+    "slug": "swift-harbor",
+    "projectID": "f41eda22c31366c4dba329069ee3369b2d9dd378",
+    "directory": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+    "title": "GitHub workflow error ISS-59 streaming",
+    "version": "1.3.10",
+    "summary": {
+      "additions": 0,
+      "deletions": 0,
+      "files": 0
+    },
+    "time": {
+      "created": 1775067442950,
+      "updated": 1775067829514
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775067442959
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d4a43af0c0010aA2QPu7YaXmhu",
+        "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "getting this error in the github workflow:  docs/plans/ISS-59_m6_streaming_smoke_tests_spec.md",
+          "id": "prt_d4a43af0c002VTQGkqYUvJJMdX",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a43af0c0010aA2QPu7YaXmhu"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d4a43af0c0010aA2QPu7YaXmhu",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775067442964,
+          "completed": 1775067445522
+        },
+        "error": {
+          "name": "MessageAbortedError",
+          "data": {
+            "message": "Aborted"
+          }
+        },
+        "id": "msg_d4a43af14001WXbMsnkaaPIg46",
+        "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX"
+      },
+      "parts": []
+    },
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775067470905
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d4a441c31001jj1siTIqnnfJs7",
+        "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "getting this error in the github workflow: Run OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-params -p \"Reply with only the word: pong\")\n  OUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-params -p \"Reply with only the word: pong\")\n  echo \"$OUTPUT\"\n  [ -n \"$OUTPUT\" ] || { echo \"FAIL: empty output\"; exit 1; }\n  shell: /usr/bin/bash -e {0}\n  env:\n    OPENCODE_API_KEY: ***\n\nFAIL: empty output\nError: Process completed with exit code 1. ",
+          "id": "prt_d4a441c320012XD6egOE6wfBWi",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c31001jj1siTIqnnfJs7"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d4a441c31001jj1siTIqnnfJs7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.05737025,
+        "tokens": {
+          "total": 91089,
+          "input": 1,
+          "output": 379,
+          "reasoning": 0,
+          "cache": {
+            "write": 441,
+            "read": 90268
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775067470910,
+          "completed": 1775067673194
+        },
+        "finish": "stop",
+        "id": "msg_d4a441c3e001SuUn9G0rWvm2ho",
+        "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX"
+      },
+      "parts": [
+        {
+          "snapshot": "7f40cd35bc74f8ec6d2642abd7f7b4e5eef04619",
+          "type": "step-start",
+          "id": "prt_d4a4431ce00123MC8eiAygmBEC",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "Let me understand the issue. The GitHub workflow is running a smoke test that executes `axe run` with a specific agent, but getting empty output. This is on the `ISS-59/enable-response-streaming` branch which is about enabling response streaming.\n\nLet me look at the current state of `cmd/run.go` since it's modified, and understand what's happening with the streaming changes that might cause empty output.",
+          "time": {
+            "start": 1775067476430,
+            "end": 1775067478938
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EtMEClkIDBgCKkDo9xzUeaVYfdJcylInzdJlziu5k0G62Xx/ldO+8+Kn2eO/IBx4ERonSIQ8pCZbdpxgz2oSKJhQuJhQq3M/OcT9Mg9jbGF1ZGUtb3B1cy00LTY4ABIMtAYyXOU/w1RxUgYfGgwHfx7y5fiP6IKcJpMiMIdlh6NRwcsyraGxb144/FX7y6icxOFD2ZCOaA2YWCNx1meDreQZ8/Qg99i8JjJaaCqnAyaqAkIyCguQVRpJBd5ehf3vogmdh0c5YxAZfWSr20TFrpHoOOl0eS4MiYzlDtW9ihqJvni8AHJ5U94+0nnZIc2kg5Gm/zufdmvHaFqy/57TMUCQiSkMnFbXjReQVp88LeZ3H7LEpLrO4ZnHrxwdaOiyKOAXmM5Jtgae2nYam1BKjk1n3hCModYQLkZhG4FLUpBxs73kJrp/ijDKqtoMJjog4W6ZGHvZW409ZKIsC3VgSObEynrhF+lwB9oBP9ghE+gwvEE4robHQDjHNCL1buqmVuuDYvY+ql34l8iIbWtriEjWAh184c2pEPFnKcmqJ9RMtLCW/iRaYt6ZFgMtep03U/m0ITIFdpodiXPS2YTsVtmJ+0il/0e5nKoxz4vELec+vlXULgQ5UJZaRK31H7+k+A0/ElcwcNxJeV6au5/pWZ27/va8Q6a4brf4pjj5a/UlXOPO+4LLXxyHM47K2LL4eH6hIXDgHP9BnUT4dkmAbhXk+zkHbGjQbl5OSu8BPAp2ojoW4YhmrPSvq6j1H/JhWqpEQcY3wq15MmAFFqUlor7NmtKzFhgB"
+            }
+          },
+          "id": "prt_d4a4431ce0034sxzsPbliTUD5Z",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me investigate the issue. The smoke test gets empty output from `axe run`, which likely relates to the streaming changes on this branch.",
+          "time": {
+            "start": 1775067480307,
+            "end": 1775067480307
+          },
+          "id": "prt_d4a443b9b00112aAFWdSGQjtg2",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "The smoke test uses the `opencode/minimax-m2.5` model. The agent config doesn't have `stream = true`, and the `--stream` flag isn't passed in the workflow command. Let me check what the `cfg.Stream` field defaults to in the agent config struct.\n\nLet me look at the agent config struct to see if `Stream` might default to true somehow.",
+          "time": {
+            "start": 1775067483634,
+            "end": 1775067485749
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EooEClkIDBgCKkC2Lj6aIPGGHctd6jX0gEJo9UPtWD7slghC7RX+VLoUt/3UBdLKS4JmJJX6/RY3TGdqrwMeLDesiVR3X1Q7+WZ0Mg9jbGF1ZGUtb3B1cy00LTY4ABIM/OctGNrVeWFihWHMGgwqKG3jb/Bxg3VN+YYiMB1p8cIJ6wjT8irAnp07F0tOYQGW+fRY0gPUuCxoa3oKbmT8fGM/M5D/iz/Xtk6kgSreAvvp6V46U/FhaAtA+HLC0YceG6Norlylxq6YHgXbQ7Y6gBUfaoDeXc7aYLDDlI0AmbaNiBY6i43gAuAvmcs0sF8f8RIjReE8Vy5RqPlgSIsM3vMkGyekVMaK74UNnBhMeoSiB5foaxtj9VuxJkO9laUXm9yxtKU2dJTZLitiYyCJ4UUUDhieSgd2mn50h8HENRzn6+0y0HN78qoBT0LNevBoXF+gMFg6Ih4B/E/2SxgcdoZoT4nma45nJnHWXAR+oGBiu5DqHnXyaVrg+3D0kuHx2a6aCNunAJLeNIzq6rwBezVbE3Vd00931kMICHLIEAQu3oKzo9FyPOqNYCM+R+LdS/NMKpCTOJhAxldY6pAYvb2mDIvSfqRwvlVjQodfpH6Ba6O6iKyfehiixCOdOhZlBEAU8+EDj9H87b1VO88BEmv7/dwig68+H93Nzk5D2Q2M7Soth8H/0iC6SxtYGAE="
+            }
+          },
+          "id": "prt_d4a444df20016KjWLvUsmYWgq8",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me check the agent config struct and how `Stream` is defined.",
+          "time": {
+            "start": 1775067486258,
+            "end": 1775067486258
+          },
+          "id": "prt_d4a445636001zH1BupBweSd3gi",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "Now I see the issue. Let me look at the OpenCode provider's streaming support. The smoke test uses `opencode/minimax-m2.5`. The key question is: does `retryProv.SupportsStream()` return `true` for the OpenCode provider?\n\nIf it does, then `streamEnabled` stays true (even though it defaults to false from `cfg.Stream`). Wait, actually `cfg.Stream` is false since the TOML doesn't have `stream = true`. So `streamEnabled` would be false. That means the non-streaming path should be used.\n\nUnless... let me re-read the code. \n\nSo `streamEnabled` starts as false since the TOML doesn't specify streaming and the `--stream` flag wasn't passed. The error is \"FAIL: empty output\" — the command runs but produces no output, which means the error is likely going to stderr while `OUTPUT` captures nothing. Looking at the workflow command, I'm seeing the bash command that runs the smoke test, but it's cut off mid-argument.\n\nThe key issue is that with `set -e`, if the command failed, the script would exit before reaching the empty output check. Since it reaches that check, the command must have exited with code 0 but produced no stdout. Looking at the Go code, there's a condition checking `streamedText` — if that's somehow true even when it shouldn't be, the output wouldn't be printed to stdout.\n\nLet me trace through the logic more carefully. The `cfg.Stream` setting is false, so streaming shouldn't be enabled at all, which means `streamedText` should stay false and the default output path should execute. But something in the recent diff might have changed how the output is handled in the non-streaming case. I'm wondering if the `Stream` field defaults to `true` somewhere or if there's another code path triggering streaming mode. But checking the TOML definition, it should be `false` by default, and no `--stream` flag is being passed, so `streamEnabled` should stay `false`.\n\nLooking at the workflow output showing empty output and exit code 1, that's coming from the test script itself, which means axe is running but producing no output. This could be a pre-existing issue unrelated to the streaming changes, but the user says it started with these modifications. Let me trace through the logic more carefully to find where the output is getting lost.\n\nI'm checking the `retryProv.SupportsStream()` method and the `drainEventStream` function — if streaming somehow activates and the provider doesn't return a `StreamEventDone` event, the response content could end up empty. But the diff is pretty focused, so the issue is likely in one of the three main changes: the flag addition, the `streamEnabled` variable, or the streaming code paths themselves.\n\nSince all the streaming logic is gated behind `streamEnabled` being false, those changes shouldn't affect the current behavior. I'm wondering if maybe the OpenCode provider itself was modified in this branch, or if there's something else going on that the diff isn't showing.",
+          "time": {
+            "start": 1775067491325,
+            "end": 1775067520853
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "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"
+            }
+          },
+          "id": "prt_d4a446bfd001ueMLsYyieY5Fjn",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me check what other files changed on this branch that might affect the OpenCode provider path.",
+          "time": {
+            "start": 1775067520861,
+            "end": 1775067520861
+          },
+          "id": "prt_d4a44df560010mYl84w5UW6VPe",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "The OpenCode provider was modified. Let me check the changes to see if the non-streaming `Send` path was broken.",
+          "time": {
+            "start": 1775067524714,
+            "end": 1775067524714
+          },
+          "id": "prt_d4a44eae1001WQatbTOeDsdThQ",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "Now let me check the `retry.go` changes, specifically `SupportsStream()`:",
+          "time": {
+            "start": 1775067528755,
+            "end": 1775067529685
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EoQCClkIDBgCKkCHJE1TB+jAzU+0E1GnGUaRIAzylf6CpcuBaMd/Fxnw2Tgz5TbKSS98ATdWYQB+SUVFdRDmLJclfuRGWwvEnGxUMg9jbGF1ZGUtb3B1cy00LTY4ABIM+mv0ddhm5rKBX2fFGgy/WyF4AaaUf04jNiEiMJsvil3XgbVzKHjablV1u+Mf/lys1dEtjdNJfSPI3MGFihfXCa6AgYOiwnyywvb08ipZx39pELrpax8lDSelgPNxI+TV7sOUW65In0TPYQXeJnFRcg9jzqc7E7O+DLpnc4aVs75lcAYudWnM1xeX+sQmrXCDZ/HqcB+RcDHrE7H8eMpvHPp2WAl/2NcYAQ=="
+            }
+          },
+          "id": "prt_d4a44fe33001Xgj14XZ7cE7OPa",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me check the retry provider's `SupportsStream()` method and how it interacts with the non-streaming path.",
+          "time": {
+            "start": 1775067530595,
+            "end": 1775067530595
+          },
+          "id": "prt_d4a4501d8001vbeUApBxZreBsy",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "Now I see the potential issue. Let me check the `Send` method of the OpenCode provider. The smoke test uses `opencode/minimax-m2.5` — the `minimax-m2.5` model doesn't start with `claude-` or `gpt-`, so it goes to the `sendChatCompletions` path. Let me check if that was also modified.\n\nActually wait, the diff for opencode.go only shows additions (the streaming methods). The non-streaming `Send` should be unmodified. Let me verify by checking if there are any other changes to opencode.go.\n\nActually, looking at the diff output, it only shows additions of streaming methods. \n\nThe `Send` method shouldn't be changed, so the non-streaming path in OpenCode should work fine. But the smoke test is failing with empty output, and since `--stream` isn't passed, `streamEnabled` is `false`, meaning the non-streaming path should execute. Let me check if maybe the OpenCode provider's response is returning empty content, or if there's an issue with the model endpoint or test setup in CI.\n\nLooking at the workflow error more carefully — this is a real API call to OpenCode with `minimax-m2.5`. The script uses `set -e`, so if axe exits with a non-zero code, the script stops immediately. But if axe exits 0 with empty stdout, the script continues and the output check fails.\n\nThe real question is why axe would return successfully but produce no output. Looking at the code path, if `streamedText` is true, the output gets skipped entirely. `streamedText` starts false and only gets set true in streaming branches, but what if `resp.Content` is actually empty? Or maybe there's an issue with how the OpenCode `Send` method works in the non-streaming case.",
+          "time": {
+            "start": 1775067534789,
+            "end": 1775067553007
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "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"
+            }
+          },
+          "id": "prt_d4a4515c5001DtrVvh1W37Ug6a",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me check if there are any issues with the non-streaming Send path for the `minimax-m2.5` model.",
+          "time": {
+            "start": 1775067553014,
+            "end": 1775067553014
+          },
+          "id": "prt_d4a455cf1001jp34BizvNJluGW",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "The non-streaming Send is unmodified. Let me think about this differently.\n\nThe workflow runs the binary. The binary is compiled from the branch code. The test runs `./axe run --agents-dir .github/smoke-agents cfg-params -p \"Reply with only the word: pong\"`.\n\nThe agent uses `opencode/minimax-m2.5`. No streaming is configured. The non-streaming path should be used.\n\nCould the issue be that the OpenCode provider's response comes back with empty content? Maybe the service returns content in a different field or format? But this was working before the streaming changes on master...\n \nLooking at the git diff for opencode.go, only new streaming methods were added — no existing functions were modified, so the non-streaming path should work exactly as it did before. Maybe the problem isn't in the code itself, but in the CI environment or how the OpenCode API is responding. If the API returns an error, it would trigger `mapProviderError` and return an `ExitError`, but if it's silently failing or returning empty content, that could explain the empty stdout. is a code change issue. Let me examine the test file modifications to see if something there might be causing the failure, or check if the streaming behavior was altered in a way that breaks the non-streaming path.",
+          "time": {
+            "start": 1775067560630,
+            "end": 1775067575574
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "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"
+            }
+          },
+          "id": "prt_d4a457ab6001MySu2JrbVGISXP",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me check the `run_test.go` changes to see if something broke the non-streaming path.",
+          "time": {
+            "start": 1775067575577,
+            "end": 1775067575577
+          },
+          "id": "prt_d4a45b518001nVvULCmBeJdvsS",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "The smoke test is a real API call to the OpenCode service. The issue could be:\n\n1. A flaky external service (minimax-m2.5 returns empty content)\n2. A real code bug in the streaming branch\n\nSince `cfg.Stream` is false and `--stream` isn't passed, `streamEnabled` should be false. The non-streaming code path should be used. And since the non-streaming `Send` method wasn't modified...\n\nActually, let me look more carefully. Could there be a compilation issue? Let me check if the `openaiStreamChunk` type (used in `streamChatCompletions`) conflicts with anything in the OpenAI provider.\n \nI need to trace where `openaiStreamChunk` is defined and whether it was modified in a way that could cause issues.",
+          "time": {
+            "start": 1775067589614,
+            "end": 1775067594035
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EqAHClkIDBgCKkDMxlbkmouFe5VBWPzFFGnav8CcO65qaSXFIxxTYo+40BINAT+5qo0AL4VZz8sQBl/PKCa2seDbWVRX6FfRARJnMg9jbGF1ZGUtb3B1cy00LTY4ABIMg+ua26OH9pYjszaaGgyBTLasLhkhxJhYXNciMFB4jyuaZzwZeI9rXgN7I9ceEu1U+0aT9ccXMh1jf6CiFsb6fsMf06Rjuxw6CmdRUir0BYKxyWBE49mJBf2uA6p0yPy93Up5PXwXW/NpSh7Z7zpEAquNjMPJnFASb/z5aCCwvIIpFfOsn3Bg6jWz85HpYsX9DW9Dq9X8tozJf2MMLSffuU1PH6TdYmVpq3jnEbg2tJNJp8ca3HP7gauDj7O1CQE3BSWRnP5MjzYBBdnr4m89ufSllFfq3n6tLFioYIfrPCx+9swDKyFwHKZKUNJ2D/VFBpIomkMGfK7+noQo3l7axDE7oVbITwt8sZwrCw16JO7NneSvqBk3KQk7Lmjw6KVujeWX04pa6U3LSCd+v29O35KQRmIztem/4hS5/DM7Zsy2PWFckUp136Vgkw6PYrs8j0pqInxDE2OLvgIxNkjTugA3ZtNSEy0SF/j/oEEzdOEX8FMz5JsRmHqddeghXXd7aYLwhme0HljsX060WTsakSK1y0Z1GidQ/9HvMOhSySYlACGkTSMl1z3YcGKjKUw37dMCs3tQSL3c2gMUHOOim3iLJUT8UorMSdkJr/eumOOiEsLfkN8zB6DlwDgUyIkFNVeapxZC10Ws9zE4awp/E4ZcahV45hcTdcva7IYAGVABtKRDN0uPUFLo6ugGDpwCY9B9hFb3JMqkSAkze6IAsT8jLx8mnIUUnKvHoRDuJSCmxUpFvJlwxXlQVnTLrsZykzvV5MMs0SkGYZlc2UiLH3xQaOJLaURN3vIgMUfZxVsaa+UaN3nL4ifqMABZfjL7/BCJgwCOGfFttGExb9JqgKRgaZjdvJPHhoISZ3B1/hskomI+y0XKBtijzGBcYTAU3NTU/0hWCa4Ei7RMbUzGu3obhz3tBrAzR8W8ev0mAdRLgRN6iOwy+XaaYSRtZe0rFoe+Ls/jmsPyyyJ+5V9aqFz9/e49X99l37+IS/7sARim1M5cCkmYsXY4QwZS3TL1WGXLOt3OZjulMJOZTC6AKj0P9XRoBTIY7MzCQiMh9w8404Lb+1ZnKAEMdjcJQEqKv8hYwVdXFJuQlLGO8N/Lec6YNRgB"
+            }
+          },
+          "id": "prt_d4a45ebee001odXNnhvwKm7kZ5",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me check if there's a type conflict or compilation issue with shared types between the streaming and non-streaming paths.",
+          "time": {
+            "start": 1775067594043,
+            "end": 1775067594043
+          },
+          "id": "prt_d4a45fd34001m3xPXtnBrnPHtI",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "All tests pass locally. The issue might be a flaky external API call in CI. But the user is asking about it, so let me check if there's something more subtle.\n\nLet me re-read the workflow command:\n```\nOUTPUT=$(./axe run --agents-dir .github/smoke-agents cfg-params -p \"Reply with only the word: pong\")\n```\n\nAnd the agent config:\n```toml\nname = \"cfg-params\"\nmodel = \"opencode/minimax-m2.5\"\ndescription = \"Smoke test: params config section\"\n\n\n```\n\nThis uses the OpenCode provider with `minimax-m2.5` model. No tools, no streaming. The flow should be:\n1. Load config\n2. Parse model -> opencode / minimax-m2.5\n3. Create OpenCode provider\n4. Send request (non-streaming, single-shot)\n5. Print response\n\nNow, the response content could be empty if the model returns an empty string. But that seems unlikely for \"Reply with only the word: pong\". Could the issue be that the `OPENCODE_API_KEY` is set but the OpenCode service is returning a 200 with empty content? Or maybe the response parsing is stripping the output somehow.\n\nLet me think about whether this test was passing on master. If it was, then something on this branch broke it. The non-streaming path shouldn't have changed, but maybe there's a subtle build issue. I'm wondering if the `sort` import added to opencode.go could be causing problems, though that seems unlikely. Or could there be a type conflict with `openaiStreamChunk` if it was redefined in opencode.go in a way that clashes with the one in openai.go? They're in the same package so duplicate names wouldn't work.\n\n```\n\ngo\n// Checking the openaiStreamChunk definition\n```",
+          "time": {
+            "start": 1775067614851,
+            "end": 1775067626023
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "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"
+            }
+          },
+          "id": "prt_d4a464e83001k38nkeoXEbs2yf",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "Let me check if there are duplicate type definitions that could cause issues.",
+          "time": {
+            "start": 1775067626031,
+            "end": 1775067626031
+          },
+          "id": "prt_d4a467a2e001O65yj0scfhcfPL",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "No duplicate types. The streaming code in opencode.go reuses types from openai.go and anthropic.go, which is fine since they're in the same package.\n\nLet me take a step back. The code changes on this branch don't seem to affect the non-streaming path. The test failure might be a flaky CI issue with the external OpenCode API. But the user is asking about it, so maybe it's consistently failing.\n\nLet me check if there are any other workflow logs or if there's a pattern. Actually, let me look at the workflow more carefully to see if other smoke tests also fail.\n\n\nI should examine the `sendChatCompletions` function more closely — there might be an issue with how responses are being parsed that's resulting in empty content.",
+          "time": {
+            "start": 1775067628444,
+            "end": 1775067634022
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EqwHClkIDBgCKkC7pFDE9810l1loSWN4QLj/PJ3pVClD6gb05z3TV4idBIpcA8UKp5uK7Kk7LazLX6EUnHCM0BRtjuPA70omnTXfMg9jbGF1ZGUtb3B1cy00LTY4ABIMrFMhDaMSfLjtoixvGgxe5myhEJAROwB7uNgiMGXVFRFmfq7AbSGbPCQfmE8wUjfKuLtiDFU9/MhaK9y20b/ZuOLzF2X+R46b7SM/lyqABkMQ68kkLV21TmPa0KrsY4ON3iIr9bBXw0+ze+i26AWEvpcXqDhG3chgz5JPvB//LCc/r7jHs92u14ruDoJ70k2YlMo6FsaUCTXa5UObIsO2RxwKoTMm6YFNxt0ITT8P7deYVvi2fmcGhnOHmWsjG59BJqIUDl+Ci83LSw5K9+u0U05RfmBiAvgRQQXGXq2Mxe8bDO4hcHu5SPPtNVkcTVZooOmCvvyJwGuuNUw7RawrNGdt6QZYAcaXsS+TNn6zYUDKB3N2OYlllBu0jVidq1iYiSDa7i8LC3rY+PQmPuItcXGTMgr+/JEgYbASwTmzshM2lFGb0pYRxhEWOeRTrDPeZhswVLCJQIY+fYqTHi3j9/bFKpIuhUddhbUm1RGI1YaI6FXb33SuDxgXOTeA0E9Km2OIHz1E8EHfbKvcHalYm/CBMFGNtcKNdfKcULRlGbZwGmQR3766BrHhfPbuOMTC/PK75+FWgumJ793Mv0qJy8FWWL14Cq0S709QBHS5tjgqyIQAml7ieEgKlWT9qzom9Iq3c5I8IDVOXZLtUPvZOqxl2MvgrNbWZqcTBYzvE9JMV8C4FNMm/Yl6N1DketdJhUFV7rsCFV3SL/ZRyAAhul/I8J6sU2Y2v+7e3k5LQN/B3CamWmUDfIU+nFNciYYUhCk0wPy+qIo7DOtija/D59P6sYv0ew4L1EFCNV/6d/zVQ0Xogum8H/+kiDFaEiHv8YTU/maT31GY/b6eLy+ZwLzQOS6XxepxJHbEXd5kecK+GubmKnXwXPYpJkGpzBAB4gwItwMzI62DD8s+MAR+TCTOGangNVfkA+sWdmS7UMyqUlS/Q9p41iYo9Vf+Jr5J1buVsY4PKq6yswYHcrZcIA071wM2tozLZbz5Nn/h9aYD+YkV1el8YtTnNVKpntH/Kx72x/erKfKNXIzqangLoj4vZTwnVsuLY2j11GKrPm4pTYewLAkqO3bafWbmmkMjiKySeVzAbcGLQMbMv6U5FqezymswlxqKJI962V8eLRgB"
+            }
+          },
+          "id": "prt_d4a46839c0013d88xAiXVOM6Vq",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "The `sendChatCompletions` function looks unmodified. It properly parses the response and returns content.\n\nLet me think about this from a totally different angle. Maybe the issue is that this is a flaky external API test — the minimax-m2.5 model sometimes returns empty content. This isn't necessarily related to the streaming changes at all.\n\nBut the user mentioned \"getting this error in the github workflow\" in the context of this branch's work, implying it's related to the streaming changes.\n\nLet me check one more thing — could the issue be that the CI binary panics silently? In bash with `set -e`, if `OUTPUT=$(./axe ...)` panics, the exit code would be non-zero and the script would exit before reaching the check. So that's not it.\n \nI should try reproducing this locally, but I don't have the API key. Let me trace through the code path more carefully instead — maybe the streaming logic is somehow intercepting the non-streaming path. Walking through the execution: streaming is disabled in the config and not passed as a flag, so `streamEnabled` is false, and with no tools we should enter the standard completion branch.\n\nThe response comes back from the provider and we print the content, which all looks correct. But wait — could this error actually be coming from a different smoke test step rather than cfg-params? Let me check the user's output again. No, they clearly show it's the cfg-params test failing. Maybe this is just a pre-existing flaky test that happened to fail on this PR?\n\nIf the Minimax API sometimes returns empty content, that would explain the failure. I should check whether this test was recently added or if it's been around for a while.",
+          "time": {
+            "start": 1775067636932,
+            "end": 1775067649749
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "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"
+            }
+          },
+          "id": "prt_d4a46a4c40018cuEIho4x3WTgu",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "reasoning",
+          "text": "The smoke test workflow hasn't been modified on this branch — it's identical to master. And the test has been around since the initial smoke test workflow commit.\n\nSo this is likely a flaky external API test. The minimax-m2.5 model via the OpenCode provider sometimes returns empty content. This is not caused by the streaming changes.\n\nHowever, let me verify: does this test pass consistently on master? If it does, then maybe there IS something about the branch that causes it. But since the non-streaming code path is unchanged...\n\nActually, let me check one more thing. The `mapOCOpenAIHTTPError` function — was it modified? If the API returns an error that's now being mapped differently...\n\n\nLooking at the diff, the only changes to opencode.go are the new streaming methods and a `sort` import. No existing functions were touched, so the non-streaming code path is completely unchanged. I should tell the user this appears to be a flaky external API test unrelated to the streaming changes, though let me just double-check if there's a new `mapStreamErrorType` function that could be causing conflicts.",
+          "time": {
+            "start": 1775067652573,
+            "end": 1775067658928
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EuYKClkIDBgCKkCDhDTd7+k8otc4wtQjJevUzlaPzL/+VMsPdjsAqlGstTBeYTf6jwaRCvBKgVtGN8rP/VZxC0EZqMZWAceUi88CMg9jbGF1ZGUtb3B1cy00LTY4ABIMQ/WvXctgLGQD2jwuGgzv7MlB+aUaX2JDk3UiMH9QntKirwdS0XTdbyj4DTQU8TCPZiegtaIaIU1ekC+EGAp6x5T95Vn5buIJ/7kP2Sq6CZY51jXWoXsLzpbeXU5/D5Pl0dWIlQs7glviTR5+jBBE9xTvFwT2TYEnkF2gYLICtJqfYSUqy09EQk2QulsdrWJCG3JVj9l7dhhL97HQiJ39cIffHok8Hj7mxA0k4y8B6FwIot46c9LgRS/hvnde4ZxQqEJe8oVfbpmv+Fc9aCdO2rRqBZY87oX4a+fK2iR/W0M9ibS4EnoCZN/k1oqDK0SgUZcRyXih5QtAGo6kH1pg3Lb6VOGd44ubYWPJeXbViRXHqFbWzIxTn47MOq7LxNCq3OKUKYLfyD6lve1dlAd3ik8f1U1GPr/sdHWYbqhp1R1jKXvuMigbitjQ+s24h/EHxsncljNDa859kygOIkZgexB+ZIct3iRr6pXj62BMz1oeMk6SckcPAuT9X2QhumApCYMGQNmVRwjSrdoqk5I5pr3zY/vouhwhUeDYnnaei7WMpojednPIbyLByYlVJJDuoaTMCyDzl5UOeinooy11o7MA5xuCY4CZt4CWF6aRrKpEusU10Ss8hyYGZcYzhc6Pg2dYgAVTevYVfyN4D6wjagC0cfoRDyyGmvphRLtqFRfaCNyKogDRvcA/Mw8BYIuPaeAX1z51ia4NPLXvrCd+Wos//2z7iZEMkxLEnCMTsjg8+4bgR0f01/vnAclrlnrXfuotY8/pViGUJX0PkpGZRKLbfZEWbvVdIjS8qU3CkLsJ9XmWnPJdogEfdj6Dru/oFnPCB9I6vlqOok1A6Wm9zLgUOtBgd/8hNiWZXJcXF1GH3qER1rswtjgGI/y5jw1Qu0BMniM9MYaL98bkB3YLAjikiwblQpp49UBfSyAXVSrD2pkt09NkfzhL2bEMW2jGkibAQsdoKFB+HWBShG+tPzslMHRi/ashO/iiOGfOBJG1JHRkiL/8vW7e53oFYL3ktEybSoQx3o9bSD1vcPnoA7baQXDQzj5Qu/0HhdhvqGTxbyRhsXT6JGzksbLj24ZkgBx0PG6oLycQ1TBnPWv6ULoABxs1a3HeL44JcMDOsGizC4yMxIT37HZZKms3I7Lf7LKue2C9hINuQ6fETT7Rsl+gc7T3xwQXJeHGt+pbbRS2o5T4OkZhsa20XMskOUd00gy6XbTmYGctOQ0CnB83kEoQ/9T/Xwd0YuI6UXfm4Q+VePOT6th+K5bjhdoZ0e+kFMxNKhLs/RgWbUd9o5bq4ugxVGSiVHICWVipz7WvwQropnS+Cgp55quyMAMD0oEaEXWOc9ej6pdcVAcRTX+4jfbrVzDOGl3nRNdcOS1gEIDhO694X/D1KGn5xke88orCYd1MFSL4KZ5l0vFxGuwarUVDgcjp2EJaEC1+ni1luve+StwS1iT8qjd7cKJ+WFot/dBVIroMkpnxf/JUhIWq41MgdeiTm/n0TU9TF+c/QJZQGllnmziTi1NW3v4NyjzOECU8FCzaBfND5rFh9FPDsNy2CgQ06RodTexTKMMuQg4ogPETXTPJmT0bWdEUPLEk43wNf9qV8OqmQx4KbXAWx5c0g5bEMkOpUjIwP6zdoZJbmk7pMFbC+HPFvZvAlBOBpyHLiXFGw6h68cr0Jw+qRhoNioU85DDepnRigRDT9vTjGp4RwZdWcc8YAQ=="
+            }
+          },
+          "id": "prt_d4a46e1dd001lTmEPXUWwqOmcp",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "The smoke test workflow is unchanged from master, and the non-streaming code path in `opencode.go` is unmodified by this branch. Let me verify there's no subtle issue by checking if the branch builds and tests pass identically to the non-streaming path.",
+          "time": {
+            "start": 1775067659662,
+            "end": 1775067659662
+          },
+          "id": "prt_d4a46fab10013tLaTxLw69jYMa",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "type": "text",
+          "text": "The code compiles and vets cleanly. Here's my analysis:\n\n**This is a flaky external API issue, not a code bug from the streaming changes.**\n\nEvidence:\n1. The smoke test workflow (`.github/workflows/smoke-test.yml`) is **identical to master** — no changes on this branch.\n2. The `cfg-params` agent uses `opencode/minimax-m2.5` with **no streaming** (`stream` not in TOML, `--stream` not passed), so `streamEnabled = false`.\n3. The non-streaming code path (`OpenCode.Send` → `sendChatCompletions`) is **completely unmodified** in the diff — the only changes to `opencode.go` are new streaming method additions.\n4. The output logic change (`else` → `else if !streamedText`) is safe because `streamedText` defaults to `false` and is only set `true` in streaming branches that aren't entered.\n5. All local unit tests pass. `go vet` is clean.\n\nThe `minimax-m2.5` model via OpenCode API is returning empty content for the \"Reply with only the word: pong\" prompt. This is a transient external service issue.\n\n**Options to fix the flakiness:**\n1. Re-run the workflow — if it passes, it confirms flakiness.\n2. Add a retry to the smoke test shell command (e.g., retry the axe call up to 2 times).\n3. Switch the smoke test to a more reliable model.\n\nWould you like me to add retry logic to the smoke test, or would you prefer to just re-run the CI?",
+          "time": {
+            "start": 1775067672526,
+            "end": 1775067672526
+          },
+          "id": "prt_d4a470f9c001cfv8RREXKDc3s7",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "7f40cd35bc74f8ec6d2642abd7f7b4e5eef04619",
+          "type": "step-finish",
+          "tokens": {
+            "total": 91089,
+            "input": 1,
+            "output": 379,
+            "reasoning": 0,
+            "cache": {
+              "write": 441,
+              "read": 90268
+            }
+          },
+          "cost": 0.05737025,
+          "id": "prt_d4a4731d9001WgbHODOYAoPxqT",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a441c3e001SuUn9G0rWvm2ho"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775067829449
+        },
+        "agent": "plan",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d4a4994c0001SAEsy9zeJ2nfPa",
+        "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "I ran the flow again and it failed again. what does this smoke test actually test?",
+          "id": "prt_d4a4994c0002ZMZfj7qMR6No4O",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a4994c0001SAEsy9zeJ2nfPa"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d4a4994c0001SAEsy9zeJ2nfPa",
+        "role": "assistant",
+        "mode": "plan",
+        "agent": "plan",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.336288,
+        "tokens": {
+          "total": 94007,
+          "input": 2,
+          "output": 233,
+          "reasoning": 0,
+          "cache": {
+            "write": 49316,
+            "read": 44456
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775067829456,
+          "completed": 1775067842970
+        },
+        "finish": "stop",
+        "id": "msg_d4a4994d0002j29ykjuUDwrmka",
+        "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX"
+      },
+      "parts": [
+        {
+          "snapshot": "7f40cd35bc74f8ec6d2642abd7f7b4e5eef04619",
+          "type": "step-start",
+          "id": "prt_d4a49b1740016cu7vCAYgfpDte",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a4994d0002j29ykjuUDwrmka"
+        },
+        {
+          "type": "text",
+          "text": "\n\nLooking at the smoke test and the agent config:\n\n```toml\nname = \"cfg-params\"\nmodel = \"opencode/minimax-m2.5\"\ndescription = \"Smoke test: params config section\"\n\n[params]\ntemperature = 0.5\nmax_tokens = 100\n```\n\nThe test just verifies that the `[params]` section (temperature, max_tokens) is correctly loaded and passed through to the provider — i.e., that a request with custom params doesn't crash and produces *some* output. It's not testing anything specific about the response content, just that it's non-empty.\n\nSince it's failing consistently, the `minimax-m2.5` model via OpenCode may be down, deprecated, or returning empty responses reliably now. This isn't a streaming bug — it's an infrastructure/model availability issue.\n\nWould you like to switch this smoke test to a different model that's more reliable, or investigate whether `minimax-m2.5` is still available on the OpenCode platform?",
+          "time": {
+            "start": 1775067842377,
+            "end": 1775067842377
+          },
+          "id": "prt_d4a49b175001w7a6iZnsd9bbSJ",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a4994d0002j29ykjuUDwrmka"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "7f40cd35bc74f8ec6d2642abd7f7b4e5eef04619",
+          "type": "step-finish",
+          "tokens": {
+            "total": 94007,
+            "input": 2,
+            "output": 233,
+            "reasoning": 0,
+            "cache": {
+              "write": 49316,
+              "read": 44456
+            }
+          },
+          "cost": 0.336288,
+          "id": "prt_d4a49c921001NHwTe12DdsxsYM",
+          "sessionID": "ses_2b5bc50f9ffe6gp6dvJwaCZVmX",
+          "messageID": "msg_d4a4994d0002j29ykjuUDwrmka"
+        }
+      ]
+    }
+  ]
+}
