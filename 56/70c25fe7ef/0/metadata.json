@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "5670c25fe7ef",
+  "session_id": "ses_2b5f0e5dcfferpSiQ6apJPnN9G",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T17:35:00.85555Z",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "internal/provider/gemini_test.go",
+    "internal/provider/ollama.go",
+    "internal/provider/ollama_test.go",
+    "internal/provider/opencode.go",
+    "internal/provider/opencode_test.go",
+    "docs/plans/ISS-59_m5_remaining_provider_streaming_implement.md",
+    "docs/plans/ISS-59_streaming_milestones.md",
+    "internal/provider/gemini.go"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "b050983ce07e",
+  "token_usage": {
+    "input_tokens": 3,
+    "cache_creation_tokens": 12366,
+    "cache_read_tokens": 44341,
+    "output_tokens": 108,
+    "api_call_count": 2
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T17:35:00.835198Z",
+    "agent_lines": 42,
+    "human_added": 1899,
+    "human_modified": 31,
+    "human_removed": 0,
+    "total_committed": 1972,
+    "agent_percentage": 2.129817444219067
+  }
+}

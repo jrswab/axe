@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "5670c25fe7ef",
+  "strategy": "manual-commit",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/plans/ISS-59_m5_remaining_provider_streaming_implement.md",
+    "docs/plans/ISS-59_streaming_milestones.md",
+    "internal/provider/gemini.go",
+    "internal/provider/gemini_test.go",
+    "internal/provider/ollama.go",
+    "internal/provider/ollama_test.go",
+    "internal/provider/opencode.go",
+    "internal/provider/opencode_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/56/70c25fe7ef/0/metadata.json",
+      "transcript": "/56/70c25fe7ef/0/full.jsonl",
+      "content_hash": "/56/70c25fe7ef/0/content_hash.txt",
+      "prompt": "/56/70c25fe7ef/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3,
+    "cache_creation_tokens": 12366,
+    "cache_read_tokens": 44341,
+    "output_tokens": 108,
+    "api_call_count": 2
+  }
+}

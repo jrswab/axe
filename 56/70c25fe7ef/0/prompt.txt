@@ -1,0 +1,39 @@
+# Code Generation Instructions
+
+Before starting, ask what branch to use.
+
+## Setup
+Locate the plan files in `docs/plans/`:
+- Spec: file starting with ISS-59_m5, or the newest `xxx_topic_spec.md` if ISS-59_m5 is empty.
+- Implement: file starting with ISS-59_m5, or the newest `xxx_topic_implement.md` if ISS-59_m5 is empty.
+
+## Rules
+
+- Always use red/green TDD
+- Use @explore sub-agents for exploring the codebase
+- Use @general sub-agents for working on the codebase
+- Each sub-agent must only have one explicit task.
+- Each sub-agent must only return the information that fulfills that task.
+- Spin off multiple sub-agents in parallel for tasks that do not depend on another task.
+- If there was an attempt at fixing a pattern, you must make a comprehensive search proving ALL instances are addressed.
+- Verify that the unit tests for functions with updates have a test case that will verify the change.
+
+## Steps
+
+1. Read the **Context Summary** in the implement guide to understand the *why* before selecting any tasks.
+2. Study the spec file thoroughly.
+3. Study the implement file thoroughly.
+4. Pick the highest leverage unchecked task.
+5. Complete the task.
+6. Run the `auto-review` skill with the @review subagent then delegate fixes to subagents.
+7. Run `make check-diff` and fix the errors with @general subagent.
+8. Update the implementation plan to check off the completed task using a sub-agent.
+9. After implementing, compare the result with the spec and confirm all requirements are met. List any spec items that are not addressed which should have been.
+10. Repeat steps 4-9 until all tasks are complete.
+11. If all tasks in the implementation file are checked off:
+    - Mark the corresponding milestone as complete in the milestone doc (`- [ ] 001:` → `- [x] 001:`).
+    - Commit the changes.
+
+---
+
+proceed with the current branch
