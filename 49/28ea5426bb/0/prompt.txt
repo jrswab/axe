@@ -26,3 +26,7 @@ proceed
 ---
 
 commit and push to remomet
+
+---
+
+remove the cfg-params smoke test from github workflow; it's breaking and does not provided any value
