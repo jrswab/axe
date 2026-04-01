@@ -1,0 +1,9 @@
+are there any remaining milestones?
+
+---
+
+use `gh` to make a github issue to ad bedrock streaming if an issue for that does not already exist.
+
+---
+
+commit remaining changes and untracked files

@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "f090e3661762",
+  "strategy": "manual-commit",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/plans/ISS-59_m5_remaining_provider_streaming_spec.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/f0/90e3661762/0/metadata.json",
+      "transcript": "/f0/90e3661762/0/full.jsonl",
+      "content_hash": "/f0/90e3661762/0/content_hash.txt",
+      "prompt": "/f0/90e3661762/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
