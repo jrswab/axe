@@ -1,0 +1,9 @@
+We need to update @docs/src/ to include the latest streaming feature added.
+
+---
+
+we need to make sure the relationship between --stream and --json is properly documented
+
+---
+
+yes go ahead

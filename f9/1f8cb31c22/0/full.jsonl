@@ -1,0 +1,593 @@
+{
+  "info": {
+    "id": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+    "slug": "calm-canyon",
+    "projectID": "f41eda22c31366c4dba329069ee3369b2d9dd378",
+    "directory": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+    "title": "Update streaming feature docs",
+    "version": "1.3.10",
+    "summary": {
+      "additions": 47,
+      "deletions": 4,
+      "files": 4
+    },
+    "time": {
+      "created": 1775071049446,
+      "updated": 1775073250288
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775071049468
+        },
+        "agent": "plan",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "variant": "medium",
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d4a7ab6ee001xFQzsfH4kwyu7S",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "We need to update @docs/src/ to include the latest streaming feature added.",
+          "id": "prt_d4a7ab6ee0022BKS74u9HQuM30",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab6ee001xFQzsfH4kwyu7S"
+        },
+        {
+          "type": "file",
+          "mime": "application/x-directory",
+          "filename": "docs/src/",
+          "url": "file:///Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/",
+          "source": {
+            "text": {
+              "value": "@docs/src/",
+              "start": 18,
+              "end": 28
+            },
+            "type": "file",
+            "path": "docs/src/"
+          },
+          "id": "prt_d4a7ab6ef001U2hoI22cR7Frq1",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab6ee001xFQzsfH4kwyu7S"
+        },
+        {
+          "type": "text",
+          "synthetic": true,
+          "text": "Called the Read tool with the following input: {\"filePath\":\"/Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/\"}",
+          "id": "prt_d4a7ab6fe001covHPNI4T5ioLz",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab6ee001xFQzsfH4kwyu7S"
+        },
+        {
+          "type": "text",
+          "synthetic": true,
+          "text": "<path>/Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/</path>\n<type>directory</type>\n<entries>\ncli/\nconfiguration/\ndocker/\ngetting-started/\nintroduction.md\nlocal-agents.md\nproviders.md\nskills.md\nSUMMARY.md\ntools/\n\n(10 entries)\n</entries>",
+          "id": "prt_d4a7ab6fe00276jcvXYALU3G0e",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab6ee001xFQzsfH4kwyu7S"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d4a7ab6ee001xFQzsfH4kwyu7S",
+        "role": "assistant",
+        "mode": "plan",
+        "agent": "plan",
+        "variant": "medium",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.04549525,
+        "tokens": {
+          "total": 67208,
+          "input": 1,
+          "output": 415,
+          "reasoning": 0,
+          "cache": {
+            "write": 299,
+            "read": 66493
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775071049480,
+          "completed": 1775071089998
+        },
+        "finish": "stop",
+        "id": "msg_d4a7ab708002n2Pe5PRaSvLv7J",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "snapshot": "33b0712e3a7e10ff2cfa249e531937995eb3d0aa",
+          "type": "step-start",
+          "id": "prt_d4a7acd6d001l6Fv2sIfbKkrY8",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab708002n2Pe5PRaSvLv7J"
+        },
+        {
+          "type": "reasoning",
+          "text": "The user wants to update the docs to include the latest streaming feature. Let me first understand what the streaming feature entails by looking at the recent commit and the current docs structure.",
+          "time": {
+            "start": 1775071055214,
+            "end": 1775071055536
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EoEDClkIDBgCKkCgydCEBweaMTfQXeEclaxIUkK28COMHbjnVQXftGhebl9HRpoFlJf6KraPFVeMEOz+V83E32flpcJ3XtBS7g6uMg9jbGF1ZGUtb3B1cy00LTY4ABIMLpzPzDg88fNEr29vGgw6ntE+aoEaV2jUArUiMLXT5mub32eUTNt38zLT9SXqhbodzuzpiZnCNJPrVpZoGpI+uQh7Am50IATp4vlFVCrVAWyuFlcJa9RDmlX9ovWFlJhEdLRk62JrKtASvyBJoZEEYzNEC7CM+nuQYFO1I+mQ8kAG9/oKBSE6nXx81FcG2PuBigIxQTybQYHSDgyGTcpgpuMMuA3fTbOcFepsrVP3zjf7jEG+VKabL9aKEYef6WSWmvyUUhj9jgXKN1Qy8lZPpx3fjF50fkFZPx0Nr9t7e70r/tRGbOKRC4nY4MOoOrx8dP3X5R1pHBUggCPEkPCc08qJdsF37HYquq/Tw3s0Wa02CwAtjXcCfPC7aDAwxBJvlMe0zRgB"
+            }
+          },
+          "id": "prt_d4a7acd6e001xN3S2N83j3dG15",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab708002n2Pe5PRaSvLv7J"
+        },
+        {
+          "type": "text",
+          "text": "Let me gather context on the streaming feature and current docs state.",
+          "time": {
+            "start": 1775071056416,
+            "end": 1775071056416
+          },
+          "id": "prt_d4a7aceb1001rRQGZrg9OD5tII",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab708002n2Pe5PRaSvLv7J"
+        },
+        {
+          "type": "text",
+          "text": "Now let me also check the `tool_call_details` JSON changes from the other recent commit since the docs may also be missing those.",
+          "time": {
+            "start": 1775071077344,
+            "end": 1775071077344
+          },
+          "id": "prt_d4a7b1e52001rVDmmDoyjEgv46",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab708002n2Pe5PRaSvLv7J"
+        },
+        {
+          "type": "text",
+          "text": "Good. Now I have a complete picture. Here's the plan:\n\n---\n\n## Plan: Update docs for v1.7.0 features\n\nTwo features landed since the docs were last updated that need documentation:\n\n### 1. Streaming (`ce7155b` — ISS-59)\n\n**a. `docs/src/configuration/agent-config.md`** — Add `stream = false` to the example TOML (after `timeout`), showing it as an optional top-level field.\n\n**b. `docs/src/cli/run-flags.md`** — Add `--stream` row to the flags table:\n| `--stream` | false | Stream responses from the LLM provider in real time |\n\n**c. `docs/src/providers.md`** — Add a short \"Streaming Support\" section noting that all providers (Anthropic, OpenAI, Gemini, Ollama, OpenCode) support streaming. Bedrock does not yet support streaming. If a provider doesn't support streaming, the flag is silently ignored and the request falls back to non-streaming.\n\n### 2. `turn` and `duration_ms` in tool_call_details (`45860e7`)\n\n**d. `docs/src/cli/json-output.md`** — Add `turn` (int) and `duration_ms` (int) rows to the `tool_call_details` table, and update the JSON example to include them.\n\n### 3. No SUMMARY.md changes needed\nNo new pages are being added; these are all edits to existing pages.\n\n---\n\nDoes this plan look right, or do you want any additions (e.g., a dedicated streaming page, or documenting the `timeout` top-level field from `784584d` which I also don't see in the agent-config docs)?",
+          "time": {
+            "start": 1775071089429,
+            "end": 1775071089429
+          },
+          "id": "prt_d4a7b2d9e001dvWfj37TZ4872V",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab708002n2Pe5PRaSvLv7J"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "33b0712e3a7e10ff2cfa249e531937995eb3d0aa",
+          "type": "step-finish",
+          "tokens": {
+            "total": 67208,
+            "input": 1,
+            "output": 415,
+            "reasoning": 0,
+            "cache": {
+              "write": 299,
+              "read": 66493
+            }
+          },
+          "cost": 0.04549525,
+          "id": "prt_d4a7b54b40011wGRrG0DYxUOlK",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7ab708002n2Pe5PRaSvLv7J"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775071146053
+        },
+        "agent": "plan",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "variant": "medium",
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d4a7c303b001tlmhTm3IXqgQWS",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "we need to make sure the relationship between --stream and --json is properly documented",
+          "id": "prt_d4a7c303c001XY8K74oQ7xohjk",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7c303b001tlmhTm3IXqgQWS"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d4a7c303b001tlmhTm3IXqgQWS",
+        "role": "assistant",
+        "mode": "plan",
+        "agent": "plan",
+        "variant": "medium",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.07236375,
+        "tokens": {
+          "total": 79176,
+          "input": 1,
+          "output": 699,
+          "reasoning": 0,
+          "cache": {
+            "write": 2721,
+            "read": 75755
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775071146059,
+          "completed": 1775071195918
+        },
+        "finish": "stop",
+        "id": "msg_d4a7c304b0029SoA2DXSuWD5Rf",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "snapshot": "33b0712e3a7e10ff2cfa249e531937995eb3d0aa",
+          "type": "step-start",
+          "id": "prt_d4a7c43720015HvljcNUUbJTyt",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7c304b0029SoA2DXSuWD5Rf"
+        },
+        {
+          "type": "reasoning",
+          "text": "The user wants me to understand the relationship between `--stream` and `--json` flags before documenting. Let me read the relevant code to understand how they interact.",
+          "time": {
+            "start": 1775071150963,
+            "end": 1775071151703
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EuUCClkIDBgCKkATZeVFCp1S4mLucENN9WRtTo1MJKZgoowlklCWdnkwUTq78n3SCyrgZFtlDlMtw/a5iK/Mp15I8bTyyhl0LHcdMg9jbGF1ZGUtb3B1cy00LTY4ABIMif4tmf0oDV4MYy6/GgzPXwhvGaxEvw3I1hIiMDV0yOqkAQ8eLYERy33e2K9toEbGez5HLuzPUeG6oNVyEwrKB+EB2qaNmKbyKar4lCq5ARk+kT1aJNmtgyZSWPGLV9FZnOHMQ6OxCxlvOd+srzmg7VvGWb2E0gvyrtO4Roq3sIz/+plSxZG6m8iME6zstcZMdfNqsi8Rs7cv2yhCLlJ2JcnfrXAzmNuta7FUZg09wP/88d4ETW9wL6fVsArZTmWdWu3z7KioQ/a4diAIQ3J2e+uy82mN+QnBsW+4Eostwy4xuZjbTPeI+x/bI/9WFMPDha+90j7DH+sUtAD6R2ElwxXlqUqCpgKlGAE="
+            }
+          },
+          "id": "prt_d4a7c4373001nSCzwuAGpM8kUK",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7c304b0029SoA2DXSuWD5Rf"
+        },
+        {
+          "type": "text",
+          "text": "Let me check how `--stream` and `--json` interact in the code.",
+          "time": {
+            "start": 1775071152590,
+            "end": 1775071152590
+          },
+          "id": "prt_d4a7c4659001mvAjisws4lSu1T",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7c304b0029SoA2DXSuWD5Rf"
+        },
+        {
+          "type": "text",
+          "text": "Now I have the full picture. Here's the key behavior from the code:\n\n**`--stream` + `--json` interaction** (from `cmd/run.go`):\n- When `--stream` is enabled **without** `--json`: text is written to stdout incrementally as it arrives (`textWriter = cmd.OutOrStdout()`), and the final print is skipped (`streamedText = true`).\n- When `--stream` is enabled **with** `--json`: `textWriter` is set to `nil`, so streaming text is **not** written incrementally. Instead, the full response is accumulated internally and emitted as part of the JSON envelope at the end. The user sees no incremental output — they get the same JSON blob as non-streaming mode, just potentially faster time-to-first-byte from the provider.\n\nSo `--json` effectively suppresses the visible streaming behavior but still uses the streaming API under the hood (potentially better latency / partial progress on the provider side).\n\n---\n\n## Updated Plan\n\n### 1. `docs/src/cli/run-flags.md`\nAdd two new rows to the flags table:\n\n| `--stream` | false | Stream LLM responses to stdout in real time |\n| `--artifact-dir <path>` | (none) | Override or set the artifact directory |\n| `--keep-artifacts` | false | Preserve auto-generated artifact directories |\n\nAdd a new section **\"Streaming\"** after \"User Message Precedence\" explaining:\n- `--stream` prints text tokens to stdout as they arrive\n- When combined with `--json`, streaming is used internally but output is still delivered as a single JSON envelope (no incremental stdout)\n- The `--stream` flag overrides the TOML `stream` field\n- If the provider doesn't support streaming, the flag is silently ignored and falls back to non-streaming\n\n### 2. `docs/src/cli/json-output.md`\n- Add `turn` (int) and `duration_ms` (int) to the `tool_call_details` table\n- Update the JSON example to include these fields\n- Add a note that `--stream` is compatible with `--json` — when both are used, streaming happens internally but the output is still a single JSON envelope\n- Also add missing fields to the top-level envelope table: `model`, `input_tokens`, `duration_ms`\n\n### 3. `docs/src/configuration/agent-config.md`\n- Add `stream = false` to the example TOML (after `allowed_hosts` or near `timeout`)\n- Add `timeout = 120` to the example TOML (it's also missing)\n\n### 4. `docs/src/providers.md`\n- Add a short \"Streaming Support\" section noting that all providers except Bedrock support streaming. If a provider doesn't support streaming, the flag is silently ignored.\n\n### 5. `docs/src/SUMMARY.md` — No changes needed (no new pages).\n\n---\n\nDoes this plan look good? Any adjustments before I implement?",
+          "time": {
+            "start": 1775071195267,
+            "end": 1775071195267
+          },
+          "id": "prt_d4a7cb30a001q0OQNC7JZuAZ6t",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7c304b0029SoA2DXSuWD5Rf"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "33b0712e3a7e10ff2cfa249e531937995eb3d0aa",
+          "type": "step-finish",
+          "tokens": {
+            "total": 79176,
+            "input": 1,
+            "output": 699,
+            "reasoning": 0,
+            "cache": {
+              "write": 2721,
+              "read": 75755
+            }
+          },
+          "cost": 0.07236375,
+          "id": "prt_d4a7cf27d0014fbQlSoi679e6B",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a7c304b0029SoA2DXSuWD5Rf"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775071440668
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "variant": "medium",
+        "summary": {
+          "diffs": [
+            {
+              "file": "docs/src/cli/json-output.md",
+              "before": "# JSON Output\n\nThe `--json` flag wraps the agent's output in a JSON envelope with metadata for scripting and observability.\n\n```bash\naxe run my-agent --json\n```\n\n## Envelope Fields\n\n| Field | Type | Description |\n|---|---|---|\n| `output` | string | The agent's text response |\n| `output_tokens` | int | Total output tokens across all turns |\n| `tool_calls` | int | Total number of tool calls made |\n| `tool_call_details` | array | Per-call details (see below) |\n| `refused` | bool | Whether refusal was detected in the response |\n| `retry_attempts` | int | Number of retries that occurred |\n| `budget_max_tokens` | int | Token budget cap (only present when a budget is set) |\n| `budget_used_tokens` | int | Cumulative tokens used (only present when a budget is set) |\n| `budget_exceeded` | bool | Whether the budget was exceeded (only present when a budget is set) |\n\n## tool_call_details\n\nEach entry in the `tool_call_details` array represents one tool invocation:\n\n| Field | Type | Description |\n|---|---|---|\n| `name` | string | Tool name (e.g., `read_file`, `run_command`) |\n| `input` | object | Arguments passed to the tool |\n| `output` | string | Tool output, truncated to 1024 bytes |\n| `is_error` | bool | Whether the tool call resulted in an error |\n\n## Example\n\n```json\n{\n  \"output\": \"Here is the summary...\",\n  \"output_tokens\": 312,\n  \"tool_calls\": 2,\n  \"tool_call_details\": [\n    {\n      \"name\": \"read_file\",\n      \"input\": { \"path\": \"main.go\" },\n      \"output\": \"package main\\n...\",\n      \"is_error\": false\n    },\n    {\n      \"name\": \"run_command\",\n      \"input\": { \"command\": \"go test ./...\" },\n      \"output\": \"ok  \\tgithub.com/jrswab/axe\\t0.42s\",\n      \"is_error\": false\n    }\n  ],\n  \"refused\": false,\n  \"retry_attempts\": 0\n}\n```\n\n## Refusal Detection\n\nThe `refused` field is set to `true` when axe detects that the LLM declined to complete the task. Detection is heuristic — it scans the response for phrases like \"I cannot\", \"I'm unable to\", \"I must decline\", etc. See the [Refusal Detection](refusal-detection.md) page for details.\n",
+              "after": "# JSON Output\n\nThe `--json` flag wraps the agent's output in a JSON envelope with metadata for scripting and observability.\n\n```bash\naxe run my-agent --json\n```\n\n## Envelope Fields\n\n| Field | Type | Description |\n|---|---|---|\n| `model` | string | The model that produced the response |\n| `content` | string | The agent's text response |\n| `input_tokens` | int | Total input tokens across all turns |\n| `output_tokens` | int | Total output tokens across all turns |\n| `stop_reason` | string | Why the LLM stopped (e.g., `end_turn`, `tool_use`) |\n| `duration_ms` | int | Wall-clock time for the entire run in milliseconds |\n| `tool_calls` | int | Total number of tool calls made |\n| `tool_call_details` | array | Per-call details (see below) |\n| `refused` | bool | Whether refusal was detected in the response |\n| `retry_attempts` | int | Number of retries that occurred |\n| `budget_max_tokens` | int | Token budget cap (only present when a budget is set) |\n| `budget_used_tokens` | int | Cumulative tokens used (only present when a budget is set) |\n| `budget_exceeded` | bool | Whether the budget was exceeded (only present when a budget is set) |\n\n## tool_call_details\n\nEach entry in the `tool_call_details` array represents one tool invocation:\n\n| Field | Type | Description |\n|---|---|---|\n| `name` | string | Tool name (e.g., `read_file`, `run_command`) |\n| `input` | object | Arguments passed to the tool |\n| `output` | string | Tool output, truncated to 1024 bytes |\n| `is_error` | bool | Whether the tool call resulted in an error |\n| `turn` | int | Conversation turn in which the tool was called (0-indexed) |\n| `duration_ms` | int | Wall-clock time for this tool call in milliseconds |\n\n## Example\n\n```json\n{\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"content\": \"Here is the summary...\",\n  \"input_tokens\": 1024,\n  \"output_tokens\": 312,\n  \"stop_reason\": \"end_turn\",\n  \"duration_ms\": 4200,\n  \"tool_calls\": 2,\n  \"tool_call_details\": [\n    {\n      \"name\": \"read_file\",\n      \"input\": { \"path\": \"main.go\" },\n      \"output\": \"package main\\n...\",\n      \"is_error\": false,\n      \"turn\": 0,\n      \"duration_ms\": 12\n    },\n    {\n      \"name\": \"run_command\",\n      \"input\": { \"command\": \"go test ./...\" },\n      \"output\": \"ok  \\tgithub.com/jrswab/axe\\t0.42s\",\n      \"is_error\": false,\n      \"turn\": 0,\n      \"duration_ms\": 1580\n    }\n  ],\n  \"refused\": false,\n  \"retry_attempts\": 0\n}\n```\n\n## Streaming Compatibility\n\nWhen `--stream` and `--json` are both enabled, streaming is used internally but the output is still delivered as a single JSON envelope. No incremental text is printed to stdout — the JSON remains safe for machine parsing. See [Run Flags — Streaming](run-flags.md#streaming) for details.\n\n## Refusal Detection\n\nThe `refused` field is set to `true` when axe detects that the LLM declined to complete the task. Detection is heuristic — it scans the response for phrases like \"I cannot\", \"I'm unable to\", \"I must decline\", etc. See the [Refusal Detection](refusal-detection.md) page for details.\n",
+              "additions": 22,
+              "deletions": 4,
+              "status": "modified"
+            },
+            {
+              "file": "docs/src/cli/run-flags.md",
+              "before": "# Run Flags\n\n| Flag | Default | Description |\n|---|---|---|\n| `--model <provider/model>` | from TOML | Override the model (e.g. `anthropic/claude-sonnet-4-20250514`) |\n| `--skill <path>` | from TOML | Override the skill file path |\n| `--workdir <path>` | from TOML or cwd | Override the working directory |\n| `--timeout <seconds>` | 120 | Request timeout |\n| `--max-tokens <int>` | 0 (unlimited) | Cap cumulative token usage for the run (exit code 4 if exceeded) |\n| `--dry-run` | false | Show resolved context without calling the LLM |\n| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, retries) to stderr |\n| `--json` | false | Wrap output in a JSON envelope with metadata |\n| `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |\n| `--agents-dir <path>` | (auto-discover) | Override agent search directory |\n\n## User Message Precedence\n\nThe user message sent to the LLM is resolved in this order:\n\n1. **`-p` / `--prompt` flag** — If provided with a non-empty, non-whitespace value, it is used as the user message.\n2. **Piped stdin** — If `-p` is absent or empty/whitespace-only, piped stdin is used.\n3. **Built-in default** — If neither `-p` nor stdin provides content, the default message `\"Execute the task described in your instructions.\"` is used.\n\nWhen `-p` is provided alongside piped stdin, the piped stdin is silently ignored. An empty or whitespace-only `-p` value is treated as absent and falls through to stdin, then the default.\n\n**Example:**\n```bash\naxe run my-agent -p \"Summarize the README\"\n```\n",
+              "after": "# Run Flags\n\n| Flag | Default | Description |\n|---|---|---|\n| `--model <provider/model>` | from TOML | Override the model (e.g. `anthropic/claude-sonnet-4-20250514`) |\n| `--skill <path>` | from TOML | Override the skill file path |\n| `--workdir <path>` | from TOML or cwd | Override the working directory |\n| `--timeout <seconds>` | 120 | Request timeout |\n| `--max-tokens <int>` | 0 (unlimited) | Cap cumulative token usage for the run (exit code 4 if exceeded) |\n| `--dry-run` | false | Show resolved context without calling the LLM |\n| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, retries) to stderr |\n| `--json` | false | Wrap output in a JSON envelope with metadata |\n| `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |\n| `--agents-dir <path>` | (auto-discover) | Override agent search directory |\n| `--stream` | false | Stream LLM responses to stdout in real time |\n| `--artifact-dir <path>` | (none) | Override or set the artifact directory |\n| `--keep-artifacts` | false | Preserve auto-generated artifact directories after the run |\n\n## User Message Precedence\n\nThe user message sent to the LLM is resolved in this order:\n\n1. **`-p` / `--prompt` flag** — If provided with a non-empty, non-whitespace value, it is used as the user message.\n2. **Piped stdin** — If `-p` is absent or empty/whitespace-only, piped stdin is used.\n3. **Built-in default** — If neither `-p` nor stdin provides content, the default message `\"Execute the task described in your instructions.\"` is used.\n\nWhen `-p` is provided alongside piped stdin, the piped stdin is silently ignored. An empty or whitespace-only `-p` value is treated as absent and falls through to stdin, then the default.\n\n**Example:**\n```bash\naxe run my-agent -p \"Summarize the README\"\n```\n\n## Streaming\n\nThe `--stream` flag enables real-time token streaming from the LLM provider. Text is printed to stdout as it arrives rather than waiting for the full response.\n\n```bash\naxe run my-agent --stream\n```\n\nThe flag overrides the TOML `stream` field. If the provider does not support streaming, the flag is silently ignored and the request falls back to non-streaming.\n\n### Streaming with `--json`\n\nWhen `--stream` and `--json` are both enabled, streaming is used internally (potentially improving time-to-first-byte from the provider) but **no incremental text is printed to stdout**. The output is still delivered as a single JSON envelope once the response is complete. This keeps `--json` output safe to parse in scripts and pipelines.\n",
+              "additions": 17,
+              "deletions": 0,
+              "status": "modified"
+            },
+            {
+              "file": "docs/src/configuration/agent-config.md",
+              "before": "# Agent Configuration\n\nAgents are defined as TOML files in `$XDG_CONFIG_HOME/axe/agents/`.\n\nAll fields except `name` and `model` are optional.\n\n```toml\nname = \"pr-reviewer\"\ndescription = \"Reviews pull requests for issues and improvements\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\nsystem_prompt = \"You are a senior code reviewer. Be concise and actionable.\"\nskill = \"skills/code-review/SKILL.md\"\nfiles = [\"src/**/*.go\", \"CONTRIBUTING.md\"]\nworkdir = \"/home/user/projects/myapp\"\ntools = [\"read_file\", \"list_directory\", \"run_command\"]\nsub_agents = [\"test-runner\", \"lint-checker\"]\nallowed_hosts = [\"api.example.com\", \"docs.example.com\"]\n\n[sub_agents_config]\nmax_depth = 3       # maximum nesting depth (hard max: 5)\nparallel = true     # run sub-agents concurrently\ntimeout = 120       # per sub-agent timeout in seconds\n\n[memory]\nenabled = true\nlast_n = 10         # load last N entries into context\nmax_entries = 100   # warn when exceeded\n\n[[mcp_servers]]\nname = \"my-tools\"\nurl = \"https://my-mcp-server.example.com/sse\"\ntransport = \"sse\"\nheaders = { Authorization = \"Bearer ${MY_TOKEN}\" }\n\n[params]\ntemperature = 0.3\nmax_tokens = 4096\n\n[budget]\nmax_tokens = 50000    # 0 = unlimited (default)\n\n[retry]\nmax_retries = 3\nbackoff = \"exponential\"\ninitial_delay_ms = 500\nmax_delay_ms = 30000\n\n[[mcp_servers]]\nname = \"filesystem\"\ntransport = \"stdio\"\ncommand = \"/usr/local/bin/mcp-server-filesystem\"\nargs = [\"--root\", \"/home/user/projects\"]\n```\n",
+              "after": "# Agent Configuration\n\nAgents are defined as TOML files in `$XDG_CONFIG_HOME/axe/agents/`.\n\nAll fields except `name` and `model` are optional.\n\n```toml\nname = \"pr-reviewer\"\ndescription = \"Reviews pull requests for issues and improvements\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\nsystem_prompt = \"You are a senior code reviewer. Be concise and actionable.\"\nskill = \"skills/code-review/SKILL.md\"\nfiles = [\"src/**/*.go\", \"CONTRIBUTING.md\"]\nworkdir = \"/home/user/projects/myapp\"\ntools = [\"read_file\", \"list_directory\", \"run_command\"]\nsub_agents = [\"test-runner\", \"lint-checker\"]\nallowed_hosts = [\"api.example.com\", \"docs.example.com\"]\ntimeout = 120       # top-level request timeout in seconds (default: 120)\nstream = false      # enable streaming responses (default: false)\n\n[sub_agents_config]\nmax_depth = 3       # maximum nesting depth (hard max: 5)\nparallel = true     # run sub-agents concurrently\ntimeout = 120       # per sub-agent timeout in seconds\n\n[memory]\nenabled = true\nlast_n = 10         # load last N entries into context\nmax_entries = 100   # warn when exceeded\n\n[[mcp_servers]]\nname = \"my-tools\"\nurl = \"https://my-mcp-server.example.com/sse\"\ntransport = \"sse\"\nheaders = { Authorization = \"Bearer ${MY_TOKEN}\" }\n\n[params]\ntemperature = 0.3\nmax_tokens = 4096\n\n[budget]\nmax_tokens = 50000    # 0 = unlimited (default)\n\n[retry]\nmax_retries = 3\nbackoff = \"exponential\"\ninitial_delay_ms = 500\nmax_delay_ms = 30000\n\n[[mcp_servers]]\nname = \"filesystem\"\ntransport = \"stdio\"\ncommand = \"/usr/local/bin/mcp-server-filesystem\"\nargs = [\"--root\", \"/home/user/projects\"]\n```\n",
+              "additions": 2,
+              "deletions": 0,
+              "status": "modified"
+            },
+            {
+              "file": "docs/src/providers.md",
+              "before": "# Providers\n\n| Provider | Provider Name | API Key Env Var | Default Base URL |\n|---|---|---|---|\n| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |\n| OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |\n| Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |\n| MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |\n| Ollama | `ollama` | (none required) | `http://localhost:11434` |\n| OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |\n| AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |\n\nThe \"Provider Name\" column is the value used in the `model` field of your agent TOML — e.g., `model = \"google/gemini-2.0-flash\"`.\n\n## Configuring Credentials\n\nAPI keys are resolved in this order for each provider:\n\n1. **Environment variable** — e.g., `GEMINI_API_KEY`\n2. **`config.toml`** — under `[providers.<name>]`\n\n### config.toml\n\nYou can store credentials and base URL overrides in `$XDG_CONFIG_HOME/axe/config.toml` instead of environment variables:\n\n```toml\n[providers.anthropic]\napi_key = \"sk-ant-...\"\n\n[providers.google]\napi_key = \"AIza...\"\n\n[providers.minimax]\napi_key = \"...\"\n\n[providers.openai]\napi_key = \"sk-...\"\nbase_url = \"https://your-openai-proxy.example.com\"\n\n[providers.bedrock]\nregion = \"us-east-1\"\n```\n\nBase URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).\n\n## AWS Bedrock\n\n- **Region resolution order:** `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`\n- **Credentials:** Uses environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`) or `~/.aws/credentials` file (supports `AWS_PROFILE` and `AWS_SHARED_CREDENTIALS_FILE`)\n- **Model IDs:** Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)\n",
+              "after": "# Providers\n\n| Provider | Provider Name | API Key Env Var | Default Base URL |\n|---|---|---|---|\n| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |\n| OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |\n| Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |\n| MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |\n| Ollama | `ollama` | (none required) | `http://localhost:11434` |\n| OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |\n| AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |\n\nThe \"Provider Name\" column is the value used in the `model` field of your agent TOML — e.g., `model = \"google/gemini-2.0-flash\"`.\n\n## Configuring Credentials\n\nAPI keys are resolved in this order for each provider:\n\n1. **Environment variable** — e.g., `GEMINI_API_KEY`\n2. **`config.toml`** — under `[providers.<name>]`\n\n### config.toml\n\nYou can store credentials and base URL overrides in `$XDG_CONFIG_HOME/axe/config.toml` instead of environment variables:\n\n```toml\n[providers.anthropic]\napi_key = \"sk-ant-...\"\n\n[providers.google]\napi_key = \"AIza...\"\n\n[providers.minimax]\napi_key = \"...\"\n\n[providers.openai]\napi_key = \"sk-...\"\nbase_url = \"https://your-openai-proxy.example.com\"\n\n[providers.bedrock]\nregion = \"us-east-1\"\n```\n\nBase URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).\n\n## Streaming Support\n\nAll providers except AWS Bedrock support response streaming via the `--stream` flag or the `stream = true` TOML field. If a provider does not support streaming, the setting is silently ignored and the request falls back to non-streaming.\n\nSee [Run Flags — Streaming](cli/run-flags.md#streaming) for usage details and how streaming interacts with `--json`.\n\n## AWS Bedrock\n\n- **Region resolution order:** `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`\n- **Credentials:** Uses environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`) or `~/.aws/credentials` file (supports `AWS_PROFILE` and `AWS_SHARED_CREDENTIALS_FILE`)\n- **Model IDs:** Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)\n",
+              "additions": 6,
+              "deletions": 0,
+              "status": "modified"
+            }
+          ]
+        },
+        "id": "msg_d4a80af16001cCkD3LNN3BUqnp",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "yes go ahead",
+          "id": "prt_d4a80af16002kyFSWbzLvYLRWQ",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af16001cCkD3LNN3BUqnp"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d4a80af16001cCkD3LNN3BUqnp",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "medium",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0.068204,
+        "tokens": {
+          "total": 84360,
+          "input": 1,
+          "output": 265,
+          "reasoning": 0,
+          "cache": {
+            "write": 3396,
+            "read": 80698
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775071440674,
+          "completed": 1775071511388
+        },
+        "finish": "stop",
+        "id": "msg_d4a80af2200218k7dJQFKWb08E",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "snapshot": "33b0712e3a7e10ff2cfa249e531937995eb3d0aa",
+          "type": "step-start",
+          "id": "prt_d4a80d3fe001PJg4QzRZWJvn2t",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "type": "reasoning",
+          "text": "Let me delegate the implementation work to subagents. I'll break this into parallel tasks since the doc edits are independent of each other.\n\nLet me read the current state of all files that need editing first, then delegate.\n\nI already have the content of all four files. Let me delegate the edits now.",
+          "time": {
+            "start": 1775071450110,
+            "end": 1775071452189
+          },
+          "metadata": {
+            "anthropic": {
+              "signature": "EuoDClkIDBgCKkB1F9Ncqe8CPFR1PMMurpfUMVHsZrlQrrLeJX6Bdup5mzGcgrc21TyoAisuy+v6O7stsWzCT5dksbduKgcgvfZVMg9jbGF1ZGUtb3B1cy00LTY4ABIMh2WTyAQnoBVvYMIdGgz0BW1GaHuVEaE/UQIiMOtPGG146wjtYqqUOcPODVIHxXUkuBzu2/jbJm13BFP9rK0MlLEGTPHPd8obXOZo5Cq+AqB9Oso2RiCAT0dMYX8yIlIBmE7ixN3oMpztXvYrGTOzAtv2GwO7j1b8s4fLLET95fmY3u3TEGGiV4E2fF3Uc9iJI3L4EzSSguOQQDnPMcZnXoOg4LxOuoWQqZ6uYSImhK0lK27JVDLS+lDZA64FcJUDQWqmrueTkqMXSxboX1prspoYtoLND+S0KsPt1vY2ZqrsyTGIJW499669+avPVE138/r4zeUP3Pgnhs+k1A6WPmByLhRK/D7n7kzIGRC307PsldLEJrWpzeK6DxUwgCQieKF3fG2ABme9N0Gnh+yUyZsgB6o9C/afRR6YIMnafRFe48s7jjQvam5/j+kguzy/chs7IFdH5XJWjvrnYmXXJ8OQvjd2b9sut8GT8XEk6AS1Ky6lOszgFsIYzYAdTz7Y5phvUYUSy5Ct3BBGchgB"
+            }
+          },
+          "id": "prt_d4a80d3fe003XLQvvKCenP0nDT",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "type": "text",
+          "text": "I'll delegate the four doc updates in parallel.",
+          "time": {
+            "start": 1775071452651,
+            "end": 1775071452651
+          },
+          "id": "prt_d4a80dc1f001wFY0x5L7pRpG11",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "type": "text",
+          "text": "Now add a note about `--stream` compatibility to the json-output page, and update the remaining files.",
+          "time": {
+            "start": 1775071487059,
+            "end": 1775071487059
+          },
+          "id": "prt_d4a8160b6001DUdNLN3HbaLDUl",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "type": "text",
+          "text": "Now let me verify the final state of all edited files.",
+          "time": {
+            "start": 1775071501524,
+            "end": 1775071501524
+          },
+          "id": "prt_d4a819af2001l7o7ksKyF1zsoT",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "type": "text",
+          "text": "All four files look correct. Here's a summary of what was updated:\n\n**`docs/src/cli/run-flags.md`**\n- Added `--stream`, `--artifact-dir`, `--keep-artifacts` to the flags table\n- Added \"Streaming\" section explaining the flag behavior\n- Added \"Streaming with `--json`\" subsection documenting that `--json` suppresses incremental output while still using the streaming API internally\n\n**`docs/src/cli/json-output.md`**\n- Added missing top-level envelope fields: `model`, `input_tokens`, `stop_reason`, `duration_ms`\n- Added `turn` and `duration_ms` to `tool_call_details` table\n- Updated the JSON example to include all new fields\n- Added \"Streaming Compatibility\" section with cross-link to run-flags\n\n**`docs/src/configuration/agent-config.md`**\n- Added `timeout` and `stream` to the example TOML\n\n**`docs/src/providers.md`**\n- Added \"Streaming Support\" section noting Bedrock is the exception, with cross-link to run-flags",
+          "time": {
+            "start": 1775071510777,
+            "end": 1775071510777
+          },
+          "id": "prt_d4a81af76001Ar6y4XeY3cNVTo",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "type": "text",
+          "text": "\n\nFiles changed:\n- edited /Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/cli/run-flags.md\n- edited /Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/cli/json-output.md\n- edited /Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/configuration/agent-config.md\n- edited /Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/providers.md",
+          "time": {
+            "start": 1775071511205,
+            "end": 1775071511205
+          },
+          "id": "prt_d4a81c2a4001GRHwkx4420FpNB",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "eb68c0b4b3a4709e100f10cf9b0676b3a74cf4a3",
+          "type": "step-finish",
+          "tokens": {
+            "total": 84360,
+            "input": 1,
+            "output": 265,
+            "reasoning": 0,
+            "cache": {
+              "write": 3396,
+              "read": 80698
+            }
+          },
+          "cost": 0.068204,
+          "id": "prt_d4a81c2a50020qxp954EBbM29W",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        },
+        {
+          "type": "patch",
+          "hash": "33b0712e3a7e10ff2cfa249e531937995eb3d0aa",
+          "files": [
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/cli/json-output.md",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/cli/run-flags.md",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/configuration/agent-config.md",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/docs/src/providers.md"
+          ],
+          "id": "prt_d4a81c35b001jBky5M41W6Pset",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a80af2200218k7dJQFKWb08E"
+        }
+      ]
+    },
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775073250128
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "variant": "medium",
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d4a9c4b47001lmyBsBQgWAoLot",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "commit and push to remote",
+          "id": "prt_d4a9c4b48001A9Fg7mP74DScig",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a9c4b47001lmyBsBQgWAoLot"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d4a9c4b47001lmyBsBQgWAoLot",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "medium",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775073250136
+        },
+        "id": "msg_d4a9c4b58002vsfKxEToxwF8yG",
+        "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
+      },
+      "parts": [
+        {
+          "snapshot": "eb68c0b4b3a4709e100f10cf9b0676b3a74cf4a3",
+          "type": "step-start",
+          "id": "prt_d4a9c72dd001dFT3UG3FkNXGrD",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a9c4b58002vsfKxEToxwF8yG"
+        }
+      ]
+    }
+  ]
+}
