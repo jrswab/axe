@@ -1,0 +1,29 @@
+## Objective
+Create an implementation guide from a specification document.
+**DO NOT do the work.** ONLY produce the implementation guide as defined below.
+
+## Requirements
+- If docs/plans/ISS-59_m2_openai_streaming_spec.md is empty or omitted, pull the latest `*_spec.md` from `docs/plans/` and verify it with the user.
+- Read the spec's **Context & Constraints** before writing tasks. Do not re-derive or re-evaluate decisions already made there.
+- Each task must reference the exact file path and function/method (e.g. `internal/handler/auth.go: UpdateUser()`).
+- Each task must be implementable and testable in isolation.
+- Tasks ordered by dependency and priority.
+- If anything is unclear, ask — then update the spec to match.
+- Specifiy which parts of the implementation checklist can be done in parallel.
+- Place the file in `docs/plans/` with the name `xxx_nnn_implement.md`
+  - "xxx" = linear id matching the spec file
+  - "nnn" = task to achieve
+
+## Testing Rules
+- Test real code, not mocks. If deleting the code under test doesn't break the test, the test adds no value.
+- Mock at the router level only for auth gating, input validation, and error propagation.
+
+## Document Structure
+
+### Section 1: Context Summary
+One paragraph summarizing the *why* behind this implementation, drawn from the spec's Context & Constraints. Anchors the executing agent without needing to re-read the spec.
+
+### Section 2: Implementation Checklist
+- `- [ ] {Task description}` format
+- Exact file path and function/method on each task
+- Include test tasks alongside implementation tasks

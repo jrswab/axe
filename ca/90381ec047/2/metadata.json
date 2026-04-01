@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "ca90381ec047",
+  "session_id": "ses_2b64e99eaffeCDYa162b469lty",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T15:58:56.370315Z",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "cmd/run.go",
+    "cmd/testdata/golden/dry-run/basic.txt",
+    "cmd/testdata/golden/dry-run/with_files.txt",
+    "cmd/testdata/golden/dry-run/with_memory.txt",
+    "cmd/testdata/golden/dry-run/with_skill.txt",
+    "cmd/testdata/golden/dry-run/with_subagents.txt",
+    "cmd/testdata/golden/dry-run/with_tools.txt",
+    "docs/plans/ISS-59_m2_implement.md",
+    "docs/plans/ISS-59_m2_openai_streaming_spec.md",
+    "internal/agent/agent.go",
+    "internal/agent/agent_test.go",
+    "internal/provider/retry.go",
+    "internal/provider/retry_test.go"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "cfa33c8bbb23",
+  "token_usage": {
+    "input_tokens": 3,
+    "cache_creation_tokens": 6333,
+    "cache_read_tokens": 237086,
+    "output_tokens": 479,
+    "api_call_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T15:58:56.361463Z",
+    "agent_lines": 458,
+    "human_added": 1522,
+    "human_modified": 26,
+    "human_removed": 0,
+    "total_committed": 2006,
+    "agent_percentage": 22.831505483549353
+  }
+}
