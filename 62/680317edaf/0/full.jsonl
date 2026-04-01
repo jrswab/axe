@@ -516,21 +516,24 @@
           "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
           "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
         },
-        "cost": 0,
+        "cost": 0.03515075,
         "tokens": {
-          "input": 0,
-          "output": 0,
+          "total": 66891,
+          "input": 1,
+          "output": 26,
           "reasoning": 0,
           "cache": {
-            "read": 0,
-            "write": 0
+            "write": 185,
+            "read": 66679
           }
         },
         "modelID": "claude-opus-4-6",
         "providerID": "anthropic",
         "time": {
-          "created": 1775070386417
+          "created": 1775070386417,
+          "completed": 1775070452171
         },
+        "finish": "stop",
         "id": "msg_d4a7098f0002mJwavIY2MaKe9F",
         "sessionID": "ses_2b5926383ffeRqBJ43iVAqkiE4"
       },
@@ -610,6 +613,60 @@
             "end": 1775070420115
           },
           "id": "prt_d4a711719001AzocHjqLKbWnn7",
+          "sessionID": "ses_2b5926383ffeRqBJ43iVAqkiE4",
+          "messageID": "msg_d4a7098f0002mJwavIY2MaKe9F"
+        },
+        {
+          "type": "text",
+          "text": "Commit and tag are ready. Shall I push with `git push origin master --follow-tags`?",
+          "time": {
+            "start": 1775070451482,
+            "end": 1775070451482
+          },
+          "id": "prt_d4a719566001o1PfSYEl0Oj2Q0",
+          "sessionID": "ses_2b5926383ffeRqBJ43iVAqkiE4",
+          "messageID": "msg_d4a7098f0002mJwavIY2MaKe9F"
+        },
+        {
+          "type": "text",
+          "text": "\n\nFiles changed:\n- edited cmd/root.go\n- edited internal/mcpclient/mcpclient.go\n- edited cmd/version_test.go\n- edited CHANGELOG.md",
+          "time": {
+            "start": 1775070451974,
+            "end": 1775070451974
+          },
+          "id": "prt_d4a719904001JC3mJ23drHeSlr",
+          "sessionID": "ses_2b5926383ffeRqBJ43iVAqkiE4",
+          "messageID": "msg_d4a7098f0002mJwavIY2MaKe9F"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "33b0712e3a7e10ff2cfa249e531937995eb3d0aa",
+          "type": "step-finish",
+          "tokens": {
+            "total": 66891,
+            "input": 1,
+            "output": 26,
+            "reasoning": 0,
+            "cache": {
+              "write": 185,
+              "read": 66679
+            }
+          },
+          "cost": 0.03515075,
+          "id": "prt_d4a719906002i9Iw7wYFEiuSKD",
+          "sessionID": "ses_2b5926383ffeRqBJ43iVAqkiE4",
+          "messageID": "msg_d4a7098f0002mJwavIY2MaKe9F"
+        },
+        {
+          "type": "patch",
+          "hash": "5ba1ff27302cbda701f433c088b99be628c55fa2",
+          "files": [
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/CHANGELOG.md",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/root.go",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/cmd/version_test.go",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/internal/mcpclient/mcpclient.go"
+          ],
+          "id": "prt_d4a7199cb00161FOKrTfassEy5",
           "sessionID": "ses_2b5926383ffeRqBJ43iVAqkiE4",
           "messageID": "msg_d4a7098f0002mJwavIY2MaKe9F"
         }
