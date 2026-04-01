@@ -69,6 +69,7 @@ type anthropicRequest struct {
 	System      string             `json:"system,omitempty"`
 	Temperature *float64           `json:"temperature,omitempty"`
 	Tools       []anthropicToolDef `json:"tools,omitempty"`
+	Stream      bool               `json:"stream,omitempty"`
 }
 
 // anthropicMessage is the wire format for a message in the Anthropic API.
@@ -337,6 +338,233 @@ func (a *Anthropic) handleErrorResponse(status int, body []byte) *ProviderError 
 		Category: category,
 		Status:   status,
 		Message:  message,
+	}
+}
+
+type anthropicBlockInfo struct {
+	typ  string
+	id   string
+	name string
+}
+
+func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
+	maxTokens := req.MaxTokens
+	if maxTokens == 0 {
+		maxTokens = defaultMaxTokens
+	}
+
+	body := anthropicRequest{
+		Model:     req.Model,
+		MaxTokens: maxTokens,
+		Messages:  convertToAnthropicMessages(req.Messages),
+		System:    req.System,
+		Stream:    true,
+	}
+
+	if req.Temperature != 0 {
+		temp := req.Temperature
+		body.Temperature = &temp
+	}
+
+	if len(req.Tools) > 0 {
+		body.Tools = convertToAnthropicTools(req.Tools)
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", a.baseURL+"/v1/messages", bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("x-api-key", a.apiKey)
+	httpReq.Header.Set("anthropic-version", anthropicVersion)
+	httpReq.Header.Set("content-type", "application/json")
+
+	httpResp, err := a.client.Do(httpReq)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryTimeout,
+				Message:  ctx.Err().Error(),
+				Err:      ctx.Err(),
+			}
+		}
+		return nil, &ProviderError{
+			Category: ErrCategoryServer,
+			Message:  err.Error(),
+			Err:      err,
+		}
+	}
+
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		respBody, err := io.ReadAll(httpResp.Body)
+		_ = httpResp.Body.Close()
+		if err != nil {
+			return nil, &ProviderError{
+				Category: ErrCategoryServer,
+				Message:  fmt.Sprintf("failed to read error response: %s", err),
+				Err:      err,
+			}
+		}
+		return nil, a.handleErrorResponse(httpResp.StatusCode, respBody)
+	}
+
+	parser := NewSSEParser(httpResp.Body)
+	var inputTokens int
+	blocks := make(map[int]anthropicBlockInfo)
+
+	nextFunc := func() (StreamEvent, error) {
+		for {
+			sseEvent, err := parser.Next()
+			if err != nil {
+				if ctx.Err() != nil {
+					return StreamEvent{}, &ProviderError{
+						Category: ErrCategoryTimeout,
+						Message:  ctx.Err().Error(),
+						Err:      ctx.Err(),
+					}
+				}
+				if err == io.EOF {
+					return StreamEvent{}, io.EOF
+				}
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  fmt.Sprintf("stream read error: %s", err),
+					Err:      err,
+				}
+			}
+
+			var event anthropicStreamEvent
+			if err := json.Unmarshal([]byte(sseEvent.Data), &event); err != nil {
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  fmt.Sprintf("failed to parse streaming event: %s", err),
+					Err:      err,
+				}
+			}
+
+			switch event.Type {
+			case "message_start":
+				if event.Message != nil && event.Message.Usage != nil {
+					inputTokens = event.Message.Usage.InputTokens
+				}
+				continue
+
+			case "content_block_start":
+				if event.ContentBlock != nil {
+					blocks[event.Index] = anthropicBlockInfo{
+						typ:  event.ContentBlock.Type,
+						id:   event.ContentBlock.ID,
+						name: event.ContentBlock.Name,
+					}
+					if event.ContentBlock.Type == "tool_use" {
+						return StreamEvent{
+							Type:       StreamEventToolStart,
+							ToolCallID: event.ContentBlock.ID,
+							ToolName:   event.ContentBlock.Name,
+						}, nil
+					}
+				}
+				continue
+
+			case "content_block_delta":
+				if event.Delta == nil {
+					continue
+				}
+				block, ok := blocks[event.Index]
+				if !ok {
+					continue
+				}
+				switch event.Delta.Type {
+				case "text_delta":
+					if event.Delta.Text == "" {
+						continue
+					}
+					return StreamEvent{
+						Type: StreamEventText,
+						Text: event.Delta.Text,
+					}, nil
+				case "input_json_delta":
+					if event.Delta.PartialJSON == "" {
+						continue
+					}
+					return StreamEvent{
+						Type:       StreamEventToolDelta,
+						ToolCallID: block.id,
+						ToolInput:  event.Delta.PartialJSON,
+					}, nil
+				}
+				continue
+
+			case "content_block_stop":
+				block, ok := blocks[event.Index]
+				if ok && block.typ == "tool_use" {
+					return StreamEvent{
+						Type:       StreamEventToolEnd,
+						ToolCallID: block.id,
+					}, nil
+				}
+				continue
+
+			case "message_delta":
+				var stopReason string
+				if event.Delta != nil {
+					stopReason = event.Delta.StopReason
+				}
+				var outputTokens int
+				if event.Usage != nil {
+					outputTokens = event.Usage.OutputTokens
+				}
+				return StreamEvent{
+					Type:         StreamEventDone,
+					StopReason:   stopReason,
+					InputTokens:  inputTokens,
+					OutputTokens: outputTokens,
+				}, nil
+
+			case "message_stop":
+				return StreamEvent{}, io.EOF
+
+			case "ping":
+				continue
+
+			case "error":
+				if event.Error != nil {
+					return StreamEvent{}, &ProviderError{
+						Category: mapStreamErrorType(event.Error.Type),
+						Message:  event.Error.Message,
+					}
+				}
+				return StreamEvent{}, &ProviderError{
+					Category: ErrCategoryServer,
+					Message:  "unknown stream error",
+				}
+
+			default:
+				continue
+			}
+		}
+	}
+
+	return NewEventStream(httpResp.Body, nextFunc), nil
+}
+
+func mapStreamErrorType(errorType string) ErrorCategory {
+	switch errorType {
+	case "overloaded_error":
+		return ErrCategoryOverloaded
+	case "rate_limit_error":
+		return ErrCategoryRateLimit
+	case "api_error":
+		return ErrCategoryServer
+	case "authentication_error":
+		return ErrCategoryAuth
+	default:
+		return ErrCategoryServer
 	}
 }
 

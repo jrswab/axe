@@ -35,7 +35,7 @@ active and the provider implements `StreamProvider`. Print text events to
 stdout (no `--json`) or buffer them (`--json`). Tool call accumulation and
 the rest of the loop stay unchanged. Sub-agents never stream.
 
-### M4 — Anthropic Provider Streaming
+### M4 — Anthropic Provider Streaming ✅
 
 Implement `SendStream()` on the Anthropic provider. Anthropic SSE uses
 typed events (`message_start`, `content_block_delta`, etc.) that map to
