@@ -297,16 +297,15 @@ model = "openai/gpt-4o"
 	}
 }
 
-func TestIntegration_Streaming_FallbackNonStreamProvider(t *testing.T) {
+func TestIntegration_Streaming_SingleShot_Anthropic(t *testing.T) {
 	resetRunCmd(t)
 
-	// Anthropic provider does not implement StreamProvider, so --stream should fall back to Send()
 	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
-		testutil.AnthropicResponse("Fallback works"),
+		testutil.AnthropicStreamResponse("Fallback works", 10, 5),
 	})
 
 	configDir, _ := testutil.SetupXDGDirs(t)
-	writeAgentConfig(t, configDir, "stream-fallback", `name = "stream-fallback"
+	writeAgentConfig(t, configDir, "stream-anthropic", `name = "stream-anthropic"
 model = "anthropic/claude-sonnet-4-20250514"
 `)
 
@@ -317,7 +316,7 @@ model = "anthropic/claude-sonnet-4-20250514"
 	errBuf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
 	rootCmd.SetErr(errBuf)
-	rootCmd.SetArgs([]string{"run", "stream-fallback", "--stream"})
+	rootCmd.SetArgs([]string{"run", "stream-anthropic", "--stream"})
 
 	err := rootCmd.Execute()
 	if err != nil {

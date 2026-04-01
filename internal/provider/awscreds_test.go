@@ -40,6 +40,7 @@ func TestResolveCredentials_File(t *testing.T) {
 
 	t.Setenv("AWS_ACCESS_KEY_ID", "")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
+	t.Setenv("AWS_PROFILE", "")
 	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", credsPath)
 
 	creds, err := resolveCredentials("")
