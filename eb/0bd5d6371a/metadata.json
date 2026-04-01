@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "eb0bd5d6371a",
+  "strategy": "manual-commit",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "cmd/run.go",
+    "cmd/run_stream_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/eb/0bd5d6371a/0/metadata.json",
+      "transcript": "/eb/0bd5d6371a/0/full.jsonl",
+      "content_hash": "/eb/0bd5d6371a/0/content_hash.txt",
+      "prompt": "/eb/0bd5d6371a/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 5231,
+    "cache_read_tokens": 239633,
+    "output_tokens": 435,
+    "api_call_count": 4
+  }
+}
