@@ -3,11 +3,13 @@
   "checkpoint_id": "145bc5ad2b99",
   "strategy": "manual-commit",
   "branch": "ISS-59/enable-response-streaming",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     "cmd/run.go",
     "cmd/run_stream_test.go",
     "cmd/run_test.go",
+    "docs/plans/ISS-59_m3_conversation_loop_integration_implement.md",
+    "docs/plans/ISS-59_m3_conversation_loop_integration_spec.md",
     "docs/plans/ISS-59_streaming_milestones.md",
     "internal/provider/retry.go",
     "internal/testutil/mockserver.go"
@@ -18,13 +20,19 @@
       "transcript": "/14/5bc5ad2b99/0/full.jsonl",
       "content_hash": "/14/5bc5ad2b99/0/content_hash.txt",
       "prompt": "/14/5bc5ad2b99/0/prompt.txt"
+    },
+    {
+      "metadata": "/14/5bc5ad2b99/1/metadata.json",
+      "transcript": "/14/5bc5ad2b99/1/full.jsonl",
+      "content_hash": "/14/5bc5ad2b99/1/content_hash.txt",
+      "prompt": "/14/5bc5ad2b99/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 4,
-    "cache_creation_tokens": 12702,
-    "cache_read_tokens": 159027,
-    "output_tokens": 578,
-    "api_call_count": 2
+    "input_tokens": 6,
+    "cache_creation_tokens": 17463,
+    "cache_read_tokens": 327323,
+    "output_tokens": 746,
+    "api_call_count": 4
   }
 }

@@ -1,0 +1,73 @@
+{miles}=@docs/plans/ISS-59_streaming_milestones.md 
+
+if {miles} is empty or blank
+    use current context
+else
+    create a spec file for the next incomplete milestone in {miles}
+    and add the milestone document path to the top of the new spec document.
+
+## Objective
+Create a specification document for a single milestone.
+**DO NOT do the work.** ONLY produce the specification document as defined below.
+
+## Requirements
+- Use clear, unambiguous language. No assumptions; be explicit.
+- All edge cases must be documented.
+- Ask questions to the user as needed to be explicit.
+- No implementation details.
+- Specifiy which parts of the spec can be done in parallel.
+- Place the file in `docs/plans/` with the name `xxx_nnn_spec.md`
+  - "xxx" = A Linear issue ID; ask the user for the ID or if you should use the next highest spec number.
+  - "nnn" = task to achieve
+
+## Document Structure
+
+### Section 1: Context & Constraints
+Extract the relevant context from the milestone's **Research Findings** that applies to this milestone:
+- Codebase structure and patterns relevant to this milestone
+- Decisions already made and why
+- Approaches already ruled out (do not re-evaluate these)
+- Constraints and assumptions that apply
+- Open questions resolved during research
+
+This section must come before requirements. The implementation guide will rely on it — do not omit details.
+
+### Section 2: Requirements
+What needs to happen: behaviors, interfaces, data flow, edge cases.
+No implementation details — what and why, not how or where.
+
+## Post Spec Generation
+1. Once complete, ask the user if there are any changes.
+2. If changes are needed, update the spec to match.
+
+---
+
+## Objective
+Create an implementation guide from a specification document.
+**DO NOT do the work.** ONLY produce the implementation guide as defined below.
+
+## Requirements
+- If docs/plans/ISS-59_m3_conversation_loop_integration_spec.md is empty or omitted, pull the latest `*_spec.md` from `docs/plans/` and verify it with the user.
+- Read the spec's **Context & Constraints** before writing tasks. Do not re-derive or re-evaluate decisions already made there.
+- Each task must reference the exact file path and function/method (e.g. `internal/handler/auth.go: UpdateUser()`).
+- Each task must be implementable and testable in isolation.
+- Tasks ordered by dependency and priority.
+- If anything is unclear, ask — then update the spec to match.
+- Specifiy which parts of the implementation checklist can be done in parallel.
+- Place the file in `docs/plans/` with the name `xxx_nnn_implement.md`
+  - "xxx" = linear id matching the spec file
+  - "nnn" = task to achieve
+
+## Testing Rules
+- Test real code, not mocks. If deleting the code under test doesn't break the test, the test adds no value.
+- Mock at the router level only for auth gating, input validation, and error propagation.
+
+## Document Structure
+
+### Section 1: Context Summary
+One paragraph summarizing the *why* behind this implementation, drawn from the spec's Context & Constraints. Anchors the executing agent without needing to re-read the spec.
+
+### Section 2: Implementation Checklist
+- `- [ ] {Task description}` format
+- Exact file path and function/method on each task
+- Include test tasks alongside implementation tasks
