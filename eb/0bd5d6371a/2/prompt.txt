@@ -1,0 +1,9 @@
+the linter is failing when running in the github workflow
+
+---
+
+commit changes, aske about untracked files, then push to remote
+
+---
+
+keep docs/plans/ISS-59_m6_streaming_smoke_tests_spec.md out of the commit this time
