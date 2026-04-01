@@ -1,0 +1,13 @@
+We need to make a new release on github; we'll use an annotated tag to trigger @.github/workflows/release.yml but before we do that we need to update all places in the code that reference the version number.
+
+---
+
+version should be v1.7.0 and the message should match the changelog for this new version; make sure to update @CHANGELOG.md too
+
+---
+
+yes, exclude docs/plans/ISS-59_m6_streaming_smoke_tests_spec.md
+
+---
+
+proceed
