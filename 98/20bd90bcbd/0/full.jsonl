@@ -367,21 +367,24 @@
           "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
           "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
         },
-        "cost": 0,
+        "cost": 0.03287475,
         "tokens": {
-          "input": 0,
-          "output": 0,
+          "total": 62696,
+          "input": 1,
+          "output": 22,
           "reasoning": 0,
           "cache": {
-            "read": 0,
-            "write": 0
+            "write": 171,
+            "read": 62502
           }
         },
         "modelID": "claude-opus-4-6",
         "providerID": "anthropic",
         "time": {
-          "created": 1775068967719
+          "created": 1775068967719,
+          "completed": 1775069010129
         },
+        "finish": "stop",
         "id": "msg_d4a5af327002JQ04A3NhpYtdua",
         "sessionID": "ses_2b5b2239affeWgmZQDzy6SuqkL"
       },
@@ -390,6 +393,36 @@
           "snapshot": "10c4836fbb9f39dd086dae77dc8698a3f0502473",
           "type": "step-start",
           "id": "prt_d4a5b1649001i1xi1BPYJzUoVx",
+          "sessionID": "ses_2b5b2239affeWgmZQDzy6SuqkL",
+          "messageID": "msg_d4a5af327002JQ04A3NhpYtdua"
+        },
+        {
+          "type": "text",
+          "text": "Committed and pushed to remote on `ISS-59/enable-response-streaming`.",
+          "time": {
+            "start": 1775069009551,
+            "end": 1775069009551
+          },
+          "id": "prt_d4a5b9510001mRJiDDV4gCoU58",
+          "sessionID": "ses_2b5b2239affeWgmZQDzy6SuqkL",
+          "messageID": "msg_d4a5af327002JQ04A3NhpYtdua"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "10c4836fbb9f39dd086dae77dc8698a3f0502473",
+          "type": "step-finish",
+          "tokens": {
+            "total": 62696,
+            "input": 1,
+            "output": 22,
+            "reasoning": 0,
+            "cache": {
+              "write": 171,
+              "read": 62502
+            }
+          },
+          "cost": 0.03287475,
+          "id": "prt_d4a5b9837001j31VvQbtPsDf35",
           "sessionID": "ses_2b5b2239affeWgmZQDzy6SuqkL",
           "messageID": "msg_d4a5af327002JQ04A3NhpYtdua"
         }
