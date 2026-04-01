@@ -109,6 +109,30 @@ func TestDrainEventStream_ToolCalls(t *testing.T) {
 	}
 }
 
+func TestDrainEventStream_ToolCallsFromStartInput(t *testing.T) {
+	stream := makeStream([]provider.StreamEvent{
+		{Type: provider.StreamEventToolStart, ToolCallID: "ollama_0", ToolName: "read_file", ToolInput: `{"path":"main.go"}`},
+		{Type: provider.StreamEventToolEnd, ToolCallID: "ollama_0"},
+		{Type: provider.StreamEventDone, StopReason: "tool_calls"},
+	})
+
+	resp, err := drainEventStream(stream, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.ToolCalls) != 1 {
+		t.Fatalf("got %d tool calls, want 1", len(resp.ToolCalls))
+	}
+
+	tc := resp.ToolCalls[0]
+	if tc.ID != "ollama_0" || tc.Name != "read_file" {
+		t.Errorf("tool call: ID=%q Name=%q", tc.ID, tc.Name)
+	}
+	if tc.Arguments["path"] != "main.go" {
+		t.Errorf("tool call args = %v, want path=main.go", tc.Arguments)
+	}
+}
+
 func TestDrainEventStream_TextAndToolCalls(t *testing.T) {
 	stream := makeStream([]provider.StreamEvent{
 		{Type: provider.StreamEventText, Text: "Let me help."},

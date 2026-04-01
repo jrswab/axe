@@ -1017,7 +1017,11 @@ func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Resp
 			}
 
 		case provider.StreamEventToolStart:
-			pending[ev.ToolCallID] = &pendingCall{id: ev.ToolCallID, name: ev.ToolName}
+			pc := &pendingCall{id: ev.ToolCallID, name: ev.ToolName}
+			if ev.ToolInput != "" {
+				pc.args.WriteString(ev.ToolInput)
+			}
+			pending[ev.ToolCallID] = pc
 
 		case provider.StreamEventToolDelta:
 			if pc, ok := pending[ev.ToolCallID]; ok {
