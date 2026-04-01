@@ -247,13 +247,13 @@ func GeminiErrorResponse(statusCode int, message string) MockLLMResponse {
 // Anthropic streaming events for a text-only response.
 func AnthropicStreamResponse(text string, inputTokens, outputTokens int) MockLLMResponse {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_mock\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-sonnet-4-20250514\",\"usage\":{\"input_tokens\":%d,\"output_tokens\":0}}}\n\n", inputTokens))
+	fmt.Fprintf(&sb, "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_mock\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-sonnet-4-20250514\",\"usage\":{\"input_tokens\":%d,\"output_tokens\":0}}}\n\n", inputTokens)
 	sb.WriteString("event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n")
 	for _, ch := range text {
-		sb.WriteString(fmt.Sprintf("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":%s}}\n\n", jsonString(string(ch))))
+		fmt.Fprintf(&sb, "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":%s}}\n\n", jsonString(string(ch)))
 	}
 	sb.WriteString("event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n")
-	sb.WriteString(fmt.Sprintf("event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":%d}}\n\n", outputTokens))
+	fmt.Fprintf(&sb, "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":%d}}\n\n", outputTokens)
 	sb.WriteString("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
 	return MockLLMResponse{StatusCode: 200, Body: sb.String(), ContentType: "text/event-stream"}
 }
