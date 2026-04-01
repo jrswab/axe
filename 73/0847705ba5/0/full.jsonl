@@ -247,21 +247,24 @@
           "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
           "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
         },
-        "cost": 0,
+        "cost": 0.038896,
         "tokens": {
-          "input": 0,
-          "output": 0,
+          "total": 72602,
+          "input": 1,
+          "output": 48,
           "reasoning": 0,
           "cache": {
-            "read": 0,
-            "write": 0
+            "write": 246,
+            "read": 72307
           }
         },
         "modelID": "claude-opus-4-6",
         "providerID": "anthropic",
         "time": {
-          "created": 1775067085040
+          "created": 1775067085040,
+          "completed": 1775067126443
         },
+        "finish": "stop",
         "id": "msg_d4a3e38f0001x8B7H0cxK4RUKA",
         "sessionID": "ses_2b5c52dc6ffekkjCAXG136FW1v"
       },
@@ -286,6 +289,36 @@
             }
           },
           "id": "prt_d4a3e5b58003mc7lI1E6P3Z5Wx",
+          "sessionID": "ses_2b5c52dc6ffekkjCAXG136FW1v",
+          "messageID": "msg_d4a3e38f0001x8B7H0cxK4RUKA"
+        },
+        {
+          "type": "text",
+          "text": "There's an untracked file: `docs/plans/ISS-59_m6_streaming_smoke_tests_spec.md`. Should I add and commit it, or leave it untracked?",
+          "time": {
+            "start": 1775067125603,
+            "end": 1775067125603
+          },
+          "id": "prt_d4a3ed0c50013JJ4q5zJnv7Rzq",
+          "sessionID": "ses_2b5c52dc6ffekkjCAXG136FW1v",
+          "messageID": "msg_d4a3e38f0001x8B7H0cxK4RUKA"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "7f40cd35bc74f8ec6d2642abd7f7b4e5eef04619",
+          "type": "step-finish",
+          "tokens": {
+            "total": 72602,
+            "input": 1,
+            "output": 48,
+            "reasoning": 0,
+            "cache": {
+              "write": 246,
+              "read": 72307
+            }
+          },
+          "cost": 0.038896,
+          "id": "prt_d4a3eda0b001kBgzmWKPGuTPe7",
           "sessionID": "ses_2b5c52dc6ffekkjCAXG136FW1v",
           "messageID": "msg_d4a3e38f0001x8B7H0cxK4RUKA"
         }
