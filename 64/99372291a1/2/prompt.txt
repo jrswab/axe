@@ -1,0 +1,41 @@
+{miles}=@docs/plans/ISS-59_streaming_milestones.md 
+
+if {miles} is empty or blank
+    use current context
+else
+    create a spec file for the next incomplete milestone in {miles}
+    and add the milestone document path to the top of the new spec document.
+
+## Objective
+Create a specification document for a single milestone.
+**DO NOT do the work.** ONLY produce the specification document as defined below.
+
+## Requirements
+- Use clear, unambiguous language. No assumptions; be explicit.
+- All edge cases must be documented.
+- Ask questions to the user as needed to be explicit.
+- No implementation details.
+- Specifiy which parts of the spec can be done in parallel.
+- Place the file in `docs/plans/` with the name `xxx_nnn_spec.md`
+  - "xxx" = A Linear issue ID; ask the user for the ID or if you should use the next highest spec number.
+  - "nnn" = task to achieve
+
+## Document Structure
+
+### Section 1: Context & Constraints
+Extract the relevant context from the milestone's **Research Findings** that applies to this milestone:
+- Codebase structure and patterns relevant to this milestone
+- Decisions already made and why
+- Approaches already ruled out (do not re-evaluate these)
+- Constraints and assumptions that apply
+- Open questions resolved during research
+
+This section must come before requirements. The implementation guide will rely on it — do not omit details.
+
+### Section 2: Requirements
+What needs to happen: behaviors, interfaces, data flow, edge cases.
+No implementation details — what and why, not how or where.
+
+## Post Spec Generation
+1. Once complete, ask the user if there are any changes.
+2. If changes are needed, update the spec to match.
