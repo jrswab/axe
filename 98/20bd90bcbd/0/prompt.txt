@@ -1,0 +1,24 @@
+Verify each finding against the current code and only fix it if needed.
+
+Inline comments:
+In `@internal/testutil/mockserver.go`:
+- Around line 244-247: The top-of-function doc comment is referring to
+OpenAIStreamResponse while the actual function is AnthropicStreamResponse;
+update the comment to accurately describe AnthropicStreamResponse (or if the
+function should be OpenAIStreamResponse, rename the function accordingly). Edit
+the comment block above AnthropicStreamResponse to mention Anthropic streaming
+events and that it returns a MockLLMResponse with SSE-formatted Anthropic
+streaming events for a text-only response, ensuring the symbol
+AnthropicStreamResponse and its behavior are described consistently.
+- Around line 250-256: Replace the three occurrences that call
+sb.WriteString(fmt.Sprintf(...)) in the SSE builder with direct formatted writes
+using fmt.Fprintf(&sb, ...); specifically update the message_start line, the
+per-character content_block_delta inside the loop over text, and the
+message_delta line so they use fmt.Fprintf(&sb, "event: ...", inputTokens, ...)
+(or include jsonString(string(ch)) for the loop) to avoid intermediate string
+allocations; keep the surrounding strings/format verbs identical and ensure fmt
+is imported/used.
+
+---
+
+proceed
