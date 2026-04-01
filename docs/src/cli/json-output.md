@@ -10,8 +10,12 @@ axe run my-agent --json
 
 | Field | Type | Description |
 |---|---|---|
-| `output` | string | The agent's text response |
+| `model` | string | The model that produced the response |
+| `content` | string | The agent's text response |
+| `input_tokens` | int | Total input tokens across all turns |
 | `output_tokens` | int | Total output tokens across all turns |
+| `stop_reason` | string | Why the LLM stopped (e.g., `end_turn`, `tool_use`) |
+| `duration_ms` | int | Wall-clock time for the entire run in milliseconds |
 | `tool_calls` | int | Total number of tool calls made |
 | `tool_call_details` | array | Per-call details (see below) |
 | `refused` | bool | Whether refusal was detected in the response |
@@ -30,32 +34,46 @@ Each entry in the `tool_call_details` array represents one tool invocation:
 | `input` | object | Arguments passed to the tool |
 | `output` | string | Tool output, truncated to 1024 bytes |
 | `is_error` | bool | Whether the tool call resulted in an error |
+| `turn` | int | Conversation turn in which the tool was called (0-indexed) |
+| `duration_ms` | int | Wall-clock time for this tool call in milliseconds |
 
 ## Example
 
 ```json
 {
-  "output": "Here is the summary...",
+  "model": "claude-sonnet-4-20250514",
+  "content": "Here is the summary...",
+  "input_tokens": 1024,
   "output_tokens": 312,
+  "stop_reason": "end_turn",
+  "duration_ms": 4200,
   "tool_calls": 2,
   "tool_call_details": [
     {
       "name": "read_file",
       "input": { "path": "main.go" },
       "output": "package main\n...",
-      "is_error": false
+      "is_error": false,
+      "turn": 0,
+      "duration_ms": 12
     },
     {
       "name": "run_command",
       "input": { "command": "go test ./..." },
       "output": "ok  \tgithub.com/jrswab/axe\t0.42s",
-      "is_error": false
+      "is_error": false,
+      "turn": 0,
+      "duration_ms": 1580
     }
   ],
   "refused": false,
   "retry_attempts": 0
 }
 ```
+
+## Streaming Compatibility
+
+When `--stream` and `--json` are both enabled, streaming is used internally but the output is still delivered as a single JSON envelope. No incremental text is printed to stdout — the JSON remains safe for machine parsing. See [Run Flags — Streaming](run-flags.md#streaming) for details.
 
 ## Refusal Detection
 

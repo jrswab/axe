@@ -12,6 +12,9 @@
 | `--json` | false | Wrap output in a JSON envelope with metadata |
 | `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |
 | `--agents-dir <path>` | (auto-discover) | Override agent search directory |
+| `--stream` | false | Stream LLM responses to stdout in real time |
+| `--artifact-dir <path>` | (none) | Override or set the artifact directory |
+| `--keep-artifacts` | false | Preserve auto-generated artifact directories after the run |
 
 ## User Message Precedence
 
@@ -27,3 +30,17 @@ When `-p` is provided alongside piped stdin, the piped stdin is silently ignored
 ```bash
 axe run my-agent -p "Summarize the README"
 ```
+
+## Streaming
+
+The `--stream` flag enables real-time token streaming from the LLM provider. Text is printed to stdout as it arrives rather than waiting for the full response.
+
+```bash
+axe run my-agent --stream
+```
+
+The flag overrides the TOML `stream` field. If the provider does not support streaming, the flag is silently ignored and the request falls back to non-streaming.
+
+### Streaming with `--json`
+
+When `--stream` and `--json` are both enabled, streaming is used internally (potentially improving time-to-first-byte from the provider) but **no incremental text is printed to stdout**. The output is still delivered as a single JSON envelope once the response is complete. This keeps `--json` output safe to parse in scripts and pipelines.

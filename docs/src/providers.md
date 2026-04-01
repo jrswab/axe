@@ -43,6 +43,12 @@ region = "us-east-1"
 
 Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
+## Streaming Support
+
+All providers except AWS Bedrock support response streaming via the `--stream` flag or the `stream = true` TOML field. If a provider does not support streaming, the setting is silently ignored and the request falls back to non-streaming.
+
+See [Run Flags — Streaming](cli/run-flags.md#streaming) for usage details and how streaming interacts with `--json`.
+
 ## AWS Bedrock
 
 - **Region resolution order:** `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`

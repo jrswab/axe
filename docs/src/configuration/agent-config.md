@@ -15,6 +15,8 @@ workdir = "/home/user/projects/myapp"
 tools = ["read_file", "list_directory", "run_command"]
 sub_agents = ["test-runner", "lint-checker"]
 allowed_hosts = ["api.example.com", "docs.example.com"]
+timeout = 120       # top-level request timeout in seconds (default: 120)
+stream = false      # enable streaming responses (default: false)
 
 [sub_agents_config]
 max_depth = 3       # maximum nesting depth (hard max: 5)
