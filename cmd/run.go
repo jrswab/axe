@@ -318,7 +318,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("stream") {
 		streamEnabled, _ = cmd.Flags().GetBool("stream")
 	}
-	_ = streamEnabled
+
 
 	// Resolve effective budget
 	flagMaxTokens, _ := cmd.Flags().GetInt("max-tokens")
@@ -383,6 +383,13 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		Stderr:         cmd.ErrOrStderr(),
 	})
 	prov = retryProv
+
+	// Resolve whether streaming is actually usable.
+	// RetryProvider always satisfies StreamProvider but may wrap a non-streaming
+	// inner provider, so check SupportsStream().
+	if streamEnabled && !retryProv.SupportsStream() {
+		streamEnabled = false
+	}
 
 	// Step 16: Build request
 	req := &provider.Request{
@@ -510,10 +517,37 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	var totalToolCalls int
 	var allToolCallDetails []toolCallDetail
 	var budgetExceeded bool
+	var streamedText bool
 
 	if len(req.Tools) == 0 {
-		// Single-shot: no tools, no conversation loop (identical to M4)
-		resp, err = prov.Send(ctx, req)
+		// Single-shot: no tools, no conversation loop
+		if streamEnabled {
+			if sp, ok := prov.(provider.StreamProvider); ok {
+				stream, streamErr := sp.SendStream(ctx, req)
+				if streamErr != nil {
+					durationMs := time.Since(start).Milliseconds()
+					if verbose {
+						_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
+					}
+					return mapProviderError(streamErr)
+				}
+				var textWriter io.Writer
+				if !jsonOutput {
+					textWriter = cmd.OutOrStdout()
+				}
+				resp, err = drainEventStream(stream, textWriter)
+				if err != nil {
+					return mapProviderError(err)
+				}
+				if !jsonOutput {
+					streamedText = true
+				}
+			} else {
+				resp, err = prov.Send(ctx, req)
+			}
+		} else {
+			resp, err = prov.Send(ctx, req)
+		}
 		if err != nil {
 			durationMs := time.Since(start).Milliseconds()
 			if verbose {
@@ -555,10 +589,44 @@ func runAgent(cmd *cobra.Command, args []string) error {
 						pendingToolCalls += len(m.ToolResults)
 					}
 				}
-				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Sending request (%d messages, %d tool calls pending)\n", turn+1, len(req.Messages), pendingToolCalls)
+				if streamEnabled {
+					if _, ok := prov.(provider.StreamProvider); ok {
+						_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Streaming request (%d messages)\n", turn+1, len(req.Messages))
+					} else {
+						_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Sending request (%d messages, %d tool calls pending)\n", turn+1, len(req.Messages), pendingToolCalls)
+					}
+				} else {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Sending request (%d messages, %d tool calls pending)\n", turn+1, len(req.Messages), pendingToolCalls)
+				}
 			}
 
-			resp, err = prov.Send(ctx, req)
+			if streamEnabled {
+				if sp, ok := prov.(provider.StreamProvider); ok {
+					stream, streamErr := sp.SendStream(ctx, req)
+					if streamErr != nil {
+						durationMs := time.Since(start).Milliseconds()
+						if verbose {
+							_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Duration: %dms\n", durationMs)
+						}
+						return mapProviderError(streamErr)
+					}
+					var textWriter io.Writer
+					if !jsonOutput {
+						textWriter = cmd.OutOrStdout()
+					}
+					resp, err = drainEventStream(stream, textWriter)
+					if err != nil {
+						return mapProviderError(err)
+					}
+					if !jsonOutput && resp.Content != "" {
+						streamedText = true
+					}
+				} else {
+					resp, err = prov.Send(ctx, req)
+				}
+			} else {
+				resp, err = prov.Send(ctx, req)
+			}
 			if err != nil {
 				durationMs := time.Since(start).Milliseconds()
 				if verbose {
@@ -572,7 +640,13 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			tracker.Add(resp.InputTokens, resp.OutputTokens)
 
 			if verbose {
-				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] Received response: %s (%d tool calls)\n", turn+1, resp.StopReason, len(resp.ToolCalls))
+				label := "Received response"
+				if streamEnabled {
+					if _, ok := prov.(provider.StreamProvider); ok {
+						label = "Stream complete"
+					}
+				}
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[turn %d] %s: %s (%d tool calls)\n", turn+1, label, resp.StopReason, len(resp.ToolCalls))
 			}
 
 			// No tool calls: conversation is done
@@ -692,8 +766,8 @@ func runAgent(cmd *cobra.Command, args []string) error {
 			return &ExitError{Code: 1, Err: fmt.Errorf("failed to marshal JSON output: %w", err)}
 		}
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
-	} else {
-		// Step 20: Default output
+	} else if !streamedText {
+		// Step 20: Default output (skip if text was already streamed to stdout)
 		_, _ = fmt.Fprint(cmd.OutOrStdout(), resp.Content)
 	}
 
@@ -907,6 +981,83 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.
 		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}
 	}
 	return result
+}
+
+// drainEventStream consumes all events from a stream and constructs a Response.
+// If w is non-nil, text events are written to it incrementally.
+func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Response, error) {
+	defer func() { _ = stream.Close() }()
+
+	var content strings.Builder
+	var toolCalls []provider.ToolCall
+	var inputTokens, outputTokens int
+	var stopReason string
+
+	type pendingCall struct {
+		id   string
+		name string
+		args strings.Builder
+	}
+	pending := make(map[string]*pendingCall)
+
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		switch ev.Type {
+		case provider.StreamEventText:
+			content.WriteString(ev.Text)
+			if w != nil {
+				_, _ = io.WriteString(w, ev.Text)
+			}
+
+		case provider.StreamEventToolStart:
+			pending[ev.ToolCallID] = &pendingCall{id: ev.ToolCallID, name: ev.ToolName}
+
+		case provider.StreamEventToolDelta:
+			if pc, ok := pending[ev.ToolCallID]; ok {
+				pc.args.WriteString(ev.ToolInput)
+			}
+
+		case provider.StreamEventToolEnd:
+			if pc, ok := pending[ev.ToolCallID]; ok {
+				args := make(map[string]string)
+				raw := pc.args.String()
+				if raw != "" {
+					var parsed map[string]interface{}
+					if jsonErr := json.Unmarshal([]byte(raw), &parsed); jsonErr == nil {
+						for k, v := range parsed {
+							args[k] = fmt.Sprintf("%v", v)
+						}
+					}
+				}
+				toolCalls = append(toolCalls, provider.ToolCall{
+					ID:        pc.id,
+					Name:      pc.name,
+					Arguments: args,
+				})
+				delete(pending, ev.ToolCallID)
+			}
+
+		case provider.StreamEventDone:
+			inputTokens = ev.InputTokens
+			outputTokens = ev.OutputTokens
+			stopReason = ev.StopReason
+		}
+	}
+
+	return &provider.Response{
+		Content:      content.String(),
+		ToolCalls:    toolCalls,
+		InputTokens:  inputTokens,
+		OutputTokens: outputTokens,
+		StopReason:   stopReason,
+	}, nil
 }
 
 // mapProviderError converts a provider error to an ExitError with the correct exit code.

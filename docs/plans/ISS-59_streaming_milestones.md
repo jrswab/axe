@@ -28,7 +28,7 @@ flag and `stream` TOML field. No provider implementations or loop changes.
 Implement `SendStream()` on the OpenAI provider. This is the primary use
 case (internal AI service speaks OpenAI-compatible SSE).
 
-### M3 — Conversation Loop Integration
+### M3 — Conversation Loop Integration ✅
 
 Wire streaming into `cmd/run.go`: call `SendStream()` when `--stream` is
 active and the provider implements `StreamProvider`. Print text events to

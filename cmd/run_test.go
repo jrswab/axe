@@ -33,8 +33,12 @@ func resetRunCmd(t *testing.T) {
 	_ = runCmd.Flags().Set("prompt", "")
 	_ = runCmd.Flags().Set("artifact-dir", "")
 	_ = runCmd.Flags().Set("keep-artifacts", "false")
+	_ = runCmd.Flags().Set("stream", "false")
 	// Reset the Changed state for timeout flag so TOML timeout values can be used
 	if f := runCmd.Flags().Lookup("timeout"); f != nil {
+		f.Changed = false
+	}
+	if f := runCmd.Flags().Lookup("stream"); f != nil {
 		f.Changed = false
 	}
 	rootCmd.SetIn(os.Stdin)

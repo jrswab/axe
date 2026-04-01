@@ -112,6 +112,12 @@ func ctxCancelErr(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// SupportsStream returns true if the inner provider implements StreamProvider.
+func (r *RetryProvider) SupportsStream() bool {
+	_, ok := r.inner.(StreamProvider)
+	return ok
+}
+
 // SendStream delegates to the inner provider's SendStream if it implements StreamProvider.
 // No retry wrapping is applied to streaming requests.
 func (r *RetryProvider) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
