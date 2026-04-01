@@ -1,0 +1,149 @@
+{
+  "info": {
+    "id": "ses_2b63e0c5fffeXnPhFAuiX4i4I1",
+    "slug": "nimble-lagoon",
+    "projectID": "f41eda22c31366c4dba329069ee3369b2d9dd378",
+    "directory": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+    "title": "New session - 2026-04-01T15:55:40.832Z",
+    "version": "1.3.10",
+    "summary": {
+      "additions": 0,
+      "deletions": 0,
+      "files": 0
+    },
+    "time": {
+      "created": 1775058940832,
+      "updated": 1775058963163
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775058940853
+        },
+        "agent": "plan",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d49c1f3a7001kYQXa40jr2zQ4X",
+        "sessionID": "ses_2b63e0c5fffeXnPhFAuiX4i4I1"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "comit the changes and untracked files",
+          "id": "prt_d49c1f3a7002JCUbNj39119DOm",
+          "sessionID": "ses_2b63e0c5fffeXnPhFAuiX4i4I1",
+          "messageID": "msg_d49c1f3a7001kYQXa40jr2zQ4X"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d49c1f3a7001kYQXa40jr2zQ4X",
+        "role": "assistant",
+        "mode": "plan",
+        "agent": "plan",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775058940867,
+          "completed": 1775058954512
+        },
+        "error": {
+          "name": "MessageAbortedError",
+          "data": {
+            "message": "Aborted"
+          }
+        },
+        "id": "msg_d49c1f3c3002UVAkKN5bHRSdDj",
+        "sessionID": "ses_2b63e0c5fffeXnPhFAuiX4i4I1"
+      },
+      "parts": []
+    },
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1775058963156
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "anthropic",
+          "modelID": "claude-opus-4-6"
+        },
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_d49c23fc3001IEOX6mqtBrxAgf",
+        "sessionID": "ses_2b63e0c5fffeXnPhFAuiX4i4I1"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "comit the changes and untracked files",
+          "id": "prt_d49c23fc30020d4AdCKXLoMQzB",
+          "sessionID": "ses_2b63e0c5fffeXnPhFAuiX4i4I1",
+          "messageID": "msg_d49c23fc3001IEOX6mqtBrxAgf"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_d49c23fc3001IEOX6mqtBrxAgf",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
+          "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "claude-opus-4-6",
+        "providerID": "anthropic",
+        "time": {
+          "created": 1775058963160,
+          "completed": 1775059035860
+        },
+        "error": {
+          "name": "MessageAbortedError",
+          "data": {
+            "message": "Aborted"
+          }
+        },
+        "id": "msg_d49c24ad8002tI21k1P552unYK",
+        "sessionID": "ses_2b63e0c5fffeXnPhFAuiX4i4I1"
+      },
+      "parts": []
+    }
+  ]
+}

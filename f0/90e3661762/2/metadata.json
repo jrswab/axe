@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "f090e3661762",
+  "session_id": "ses_2b63e0c5fffeXnPhFAuiX4i4I1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T17:46:04.704324Z",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/plans/ISS-59_m5_remaining_provider_streaming_spec.md"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "7bc5f3d0a838",
+  "checkpoint_transcript_start": 4,
+  "transcript_lines_at_start": 4,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T17:46:04.701536Z",
+    "agent_lines": 149,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 149,
+    "agent_percentage": 100
+  }
+}
