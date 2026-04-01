@@ -213,21 +213,24 @@
           "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
           "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
         },
-        "cost": 0,
+        "cost": 0.0966335,
         "tokens": {
-          "input": 0,
-          "output": 0,
+          "total": 173685,
+          "input": 1,
+          "output": 299,
           "reasoning": 0,
           "cache": {
-            "read": 0,
-            "write": 0
+            "write": 428,
+            "read": 172957
           }
         },
         "modelID": "claude-opus-4-6",
         "providerID": "anthropic",
         "time": {
-          "created": 1775064363678
+          "created": 1775064363678,
+          "completed": 1775064934860
         },
+        "finish": "stop",
         "id": "msg_d4a14b29e001vrl9rsvywP7khG",
         "sessionID": "ses_2b5f0e5dcfferpSiQ6apJPnN9G"
       },
@@ -706,6 +709,64 @@
             "end": 1775064891732
           },
           "id": "prt_d4a1c9f96001PPN7XMA52YKAFL",
+          "sessionID": "ses_2b5f0e5dcfferpSiQ6apJPnN9G",
+          "messageID": "msg_d4a14b29e001vrl9rsvywP7khG"
+        },
+        {
+          "type": "text",
+          "text": "All M5 tasks are complete. Here's a summary:\n\n**Implemented `SendStream()` for 3 providers:**\n\n| Provider | Format | Tests |\n|----------|--------|-------|\n| **Ollama** | NDJSON (newline-delimited JSON) | 7 tests |\n| **Gemini** | SSE via `streamGenerateContent?alt=sse` | 10 tests |\n| **OpenCode** | 3 routes: Claude SSE, GPT Responses SSE, Chat Completions SSE | 6 tests (some with subtests) |\n\n**Key details:**\n- No changes to existing streaming infrastructure (`StreamEvent`, `EventStream`, `SSEParser`, `RetryProvider`, conversation loop)\n- Ollama tool calls emit `ToolStart`+`ToolEnd` pairs (no deltas — Ollama delivers complete calls)\n- Gemini tool calls use `gemini_{counter}` IDs matching non-streaming `Send()`\n- OpenCode `streamClaude()` reuses the existing `anthropicStreamEvent` types; `streamChatCompletions()` reuses `openaiStreamChunk` types\n- All lint checks pass, all tests pass\n- M5 milestone marked complete in the milestones doc",
+          "time": {
+            "start": 1775064934173,
+            "end": 1775064934173
+          },
+          "id": "prt_d4a1d539e001zJiu4v6ic7W0Ny",
+          "sessionID": "ses_2b5f0e5dcfferpSiQ6apJPnN9G",
+          "messageID": "msg_d4a14b29e001vrl9rsvywP7khG"
+        },
+        {
+          "type": "text",
+          "text": "\n\nFiles changed:\n- edited internal/provider/ollama.go\n- edited internal/provider/ollama_test.go\n- edited internal/provider/gemini.go\n- edited internal/provider/gemini_test.go\n- edited internal/provider/opencode.go\n- edited internal/provider/opencode_test.go\n- edited docs/plans/ISS-59_m5_remaining_provider_streaming_implement.md\n- edited docs/plans/ISS-59_streaming_milestones.md",
+          "time": {
+            "start": 1775064934629,
+            "end": 1775064934629
+          },
+          "id": "prt_d4a1d68e4001td0C0rHNIGEQah",
+          "sessionID": "ses_2b5f0e5dcfferpSiQ6apJPnN9G",
+          "messageID": "msg_d4a14b29e001vrl9rsvywP7khG"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "038b669c44d0ff52d7eb2b69faef1c5f4ea0b5c3",
+          "type": "step-finish",
+          "tokens": {
+            "total": 173685,
+            "input": 1,
+            "output": 299,
+            "reasoning": 0,
+            "cache": {
+              "write": 428,
+              "read": 172957
+            }
+          },
+          "cost": 0.0966335,
+          "id": "prt_d4a1d68e6001UxMy07hKgqcwpQ",
+          "sessionID": "ses_2b5f0e5dcfferpSiQ6apJPnN9G",
+          "messageID": "msg_d4a14b29e001vrl9rsvywP7khG"
+        },
+        {
+          "type": "patch",
+          "hash": "4b81e61a36379ba6d88183f9ca7e38973ffc414c",
+          "files": [
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/docs/plans/ISS-59_m5_remaining_provider_streaming_implement.md",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/docs/plans/ISS-59_streaming_milestones.md",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/internal/provider/gemini.go",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/internal/provider/gemini_test.go",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/internal/provider/ollama.go",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/internal/provider/ollama_test.go",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/internal/provider/opencode.go",
+            "/Users/jaronswab/go/src/github.com/jrswab/axe/internal/provider/opencode_test.go"
+          ],
+          "id": "prt_d4a1d69c8001dOTzk0mUqFTM2d",
           "sessionID": "ses_2b5f0e5dcfferpSiQ6apJPnN9G",
           "messageID": "msg_d4a14b29e001vrl9rsvywP7khG"
         }
