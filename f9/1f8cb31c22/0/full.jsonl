@@ -561,21 +561,24 @@
           "cwd": "/Users/jaronswab/go/src/github.com/jrswab/axe",
           "root": "/Users/jaronswab/go/src/github.com/jrswab/axe"
         },
-        "cost": 0,
+        "cost": 0.04534575,
         "tokens": {
-          "input": 0,
-          "output": 0,
+          "total": 85086,
+          "input": 1,
+          "output": 60,
           "reasoning": 0,
           "cache": {
-            "read": 0,
-            "write": 0
+            "write": 231,
+            "read": 84794
           }
         },
         "modelID": "claude-opus-4-6",
         "providerID": "anthropic",
         "time": {
-          "created": 1775073250136
+          "created": 1775073250136,
+          "completed": 1775073296043
         },
+        "finish": "stop",
         "id": "msg_d4a9c4b58002vsfKxEToxwF8yG",
         "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS"
       },
@@ -584,6 +587,36 @@
           "snapshot": "eb68c0b4b3a4709e100f10cf9b0676b3a74cf4a3",
           "type": "step-start",
           "id": "prt_d4a9c72dd001dFT3UG3FkNXGrD",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a9c4b58002vsfKxEToxwF8yG"
+        },
+        {
+          "type": "text",
+          "text": "Committed and pushed. Branch `update-docs-1-7-0` is now on the remote — you can open a PR at https://github.com/jrswab/axe/pull/new/update-docs-1-7-0.",
+          "time": {
+            "start": 1775073295324,
+            "end": 1775073295324
+          },
+          "id": "prt_d4a9cf886001hewPt82PAYntCE",
+          "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
+          "messageID": "msg_d4a9c4b58002vsfKxEToxwF8yG"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "eb68c0b4b3a4709e100f10cf9b0676b3a74cf4a3",
+          "type": "step-finish",
+          "tokens": {
+            "total": 85086,
+            "input": 1,
+            "output": 60,
+            "reasoning": 0,
+            "cache": {
+              "write": 231,
+              "read": 84794
+            }
+          },
+          "cost": 0.04534575,
+          "id": "prt_d4a9cfdfe001fGDu1zYSNAKDoO",
           "sessionID": "ses_2b5854919ffeQPA1XVOSyHYbtS",
           "messageID": "msg_d4a9c4b58002vsfKxEToxwF8yG"
         }
