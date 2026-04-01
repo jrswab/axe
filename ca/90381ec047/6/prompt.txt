@@ -1,0 +1,1 @@
+Here's the flow: front end makes a call to a lambda -> lambda starts axe -> axe calls ai service -> when agent takes longer than 60 seconds nginx on the ai service kills the connection -> no data returns to front end from axe.
