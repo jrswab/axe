@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "730847705ba5",
+  "session_id": "ses_2b6a34e1fffevW7pgAlSl5L3AX",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T18:11:44.807613Z",
+  "branch": "ISS-59/enable-response-streaming",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "internal/testutil/mockserver.go"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "c49dd90335c6",
+  "checkpoint_transcript_start": 6,
+  "transcript_lines_at_start": 6,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T18:11:44.800214Z",
+    "agent_lines": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 3,
+    "agent_percentage": 100
+  }
+}
