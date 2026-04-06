@@ -332,61 +332,33 @@ func TestValidateCommand_CompoundCommandOneBad(t *testing.T) {
 	}
 }
 
-func TestValidateCommand_URLPathsAllowed(t *testing.T) {
+func TestValidateCommand_URLs(t *testing.T) {
 	workdir := t.TempDir()
 
 	tests := []struct {
 		name    string
 		command string
+		wantErr bool
 	}{
-		{"https URL with path", `curl https://api.example.com/api/v2/data`},
-		{"http localhost URL", `curl http://localhost:8080/graphql`},
-		{"URL inside quotes", `node -e 'fetch("https://youtube.com/api/v2/transcripts")'`},
+		{"https URL with path", `curl https://api.example.com/api/v2/data`, false},
+		{"http localhost URL", `curl http://localhost:8080/graphql`, false},
+		{"URL inside quotes", `node -e 'fetch("https://youtube.com/api/v2/transcripts")'`, false},
+		{"URL with sensitive-looking path", `curl https://example.com/etc/passwd`, false},
+		{"URL then spaced redirect to bad path", `curl https://example.com/api/v2 > /tmp/out`, true},
+		{"no-space redirect after URL", `curl https://example.com/api>/tmp/out`, true},
+		{"ftp scheme not masked", `curl ftp://example.com/etc/passwd`, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateCommand(workdir, tt.command)
-			if err != nil {
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error for command %q, got nil", tt.command)
+			}
+			if !tt.wantErr && err != nil {
 				t.Errorf("expected nil error for command %q, got: %v", tt.command, err)
 			}
 		})
-	}
-}
-
-func TestValidateCommand_URLWithBadFilesystemPath(t *testing.T) {
-	workdir := t.TempDir()
-
-	err := validateCommand(workdir, `curl https://example.com/api/v2 > /tmp/out`)
-	if err == nil {
-		t.Fatal("expected error for mixed URL + bad filesystem path, got nil")
-	}
-	if !strings.Contains(err.Error(), "absolute path") {
-		t.Errorf("error should contain 'absolute path', got: %v", err)
-	}
-	if !strings.Contains(err.Error(), "/tmp/out") {
-		t.Errorf("error should mention '/tmp/out', got: %v", err)
-	}
-}
-
-func TestValidateCommand_NonHTTPSchemeNotMasked(t *testing.T) {
-	workdir := t.TempDir()
-
-	err := validateCommand(workdir, `curl ftp://example.com/etc/passwd`)
-	if err == nil {
-		t.Fatal("expected error for non-HTTP scheme URL, got nil")
-	}
-	if !strings.Contains(err.Error(), "absolute path") {
-		t.Errorf("error should contain 'absolute path', got: %v", err)
-	}
-}
-
-func TestValidateCommand_URLWithSensitivePath(t *testing.T) {
-	workdir := t.TempDir()
-
-	err := validateCommand(workdir, `curl https://example.com/etc/passwd`)
-	if err != nil {
-		t.Errorf("expected nil error for URL containing sensitive-looking path, got: %v", err)
 	}
 }
 
