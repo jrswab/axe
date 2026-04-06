@@ -11,6 +11,10 @@ import (
 // Regex to match absolute paths: / followed by one or more path characters
 var absPathRe = regexp.MustCompile(`(/[\w./_-]*)`)
 
+// Regex to match HTTP/HTTPS URLs so their path segments can be masked before the
+// absolute-path scan. Matches the scheme through the first whitespace or quote character.
+var urlRe = regexp.MustCompile(`https?://[^\s'` + "`" + `"]+`)
+
 // Regex to match .. as a path component (not inside a filename like file..bak)
 // Matches: standalone "..", "../something", "something/..", "something/../other"
 var dotDotRe = regexp.MustCompile(`(?:^|/)\.\.(?:/|$)`)
@@ -68,10 +72,15 @@ func validateCommand(workdir, command string) error {
 		}
 	}
 
+	// Mask HTTP/HTTPS URLs so their path segments are not mistaken for filesystem paths
+	masked := urlRe.ReplaceAllStringFunc(command, func(match string) string {
+		return strings.Repeat("_", len(match))
+	})
+
 	// Check for absolute paths outside workdir
 	// Skip tokens that contain ".." as they were already handled above
 	// Allow /dev/ paths (device files are system resources, not file system traversal)
-	matches := absPathRe.FindAllString(command, -1)
+	matches := absPathRe.FindAllString(masked, -1)
 	for _, match := range matches {
 		// Skip if this match is part of a parent traversal
 		if strings.Contains(match, "..") {
