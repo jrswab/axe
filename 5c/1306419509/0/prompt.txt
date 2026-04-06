@@ -1,0 +1,39 @@
+Will the changes on this branch break existing `run_command` tool calls?
+
+---
+
+Verify each finding against the current code and only fix it if needed.
+
+Inline comments:
+In `@internal/tool/command_validation.go`:
+- Around line 14-17: The URL-masking regex urlRe (`https?://[^\s'` + "`" +
+`"]+`) is too permissive and swallows adjacent shell metacharacters (e.g., >, <,
+|, ;, &, parentheses), allowing redirection paths like `>/tmp/out` to be hidden
+from the absolute-path check; update urlRe to stop at common shell
+metacharacters by excluding them from the character class (add
+>,<,|,;,&,(),{},[],$ and backtick as needed) so URLs break before redirection
+tokens, and apply the same updated pattern to the other occurrences referenced
+near the other blocks (the other regex variables/usages at the noted locations)
+so all URL masking consistently prevents escaping into shell redirections.
+
+---
+
+Nitpick comments:
+In `@internal/tool/command_validation_test.go`:
+- Around line 335-391: Combine the separate URL-related tests into one
+table-driven test using a []struct{name, input, wantErr} pattern (replace
+TestValidateCommand_URLPathsAllowed,
+TestValidateCommand_URLWithBadFilesystemPath,
+TestValidateCommand_NonHTTPSchemeNotMasked,
+TestValidateCommand_URLWithSensitivePath with a single TestValidateCommand_URLs
+table-driven function) and iterate t.Run over cases calling
+validateCommand(workdir, tc.input) and asserting error presence matches
+tc.wantErr; include a test row for the no-space redirect edge case `curl
+https://example.com/api>/tmp/out` expecting an error, and keep the existing
+cases (https with path, http localhost, quoted URL, ftp scheme non-HTTP
+expecting error, URL with sensitive-looking path expecting no error) with clear
+names so failures are easy to identify.
+
+---
+
+go ahead
