@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "e00121795a43",
+  "strategy": "manual-commit",
+  "branch": "fix/url-path-validation",
+  "checkpoints_count": 9,
+  "files_touched": [
+    "internal/tool/command_validation.go",
+    "internal/tool/command_validation_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/e0/0121795a43/0/metadata.json",
+      "transcript": "/e0/0121795a43/0/full.jsonl",
+      "content_hash": "/e0/0121795a43/0/content_hash.txt",
+      "prompt": "/e0/0121795a43/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 12703,
+    "cache_read_tokens": 120560,
+    "output_tokens": 409,
+    "api_call_count": 2
+  }
+}

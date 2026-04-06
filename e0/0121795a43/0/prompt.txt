@@ -1,0 +1,104 @@
+# Code Generation Instructions
+
+Before starting, ask what branch to use.
+
+## Setup
+Locate the plan files in `docs/plans/`:
+- Spec: file starting with GAI-5223, or the newest `xxx_topic_spec.md` if GAI-5223 is empty.
+- Implement: file starting with GAI-5223, or the newest `xxx_topic_implement.md` if GAI-5223 is empty.
+
+## Rules
+
+- Always use red/green TDD
+- Use @explore sub-agents for exploring the codebase
+- Use @general sub-agents for working on the codebase
+- Each sub-agent must only have one explicit task.
+- Each sub-agent must only return the information that fulfills that task.
+- Spin off multiple sub-agents in parallel for tasks that do not depend on another task.
+- If there was an attempt at fixing a pattern, you must make a comprehensive search proving ALL instances are addressed.
+- Verify that the unit tests for functions with updates have a test case that will verify the change.
+
+## Steps
+
+1. Read the **Context Summary** in the implement guide to understand the *why* before selecting any tasks.
+2. Study the spec file thoroughly.
+3. Study the implement file thoroughly.
+4. Pick the highest leverage unchecked task.
+5. Complete the task.
+6. Run the `auto-review` skill with the @review subagent, then delegate fixes to subagents. Do NOT proceed until all review issues are resolved.
+7. Run the @qa subagent. Do NOT proceed until all QA issues are resolved.
+8. Run `make check-diff` and fix the errors with @general subagent if that Makefile target exists.
+9. Update the implementation plan to check off the completed task using a sub-agent.
+10. After implementing, compare the result with the spec and confirm all requirements are met. List any spec items that are not addressed which should have been.
+11. Repeat steps 4-10 until all tasks are complete.
+12. If all tasks in the implementation file are checked off:
+    - Mark the corresponding milestone as complete in the milestone doc if one exists (`- [ ] 001:` → `- [x] 001:`).
+    - Commit the changes.
+
+---
+
+proceed with on this branch
+
+---
+
+commit and push to master
+
+---
+
+1. Verify that we are not on the develop, main, or master branch.
+    - If we are on the one of these branch ask what branch name to switch to.
+    - Once given the name create a new git branch off of develop using `git checkout -b`
+2. Ask the user what branch should be the base branch for this PR.
+3. Run `git rebase` off of the base branch provided by the user at origin/remote.
+4. Read all changes made against the parent branch and ask about any untracked files.
+5. Create a Git message which lists out the changes made in a short paragraph
+6. The title should summarize the changes at a high level. Keep it UNDER 50 characters.
+7. Commit the changes locally.
+8. Push the branch to remote using `git push --set-upstream origin "$(git branch --show-current)"`
+9. Open a PR on GitHub if it does not already exist.
+    - Use `gh pr create --base <parent branch>` when sending the PR request to GitHub. (we use stacked diffs)
+    - Always verify before opening the PR on GitHub
+    - Make sure the the title starts with the Linear issue ID (GAI-XXXX - this should be part of the branch name already).
+    - Make sure the title is in title case.
+    - Do not add any details to the description.
+    - If a PR for the current branch is already in GitHub just push the new commit(s) to remote.
+
+---
+
+proceed
+
+---
+
+master
+
+---
+
+include the untracked files
+
+---
+
+include the unstaged files
+
+---
+
+1. Verify that we are not on the develop, main, or master branch.
+    - If we are on the one of these branch ask what branch name to switch to.
+    - Once given the name create a new git branch off of develop using `git checkout -b`
+2. Ask the user what branch should be the base branch for this PR.
+3. Run `git rebase` off of the base branch provided by the user at origin/remote.
+4. Read all changes made against the parent branch and ask about any untracked files.
+5. Create a Git message which lists out the changes made in a short paragraph
+6. The title should summarize the changes at a high level. Keep it UNDER 50 characters.
+7. Commit the changes locally.
+8. Push the branch to remote using `git push --set-upstream origin "$(git branch --show-current)"`
+9. Open a PR on GitHub if it does not already exist.
+    - Use `gh pr create --base <parent branch>` when sending the PR request to GitHub. (we use stacked diffs)
+    - Always verify before opening the PR on GitHub
+    - Make sure the the title starts with the Linear issue ID (GAI-XXXX - this should be part of the branch name already).
+    - Make sure the title is in title case.
+    - Do not add any details to the description.
+    - If a PR for the current branch is already in GitHub just push the new commit(s) to remote.
+
+---
+
+use it
