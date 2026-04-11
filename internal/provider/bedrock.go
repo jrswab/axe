@@ -282,6 +282,11 @@ func (b *Bedrock) mapStatusToCategory(status int) ErrorCategory {
 	}
 }
 
+// SupportsFormat returns false as Bedrock structured output is not yet implemented.
+func (b *Bedrock) SupportsFormat(format *ResponseFormat) bool {
+	return false
+}
+
 // Send makes a completion request to the AWS Bedrock Converse API.
 func (b *Bedrock) Send(ctx context.Context, req *Request) (*Response, error) {
 	body, err := json.Marshal(buildBedrockRequest(req))

@@ -56,6 +56,11 @@ func NewOpenCode(apiKey string, opts ...OpenCodeOption) (*OpenCode, error) {
 	return o, nil
 }
 
+// SupportsFormat returns true as OpenCode Zen routes to Claude or OpenAI formats, both are supported.
+func (o *OpenCode) SupportsFormat(format *ResponseFormat) bool {
+	return true
+}
+
 // Send dispatches the request to the appropriate Zen endpoint based on the model name prefix.
 func (o *OpenCode) Send(ctx context.Context, req *Request) (*Response, error) {
 	switch {
@@ -105,6 +110,22 @@ type ocAnthropicToolDef struct {
 	InputSchema ocAnthropicInputSchema `json:"input_schema"`
 }
 
+type ocAnthropicToolChoice struct {
+	Type string `json:"type"`
+	Name string `json:"name,omitempty"`
+}
+
+type ocResponseFormat struct {
+	Type       string           `json:"type"`
+	JSONSchema *ocJSONSchemaDef `json:"json_schema,omitempty"`
+}
+
+type ocJSONSchemaDef struct {
+	Name   string                 `json:"name"`
+	Strict bool                   `json:"strict"`
+	Schema map[string]interface{} `json:"schema"`
+}
+
 type ocAnthropicRequest struct {
 	Model       string               `json:"model"`
 	MaxTokens   int                  `json:"max_tokens"`
@@ -112,6 +133,7 @@ type ocAnthropicRequest struct {
 	System      string               `json:"system,omitempty"`
 	Temperature *float64             `json:"temperature,omitempty"`
 	Tools       []ocAnthropicToolDef `json:"tools,omitempty"`
+	ToolChoice  *ocAnthropicToolChoice `json:"tool_choice,omitempty"`
 }
 
 type ocAnthropicResponse struct {
@@ -205,6 +227,43 @@ func convertToOCAnthropicTools(tools []Tool) []ocAnthropicToolDef {
 	return defs
 }
 
+func convertToOCAnthropicJSONSchemaProps(schema map[string]interface{}) map[string]ocJSONSchemaProp {
+	propsRaw, ok := schema["properties"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	props := make(map[string]ocJSONSchemaProp, len(propsRaw))
+	for name, val := range propsRaw {
+		valMap, ok := val.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		p := ocJSONSchemaProp{}
+		if t, ok := valMap["type"].(string); ok {
+			p.Type = t
+		}
+		if d, ok := valMap["description"].(string); ok {
+			p.Description = d
+		}
+		props[name] = p
+	}
+	return props
+}
+
+func convertToOCAnthropicRequiredProps(schema map[string]interface{}) []string {
+	reqRaw, ok := schema["required"].([]interface{})
+	if !ok {
+		return nil
+	}
+	req := make([]string, len(reqRaw))
+	for i, v := range reqRaw {
+		if s, ok := v.(string); ok {
+			req[i] = s
+		}
+	}
+	return req
+}
+
 func mapOCAnthropicHTTPError(status int, body []byte) *ProviderError {
 	var cat ErrorCategory
 	switch status {
@@ -249,6 +308,28 @@ func (o *OpenCode) sendClaude(ctx context.Context, req *Request) (*Response, err
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOCAnthropicTools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatSchema {
+			// Add forced tool call for schema enforcement
+			body.Tools = append(body.Tools, ocAnthropicToolDef{
+				Name:        "print_output",
+				Description: "Outputs the response in the requested structured format.",
+				InputSchema: ocAnthropicInputSchema{
+					Type:       "object",
+					Properties: convertToOCAnthropicJSONSchemaProps(req.Format.Schema),
+					Required:   convertToOCAnthropicRequiredProps(req.Format.Schema),
+				},
+			})
+			body.ToolChoice = &ocAnthropicToolChoice{Type: "tool", Name: "print_output"}
+		} else if req.Format.Type == FormatJSON {
+			// Prompt injection for JSON mode
+			if body.System != "" {
+				body.System += "\n\n"
+			}
+			body.System += "You must output your response in valid JSON. Do not include any markdown formatting, preamble, or conversational text. Output only the JSON."
+		}
 	}
 
 	data, err := json.Marshal(body)
@@ -303,15 +384,22 @@ func (o *OpenCode) sendClaude(ctx context.Context, req *Request) (*Response, err
 		case "text":
 			result.Content += block.Text
 		case "tool_use":
-			args := make(map[string]string, len(block.Input))
-			for k, v := range block.Input {
-				args[k] = fmt.Sprintf("%v", v)
+			if req.Format != nil && req.Format.Type == FormatSchema && block.Name == "print_output" {
+				marshaled, _ := json.Marshal(block.Input)
+				result.Content = string(marshaled)
+				// Clear tool calls as this was a format enforcement tool
+				result.ToolCalls = nil
+			} else {
+				args := make(map[string]string, len(block.Input))
+				for k, v := range block.Input {
+					args[k] = fmt.Sprintf("%v", v)
+				}
+				result.ToolCalls = append(result.ToolCalls, ToolCall{
+					ID:        block.ID,
+					Name:      block.Name,
+					Arguments: args,
+				})
 			}
-			result.ToolCalls = append(result.ToolCalls, ToolCall{
-				ID:        block.ID,
-				Name:      block.Name,
-				Arguments: args,
-			})
 		}
 	}
 
@@ -343,6 +431,7 @@ type ocAnthropicStreamRequest struct {
 	System      string               `json:"system,omitempty"`
 	Temperature *float64             `json:"temperature,omitempty"`
 	Tools       []ocAnthropicToolDef `json:"tools,omitempty"`
+	ToolChoice  *ocAnthropicToolChoice `json:"tool_choice,omitempty"`
 	Stream      bool                 `json:"stream"`
 }
 
@@ -367,6 +456,28 @@ func (o *OpenCode) streamClaude(ctx context.Context, req *Request) (*EventStream
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOCAnthropicTools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatSchema {
+			// Add forced tool call for schema enforcement
+			body.Tools = append(body.Tools, ocAnthropicToolDef{
+				Name:        "print_output",
+				Description: "Outputs the response in the requested structured format.",
+				InputSchema: ocAnthropicInputSchema{
+					Type:       "object",
+					Properties: convertToOCAnthropicJSONSchemaProps(req.Format.Schema),
+					Required:   convertToOCAnthropicRequiredProps(req.Format.Schema),
+				},
+			})
+			body.ToolChoice = &ocAnthropicToolChoice{Type: "tool", Name: "print_output"}
+		} else if req.Format.Type == FormatJSON {
+			// Prompt injection for JSON mode
+			if body.System != "" {
+				body.System += "\n\n"
+			}
+			body.System += "You must output your response in valid JSON. Do not include any markdown formatting, preamble, or conversational text. Output only the JSON."
+		}
 	}
 
 	data, err := json.Marshal(body)
@@ -492,13 +603,14 @@ func (o *OpenCode) streamClaude(ctx context.Context, req *Request) (*EventStream
 
 // --- GPT (OpenAI Responses API) streaming ---
 
-type ocResponsesStreamRequest struct {
+type ocGPTStreamRequest struct {
 	Model           string            `json:"model"`
 	Input           []interface{}     `json:"input"`
 	Temperature     *float64          `json:"temperature,omitempty"`
 	MaxOutputTokens *int              `json:"max_output_tokens,omitempty"`
 	Tools           []ocOpenAIToolDef `json:"tools,omitempty"`
 	Stream          bool              `json:"stream"`
+	ResponseFormat  *ocResponseFormat `json:"response_format,omitempty"`
 }
 
 type ocRespStreamEvent struct {
@@ -523,7 +635,7 @@ type ocRespStreamResponse struct {
 }
 
 func (o *OpenCode) streamGPT(ctx context.Context, req *Request) (*EventStream, error) {
-	body := ocResponsesStreamRequest{
+	body := ocGPTStreamRequest{
 		Model:  req.Model,
 		Input:  convertToOCResponsesMessages(req),
 		Stream: true,
@@ -541,6 +653,21 @@ func (o *OpenCode) streamGPT(ctx context.Context, req *Request) (*EventStream, e
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOCOpenAITools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			body.ResponseFormat = &ocResponseFormat{Type: "json_object"}
+		} else if req.Format.Type == FormatSchema {
+			body.ResponseFormat = &ocResponseFormat{
+				Type: "json_schema",
+				JSONSchema: &ocJSONSchemaDef{
+					Name:   "structured_output",
+					Strict: true,
+					Schema: req.Format.Schema,
+				},
+			}
+		}
 	}
 
 	data, err := json.Marshal(body)
@@ -648,14 +775,15 @@ func (o *OpenCode) streamGPT(ctx context.Context, req *Request) (*EventStream, e
 
 // --- Chat Completions streaming ---
 
-type ocChatStreamRequest struct {
-	Model         string             `json:"model"`
-	Messages      []ocChatMessage    `json:"messages"`
-	Temperature   *float64           `json:"temperature,omitempty"`
-	MaxTokens     *int               `json:"max_tokens,omitempty"`
-	Tools         []ocOpenAIToolDef  `json:"tools,omitempty"`
-	Stream        bool               `json:"stream"`
-	StreamOptions *ocStreamOptions   `json:"stream_options,omitempty"`
+type ocChatCompletionsStreamRequest struct {
+	Model          string            `json:"model"`
+	Messages       []ocChatMessage   `json:"messages"`
+	Temperature    *float64          `json:"temperature,omitempty"`
+	MaxTokens      *int              `json:"max_tokens,omitempty"`
+	Tools          []ocOpenAIToolDef `json:"tools,omitempty"`
+	Stream         bool              `json:"stream"`
+	StreamOptions  *ocStreamOptions  `json:"stream_options,omitempty"`
+	ResponseFormat *ocResponseFormat `json:"response_format,omitempty"`
 }
 
 type ocStreamOptions struct {
@@ -663,7 +791,7 @@ type ocStreamOptions struct {
 }
 
 func (o *OpenCode) streamChatCompletions(ctx context.Context, req *Request) (*EventStream, error) {
-	body := ocChatStreamRequest{
+	body := ocChatCompletionsStreamRequest{
 		Model:         req.Model,
 		Messages:      convertToOCChatMessages(req),
 		Stream:        true,
@@ -682,6 +810,21 @@ func (o *OpenCode) streamChatCompletions(ctx context.Context, req *Request) (*Ev
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOCOpenAITools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			body.ResponseFormat = &ocResponseFormat{Type: "json_object"}
+		} else if req.Format.Type == FormatSchema {
+			body.ResponseFormat = &ocResponseFormat{
+				Type: "json_schema",
+				JSONSchema: &ocJSONSchemaDef{
+					Name:   "structured_output",
+					Strict: true,
+					Schema: req.Format.Schema,
+				},
+			}
+		}
 	}
 
 	data, err := json.Marshal(body)
@@ -841,12 +984,13 @@ type ocResponsesAssistantMsg struct {
 	ToolCalls []ocToolCallWire `json:"tool_calls,omitempty"`
 }
 
-type ocResponsesRequest struct {
+type ocGPTRequest struct {
 	Model           string            `json:"model"`
 	Input           []interface{}     `json:"input"`
 	Temperature     *float64          `json:"temperature,omitempty"`
 	MaxOutputTokens *int              `json:"max_output_tokens,omitempty"`
 	Tools           []ocOpenAIToolDef `json:"tools,omitempty"`
+	ResponseFormat  *ocResponseFormat `json:"response_format,omitempty"`
 }
 
 type ocResponsesResponse struct {
@@ -962,7 +1106,7 @@ func convertToOCResponsesMessages(req *Request) []interface{} {
 }
 
 func (o *OpenCode) sendGPT(ctx context.Context, req *Request) (*Response, error) {
-	body := ocResponsesRequest{
+	body := ocGPTRequest{
 		Model: req.Model,
 		Input: convertToOCResponsesMessages(req),
 	}
@@ -979,6 +1123,21 @@ func (o *OpenCode) sendGPT(ctx context.Context, req *Request) (*Response, error)
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOCOpenAITools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			body.ResponseFormat = &ocResponseFormat{Type: "json_object"}
+		} else if req.Format.Type == FormatSchema {
+			body.ResponseFormat = &ocResponseFormat{
+				Type: "json_schema",
+				JSONSchema: &ocJSONSchemaDef{
+					Name:   "structured_output",
+					Strict: true,
+					Schema: req.Format.Schema,
+				},
+			}
+		}
 	}
 
 	data, err := json.Marshal(body)
@@ -1066,12 +1225,13 @@ type ocChatMessage struct {
 	ToolCalls  []ocToolCallWire `json:"tool_calls,omitempty"`
 }
 
-type ocChatRequest struct {
-	Model       string            `json:"model"`
-	Messages    []ocChatMessage   `json:"messages"`
-	Temperature *float64          `json:"temperature,omitempty"`
-	MaxTokens   *int              `json:"max_tokens,omitempty"`
-	Tools       []ocOpenAIToolDef `json:"tools,omitempty"`
+type ocChatCompletionsRequest struct {
+	Model          string            `json:"model"`
+	Messages       []ocChatMessage   `json:"messages"`
+	Temperature    *float64          `json:"temperature,omitempty"`
+	MaxTokens      *int              `json:"max_tokens,omitempty"`
+	Tools          []ocOpenAIToolDef `json:"tools,omitempty"`
+	ResponseFormat *ocResponseFormat `json:"response_format,omitempty"`
 }
 
 type ocChatResponse struct {
@@ -1131,7 +1291,7 @@ func convertToOCChatMessages(req *Request) []ocChatMessage {
 }
 
 func (o *OpenCode) sendChatCompletions(ctx context.Context, req *Request) (*Response, error) {
-	body := ocChatRequest{
+	body := ocChatCompletionsRequest{
 		Model:    req.Model,
 		Messages: convertToOCChatMessages(req),
 	}
@@ -1148,6 +1308,21 @@ func (o *OpenCode) sendChatCompletions(ctx context.Context, req *Request) (*Resp
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOCOpenAITools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			body.ResponseFormat = &ocResponseFormat{Type: "json_object"}
+		} else if req.Format.Type == FormatSchema {
+			body.ResponseFormat = &ocResponseFormat{
+				Type: "json_schema",
+				JSONSchema: &ocJSONSchemaDef{
+					Name:   "structured_output",
+					Strict: true,
+					Schema: req.Format.Schema,
+				},
+			}
+		}
 	}
 
 	data, err := json.Marshal(body)

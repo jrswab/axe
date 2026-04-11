@@ -11,6 +11,9 @@ description = "Reviews pull requests for style and correctness"
 # Full provider/model per models.dev
 model = "anthropic/claude-sonnet-4-20250514"
 
+# Structured output (optional, supported by most providers)
+# format = "json"
+
 # Agent persona — reusable across skills
 system_prompt = """
 You are a senior code reviewer. Be concise, actionable,

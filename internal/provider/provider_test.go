@@ -67,6 +67,10 @@ func (m *mockProvider) Send(ctx context.Context, req *Request) (*Response, error
 	return nil, nil
 }
 
+func (m *mockProvider) SupportsFormat(format *ResponseFormat) bool {
+	return false
+}
+
 // --- Phase 1a: New struct zero-value tests ---
 
 func TestTool_ZeroValue(t *testing.T) {

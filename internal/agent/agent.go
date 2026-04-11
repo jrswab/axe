@@ -91,6 +91,10 @@ type AgentConfig struct {
 	Retry         RetryConfig       `toml:"retry"`
 	Budget        BudgetConfig      `toml:"budget"`
 	Artifacts     ArtifactsConfig   `toml:"artifacts"`
+	// Format controls structured output. Set to "json" for JSON mode, or a
+	// JSON Schema object (as a TOML table) to constrain output to a specific schema.
+	// Only supported by the Ollama provider.
+	Format        interface{}       `toml:"format"`
 }
 
 // Validate checks that required fields are present in the agent configuration.
@@ -180,6 +184,19 @@ func Validate(cfg *AgentConfig) error {
 	}
 	if strings.Contains(cfg.Artifacts.Dir, "..") {
 		return &ValidationError{msg: "artifacts.dir must not contain path traversal sequences"}
+	}
+
+	if cfg.Format != nil {
+		switch v := cfg.Format.(type) {
+		case string:
+			if v != "json" {
+				return &ValidationError{msg: `format must be "json" or a JSON Schema table`}
+			}
+		case map[string]interface{}:
+			// Valid JSON Schema table
+		default:
+			return &ValidationError{msg: `format must be "json" or a JSON Schema table`}
+		}
 	}
 
 	return nil
@@ -323,6 +340,9 @@ description = ""
 # Full provider/model per models.dev
 model = "provider/model-name"
 
+# Structured output (optional, supported by most providers)
+# format = "json"
+
 # Agent persona (optional)
 # system_prompt = ""
 
@@ -403,3 +423,4 @@ func BuildSearchDirs(flagDir string, baseDir string) []string {
 
 // tomlDecode is a package-level wrapper for toml.Decode, used by tests.
 var tomlDecode = toml.Decode
+Decode

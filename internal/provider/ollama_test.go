@@ -817,6 +817,7 @@ func TestOllama_Send_ToolResultMessage(t *testing.T) {
 func TestOllama_SendStream_RequestFormat(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotStream interface{}
+	var gotFormat interface{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod = r.Method
@@ -826,6 +827,7 @@ func TestOllama_SendStream_RequestFormat(t *testing.T) {
 		var req map[string]interface{}
 		_ = json.Unmarshal(body, &req)
 		gotStream = req["stream"]
+		gotFormat = req["format"]
 
 		// Return NDJSON: one text chunk then done
 		_, _ = fmt.Fprintln(w, `{"message":{"content":"hi"},"done":false}`)
@@ -837,6 +839,7 @@ func TestOllama_SendStream_RequestFormat(t *testing.T) {
 	stream, err := o.SendStream(context.Background(), &Request{
 		Model:    "llama3",
 		Messages: []Message{{Role: "user", Content: "Hi"}},
+		Format:   &ResponseFormat{Type: FormatJSON},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -862,6 +865,9 @@ func TestOllama_SendStream_RequestFormat(t *testing.T) {
 	}
 	if gotStream != true {
 		t.Errorf("expected stream=true, got %v", gotStream)
+	}
+	if gotFormat != "json" {
+		t.Errorf("expected format=json, got %v", gotFormat)
 	}
 }
 

@@ -314,6 +314,7 @@ Agents are defined as TOML files in `$XDG_CONFIG_HOME/axe/agents/`.
 name = "pr-reviewer"
 description = "Reviews pull requests for issues and improvements"
 model = "anthropic/claude-sonnet-4-20250514"
+format = "json"  # optional, supported by most providers
 system_prompt = "You are a senior code reviewer. Be concise and actionable."
 skill = "skills/code-review/SKILL.md"
 files = ["src/**/*.go", "CONTRIBUTING.md"]

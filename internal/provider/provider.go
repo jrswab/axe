@@ -59,6 +59,21 @@ type Message struct {
 	ToolResults []ToolResult // Tool results in a tool-result message (non-nil when role is "tool")
 }
 
+// FormatType defines the type of requested formatting.
+type FormatType string
+
+const (
+	FormatNone   FormatType = ""
+	FormatJSON   FormatType = "json"
+	FormatSchema FormatType = "schema"
+)
+
+// ResponseFormat represents the internal structured output requirement.
+type ResponseFormat struct {
+	Type   FormatType
+	Schema map[string]interface{}
+}
+
 // Request represents an LLM completion request.
 type Request struct {
 	Model       string
@@ -66,7 +81,8 @@ type Request struct {
 	Messages    []Message
 	Temperature float64
 	MaxTokens   int
-	Tools       []Tool // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
+	Tools       []Tool          // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
+	Format      *ResponseFormat // Optional: defines the requested response formatting.
 }
 
 // Response represents an LLM completion response.
@@ -82,6 +98,7 @@ type Response struct {
 // Provider defines the interface for LLM providers.
 type Provider interface {
 	Send(ctx context.Context, req *Request) (*Response, error)
+	SupportsFormat(format *ResponseFormat) bool
 }
 
 // ProviderError wraps provider-specific errors with categorization.

@@ -168,6 +168,7 @@ func TestAgentsShow_ValidAgent(t *testing.T) {
 	toml := `name = "full"
 description = "A full agent"
 model = "anthropic/claude-sonnet-4-20250514"
+format = "json"
 system_prompt = "You are helpful."
 skill = "skills/sample/SKILL.md"
 files = ["src/**/*.go", "README.md"]
@@ -202,6 +203,8 @@ max_tokens = 4096
 		"A full agent",
 		"Model:",
 		"anthropic/claude-sonnet-4-20250514",
+		"Format:",
+		"json",
 		"System Prompt:",
 		"You are helpful.",
 		"Skill:",
@@ -314,7 +317,7 @@ func TestAgentsShow_MinimalAgent(t *testing.T) {
 		t.Error("show output missing Model field")
 	}
 	// Optional fields should NOT appear
-	for _, absent := range []string{"Description:", "System Prompt:", "Skill:", "Files:", "Workdir:", "Sub-Agents:", "Memory Enabled:", "Memory Path:", "Memory LastN:", "Memory MaxEntries:", "Temperature:", "Max Tokens:"} {
+	for _, absent := range []string{"Description:", "Format:", "System Prompt:", "Skill:", "Files:", "Workdir:", "Sub-Agents:", "Memory Enabled:", "Memory Path:", "Memory LastN:", "Memory MaxEntries:", "Temperature:", "Max Tokens:"} {
 		if strings.Contains(output, absent) {
 			t.Errorf("show output should not contain %q for minimal agent\nfull output:\n%s", absent, output)
 		}

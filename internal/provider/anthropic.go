@@ -61,15 +61,21 @@ func NewAnthropic(apiKey string, opts ...AnthropicOption) (*Anthropic, error) {
 	return a, nil
 }
 
+type anthropicToolChoice struct {
+	Type string `json:"type"`
+	Name string `json:"name,omitempty"`
+}
+
 // anthropicRequest is the JSON body sent to the Anthropic Messages API.
 type anthropicRequest struct {
-	Model       string             `json:"model"`
-	MaxTokens   int                `json:"max_tokens"`
-	Messages    []anthropicMessage `json:"messages"`
-	System      string             `json:"system,omitempty"`
-	Temperature *float64           `json:"temperature,omitempty"`
-	Tools       []anthropicToolDef `json:"tools,omitempty"`
-	Stream      bool               `json:"stream,omitempty"`
+	Model       string               `json:"model"`
+	MaxTokens   int                  `json:"max_tokens"`
+	Messages    []anthropicMessage   `json:"messages"`
+	System      string               `json:"system,omitempty"`
+	Temperature *float64             `json:"temperature,omitempty"`
+	Tools       []anthropicToolDef   `json:"tools,omitempty"`
+	ToolChoice  *anthropicToolChoice `json:"tool_choice,omitempty"`
+	Stream      bool                 `json:"stream,omitempty"`
 }
 
 // anthropicMessage is the wire format for a message in the Anthropic API.
@@ -210,6 +216,11 @@ func convertToAnthropicTools(tools []Tool) []anthropicToolDef {
 	return result
 }
 
+// SupportsFormat returns true as Anthropic supports JSON mode (via prompt injection) and JSON Schema (via tool use).
+func (a *Anthropic) SupportsFormat(format *ResponseFormat) bool {
+	return true
+}
+
 // Send makes a completion request to the Anthropic Messages API.
 func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 	maxTokens := req.MaxTokens
@@ -231,6 +242,24 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToAnthropicTools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatSchema {
+			// Add forced tool call for schema enforcement
+			body.Tools = append(body.Tools, anthropicToolDef{
+				Name:        "print_output",
+				Description: "Outputs the response in the requested structured format.",
+				InputSchema: req.Format.Schema,
+			})
+			body.ToolChoice = &anthropicToolChoice{Type: "tool", Name: "print_output"}
+		} else if req.Format.Type == FormatJSON {
+			// Prompt injection for JSON mode
+			if body.System != "" {
+				body.System += "\n\n"
+			}
+			body.System += "You must output your response in valid JSON. Do not include any markdown formatting, preamble, or conversational text. Output only the JSON."
+		}
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -301,15 +330,22 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 		case "text":
 			textContent += block.Text
 		case "tool_use":
-			args := make(map[string]string)
-			for k, v := range block.Input {
-				args[k] = fmt.Sprintf("%v", v)
+			if req.Format != nil && req.Format.Type == FormatSchema && block.Name == "print_output" {
+				marshaled, _ := json.Marshal(block.Input)
+				textContent = string(marshaled)
+				// Clear tool calls as this was a format enforcement tool
+				toolCalls = nil
+			} else {
+				args := make(map[string]string)
+				for k, v := range block.Input {
+					args[k] = fmt.Sprintf("%v", v)
+				}
+				toolCalls = append(toolCalls, ToolCall{
+					ID:        block.ID,
+					Name:      block.Name,
+					Arguments: args,
+				})
 			}
-			toolCalls = append(toolCalls, ToolCall{
-				ID:        block.ID,
-				Name:      block.Name,
-				Arguments: args,
-			})
 		}
 	}
 
@@ -368,6 +404,24 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToAnthropicTools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatSchema {
+			// Add forced tool call for schema enforcement
+			body.Tools = append(body.Tools, anthropicToolDef{
+				Name:        "print_output",
+				Description: "Outputs the response in the requested structured format.",
+				InputSchema: req.Format.Schema,
+			})
+			body.ToolChoice = &anthropicToolChoice{Type: "tool", Name: "print_output"}
+		} else if req.Format.Type == FormatJSON {
+			// Prompt injection for JSON mode
+			if body.System != "" {
+				body.System += "\n\n"
+			}
+			body.System += "You must output your response in valid JSON. Do not include any markdown formatting, preamble, or conversational text. Output only the JSON."
+		}
 	}
 
 	jsonBody, err := json.Marshal(body)

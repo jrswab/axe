@@ -79,6 +79,13 @@ var agentsShowCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(w, "%-16s%s\n", "Description:", cfg.Description)
 		}
 		_, _ = fmt.Fprintf(w, "%-16s%s\n", "Model:", cfg.Model)
+		if cfg.Format != nil {
+			if fstr, ok := cfg.Format.(string); ok {
+				_, _ = fmt.Fprintf(w, "%-16s%s\n", "Format:", fstr)
+			} else {
+				_, _ = fmt.Fprintf(w, "%-16s%s\n", "Format:", "JSON Schema")
+			}
+		}
 		if cfg.SystemPrompt != "" {
 			_, _ = fmt.Fprintf(w, "%-16s%s\n", "System Prompt:", cfg.SystemPrompt)
 		}

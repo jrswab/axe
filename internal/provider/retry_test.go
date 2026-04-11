@@ -30,6 +30,10 @@ func (m *retryMockProvider) Send(ctx context.Context, req *Request) (*Response, 
 	return &Response{Content: "ok"}, nil
 }
 
+func (m *retryMockProvider) SupportsFormat(format *ResponseFormat) bool {
+	return false
+}
+
 // --- 2f: isRetriable tests ---
 
 func TestIsRetriable_RateLimit(t *testing.T) {

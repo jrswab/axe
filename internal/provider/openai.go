@@ -59,13 +59,25 @@ func NewOpenAI(apiKey string, opts ...OpenAIOption) (*OpenAI, error) {
 
 // openaiRequest is the JSON body sent to the OpenAI Chat Completions API.
 type openaiRequest struct {
-	Model         string               `json:"model"`
-	Messages      []openaiMessage      `json:"messages"`
-	Temperature   *float64             `json:"temperature,omitempty"`
-	MaxTokens     *int                 `json:"max_completion_tokens,omitempty"`
-	Tools         []openaiToolDef      `json:"tools,omitempty"`
-	Stream        bool                 `json:"stream,omitempty"`
-	StreamOptions *openaiStreamOptions `json:"stream_options,omitempty"`
+	Model          string                `json:"model"`
+	Messages       []openaiMessage       `json:"messages"`
+	Temperature    *float64              `json:"temperature,omitempty"`
+	MaxTokens      *int                  `json:"max_completion_tokens,omitempty"`
+	Tools          []openaiToolDef       `json:"tools,omitempty"`
+	Stream         bool                  `json:"stream,omitempty"`
+	StreamOptions  *openaiStreamOptions  `json:"stream_options,omitempty"`
+	ResponseFormat *openaiResponseFormat `json:"response_format,omitempty"`
+}
+
+type openaiResponseFormat struct {
+	Type       string               `json:"type"`
+	JSONSchema *openaiJSONSchemaDef `json:"json_schema,omitempty"`
+}
+
+type openaiJSONSchemaDef struct {
+	Name   string                 `json:"name"`
+	Strict bool                   `json:"strict"`
+	Schema map[string]interface{} `json:"schema"`
 }
 
 // openaiMessage is the wire format for a message in the OpenAI API.
@@ -217,6 +229,11 @@ func convertToOpenAITools(tools []Tool) []openaiToolDef {
 	return result
 }
 
+// SupportsFormat returns true as OpenAI supports both JSON mode and JSON Schema.
+func (o *OpenAI) SupportsFormat(format *ResponseFormat) bool {
+	return true
+}
+
 // Send makes a completion request to the OpenAI Chat Completions API.
 func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	var messages []Message
@@ -242,6 +259,21 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOpenAITools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			body.ResponseFormat = &openaiResponseFormat{Type: "json_object"}
+		} else if req.Format.Type == FormatSchema {
+			body.ResponseFormat = &openaiResponseFormat{
+				Type: "json_schema",
+				JSONSchema: &openaiJSONSchemaDef{
+					Name:   "structured_output",
+					Strict: true,
+					Schema: req.Format.Schema,
+				},
+			}
+		}
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -374,6 +406,21 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOpenAITools(req.Tools)
+	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			body.ResponseFormat = &openaiResponseFormat{Type: "json_object"}
+		} else if req.Format.Type == FormatSchema {
+			body.ResponseFormat = &openaiResponseFormat{
+				Type: "json_schema",
+				JSONSchema: &openaiJSONSchemaDef{
+					Name:   "structured_output",
+					Strict: true,
+					Schema: req.Format.Schema,
+				},
+			}
+		}
 	}
 
 	jsonBody, err := json.Marshal(body)

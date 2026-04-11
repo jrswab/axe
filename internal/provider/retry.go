@@ -46,6 +46,11 @@ func (r *RetryProvider) Attempts() int {
 	return r.attempts
 }
 
+// SupportsFormat delegates format support checking to the inner provider.
+func (r *RetryProvider) SupportsFormat(format *ResponseFormat) bool {
+	return r.inner.SupportsFormat(format)
+}
+
 // Send delegates to the wrapped provider with retry logic.
 // When MaxRetries is 0, it passes through directly with no overhead.
 func (r *RetryProvider) Send(ctx context.Context, req *Request) (*Response, error) {

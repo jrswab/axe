@@ -391,6 +391,27 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		streamEnabled = false
 	}
 
+	var reqFormat *provider.ResponseFormat
+	if cfg.Format != nil {
+		reqFormat = &provider.ResponseFormat{}
+		switch v := cfg.Format.(type) {
+		case string:
+			if v == "json" {
+				reqFormat.Type = provider.FormatJSON
+			}
+		case map[string]interface{}:
+			reqFormat.Type = provider.FormatSchema
+			reqFormat.Schema = v
+		}
+
+		if reqFormat.Type != provider.FormatNone && !retryProv.SupportsFormat(reqFormat) {
+			return &ExitError{
+				Code: 2,
+				Err:  fmt.Errorf("provider %q does not support the requested structured output format; remove format or switch model provider", provName),
+			}
+		}
+	}
+
 	// Step 16: Build request
 	req := &provider.Request{
 		Model:       modelName,
@@ -398,6 +419,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		Messages:    []provider.Message{{Role: "user", Content: userMessage}},
 		Temperature: cfg.Params.Temperature,
 		MaxTokens:   cfg.Params.MaxTokens,
+		Format:      reqFormat,
 	}
 
 	// Step 16b: Create tool registry and resolve configured tools

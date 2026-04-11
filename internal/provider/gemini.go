@@ -103,8 +103,10 @@ type geminiFunctionDeclaration struct {
 }
 
 type geminiGenerationConfig struct {
-	Temperature     *float64 `json:"temperature,omitempty"`
-	MaxOutputTokens *int     `json:"maxOutputTokens,omitempty"`
+	Temperature      *float64               `json:"temperature,omitempty"`
+	MaxOutputTokens  *int                   `json:"maxOutputTokens,omitempty"`
+	ResponseMimeType string                 `json:"response_mime_type,omitempty"`
+	ResponseSchema   map[string]interface{} `json:"response_schema,omitempty"`
 }
 
 type geminiResponse struct {
@@ -245,6 +247,11 @@ func convertToGeminiTools(tools []Tool) []geminiToolDef {
 
 // --- Send method ---
 
+// SupportsFormat returns true as Gemini supports both JSON mode and JSON Schema.
+func (g *Gemini) SupportsFormat(format *ResponseFormat) bool {
+	return true
+}
+
 // Send makes a completion request to the Google Gemini API.
 func (g *Gemini) Send(ctx context.Context, req *Request) (*Response, error) {
 	body := geminiRequest{
@@ -274,6 +281,18 @@ func (g *Gemini) Send(ctx context.Context, req *Request) (*Response, error) {
 		genCfg.MaxOutputTokens = &mt
 		hasGenCfg = true
 	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			genCfg.ResponseMimeType = "application/json"
+			hasGenCfg = true
+		} else if req.Format.Type == FormatSchema {
+			genCfg.ResponseMimeType = "application/json"
+			genCfg.ResponseSchema = req.Format.Schema
+			hasGenCfg = true
+		}
+	}
+
 	if hasGenCfg {
 		body.GenerationConfig = &genCfg
 	}
@@ -406,6 +425,18 @@ func (g *Gemini) SendStream(ctx context.Context, req *Request) (*EventStream, er
 		genCfg.MaxOutputTokens = &mt
 		hasGenCfg = true
 	}
+
+	if req.Format != nil {
+		if req.Format.Type == FormatJSON {
+			genCfg.ResponseMimeType = "application/json"
+			hasGenCfg = true
+		} else if req.Format.Type == FormatSchema {
+			genCfg.ResponseMimeType = "application/json"
+			genCfg.ResponseSchema = req.Format.Schema
+			hasGenCfg = true
+		}
+	}
+
 	if hasGenCfg {
 		body.GenerationConfig = &genCfg
 	}

@@ -100,51 +100,82 @@ func TestRun_NoArgs(t *testing.T) {
 
 // --- Phase 11b: Model Parsing and Provider Validation ---
 
-func TestRun_InvalidModelFormat(t *testing.T) {
-	resetRunCmd(t)
-	setupRunTestAgent(t, "badmodel", `name = "badmodel"
-model = "noprefix"
-`)
-
-	buf := new(bytes.Buffer)
-	errBuf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(errBuf)
-	rootCmd.SetArgs([]string{"run", "badmodel"})
-
-	err := rootCmd.Execute()
-	if err == nil {
-		t.Fatal("expected error for invalid model format, got nil")
+func TestRun_ProviderConfigValidation(t *testing.T) {
+	cases := []struct {
+		name        string
+		agentName   string
+		agentToml   string
+		envSetup    func(t *testing.T)
+		wantCode    int
+		wantSubstrs []string
+	}{
+		{
+			name:      "invalid model format",
+			agentName: "badmodel",
+			agentToml: `name = "badmodel"
+model = "noprefix"`,
+			wantCode:    1,
+			wantSubstrs: []string{"invalid model format"},
+		},
+		{
+			name:      "unsupported provider",
+			agentName: "fakeprov",
+			agentToml: `name = "fakeprov"
+model = "fakeprovider/some-model"`,
+			wantCode:    1,
+			wantSubstrs: []string{`unsupported provider "fakeprovider"`, "anthropic, openai, ollama"},
+		},
+		{
+			name:      "unsupported format",
+			agentName: "unsupported-format",
+			agentToml: `name = "unsupported-format"
+model = "bedrock/anthropic.claude-v2"
+format = "json"`,
+			envSetup: func(t *testing.T) {
+				t.Setenv("AWS_REGION", "us-east-1")
+				t.Setenv("AWS_ACCESS_KEY_ID", "dummy")
+				t.Setenv("AWS_SECRET_ACCESS_KEY", "dummy")
+			},
+			wantCode:    2,
+			wantSubstrs: []string{`provider "bedrock" does not support the requested structured output format`},
+		},
 	}
-	if !strings.Contains(err.Error(), "invalid model format") {
-		t.Errorf("expected 'invalid model format' error, got: %v", err)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetRunCmd(t)
+			setupRunTestAgent(t, tc.agentName, tc.agentToml)
+			if tc.envSetup != nil {
+				tc.envSetup(t)
+			}
+
+			buf := new(bytes.Buffer)
+			errBuf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(errBuf)
+			rootCmd.SetArgs([]string{"run", tc.agentName})
+
+			err := rootCmd.Execute()
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			exitErr, ok := err.(*ExitError)
+			if !ok {
+				t.Fatalf("expected *ExitError, got %T: %v", err, err)
+			}
+			if exitErr.Code != tc.wantCode {
+				t.Errorf("expected exit code %d, got %d", tc.wantCode, exitErr.Code)
+			}
+
+			for _, wantSubstr := range tc.wantSubstrs {
+				if !strings.Contains(err.Error(), wantSubstr) {
+					t.Errorf("expected error containing %q, got: %v", wantSubstr, err.Error())
+				}
+			}
+		})
 	}
 }
-
-func TestRun_UnsupportedProvider(t *testing.T) {
-	resetRunCmd(t)
-	setupRunTestAgent(t, "fakeprov-agent", `name = "fakeprov-agent"
-model = "fakeprovider/some-model"
-`)
-
-	buf := new(bytes.Buffer)
-	errBuf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(errBuf)
-	rootCmd.SetArgs([]string{"run", "fakeprov-agent"})
-
-	err := rootCmd.Execute()
-	if err == nil {
-		t.Fatal("expected error for unsupported provider, got nil")
-	}
-	if !strings.Contains(err.Error(), `unsupported provider "fakeprovider"`) {
-		t.Errorf("expected 'unsupported provider' error, got: %v", err)
-	}
-	if !strings.Contains(err.Error(), "anthropic, openai, ollama") {
-		t.Errorf("expected supported providers list, got: %v", err)
-	}
-}
-
 // --- Phase 11c: Config Loading and Overrides ---
 
 func TestRun_MissingAgent(t *testing.T) {
