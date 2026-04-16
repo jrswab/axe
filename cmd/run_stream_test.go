@@ -54,7 +54,7 @@ func TestDrainEventStream_TextOnly(t *testing.T) {
 		{Type: provider.StreamEventDone, InputTokens: 10, OutputTokens: 5, StopReason: "end_turn"},
 	})
 
-	resp, err := drainEventStream(stream, nil)
+	resp, err := drainEventStream(stream, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestDrainEventStream_ToolCalls(t *testing.T) {
 		{Type: provider.StreamEventDone, StopReason: "tool_calls"},
 	})
 
-	resp, err := drainEventStream(stream, nil)
+	resp, err := drainEventStream(stream, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestDrainEventStream_ToolCallsFromStartInput(t *testing.T) {
 		{Type: provider.StreamEventDone, StopReason: "tool_calls"},
 	})
 
-	resp, err := drainEventStream(stream, nil)
+	resp, err := drainEventStream(stream, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestDrainEventStream_TextAndToolCalls(t *testing.T) {
 		{Type: provider.StreamEventDone, StopReason: "tool_calls", InputTokens: 20, OutputTokens: 15},
 	})
 
-	resp, err := drainEventStream(stream, nil)
+	resp, err := drainEventStream(stream, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestDrainEventStream_IncrementalWrite(t *testing.T) {
 	})
 
 	var buf bytes.Buffer
-	resp, err := drainEventStream(stream, &buf)
+	resp, err := drainEventStream(stream, &buf, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestDrainEventStream_NilWriter(t *testing.T) {
 		{Type: provider.StreamEventDone, StopReason: "end_turn"},
 	})
 
-	resp, err := drainEventStream(stream, nil)
+	resp, err := drainEventStream(stream, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestDrainEventStream_MidStreamError(t *testing.T) {
 		{Type: provider.StreamEventText, Text: " data"},
 	}, testErr)
 
-	_, err := drainEventStream(stream, nil)
+	_, err := drainEventStream(stream, nil, nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -211,7 +211,7 @@ func TestDrainEventStream_EmptyStream(t *testing.T) {
 		{Type: provider.StreamEventDone, StopReason: "end_turn", InputTokens: 3, OutputTokens: 1},
 	})
 
-	resp, err := drainEventStream(stream, nil)
+	resp, err := drainEventStream(stream, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestDrainEventStream_EOFWithoutDone(t *testing.T) {
 		{Type: provider.StreamEventText, Text: "hello"},
 	})
 
-	resp, err := drainEventStream(stream, nil)
+	resp, err := drainEventStream(stream, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

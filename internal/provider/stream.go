@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	StreamEventText      = "text"
+	StreamEventText       = "text"
+	StreamEventThinking   = "thinking"
 	StreamEventToolStart = "tool_start"
 	StreamEventToolDelta = "tool_delta"
 	StreamEventToolEnd   = "tool_end"
@@ -17,6 +18,7 @@ const (
 type StreamEvent struct {
 	Type         string
 	Text         string
+	Thinking     string
 	ToolCallID   string
 	ToolName     string
 	ToolInput    string

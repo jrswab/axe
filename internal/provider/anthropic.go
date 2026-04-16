@@ -497,6 +497,14 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 						ToolCallID: block.id,
 						ToolInput:  event.Delta.PartialJSON,
 					}, nil
+				case "thinking_delta":
+					if event.Delta.Text == "" {
+						continue
+					}
+					return StreamEvent{
+						Type:     StreamEventThinking,
+						Thinking: event.Delta.Text,
+					}, nil
 				}
 				continue
 

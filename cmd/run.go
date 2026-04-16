@@ -535,7 +535,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 				if !jsonOutput {
 					textWriter = cmd.OutOrStdout()
 				}
-				resp, err = drainEventStream(stream, textWriter)
+				resp, err = drainEventStream(stream, textWriter, cmd.ErrOrStderr())
 				if err != nil {
 					return mapProviderError(err)
 				}
@@ -614,7 +614,7 @@ func runAgent(cmd *cobra.Command, args []string) error {
 					if !jsonOutput {
 						textWriter = cmd.OutOrStdout()
 					}
-					resp, err = drainEventStream(stream, textWriter)
+					resp, err = drainEventStream(stream, textWriter, cmd.ErrOrStderr())
 					if err != nil {
 						return mapProviderError(err)
 					}
@@ -985,7 +985,8 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.
 
 // drainEventStream consumes all events from a stream and constructs a Response.
 // If w is non-nil, text events are written to it incrementally.
-func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Response, error) {
+// If verboseStderr is non-nil, reasoning/thinking events are written there.
+func drainEventStream(stream *provider.EventStream, w io.Writer, verboseStderr io.Writer) (*provider.Response, error) {
 	defer func() { _ = stream.Close() }()
 
 	var content strings.Builder
@@ -1014,6 +1015,11 @@ func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Resp
 			content.WriteString(ev.Text)
 			if w != nil {
 				_, _ = io.WriteString(w, ev.Text)
+			}
+
+		case provider.StreamEventThinking:
+			if verboseStderr != nil && ev.Thinking != "" {
+				_, _ = fmt.Fprintf(verboseStderr, "[reasoning] %s", ev.Thinking)
 			}
 
 		case provider.StreamEventToolStart:
