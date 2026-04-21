@@ -37,9 +37,10 @@ type ResponseFormatConfig struct {
 	Schema map[string]interface{} `toml:"schema"`
 }
 
-// IsSet returns true if a response format type has been configured.
+// IsSet returns true if a response format type has been configured
+// and is not the default "text" (which is equivalent to omitted).
 func (r ResponseFormatConfig) IsSet() bool {
-	return r.Type != ""
+	return r.Type != "" && r.Type != "text"
 }
 
 // ParamsConfig holds model parameter overrides for an agent.
@@ -188,6 +189,9 @@ func Validate(cfg *AgentConfig) error {
 		return &ValidationError{msg: "budget.max_tokens must be non-negative"}
 	}
 
+	if len(cfg.Params.ResponseFormat.Schema) > 0 && cfg.Params.ResponseFormat.Type == "" {
+		return &ValidationError{msg: "params.response_format.type is required when params.response_format.schema is set"}
+	}
 	if cfg.Params.ResponseFormat.IsSet() {
 		switch cfg.Params.ResponseFormat.Type {
 		case "text", "json_object", "json_schema":

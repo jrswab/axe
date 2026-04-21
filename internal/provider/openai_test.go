@@ -1645,3 +1645,22 @@ func TestOpenAI_Send_IncludesResponseFormatJsonSchema(t *testing.T) {
 		t.Errorf("expected schema type 'object', got %v", schema["type"])
 	}
 }
+
+func TestOpenAI_Send_JsonSchemaWithoutSchemaReturnsError(t *testing.T) {
+	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL("http://localhost:1"))
+	_, err := o.Send(context.Background(), &Request{
+		Model:          "gpt-4o",
+		Messages:       []Message{{Role: "user", Content: "Hi"}},
+		ResponseFormat: ResponseFormat{Type: "json_schema"},
+	})
+	if err == nil {
+		t.Fatal("expected error for json_schema without schema, got nil")
+	}
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryBadRequest {
+		t.Errorf("expected ErrCategoryBadRequest, got %s", provErr.Category)
+	}
+}

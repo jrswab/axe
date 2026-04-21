@@ -1299,3 +1299,22 @@ func TestOllama_Send_IncludesFormatJsonSchema(t *testing.T) {
 		t.Error("expected 'name' to be stripped from Ollama schema (it's not part of JSON Schema)")
 	}
 }
+
+func TestOllama_Send_JsonSchemaWithoutSchemaReturnsError(t *testing.T) {
+	o, _ := NewOllama(WithOllamaBaseURL("http://localhost:11434"))
+	_, err := o.Send(context.Background(), &Request{
+		Model:          "llama3",
+		Messages:       []Message{{Role: "user", Content: "Hi"}},
+		ResponseFormat: ResponseFormat{Type: "json_schema"},
+	})
+	if err == nil {
+		t.Fatal("expected error for json_schema without schema, got nil")
+	}
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryBadRequest {
+		t.Errorf("expected ErrCategoryBadRequest, got %s", provErr.Category)
+	}
+}

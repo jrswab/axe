@@ -259,7 +259,11 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	if req.ResponseFormat.IsSet() {
-		body.ResponseFormat = buildOpenAIResponseFormat(req.ResponseFormat)
+		rf, rfErr := buildOpenAIResponseFormat(req.ResponseFormat)
+		if rfErr != nil {
+			return nil, rfErr
+		}
+		body.ResponseFormat = rf
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -351,9 +355,15 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 }
 
 // buildOpenAIResponseFormat converts a provider ResponseFormat to the OpenAI wire format.
-func buildOpenAIResponseFormat(rf ResponseFormat) *openaiResponseFormat {
+func buildOpenAIResponseFormat(rf ResponseFormat) (*openaiResponseFormat, error) {
 	orf := &openaiResponseFormat{Type: rf.Type}
-	if rf.Type == "json_schema" && len(rf.Schema) > 0 {
+	if rf.Type == "json_schema" {
+		if len(rf.Schema) == 0 {
+			return nil, &ProviderError{
+				Category: ErrCategoryBadRequest,
+				Message:  "response_format.schema is required when type is json_schema",
+			}
+		}
 		name, _ := rf.Schema["name"].(string)
 		if name == "" {
 			name = "response"
@@ -370,7 +380,7 @@ func buildOpenAIResponseFormat(rf ResponseFormat) *openaiResponseFormat {
 			Schema: schema,
 		}
 	}
-	return orf
+	return orf, nil
 }
 
 // handleErrorResponse maps HTTP error responses to ProviderError.
@@ -418,7 +428,11 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 	}
 
 	if req.ResponseFormat.IsSet() {
-		body.ResponseFormat = buildOpenAIResponseFormat(req.ResponseFormat)
+		rf, rfErr := buildOpenAIResponseFormat(req.ResponseFormat)
+		if rfErr != nil {
+			return nil, rfErr
+		}
+		body.ResponseFormat = rf
 	}
 
 	jsonBody, err := json.Marshal(body)

@@ -233,7 +233,11 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	if req.ResponseFormat.IsSet() {
-		body.Format = buildOllamaFormat(req.ResponseFormat)
+		f, fmtErr := buildOllamaFormat(req.ResponseFormat)
+		if fmtErr != nil {
+			return nil, fmtErr
+		}
+		body.Format = f
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -369,7 +373,11 @@ func (o *Ollama) SendStream(ctx context.Context, req *Request) (*EventStream, er
 	}
 
 	if req.ResponseFormat.IsSet() {
-		body.Format = buildOllamaFormat(req.ResponseFormat)
+		f, fmtErr := buildOllamaFormat(req.ResponseFormat)
+		if fmtErr != nil {
+			return nil, fmtErr
+		}
+		body.Format = f
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -543,17 +551,30 @@ func (o *Ollama) mapStatusToCategory(status int) ErrorCategory {
 
 // buildOllamaFormat converts a provider ResponseFormat to the Ollama format field.
 // Ollama accepts "json" for unstructured JSON or a JSON Schema object for structured output.
-func buildOllamaFormat(rf ResponseFormat) interface{} {
-	if rf.Type == "json_schema" && len(rf.Schema) > 0 {
+func buildOllamaFormat(rf ResponseFormat) (interface{}, error) {
+	switch rf.Type {
+	case "json_object":
+		return "json", nil
+	case "json_schema":
+		if len(rf.Schema) == 0 {
+			return nil, &ProviderError{
+				Category: ErrCategoryBadRequest,
+				Message:  "response_format.schema is required when type is json_schema",
+			}
+		}
 		schema := make(map[string]interface{})
 		for k, v := range rf.Schema {
 			if k != "name" {
 				schema[k] = v
 			}
 		}
-		return schema
+		return schema, nil
+	default:
+		return nil, &ProviderError{
+			Category: ErrCategoryBadRequest,
+			Message:  fmt.Sprintf("unsupported response_format type %q for Ollama provider", rf.Type),
+		}
 	}
-	return "json"
 }
 
 // isConnectionRefused checks if the error is a connection refused error.

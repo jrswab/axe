@@ -2040,6 +2040,38 @@ func TestValidate_ResponseFormat_ValidTypes(t *testing.T) {
 	}
 }
 
+func TestValidate_ResponseFormat_SchemaWithoutType(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:  "test",
+		Model: "openai/gpt-4o",
+		Params: ParamsConfig{ResponseFormat: ResponseFormatConfig{
+			Schema: map[string]interface{}{"type": "object"},
+		}},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for schema without type, got nil")
+	}
+	want := "params.response_format.type is required when params.response_format.schema is set"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_ResponseFormat_TextIsNotActive(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Params: ParamsConfig{ResponseFormat: ResponseFormatConfig{Type: "text"}},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("expected no error for type=text, got %v", err)
+	}
+	if cfg.Params.ResponseFormat.IsSet() {
+		t.Error("expected IsSet()=false for type=text")
+	}
+}
+
 func TestValidate_ResponseFormat_InvalidType(t *testing.T) {
 	cfg := &AgentConfig{
 		Name:   "test",
