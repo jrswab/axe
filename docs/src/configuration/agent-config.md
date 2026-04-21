@@ -37,6 +37,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 [params]
 temperature = 0.3
 max_tokens = 4096
+# response_format = "json_object"   # text, json_object, or json_schema
 
 [budget]
 max_tokens = 50000    # 0 = unlimited (default)
@@ -53,3 +54,26 @@ transport = "stdio"
 command = "/usr/local/bin/mcp-server-filesystem"
 args = ["--root", "/home/user/projects"]
 ```
+
+### Response Format
+
+Constrain LLM output to a specific format via the `[params]` section. Supported by OpenAI and Ollama providers; other providers ignore this setting.
+
+```toml
+# String shorthand
+[params]
+response_format = "json_object"
+
+# Table form (required for json_schema)
+[params.response_format]
+type = "json_schema"
+[params.response_format.schema]
+name = "my_schema"
+type = "object"
+```
+
+| Type | Description |
+|---|---|
+| `text` | Default free-form text output |
+| `json_object` | Valid JSON object (provider-enforced at decoding time) |
+| `json_schema` | JSON matching the provided schema; requires `[params.response_format.schema]` |
