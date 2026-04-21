@@ -31,10 +31,39 @@ type MemoryConfig struct {
 }
 
 // ResponseFormatConfig holds response format configuration for structured output.
+// It supports two TOML forms:
+//
+//	[params]
+//	response_format = "json_object"          # string shorthand
+//
+//	[params.response_format]                  # table form (required for json_schema)
+//	type = "json_schema"
+//	[params.response_format.schema]
+//	name = "my_schema"
+//	type = "object"
 type ResponseFormatConfig struct {
 	Type string `toml:"type"`
 	// Schema holds an inline JSON Schema object for type = "json_schema".
 	Schema map[string]interface{} `toml:"schema"`
+}
+
+// UnmarshalTOML allows response_format to be either a string shorthand
+// (e.g. response_format = "json_object") or a full table with type and schema.
+func (r *ResponseFormatConfig) UnmarshalTOML(data interface{}) error {
+	switch v := data.(type) {
+	case string:
+		r.Type = v
+	case map[string]interface{}:
+		if t, ok := v["type"].(string); ok {
+			r.Type = t
+		}
+		if s, ok := v["schema"].(map[string]interface{}); ok {
+			r.Schema = s
+		}
+	default:
+		return fmt.Errorf("response_format must be a string or table, got %T", data)
+	}
+	return nil
 }
 
 // IsSet returns true if a response format type has been configured
@@ -400,8 +429,13 @@ model = "provider/model-name"
 # [params]
 # temperature = 0.3
 # max_tokens = 4096
+# response_format = "json_object"
+# For json_schema with validation, use the table form instead:
 # [params.response_format]
-# type = "json_object"
+# type = "json_schema"
+# [params.response_format.schema]
+# name = "my_schema"
+# type = "object"
 
 # [retry]
 # max_retries = 0
