@@ -1,0 +1,88 @@
+# GoReleaser Release Process
+
+Follow every step below in order. Do not skip steps. Ask for human confirmation before creating and pushing the tag.
+
+## Step 1: Validate the project
+
+1. Verify that `.goreleaser.yaml` (or `.goreleaser.yml`) exists in the project root. If not, stop and inform the user.
+2. Verify that `go.mod` exists. If not, stop and inform the user.
+3. Verify you are on the correct release branch (usually `main` or `master`). Run `git branch --show-current` and confirm with the user if uncertain.
+4. Ensure the working tree is clean: `git status --porcelain`. If there are uncommitted changes, stop and inform the user.
+
+## Step 2: Determine the version
+
+1. Get the latest semver tag:
+   ```bash
+   git tag -l "v*" --sort=-v:refname | head -5
+   ```
+2. List commits since the last tag:
+   ```bash
+   git log <latest-tag>..HEAD --oneline
+   ```
+   If there is no previous tag, list all commits.
+3. Analyze the commits and propose a semver bump using these rules:
+   - **MAJOR**: Any commit message containing `BREAKING CHANGE`, `!:` after a type, or explicitly breaking changes.
+   - **MINOR**: Commits prefixed with `feat:` or `feat(...):`
+   - **PATCH**: Commits prefixed with `fix:`, `perf:`, `refactor:`, or anything else.
+   - When multiple bump levels apply, use the highest.
+4. Present the proposed version to the user with your reasoning. List the commits that informed the decision.
+5. **Wait for the user to confirm or override the version before proceeding.** Do not continue until you have confirmation.
+
+## Step 3: Extract repository details
+
+1. Parse the GitHub owner and repo name from `.goreleaser.yaml` under `release.github.owner` and `release.github.name`.
+2. If those fields are not present, extract them from the git remote:
+   ```bash
+   git remote get-url origin
+   ```
+3. Store the owner/repo for use in verification steps.
+
+## Step 4: Update Code Versions and CHANGELOG.md (if it exists)
+
+1. Check if `CHANGELOG.md` exists in the project root.
+2. If it exists:
+   - Read the file.
+   - Under the `## [Unreleased]` heading, move all items into a new version section: `## [X.Y.Z] - YYYY-MM-DD` (using today's date).
+   - Add a fresh empty `## [Unreleased]` section above the new version.
+   - Update the comparison links at the bottom of the file:
+     - `[unreleased]` link should compare the new tag to `HEAD`.
+     - Add a new link for the version comparing it to the previous tag.
+3. Check the repository for any references to a version number
+4. Update to match the new version to be used as the annotated tag.
+5. Commit the change:
+     ```bash
+     git add .
+     git commit -m "docs: update changelog for vX.Y.Z"
+     git push
+     ```
+4. If `CHANGELOG.md` does not exist, skip and update any code references to the version as found.
+
+
+## Step 5: Update version references in the code
+
+
+## Step 6: Create and push the tag
+
+1. Create an annotated tag:
+   ```bash
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   ```
+2. Push the tag to trigger the release workflow:
+   ```bash
+   git push origin vX.Y.Z
+   ```
+
+## Safety Rules
+
+- **Never force push.**
+- **Never create or push a tag without explicit user confirmation of the version.**
+- **Never merge branches** -- this command only handles tagging and releasing.
+- If anything is ambiguous, ask the user before proceeding.
+
+---
+
+remove docs/plans/ISS-59_m6_streaming_smoke_tests_spec.md
+
+---
+
+v1.8.0 is good
