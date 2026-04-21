@@ -400,6 +400,13 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		MaxTokens:   cfg.Params.MaxTokens,
 	}
 
+	if cfg.Params.ResponseFormat.IsSet() {
+		req.ResponseFormat = provider.ResponseFormat{
+			Type:   cfg.Params.ResponseFormat.Type,
+			Schema: cfg.Params.ResponseFormat.Schema,
+		}
+	}
+
 	// Step 16b: Create tool registry and resolve configured tools
 	registry := tool.NewRegistry()
 	tool.RegisterAll(registry)
@@ -490,7 +497,11 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Files:    %d file(s)\n", len(files))
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Prompt:   %s\n", promptSource)
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Timeout:  %ds\n", timeout)
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Params:   temperature=%g, max_tokens=%d\n", cfg.Params.Temperature, cfg.Params.MaxTokens)
+		paramsLine := fmt.Sprintf("temperature=%g, max_tokens=%d", cfg.Params.Temperature, cfg.Params.MaxTokens)
+		if cfg.Params.ResponseFormat.IsSet() {
+			paramsLine += fmt.Sprintf(", response_format=%s", cfg.Params.ResponseFormat.Type)
+		}
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Params:   %s\n", paramsLine)
 		if cfg.Memory.Enabled {
 			if memoryCount > 0 {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Memory:   %d entries loaded from %s\n", memoryCount, memoryPath)
@@ -799,7 +810,11 @@ func printDryRun(cmd *cobra.Command, cfg *agent.AgentConfig, provName, modelName
 	_, _ = fmt.Fprintf(out, "Model:    %s/%s\n", provName, modelName)
 	_, _ = fmt.Fprintf(out, "Workdir:  %s\n", workdir)
 	_, _ = fmt.Fprintf(out, "Timeout:  %ds\n", timeout)
-	_, _ = fmt.Fprintf(out, "Params:   temperature=%g, max_tokens=%d\n", cfg.Params.Temperature, cfg.Params.MaxTokens)
+	paramsLine := fmt.Sprintf("temperature=%g, max_tokens=%d", cfg.Params.Temperature, cfg.Params.MaxTokens)
+	if cfg.Params.ResponseFormat.IsSet() {
+		paramsLine += fmt.Sprintf(", response_format=%s", cfg.Params.ResponseFormat.Type)
+	}
+	_, _ = fmt.Fprintf(out, "Params:   %s\n", paramsLine)
 	_, _ = fmt.Fprintf(out, "Budget:   %d tokens (0 = unlimited)\n", maxTokens)
 	streamVal := "no"
 	if streamEnabled {

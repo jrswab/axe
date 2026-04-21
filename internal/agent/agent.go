@@ -30,10 +30,23 @@ type MemoryConfig struct {
 	MaxEntries int    `toml:"max_entries"`
 }
 
+// ResponseFormatConfig holds response format configuration for structured output.
+type ResponseFormatConfig struct {
+	Type string `toml:"type"`
+	// Schema holds an inline JSON Schema object for type = "json_schema".
+	Schema map[string]interface{} `toml:"schema"`
+}
+
+// IsSet returns true if a response format type has been configured.
+func (r ResponseFormatConfig) IsSet() bool {
+	return r.Type != ""
+}
+
 // ParamsConfig holds model parameter overrides for an agent.
 type ParamsConfig struct {
-	Temperature float64 `toml:"temperature"`
-	MaxTokens   int     `toml:"max_tokens"`
+	Temperature    float64              `toml:"temperature"`
+	MaxTokens      int                  `toml:"max_tokens"`
+	ResponseFormat ResponseFormatConfig `toml:"response_format"`
 }
 
 // RetryConfig holds retry sub-configuration for an agent.
@@ -173,6 +186,17 @@ func Validate(cfg *AgentConfig) error {
 
 	if cfg.Budget.MaxTokens < 0 {
 		return &ValidationError{msg: "budget.max_tokens must be non-negative"}
+	}
+
+	if cfg.Params.ResponseFormat.IsSet() {
+		switch cfg.Params.ResponseFormat.Type {
+		case "text", "json_object", "json_schema":
+		default:
+			return &ValidationError{msg: fmt.Sprintf("params.response_format.type must be one of: text, json_object, json_schema; got %q", cfg.Params.ResponseFormat.Type)}
+		}
+		if cfg.Params.ResponseFormat.Type == "json_schema" && len(cfg.Params.ResponseFormat.Schema) == 0 {
+			return &ValidationError{msg: "params.response_format.schema is required when type is json_schema"}
+		}
 	}
 
 	if cfg.Artifacts.Dir != "" && !cfg.Artifacts.Enabled {
@@ -372,6 +396,8 @@ model = "provider/model-name"
 # [params]
 # temperature = 0.3
 # max_tokens = 4096
+# [params.response_format]
+# type = "json_object"
 
 # [retry]
 # max_retries = 0

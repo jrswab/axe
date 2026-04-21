@@ -2010,3 +2010,131 @@ func TestAllowedHosts_TOMLParsing(t *testing.T) {
 		})
 	}
 }
+
+// --- Response Format Config tests ---
+
+func TestValidate_ResponseFormat_ValidTypes(t *testing.T) {
+	tests := []struct {
+		name   string
+		format ResponseFormatConfig
+	}{
+		{name: "text", format: ResponseFormatConfig{Type: "text"}},
+		{name: "json_object", format: ResponseFormatConfig{Type: "json_object"}},
+		{name: "json_schema", format: ResponseFormatConfig{
+			Type:   "json_schema",
+			Schema: map[string]interface{}{"type": "object"},
+		}},
+		{name: "empty (unset)", format: ResponseFormatConfig{}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &AgentConfig{
+				Name:   "test",
+				Model:  "openai/gpt-4o",
+				Params: ParamsConfig{ResponseFormat: tc.format},
+			}
+			if err := Validate(cfg); err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+		})
+	}
+}
+
+func TestValidate_ResponseFormat_InvalidType(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Params: ParamsConfig{ResponseFormat: ResponseFormatConfig{Type: "xml"}},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for invalid response_format type, got nil")
+	}
+	if !strings.Contains(err.Error(), "params.response_format.type must be one of") {
+		t.Errorf("got %q, want error about invalid type", err.Error())
+	}
+}
+
+func TestValidate_ResponseFormat_JsonSchemaRequiresSchema(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:   "test",
+		Model:  "openai/gpt-4o",
+		Params: ParamsConfig{ResponseFormat: ResponseFormatConfig{Type: "json_schema"}},
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for json_schema without schema, got nil")
+	}
+	want := "params.response_format.schema is required when type is json_schema"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestResponseFormat_TOMLParsing_JsonObject(t *testing.T) {
+	input := `
+name = "test"
+model = "openai/gpt-4o"
+
+[params.response_format]
+type = "json_object"
+`
+	var cfg AgentConfig
+	if _, err := tomlDecode(input, &cfg); err != nil {
+		t.Fatalf("failed to decode TOML: %v", err)
+	}
+	if cfg.Params.ResponseFormat.Type != "json_object" {
+		t.Errorf("Type = %q, want %q", cfg.Params.ResponseFormat.Type, "json_object")
+	}
+}
+
+func TestResponseFormat_TOMLParsing_JsonSchema(t *testing.T) {
+	input := `
+name = "test"
+model = "openai/gpt-4o"
+
+[params.response_format]
+type = "json_schema"
+
+[params.response_format.schema]
+name = "leadership"
+type = "object"
+`
+	var cfg AgentConfig
+	if _, err := tomlDecode(input, &cfg); err != nil {
+		t.Fatalf("failed to decode TOML: %v", err)
+	}
+	if cfg.Params.ResponseFormat.Type != "json_schema" {
+		t.Errorf("Type = %q, want %q", cfg.Params.ResponseFormat.Type, "json_schema")
+	}
+	if cfg.Params.ResponseFormat.Schema["name"] != "leadership" {
+		t.Errorf("Schema.name = %v, want %q", cfg.Params.ResponseFormat.Schema["name"], "leadership")
+	}
+	if cfg.Params.ResponseFormat.Schema["type"] != "object" {
+		t.Errorf("Schema.type = %v, want %q", cfg.Params.ResponseFormat.Schema["type"], "object")
+	}
+}
+
+func TestResponseFormat_TOMLParsing_Absent(t *testing.T) {
+	input := `
+name = "test"
+model = "openai/gpt-4o"
+`
+	var cfg AgentConfig
+	if _, err := tomlDecode(input, &cfg); err != nil {
+		t.Fatalf("failed to decode TOML: %v", err)
+	}
+	if cfg.Params.ResponseFormat.IsSet() {
+		t.Error("expected IsSet() = false for absent response_format")
+	}
+}
+
+func TestScaffold_IncludesResponseFormatConfig(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "# [params.response_format]") {
+		t.Errorf("scaffold output missing '# [params.response_format]'\nfull output:\n%s", out)
+	}
+}

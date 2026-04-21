@@ -1516,3 +1516,132 @@ func TestOpenAI_Send_AssistantToolCallMessage(t *testing.T) {
 		t.Error("no assistant message with tool_calls found in request")
 	}
 }
+
+func TestOpenAI_Send_OmitsResponseFormatWhenEmpty(t *testing.T) {
+	var hasResponseFormat bool
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var raw map[string]json.RawMessage
+		_ = json.Unmarshal(body, &raw)
+		_, hasResponseFormat = raw["response_format"]
+
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":   "gpt-4o",
+			"choices": []map[string]interface{}{{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"}},
+			"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if hasResponseFormat {
+		t.Error("expected response_format to be omitted when not set")
+	}
+}
+
+func TestOpenAI_Send_IncludesResponseFormatJsonObject(t *testing.T) {
+	var gotResponseFormat map[string]interface{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var raw map[string]json.RawMessage
+		_ = json.Unmarshal(body, &raw)
+		if rf, ok := raw["response_format"]; ok {
+			_ = json.Unmarshal(rf, &gotResponseFormat)
+		}
+
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":   "gpt-4o",
+			"choices": []map[string]interface{}{{"message": map[string]string{"content": `{"result":"ok"}`}, "finish_reason": "stop"}},
+			"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:          "gpt-4o",
+		Messages:       []Message{{Role: "user", Content: "Hi"}},
+		ResponseFormat: ResponseFormat{Type: "json_object"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotResponseFormat == nil {
+		t.Fatal("expected response_format to be present")
+	}
+	if gotResponseFormat["type"] != "json_object" {
+		t.Errorf("expected type 'json_object', got %v", gotResponseFormat["type"])
+	}
+}
+
+func TestOpenAI_Send_IncludesResponseFormatJsonSchema(t *testing.T) {
+	var gotResponseFormat map[string]interface{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var raw map[string]json.RawMessage
+		_ = json.Unmarshal(body, &raw)
+		if rf, ok := raw["response_format"]; ok {
+			_ = json.Unmarshal(rf, &gotResponseFormat)
+		}
+
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":   "gpt-4o",
+			"choices": []map[string]interface{}{{"message": map[string]string{"content": `{"name":"test"}`}, "finish_reason": "stop"}},
+			"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		})
+	}))
+	defer server.Close()
+
+	o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "gpt-4o",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		ResponseFormat: ResponseFormat{
+			Type: "json_schema",
+			Schema: map[string]interface{}{
+				"name": "leadership",
+				"type": "object",
+				"properties": map[string]interface{}{
+					"pastor_name": map[string]interface{}{"type": "string"},
+				},
+				"required": []string{"pastor_name"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotResponseFormat == nil {
+		t.Fatal("expected response_format to be present")
+	}
+	if gotResponseFormat["type"] != "json_schema" {
+		t.Errorf("expected type 'json_schema', got %v", gotResponseFormat["type"])
+	}
+	jsonSchema, ok := gotResponseFormat["json_schema"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected json_schema object in response_format")
+	}
+	if jsonSchema["name"] != "leadership" {
+		t.Errorf("expected schema name 'leadership', got %v", jsonSchema["name"])
+	}
+	if jsonSchema["strict"] != true {
+		t.Errorf("expected strict=true, got %v", jsonSchema["strict"])
+	}
+	schema, ok := jsonSchema["schema"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected schema object inside json_schema")
+	}
+	if schema["type"] != "object" {
+		t.Errorf("expected schema type 'object', got %v", schema["type"])
+	}
+}

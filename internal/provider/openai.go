@@ -57,15 +57,29 @@ func NewOpenAI(apiKey string, opts ...OpenAIOption) (*OpenAI, error) {
 	return o, nil
 }
 
+// openaiResponseFormat is the wire format for the response_format parameter.
+type openaiResponseFormat struct {
+	Type       string                  `json:"type"`
+	JSONSchema *openaiJSONSchemaConfig `json:"json_schema,omitempty"`
+}
+
+// openaiJSONSchemaConfig holds the schema definition for json_schema response format.
+type openaiJSONSchemaConfig struct {
+	Name   string                 `json:"name"`
+	Strict bool                   `json:"strict"`
+	Schema map[string]interface{} `json:"schema"`
+}
+
 // openaiRequest is the JSON body sent to the OpenAI Chat Completions API.
 type openaiRequest struct {
-	Model         string               `json:"model"`
-	Messages      []openaiMessage      `json:"messages"`
-	Temperature   *float64             `json:"temperature,omitempty"`
-	MaxTokens     *int                 `json:"max_completion_tokens,omitempty"`
-	Tools         []openaiToolDef      `json:"tools,omitempty"`
-	Stream        bool                 `json:"stream,omitempty"`
-	StreamOptions *openaiStreamOptions `json:"stream_options,omitempty"`
+	Model          string                `json:"model"`
+	Messages       []openaiMessage       `json:"messages"`
+	Temperature    *float64              `json:"temperature,omitempty"`
+	MaxTokens      *int                  `json:"max_completion_tokens,omitempty"`
+	Tools          []openaiToolDef       `json:"tools,omitempty"`
+	Stream         bool                  `json:"stream,omitempty"`
+	StreamOptions  *openaiStreamOptions  `json:"stream_options,omitempty"`
+	ResponseFormat *openaiResponseFormat `json:"response_format,omitempty"`
 }
 
 // openaiMessage is the wire format for a message in the OpenAI API.
@@ -244,6 +258,10 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 		body.Tools = convertToOpenAITools(req.Tools)
 	}
 
+	if req.ResponseFormat.IsSet() {
+		body.ResponseFormat = buildOpenAIResponseFormat(req.ResponseFormat)
+	}
+
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -332,6 +350,29 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	}, nil
 }
 
+// buildOpenAIResponseFormat converts a provider ResponseFormat to the OpenAI wire format.
+func buildOpenAIResponseFormat(rf ResponseFormat) *openaiResponseFormat {
+	orf := &openaiResponseFormat{Type: rf.Type}
+	if rf.Type == "json_schema" && len(rf.Schema) > 0 {
+		name, _ := rf.Schema["name"].(string)
+		if name == "" {
+			name = "response"
+		}
+		schema := make(map[string]interface{})
+		for k, v := range rf.Schema {
+			if k != "name" {
+				schema[k] = v
+			}
+		}
+		orf.JSONSchema = &openaiJSONSchemaConfig{
+			Name:   name,
+			Strict: true,
+			Schema: schema,
+		}
+	}
+	return orf
+}
+
 // handleErrorResponse maps HTTP error responses to ProviderError.
 func (o *OpenAI) handleErrorResponse(status int, body []byte) *ProviderError {
 	message := http.StatusText(status)
@@ -374,6 +415,10 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOpenAITools(req.Tools)
+	}
+
+	if req.ResponseFormat.IsSet() {
+		body.ResponseFormat = buildOpenAIResponseFormat(req.ResponseFormat)
 	}
 
 	jsonBody, err := json.Marshal(body)

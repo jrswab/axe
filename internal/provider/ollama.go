@@ -65,6 +65,7 @@ type ollamaRequest struct {
 	Stream   bool            `json:"stream"`
 	Options  *ollamaOptions  `json:"options,omitempty"`
 	Tools    []ollamaToolDef `json:"tools,omitempty"`
+	Format   interface{}     `json:"format,omitempty"`
 }
 
 // ollamaMessage is the wire format for a message in the Ollama API.
@@ -231,6 +232,10 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 		body.Tools = convertToOllamaTools(req.Tools)
 	}
 
+	if req.ResponseFormat.IsSet() {
+		body.Format = buildOllamaFormat(req.ResponseFormat)
+	}
+
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -361,6 +366,10 @@ func (o *Ollama) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOllamaTools(req.Tools)
+	}
+
+	if req.ResponseFormat.IsSet() {
+		body.Format = buildOllamaFormat(req.ResponseFormat)
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -530,6 +539,21 @@ func (o *Ollama) mapStatusToCategory(status int) ErrorCategory {
 	default:
 		return ErrCategoryServer
 	}
+}
+
+// buildOllamaFormat converts a provider ResponseFormat to the Ollama format field.
+// Ollama accepts "json" for unstructured JSON or a JSON Schema object for structured output.
+func buildOllamaFormat(rf ResponseFormat) interface{} {
+	if rf.Type == "json_schema" && len(rf.Schema) > 0 {
+		schema := make(map[string]interface{})
+		for k, v := range rf.Schema {
+			if k != "name" {
+				schema[k] = v
+			}
+		}
+		return schema
+	}
+	return "json"
 }
 
 // isConnectionRefused checks if the error is a connection refused error.
