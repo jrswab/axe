@@ -341,6 +341,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 [params]
 temperature = 0.3
 max_tokens = 4096
+# response_format = "json_object"   # text, json_object, or json_schema
 
 [budget]
 max_tokens = 50000    # 0 = unlimited (default)
@@ -413,6 +414,29 @@ The flag takes precedence over TOML when set to a value greater than zero.
 When the budget is exceeded, the current response is returned but no further tool calls execute. The process exits with **code 4**. Memory is not appended on a budget-exceeded run.
 
 With `--verbose`, each turn logs cumulative usage to stderr. With `--json`, the output envelope includes `budget_max_tokens`, `budget_used_tokens`, and `budget_exceeded` fields (omitted when unlimited).
+
+### Response Format
+
+Constrain LLM output to a specific format via the `[params]` section. Supported by OpenAI and Ollama providers; other providers ignore this setting.
+
+```toml
+# String shorthand
+[params]
+response_format = "json_object"
+
+# Table form (required for json_schema)
+[params.response_format]
+type = "json_schema"
+[params.response_format.schema]
+name = "my_schema"
+type = "object"
+```
+
+| Type | Description |
+|---|---|
+| `text` | Default free-form text output |
+| `json_object` | Valid JSON object (provider-enforced at decoding time) |
+| `json_schema` | JSON matching the provided schema; requires `[params.response_format.schema]` |
 
 ## Tools
 
