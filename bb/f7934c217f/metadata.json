@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "bbf7934c217f",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/src/configuration/agent-config.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/bb/f7934c217f/0/metadata.json",
+      "transcript": "/bb/f7934c217f/0/full.jsonl",
+      "content_hash": "/bb/f7934c217f/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
