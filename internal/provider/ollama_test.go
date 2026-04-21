@@ -1194,3 +1194,127 @@ func TestOllama_Send_AssistantToolCallMessage(t *testing.T) {
 		t.Errorf("expected task 'do it', got %v", args["task"])
 	}
 }
+
+func TestOllama_Send_OmitsFormatWhenEmpty(t *testing.T) {
+	var hasFormat bool
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var raw map[string]json.RawMessage
+		_ = json.Unmarshal(body, &raw)
+		_, hasFormat = raw["format"]
+
+		resp := ollamaSuccessResponse()
+		resp["done"] = true
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if hasFormat {
+		t.Error("expected format to be omitted when not set")
+	}
+}
+
+func TestOllama_Send_IncludesFormatJsonObject(t *testing.T) {
+	var gotFormat string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var raw map[string]json.RawMessage
+		_ = json.Unmarshal(body, &raw)
+		if f, ok := raw["format"]; ok {
+			_ = json.Unmarshal(f, &gotFormat)
+		}
+
+		resp := ollamaSuccessResponse()
+		resp["done"] = true
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:          "llama3",
+		Messages:       []Message{{Role: "user", Content: "Hi"}},
+		ResponseFormat: ResponseFormat{Type: "json_object"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotFormat != "json" {
+		t.Errorf("expected format 'json', got %q", gotFormat)
+	}
+}
+
+func TestOllama_Send_IncludesFormatJsonSchema(t *testing.T) {
+	var gotFormat map[string]interface{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var raw map[string]json.RawMessage
+		_ = json.Unmarshal(body, &raw)
+		if f, ok := raw["format"]; ok {
+			_ = json.Unmarshal(f, &gotFormat)
+		}
+
+		resp := ollamaSuccessResponse()
+		resp["done"] = true
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	o, _ := NewOllama(WithOllamaBaseURL(server.URL))
+	_, err := o.Send(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Hi"}},
+		ResponseFormat: ResponseFormat{
+			Type: "json_schema",
+			Schema: map[string]interface{}{
+				"name": "extraction",
+				"type": "object",
+				"properties": map[string]interface{}{
+					"result": map[string]interface{}{"type": "string"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotFormat == nil {
+		t.Fatal("expected format to be a schema object")
+	}
+	if gotFormat["type"] != "object" {
+		t.Errorf("expected schema type 'object', got %v", gotFormat["type"])
+	}
+	if _, hasName := gotFormat["name"]; hasName {
+		t.Error("expected 'name' to be stripped from Ollama schema (it's not part of JSON Schema)")
+	}
+}
+
+func TestOllama_Send_JsonSchemaWithoutSchemaReturnsError(t *testing.T) {
+	o, _ := NewOllama(WithOllamaBaseURL("http://localhost:11434"))
+	_, err := o.Send(context.Background(), &Request{
+		Model:          "llama3",
+		Messages:       []Message{{Role: "user", Content: "Hi"}},
+		ResponseFormat: ResponseFormat{Type: "json_schema"},
+	})
+	if err == nil {
+		t.Fatal("expected error for json_schema without schema, got nil")
+	}
+	var provErr *ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatalf("expected ProviderError, got %T: %v", err, err)
+	}
+	if provErr.Category != ErrCategoryBadRequest {
+		t.Errorf("expected ErrCategoryBadRequest, got %s", provErr.Category)
+	}
+}

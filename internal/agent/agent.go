@@ -30,10 +30,53 @@ type MemoryConfig struct {
 	MaxEntries int    `toml:"max_entries"`
 }
 
+// ResponseFormatConfig holds response format configuration for structured output.
+// It supports two TOML forms:
+//
+//	[params]
+//	response_format = "json_object"          # string shorthand
+//
+//	[params.response_format]                  # table form (required for json_schema)
+//	type = "json_schema"
+//	[params.response_format.schema]
+//	name = "my_schema"
+//	type = "object"
+type ResponseFormatConfig struct {
+	Type string `toml:"type"`
+	// Schema holds an inline JSON Schema object for type = "json_schema".
+	Schema map[string]interface{} `toml:"schema"`
+}
+
+// UnmarshalTOML allows response_format to be either a string shorthand
+// (e.g. response_format = "json_object") or a full table with type and schema.
+func (r *ResponseFormatConfig) UnmarshalTOML(data interface{}) error {
+	switch v := data.(type) {
+	case string:
+		r.Type = v
+	case map[string]interface{}:
+		if t, ok := v["type"].(string); ok {
+			r.Type = t
+		}
+		if s, ok := v["schema"].(map[string]interface{}); ok {
+			r.Schema = s
+		}
+	default:
+		return fmt.Errorf("response_format must be a string or table, got %T", data)
+	}
+	return nil
+}
+
+// IsSet returns true if a response format type has been configured
+// and is not the default "text" (which is equivalent to omitted).
+func (r ResponseFormatConfig) IsSet() bool {
+	return r.Type != "" && r.Type != "text"
+}
+
 // ParamsConfig holds model parameter overrides for an agent.
 type ParamsConfig struct {
-	Temperature float64 `toml:"temperature"`
-	MaxTokens   int     `toml:"max_tokens"`
+	Temperature    float64              `toml:"temperature"`
+	MaxTokens      int                  `toml:"max_tokens"`
+	ResponseFormat ResponseFormatConfig `toml:"response_format"`
 }
 
 // RetryConfig holds retry sub-configuration for an agent.
@@ -173,6 +216,20 @@ func Validate(cfg *AgentConfig) error {
 
 	if cfg.Budget.MaxTokens < 0 {
 		return &ValidationError{msg: "budget.max_tokens must be non-negative"}
+	}
+
+	if len(cfg.Params.ResponseFormat.Schema) > 0 && cfg.Params.ResponseFormat.Type == "" {
+		return &ValidationError{msg: "params.response_format.type is required when params.response_format.schema is set"}
+	}
+	if cfg.Params.ResponseFormat.IsSet() {
+		switch cfg.Params.ResponseFormat.Type {
+		case "text", "json_object", "json_schema":
+		default:
+			return &ValidationError{msg: fmt.Sprintf("params.response_format.type must be one of: text, json_object, json_schema; got %q", cfg.Params.ResponseFormat.Type)}
+		}
+		if cfg.Params.ResponseFormat.Type == "json_schema" && len(cfg.Params.ResponseFormat.Schema) == 0 {
+			return &ValidationError{msg: "params.response_format.schema is required when type is json_schema"}
+		}
 	}
 
 	if cfg.Artifacts.Dir != "" && !cfg.Artifacts.Enabled {
@@ -372,6 +429,13 @@ model = "provider/model-name"
 # [params]
 # temperature = 0.3
 # max_tokens = 4096
+# response_format = "json_object"
+# For json_schema with validation, use the table form instead:
+# [params.response_format]
+# type = "json_schema"
+# [params.response_format.schema]
+# name = "my_schema"
+# type = "object"
 
 # [retry]
 # max_retries = 0

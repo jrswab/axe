@@ -65,6 +65,7 @@ type ollamaRequest struct {
 	Stream   bool            `json:"stream"`
 	Options  *ollamaOptions  `json:"options,omitempty"`
 	Tools    []ollamaToolDef `json:"tools,omitempty"`
+	Format   interface{}     `json:"format,omitempty"`
 }
 
 // ollamaMessage is the wire format for a message in the Ollama API.
@@ -231,6 +232,14 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 		body.Tools = convertToOllamaTools(req.Tools)
 	}
 
+	if req.ResponseFormat.IsSet() {
+		f, fmtErr := buildOllamaFormat(req.ResponseFormat)
+		if fmtErr != nil {
+			return nil, fmtErr
+		}
+		body.Format = f
+	}
+
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -361,6 +370,14 @@ func (o *Ollama) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 	if len(req.Tools) > 0 {
 		body.Tools = convertToOllamaTools(req.Tools)
+	}
+
+	if req.ResponseFormat.IsSet() {
+		f, fmtErr := buildOllamaFormat(req.ResponseFormat)
+		if fmtErr != nil {
+			return nil, fmtErr
+		}
+		body.Format = f
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -529,6 +546,34 @@ func (o *Ollama) mapStatusToCategory(status int) ErrorCategory {
 		return ErrCategoryServer
 	default:
 		return ErrCategoryServer
+	}
+}
+
+// buildOllamaFormat converts a provider ResponseFormat to the Ollama format field.
+// Ollama accepts "json" for unstructured JSON or a JSON Schema object for structured output.
+func buildOllamaFormat(rf ResponseFormat) (interface{}, error) {
+	switch rf.Type {
+	case "json_object":
+		return "json", nil
+	case "json_schema":
+		if len(rf.Schema) == 0 {
+			return nil, &ProviderError{
+				Category: ErrCategoryBadRequest,
+				Message:  "response_format.schema is required when type is json_schema",
+			}
+		}
+		schema := make(map[string]interface{})
+		for k, v := range rf.Schema {
+			if k != "name" {
+				schema[k] = v
+			}
+		}
+		return schema, nil
+	default:
+		return nil, &ProviderError{
+			Category: ErrCategoryBadRequest,
+			Message:  fmt.Sprintf("unsupported response_format type %q for Ollama provider", rf.Type),
+		}
 	}
 }
 

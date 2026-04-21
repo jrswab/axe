@@ -59,14 +59,29 @@ type Message struct {
 	ToolResults []ToolResult // Tool results in a tool-result message (non-nil when role is "tool")
 }
 
+// ResponseFormat specifies the desired output format for the LLM response.
+// When Type is empty, no constraint is applied (default text behavior).
+type ResponseFormat struct {
+	// Type is one of "text", "json_object", or "json_schema".
+	Type string
+	// Schema is the JSON Schema definition, required when Type is "json_schema".
+	Schema map[string]interface{}
+}
+
+// IsSet returns true if a response format has been configured.
+func (r ResponseFormat) IsSet() bool {
+	return r.Type != "" && r.Type != "text"
+}
+
 // Request represents an LLM completion request.
 type Request struct {
-	Model       string
-	System      string
-	Messages    []Message
-	Temperature float64
-	MaxTokens   int
-	Tools       []Tool // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
+	Model          string
+	System         string
+	Messages       []Message
+	Temperature    float64
+	MaxTokens      int
+	Tools          []Tool         // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
+	ResponseFormat ResponseFormat // Optional structured output constraint.
 }
 
 // Response represents an LLM completion response.
