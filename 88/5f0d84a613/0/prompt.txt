@@ -1,0 +1,42 @@
+Perform a final spec comparison for the 047_artifacts_default_write feature. Read the spec at `/Users/jaronswab/go/src/github.com/jrswab/axe/docs/plans/047_artifacts_default_write_spec.md` and verify each requirement against the actual implementation.
+
+Check the following spec requirements specifically:
+
+### 2.1 Agent TOML Configuration
+- New `default_write` field on `[artifacts]` block, type boolean, default false
+- No new validation rules needed
+- Verify in: `internal/agent/agent.go` (ArtifactsConfig struct)
+
+### 2.2 Tool Behavior Change: write_file
+- Artifact resolution logic has 4 cases (explicit "true", explicit non-empty non-"true", absent/empty with DefaultArtifactWrite=true, absent/empty with DefaultArtifactWrite=false)
+- Verify in: `internal/tool/write_file.go` (writeFileExecute function)
+
+### 2.3 Configuration Threading
+- cfg.Artifacts.DefaultWrite → tool.ExecContext.DefaultArtifactWrite for direct tool dispatch in cmd/run.go
+- cfg.Artifacts.DefaultWrite → tool.ExecuteOptions.DefaultArtifactWrite for sub-agent delegation in cmd/run.go
+- internal/tool/tool.go dispatchToolCall passes opts.DefaultArtifactWrite into ExecContext
+- Sub-agents load their own TOML (verify the ExecuteOptions doesn't inherit from parent)
+- Verify in: `cmd/run.go`, `internal/tool/tool.go`
+
+### 2.4 Scaffold Template
+- Template includes `# default_write = false`
+- Verify in: `internal/agent/agent.go` (Scaffold function)
+
+### 2.5 Edge Cases
+- Verify each of the 12 edge cases from the spec table has test coverage. Check:
+  1. No [artifacts] table, no flag → zero behavior change
+  2. enabled=false, default_write=true, no flag → silently ignored, writes to workdir
+  3. enabled=true, default_write=true, write_file without artifact arg → artifact dir
+  4. enabled=true, default_write=true, artifact="false" → workdir
+  5. enabled=true, default_write=true, artifact="true" → artifact dir
+  6. enabled=true, default_write=false/omitted, write_file without artifact arg → workdir
+  7. --artifact-dir with no TOML [artifacts], default_write not in TOML → workdir (default_write defaults to false)
+  8. --artifact-dir with default_write=true but enabled=false → artifact dir (flag activates system)
+  9. Sub-agent with default_write=true in its own TOML → sub-agent's write_file defaults to artifact mode
+  10. Sub-agent with no [artifacts], parent has default_write=true → no artifact, parent setting doesn't propagate
+  11. default_write=true, artifact="TRUE" → artifact dir (case-insensitive)
+  12. default_write=true, artifact="no" → workdir
+
+Check which of these edge cases have test coverage and which are missing.
+
+Return a detailed report listing each spec requirement, whether it's met, and any gaps.

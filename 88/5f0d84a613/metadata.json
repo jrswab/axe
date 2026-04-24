@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "885f0d84a613",
+  "strategy": "manual-commit",
+  "branch": "feat/artifacts-default-write",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "AGENTS.md",
+    "cmd/run.go",
+    "cmd/run_integration_test.go",
+    "docs/plans/042_artifact_management_spec.md",
+    "internal/agent/agent.go",
+    "internal/agent/agent_test.go",
+    "internal/tool/registry.go",
+    "internal/tool/tool.go",
+    "internal/tool/write_file.go",
+    "internal/tool/write_file_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/88/5f0d84a613/0/metadata.json",
+      "transcript": "/88/5f0d84a613/0/full.jsonl",
+      "content_hash": "/88/5f0d84a613/0/content_hash.txt",
+      "prompt": "/88/5f0d84a613/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 15947,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 160,
+    "output_tokens": 49,
+    "api_call_count": 2
+  }
+}

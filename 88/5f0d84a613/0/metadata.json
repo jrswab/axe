@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "885f0d84a613",
+  "session_id": "ses_23ee9e7a5ffeRl1eYmAXpk3SZn",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-24T20:04:33.456739Z",
+  "branch": "feat/artifacts-default-write",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "AGENTS.md",
+    "cmd/run.go",
+    "cmd/run_integration_test.go",
+    "docs/plans/042_artifact_management_spec.md",
+    "internal/agent/agent.go",
+    "internal/agent/agent_test.go",
+    "internal/tool/registry.go",
+    "internal/tool/tool.go",
+    "internal/tool/write_file.go",
+    "internal/tool/write_file_test.go"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "1b11ad83e39e",
+  "token_usage": {
+    "input_tokens": 15947,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 160,
+    "output_tokens": 49,
+    "api_call_count": 2
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-24T20:04:33.443199Z",
+    "agent_lines": 0,
+    "human_added": 690,
+    "human_modified": 57,
+    "human_removed": 0,
+    "total_committed": 690,
+    "agent_percentage": 0
+  }
+}
