@@ -94,8 +94,9 @@ type BudgetConfig struct {
 
 // ArtifactsConfig holds artifact sub-configuration for an agent.
 type ArtifactsConfig struct {
-	Enabled bool   `toml:"enabled"`
-	Dir     string `toml:"dir"`
+	Enabled      bool   `toml:"enabled"`
+	Dir          string `toml:"dir"`
+	DefaultWrite bool   `toml:"default_write"`
 }
 
 // SubAgentsConfig holds sub-agent execution configuration for an agent.
@@ -449,6 +450,7 @@ model = "provider/model-name"
 # [artifacts]
 # enabled = false
 # dir = ""
+# default_write = false
 `
 	return tmpl, nil
 }

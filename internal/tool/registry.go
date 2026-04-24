@@ -12,12 +12,13 @@ import (
 
 // ExecContext holds the minimal context needed by generic tool executors.
 type ExecContext struct {
-	Workdir         string
-	Stderr          io.Writer
-	Verbose         bool
-	AllowedHosts    []string
-	ArtifactDir     string
-	ArtifactTracker *artifact.Tracker
+	Workdir              string
+	Stderr               io.Writer
+	Verbose              bool
+	AllowedHosts         []string
+	ArtifactDir          string
+	ArtifactTracker      *artifact.Tracker
+	DefaultArtifactWrite bool
 }
 
 // ToolEntry holds a tool's definition and executor functions.

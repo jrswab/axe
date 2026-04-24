@@ -102,6 +102,11 @@ path = "/custom/path" # Optional (default: $XDG_DATA_HOME/axe/memory/{agent-name
 temperature = 0.7  # Default: 0 (omitted if 0)
 max_tokens = 4096  # Default: 0 (provider default)
 
+[artifacts]
+enabled = true
+dir = "output"
+default_write = true  # When true, write_file without explicit artifact arg writes to artifact dir
+
 [[mcp_servers]]
 name = "server-name"
 transport = "stdio"  # or "http", "https"
