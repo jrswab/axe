@@ -1,0 +1,24 @@
+{
+  "cli_version": "0.5.2",
+  "checkpoint_id": "7345f6f7dccd",
+  "session_id": "ses_23b5a661affeV7kWoMBcGnwcl8",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-25T13:52:34.965366Z",
+  "branch": "feat/artifacts-default-write",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "cmd/run.go",
+    "internal/tool/write_file.go"
+  ],
+  "agent": "OpenCode",
+  "turn_id": "c135bc2f0c2f",
+  "initial_attribution": {
+    "calculated_at": "2026-04-25T13:52:34.964311Z",
+    "agent_lines": 20,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 20,
+    "agent_percentage": 100
+  }
+}
