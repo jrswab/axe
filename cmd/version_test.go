@@ -16,14 +16,14 @@ func TestVersionCommand_Output(t *testing.T) {
 	}
 
 	got := buf.String()
-	want := "axe version 1.8.0\n"
+	want := "axe version 1.9.0\n"
 	if got != want {
 		t.Errorf("version output = %q, want %q", got, want)
 	}
 }
 
 func TestVersionConstant(t *testing.T) {
-	if Version != "1.8.0" {
-		t.Errorf("Version = %q, want %q", Version, "1.8.0")
+	if Version != "1.9.0" {
+		t.Errorf("Version = %q, want %q", Version, "1.9.0")
 	}
 }

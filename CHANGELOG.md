@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-04-25
+
+### Added
+- Artifacts default write option (#77)
+
 ## [1.8.0] - 2026-04-21
 
 ### Added
@@ -121,7 +126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - staticcheck/errcheck lint issues
 - Duplicate error silencing, glob validation, and nil ExitError guard
 
-[unreleased]: https://github.com/jrswab/axe/compare/v1.8.0...HEAD
+[unreleased]: https://github.com/jrswab/axe/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/jrswab/axe/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/jrswab/axe/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/jrswab/axe/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/jrswab/axe/compare/v1.6.1...v1.7.0
