@@ -79,7 +79,7 @@ func writeFileDefinition() provider.Tool {
 			"artifact": {
 				Type:        "string",
 				Required:    false,
-				Description: `When "true", write to the artifact directory instead of the working directory.`,
+				Description: `When "true", write to the artifact directory; when "false", write to the working directory. If omitted, respects the agent-level default_write setting.`,
 			},
 		},
 	}
@@ -100,7 +100,7 @@ func writeFileExecute(ctx context.Context, call provider.ToolCall, ec ExecContex
 
 	artifactArg := call.Arguments["artifact"]
 	useArtifact := strings.EqualFold(artifactArg, "true")
-	if !useArtifact && artifactArg == "" && ec.DefaultArtifactWrite {
+	if artifactArg == "" && ec.DefaultArtifactWrite {
 		useArtifact = true
 	}
 	if useArtifact {

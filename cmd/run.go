@@ -927,17 +927,27 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		DefaultArtifactWrite: cfg.Artifacts.DefaultWrite,
 	}
 
+	toolExecCtx := tool.ExecContext{
+		Workdir:              workdir,
+		Stderr:               stderr,
+		Verbose:              verbose,
+		AllowedHosts:         cfg.AllowedHosts,
+		ArtifactDir:          artifactDir,
+		ArtifactTracker:      artifactTracker,
+		DefaultArtifactWrite: cfg.Artifacts.DefaultWrite,
+	}
+
 	if len(toolCalls) == 1 || !parallel {
 		// Sequential execution (also used for single call)
 		for i, tc := range toolCalls {
 			start := time.Now()
 			var r provider.ToolResult
 			if mcpRouter != nil && mcpRouter.Has(tc.Name) {
-				r = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker, cfg.Artifacts.DefaultWrite)
+				r = dispatchToolCall(ctx, tc, registry, mcpRouter, toolExecCtx)
 			} else if tc.Name == tool.CallAgentToolName {
 				r = tool.ExecuteCallAgent(ctx, tc, execOpts)
 			} else {
-				r = dispatchToolCall(ctx, tc, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker, cfg.Artifacts.DefaultWrite)
+				r = dispatchToolCall(ctx, tc, registry, mcpRouter, toolExecCtx)
 			}
 			results[i] = toolExecResult{Result: r, Duration: time.Since(start)}
 		}
@@ -953,11 +963,11 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 				start := time.Now()
 				var res provider.ToolResult
 				if mcpRouter != nil && mcpRouter.Has(call.Name) {
-					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker, cfg.Artifacts.DefaultWrite)
+					res = dispatchToolCall(ctx, call, registry, mcpRouter, toolExecCtx)
 				} else if call.Name == tool.CallAgentToolName {
 					res = tool.ExecuteCallAgent(ctx, call, execOpts)
 				} else {
-					res = dispatchToolCall(ctx, call, registry, mcpRouter, verbose, stderr, workdir, cfg.AllowedHosts, artifactDir, artifactTracker, cfg.Artifacts.DefaultWrite)
+					res = dispatchToolCall(ctx, call, registry, mcpRouter, toolExecCtx)
 				}
 				ch <- indexedResult{index: idx, result: toolExecResult{Result: res, Duration: time.Since(start)}}
 			}(i, tc)
@@ -971,11 +981,11 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 	return results
 }
 
-func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.Registry, mcpRouter *mcpclient.Router, verbose bool, stderr io.Writer, workdir string, allowedHosts []string, artifactDir string, artifactTracker *artifact.Tracker, defaultArtifactWrite bool) provider.ToolResult {
+func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.Registry, mcpRouter *mcpclient.Router, ec tool.ExecContext) provider.ToolResult {
 	if mcpRouter != nil && mcpRouter.Has(tc.Name) {
-		if verbose && stderr != nil {
+		if ec.Verbose && ec.Stderr != nil {
 			if serverName, ok := mcpRouter.ServerName(tc.Name); ok {
-				_, _ = fmt.Fprintf(stderr, "[mcp] Routing tool %q to server %q\n", tc.Name, serverName)
+				_, _ = fmt.Fprintf(ec.Stderr, "[mcp] Routing tool %q to server %q\n", tc.Name, serverName)
 			}
 		}
 		result, err := mcpRouter.Dispatch(ctx, tc)
@@ -985,15 +995,7 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *tool.
 		return result
 	}
 
-	result, dispatchErr := registry.Dispatch(ctx, tc, tool.ExecContext{
-		Workdir:              workdir,
-		Stderr:               stderr,
-		Verbose:              verbose,
-		AllowedHosts:         allowedHosts,
-		ArtifactDir:          artifactDir,
-		ArtifactTracker:      artifactTracker,
-		DefaultArtifactWrite: defaultArtifactWrite,
-	})
+	result, dispatchErr := registry.Dispatch(ctx, tc, ec)
 	if dispatchErr != nil {
 		return provider.ToolResult{CallID: tc.ID, Content: dispatchErr.Error(), IsError: true}
 	}
