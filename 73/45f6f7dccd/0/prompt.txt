@@ -1,0 +1,14 @@
+Do a full review of the current code changes in `/Users/jaronswab/go/src/github.com/jrswab/axe`. Run `git diff` to see all changes. Verify:
+
+1. `cmd/run.go`: `dispatchToolCall` now accepts `tool.ExecContext` instead of 11 positional params. The `toolExecCtx` is constructed once and reused at all 4 call sites. The function body correctly uses `ec.Verbose`, `ec.Stderr`, and passes `ec` to `registry.Dispatch`. No behavioral changes.
+
+2. `internal/tool/write_file.go`: The "artifact" field description now mentions "false" opt-out and the default_write fallback. The redundant `!useArtifact` check has been removed. Indentation is correct.
+
+3. No other files were changed unexpectedly.
+
+4. All tests pass (already confirmed: `go test ./internal/tool/... ./cmd/...` passes).
+
+Report back with:
+- The full diff
+- Any issues found
+- Confirmation that all changes are behavior-preserving
