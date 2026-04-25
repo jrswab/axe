@@ -1,0 +1,47 @@
+Make two small fixes in `/Users/jaronswab/go/src/github.com/jrswab/axe/internal/tool/write_file.go`:
+
+## Fix 1: Update the static "artifact" field description (around line 82)
+
+Current:
+```go
+"artifact": {
+    Type:        "string",
+    Required:    false,
+    Description: `When "true", write to the artifact directory instead of the working directory.`,
+},
+```
+
+Change to:
+```go
+"artifact": {
+    Type:        "string",
+    Required:    false,
+    Description: `When "true", write to the artifact directory; when "false", write to the working directory. If omitted, respects the agent-level default_write setting.`,
+},
+```
+
+This informs the LLM about the escape hatch (passing "false" to override default_write=true) and the fallback behavior.
+
+## Fix 2: Remove the redundant `!useArtifact` check (around line 103)
+
+Current:
+```go
+artifactArg := call.Arguments["artifact"]
+useArtifact := strings.EqualFold(artifactArg, "true")
+if !useArtifact && artifactArg == "" && ec.DefaultArtifactWrite {
+    useArtifact = true
+}
+```
+
+Change to:
+```go
+artifactArg := call.Arguments["artifact"]
+useArtifact := strings.EqualFold(artifactArg, "true")
+if artifactArg == "" && ec.DefaultArtifactWrite {
+    useArtifact = true
+}
+```
+
+This is a pure refactor with zero behavioral change: when `artifactArg == "true"`, `useArtifact` is already `true` and the if-block's condition `artifactArg == ""` is false, so `!useArtifact` was redundant.
+
+Do NOT change anything else. After making the edits, verify the code compiles by running: `go build ./internal/tool/...`

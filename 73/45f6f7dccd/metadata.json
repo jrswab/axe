@@ -3,7 +3,7 @@
   "checkpoint_id": "7345f6f7dccd",
   "strategy": "manual-commit",
   "branch": "feat/artifacts-default-write",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "cmd/run.go",
     "internal/tool/write_file.go"
@@ -14,13 +14,19 @@
       "transcript": "/73/45f6f7dccd/0/full.jsonl",
       "content_hash": "/73/45f6f7dccd/0/content_hash.txt",
       "prompt": "/73/45f6f7dccd/0/prompt.txt"
+    },
+    {
+      "metadata": "/73/45f6f7dccd/1/metadata.json",
+      "transcript": "/73/45f6f7dccd/1/full.jsonl",
+      "content_hash": "/73/45f6f7dccd/1/content_hash.txt",
+      "prompt": "/73/45f6f7dccd/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 13327,
+    "input_tokens": 21935,
     "cache_creation_tokens": 0,
-    "cache_read_tokens": 35616,
-    "output_tokens": 2094,
-    "api_call_count": 4
+    "cache_read_tokens": 72320,
+    "output_tokens": 2561,
+    "api_call_count": 8
   }
 }
