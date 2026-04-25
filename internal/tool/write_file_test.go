@@ -335,6 +335,198 @@ func TestWriteFile_Artifact_VerboseLogging(t *testing.T) {
 	}
 }
 
+func TestWriteFile_DefaultArtifactWrite_True(t *testing.T) {
+	tmpdir := t.TempDir()
+	artifactDir := t.TempDir()
+	tracker := artifact.NewTracker()
+
+	entry := writeFileEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:   "wf-default-artifact",
+		Name: "write_file",
+		Arguments: map[string]string{
+			"path":    "test.txt",
+			"content": "hello default artifact",
+		},
+	}, ExecContext{
+		Workdir:              tmpdir,
+		ArtifactDir:          artifactDir,
+		ArtifactTracker:      tracker,
+		DefaultArtifactWrite: true,
+	})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+
+	if !strings.Contains(result.Content, "(artifact)") {
+		t.Errorf("expected artifact marker in content, got %q", result.Content)
+	}
+
+	data, err := os.ReadFile(filepath.Join(artifactDir, "test.txt"))
+	if err != nil {
+		t.Fatalf("file not found in artifact dir: %v", err)
+	}
+	if string(data) != "hello default artifact" {
+		t.Errorf("artifact content: got %q, want %q", string(data), "hello default artifact")
+	}
+
+	if _, err := os.Stat(filepath.Join(tmpdir, "test.txt")); err == nil {
+		t.Error("file should not exist in workdir when DefaultArtifactWrite=true")
+	}
+}
+
+func TestWriteFile_DefaultArtifactWrite_ExplicitFalse(t *testing.T) {
+	tmpdir := t.TempDir()
+	artifactDir := t.TempDir()
+	tracker := artifact.NewTracker()
+
+	entry := writeFileEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:   "wf-default-artifact-false",
+		Name: "write_file",
+		Arguments: map[string]string{
+			"path":     "test.txt",
+			"content":  "hello workdir",
+			"artifact": "false",
+		},
+	}, ExecContext{
+		Workdir:              tmpdir,
+		ArtifactDir:          artifactDir,
+		ArtifactTracker:      tracker,
+		DefaultArtifactWrite: true,
+	})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+
+	if strings.Contains(result.Content, "(artifact)") {
+		t.Errorf("did not expect artifact marker in content, got %q", result.Content)
+	}
+
+	data, err := os.ReadFile(filepath.Join(tmpdir, "test.txt"))
+	if err != nil {
+		t.Fatalf("file not found in workdir: %v", err)
+	}
+	if string(data) != "hello workdir" {
+		t.Errorf("workdir content: got %q, want %q", string(data), "hello workdir")
+	}
+
+	if _, err := os.Stat(filepath.Join(artifactDir, "test.txt")); err == nil {
+		t.Error("file should not exist in artifact dir when artifact=false")
+	}
+}
+
+func TestWriteFile_DefaultArtifactWrite_False(t *testing.T) {
+	tmpdir := t.TempDir()
+	artifactDir := t.TempDir()
+	tracker := artifact.NewTracker()
+
+	entry := writeFileEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:   "wf-default-artifact-false",
+		Name: "write_file",
+		Arguments: map[string]string{
+			"path":    "test.txt",
+			"content": "hello workdir",
+		},
+	}, ExecContext{
+		Workdir:              tmpdir,
+		ArtifactDir:          artifactDir,
+		ArtifactTracker:      tracker,
+		DefaultArtifactWrite: false,
+	})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+
+	if strings.Contains(result.Content, "(artifact)") {
+		t.Errorf("did not expect artifact marker in content, got %q", result.Content)
+	}
+
+	data, err := os.ReadFile(filepath.Join(tmpdir, "test.txt"))
+	if err != nil {
+		t.Fatalf("file not found in workdir: %v", err)
+	}
+	if string(data) != "hello workdir" {
+		t.Errorf("workdir content: got %q, want %q", string(data), "hello workdir")
+	}
+
+	if _, err := os.Stat(filepath.Join(artifactDir, "test.txt")); err == nil {
+		t.Error("file should not exist in artifact dir when DefaultArtifactWrite=false")
+	}
+}
+
+func TestWriteFile_DefaultArtifactWrite_NonTrueValue(t *testing.T) {
+	tmpdir := t.TempDir()
+	artifactDir := t.TempDir()
+	tracker := artifact.NewTracker()
+
+	entry := writeFileEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:   "wf-default-artifact-no",
+		Name: "write_file",
+		Arguments: map[string]string{
+			"path":     "test.txt",
+			"content":  "hello workdir",
+			"artifact": "no",
+		},
+	}, ExecContext{
+		Workdir:              tmpdir,
+		ArtifactDir:          artifactDir,
+		ArtifactTracker:      tracker,
+		DefaultArtifactWrite: true,
+	})
+
+	if result.IsError {
+		t.Fatalf("unexpected error: %s", result.Content)
+	}
+
+	if strings.Contains(result.Content, "(artifact)") {
+		t.Errorf("did not expect artifact marker in content, got %q", result.Content)
+	}
+
+	data, err := os.ReadFile(filepath.Join(tmpdir, "test.txt"))
+	if err != nil {
+		t.Fatalf("file not found in workdir: %v", err)
+	}
+	if string(data) != "hello workdir" {
+		t.Errorf("workdir content: got %q, want %q", string(data), "hello workdir")
+	}
+
+	if _, err := os.Stat(filepath.Join(artifactDir, "test.txt")); err == nil {
+		t.Error("file should not exist in artifact dir when artifact=no")
+	}
+}
+
+func TestWriteFile_DefaultArtifactWrite_NoArtifactDir(t *testing.T) {
+	tmpdir := t.TempDir()
+	tracker := artifact.NewTracker()
+
+	entry := writeFileEntry()
+	result := entry.Execute(context.Background(), provider.ToolCall{
+		ID:   "wf-default-artifact-no-dir",
+		Name: "write_file",
+		Arguments: map[string]string{
+			"path":    "test.txt",
+			"content": "hello default artifact",
+		},
+	}, ExecContext{
+		Workdir:              tmpdir,
+		ArtifactTracker:      tracker,
+		DefaultArtifactWrite: true,
+	})
+
+	if !result.IsError {
+		t.Fatal("expected error, got success")
+	}
+	if !strings.Contains(result.Content, "artifact directory not configured") {
+		t.Errorf("error content %q should contain 'artifact directory not configured'", result.Content)
+	}
+}
+
 func TestWriteFile_Artifact(t *testing.T) {
 	tests := []struct {
 		name             string

@@ -1816,12 +1816,60 @@ func TestScaffold_IncludesArtifactsConfig(t *testing.T) {
 		"# [artifacts]",
 		"# enabled = false",
 		"# dir = \"\"",
+		"# default_write = false",
 	}
 	for _, check := range checks {
 		if !strings.Contains(out, check) {
 			t.Errorf("scaffold output missing %q\nfull output:\n%s", check, out)
 		}
 	}
+}
+
+func TestLoad_ArtifactsDefaultWrite(t *testing.T) {
+	t.Run("default_write true", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "test.toml")
+		content := `name = "test"
+model = "openai/gpt-4o"
+
+[artifacts]
+enabled = true
+dir = "output"
+default_write = true
+`
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("failed to write: %v", err)
+		}
+		cfg, err := loadFromPath(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !cfg.Artifacts.DefaultWrite {
+			t.Error("expected DefaultWrite true, got false")
+		}
+	})
+
+	t.Run("default_write omitted defaults to false", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "test.toml")
+		content := `name = "test"
+model = "openai/gpt-4o"
+
+[artifacts]
+enabled = true
+dir = "output"
+`
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("failed to write: %v", err)
+		}
+		cfg, err := loadFromPath(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Artifacts.DefaultWrite {
+			t.Error("expected DefaultWrite false, got true")
+		}
+	})
 }
 
 // --- Phase 1 Multi-Directory Search Tests ---

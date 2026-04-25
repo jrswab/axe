@@ -113,6 +113,7 @@ A new optional `[artifacts]` configuration table must be supported in agent TOML
 |-------|------|---------|-------------|
 | `enabled` | boolean | `false` | Whether the artifact system is active for this agent. Must be `true` for auto-generated temp dirs to be created. |
 | `dir` | string | `""` | Path to a persistent artifact directory. Supports `~` and `$VAR` expansion. When empty and `enabled` is `true`, an auto-generated temp directory is used. |
+| `default_write` | boolean | `false` | When `true` and the artifact system is active, `write_file` tool calls without an explicit `artifact` argument default to writing to the artifact directory. Explicit `artifact` arguments always override this default. |
 
 **Validation rules:**
 - `dir` set to a non-empty value while `enabled` is `false` (or absent) is a validation error: `"artifacts.dir is set but artifacts.enabled is false"`.
@@ -130,6 +131,14 @@ enabled = true
 [artifacts]
 enabled = true
 dir = "~/project-artifacts"
+```
+
+**Example — default write to artifact directory:**
+```toml
+[artifacts]
+enabled = true
+dir = "output"
+default_write = true
 ```
 
 ### 2.2 CLI Flag Overrides

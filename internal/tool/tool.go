@@ -27,21 +27,22 @@ const maxConversationTurns = 50
 
 // ExecuteOptions holds configuration for executing a call_agent tool call.
 type ExecuteOptions struct {
-	AllowedAgents   []string
-	ParentModel     string
-	Depth           int
-	MaxDepth        int
-	Timeout         int
-	GlobalConfig    *config.GlobalConfig
-	MCPRouter       *mcpclient.Router
-	Verbose         bool
-	Stderr          io.Writer
-	BudgetTracker   *budget.BudgetTracker
-	AgentsDir       string // value of --agents-dir flag (may be empty)
-	AgentsBase      string // parent agent's resolved workdir (for auto-discovery)
-	AllowedHosts    []string
-	ArtifactDir     string
-	ArtifactTracker *artifact.Tracker
+	AllowedAgents        []string
+	ParentModel          string
+	Depth                int
+	MaxDepth             int
+	Timeout              int
+	GlobalConfig         *config.GlobalConfig
+	MCPRouter            *mcpclient.Router
+	Verbose              bool
+	Stderr               io.Writer
+	BudgetTracker        *budget.BudgetTracker
+	AgentsDir            string // value of --agents-dir flag (may be empty)
+	AgentsBase           string // parent agent's resolved workdir (for auto-discovery)
+	AllowedHosts         []string
+	ArtifactDir          string
+	ArtifactTracker      *artifact.Tracker
+	DefaultArtifactWrite bool
 }
 
 // CallAgentTool returns the call_agent tool definition for LLM tool calling.
@@ -454,12 +455,13 @@ func dispatchToolCall(ctx context.Context, tc provider.ToolCall, registry *Regis
 	}
 
 	execCtx := ExecContext{
-		Workdir:         toolWorkdir,
-		Stderr:          opts.Stderr,
-		Verbose:         opts.Verbose,
-		AllowedHosts:    opts.AllowedHosts,
-		ArtifactDir:     opts.ArtifactDir,
-		ArtifactTracker: opts.ArtifactTracker,
+		Workdir:              toolWorkdir,
+		Stderr:               opts.Stderr,
+		Verbose:              opts.Verbose,
+		AllowedHosts:         opts.AllowedHosts,
+		ArtifactDir:          opts.ArtifactDir,
+		ArtifactTracker:      opts.ArtifactTracker,
+		DefaultArtifactWrite: opts.DefaultArtifactWrite,
 	}
 	result, dispatchErr := registry.Dispatch(ctx, tc, execCtx)
 	if dispatchErr != nil {

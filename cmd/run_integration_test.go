@@ -2326,3 +2326,128 @@ tools = ["write_file"]
 		t.Errorf("expected second request body to contain 'artifact directory not configured for this agent', got: %s", body1)
 	}
 }
+
+// --- Group E: Default Artifact Write Tests ---
+
+func TestIntegration_DefaultArtifactWrite(t *testing.T) {
+	resetRunCmd(t)
+
+	artifactDir := t.TempDir()
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Writing file.", []testutil.MockToolCall{
+			{ID: "tc_dw1", Name: "write_file", Input: map[string]string{"path": "output.txt", "content": "default artifact content"}},
+		}),
+		testutil.AnthropicResponse("File written."),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "default-artifact-write", fmt.Sprintf(`name = "default-artifact-write"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["write_file"]
+[artifacts]
+enabled = true
+dir = %q
+default_write = true
+`, artifactDir))
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "default-artifact-write", "--json"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+
+	// Verify file on disk in artifact dir
+	artifactFile := filepath.Join(artifactDir, "output.txt")
+	data, readErr := os.ReadFile(artifactFile)
+	if readErr != nil {
+		t.Fatalf("expected artifact file %q to exist on disk, got error: %v", artifactFile, readErr)
+	}
+	if !strings.Contains(string(data), "default artifact content") {
+		t.Errorf("expected artifact content %q, got %q", "default artifact content", string(data))
+	}
+
+	// Verify JSON output contains artifacts
+	var result map[string]interface{}
+	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+		t.Fatalf("expected valid JSON output, got parse error: %v\nraw: %q", jsonErr, buf.String())
+	}
+
+	artifactsRaw, ok := result["artifacts"]
+	if !ok {
+		t.Fatalf("expected JSON output to contain 'artifacts' key")
+	}
+	artifacts, ok := artifactsRaw.([]interface{})
+	if !ok {
+		t.Fatalf("expected artifacts to be array, got %T", artifactsRaw)
+	}
+	if len(artifacts) < 1 {
+		t.Errorf("expected at least 1 artifact entry, got %d", len(artifacts))
+	}
+
+	// Verify tool result contains "(artifact)" marker
+	body1 := mock.Requests[1].Body
+	if !strings.Contains(body1, "(artifact)") {
+		t.Errorf("expected second request body to contain '(artifact)', got: %s", body1)
+	}
+}
+
+func TestIntegration_DefaultArtifactWrite_FlagOverride(t *testing.T) {
+	resetRunCmd(t)
+
+	artifactDir := t.TempDir()
+
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Writing file.", []testutil.MockToolCall{
+			{ID: "tc_fo1", Name: "write_file", Input: map[string]string{"path": "flag-output.txt", "content": "flag artifact content"}},
+		}),
+		testutil.AnthropicResponse("File written."),
+	})
+
+	configDir, _ := testutil.SetupXDGDirs(t)
+	writeAgentConfig(t, configDir, "flag-override-artifact", `name = "flag-override-artifact"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["write_file"]
+[artifacts]
+enabled = false
+default_write = true
+`)
+
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	buf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(errBuf)
+	rootCmd.SetArgs([]string{"run", "flag-override-artifact", "--artifact-dir", artifactDir})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+
+	// Verify file on disk in artifact dir (the one from --artifact-dir flag)
+	artifactFile := filepath.Join(artifactDir, "flag-output.txt")
+	data, readErr := os.ReadFile(artifactFile)
+	if readErr != nil {
+		t.Fatalf("expected artifact file %q to exist on disk, got error: %v", artifactFile, readErr)
+	}
+	if !strings.Contains(string(data), "flag artifact content") {
+		t.Errorf("expected artifact content %q, got %q", "flag artifact content", string(data))
+	}
+
+	// Verify tool result contains "(artifact)" marker
+	body1 := mock.Requests[1].Body
+	if !strings.Contains(body1, "(artifact)") {
+		t.Errorf("expected second request body to contain '(artifact)', got: %s", body1)
+	}
+}
