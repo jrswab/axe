@@ -3,12 +3,14 @@ package runner
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/testutil"
 )
 
@@ -577,5 +579,89 @@ tools = ["list_directory"]
 	}
 	if !strings.Contains(err.Error(), "exceeded maximum conversation turns") {
 		t.Errorf("error message missing 'exceeded maximum conversation turns': %v", err)
+	}
+}
+
+// --- parseModel edge case tests ---
+
+func TestParseModel_EmptyProvider(t *testing.T) {
+	_, _, err := parseModel("/model-name")
+	if err == nil {
+		t.Fatal("expected error for empty provider")
+	}
+	if !strings.Contains(err.Error(), "empty provider") {
+		t.Errorf("expected 'empty provider' error, got: %v", err)
+	}
+}
+
+func TestParseModel_EmptyModelName(t *testing.T) {
+	_, _, err := parseModel("provider/")
+	if err == nil {
+		t.Fatal("expected error for empty model name")
+	}
+	if !strings.Contains(err.Error(), "empty model name") {
+		t.Errorf("expected 'empty model name' error, got: %v", err)
+	}
+}
+
+func TestParseModel_MultipleSlashes(t *testing.T) {
+	// Should split on first slash only
+	prov, model, err := parseModel("anthropic/claude-sonnet-4-20250514/extra")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if prov != "anthropic" {
+		t.Errorf("provider = %q, want 'anthropic'", prov)
+	}
+	if model != "claude-sonnet-4-20250514/extra" {
+		t.Errorf("model = %q, want 'claude-sonnet-4-20250514/extra'", model)
+	}
+}
+
+// --- mapProviderError tests ---
+
+func TestMapProviderError_Auth(t *testing.T) {
+	inner := &provider.ProviderError{Category: provider.ErrCategoryAuth, Message: "bad key"}
+	err := mapProviderError(inner)
+	if !IsRuntimeError(err) {
+		t.Fatalf("expected RuntimeError, got %T", err)
+	}
+	if !strings.Contains(err.Error(), "auth error") {
+		t.Errorf("expected auth error message, got: %v", err)
+	}
+}
+
+func TestMapProviderError_RateLimit(t *testing.T) {
+	inner := &provider.ProviderError{Category: provider.ErrCategoryRateLimit, Message: "slow down"}
+	err := mapProviderError(inner)
+	if !strings.Contains(err.Error(), "rate limit") {
+		t.Errorf("expected rate limit message, got: %v", err)
+	}
+}
+
+func TestMapProviderError_Server(t *testing.T) {
+	inner := &provider.ProviderError{Category: provider.ErrCategoryServer, Message: "boom"}
+	err := mapProviderError(inner)
+	if !strings.Contains(err.Error(), "server") {
+		t.Errorf("expected server error message, got: %v", err)
+	}
+}
+
+func TestMapProviderError_BadRequest(t *testing.T) {
+	inner := &provider.ProviderError{Category: provider.ErrCategoryBadRequest, Message: "invalid"}
+	err := mapProviderError(inner)
+	if !strings.Contains(err.Error(), "bad request") {
+		t.Errorf("expected bad request message, got: %v", err)
+	}
+}
+
+func TestMapProviderError_NonProviderError(t *testing.T) {
+	inner := errors.New("plain failure")
+	err := mapProviderError(inner)
+	if !IsRuntimeError(err) {
+		t.Fatalf("expected RuntimeError, got %T", err)
+	}
+	if !strings.Contains(err.Error(), "provider call failed") {
+		t.Errorf("expected generic provider failure message, got: %v", err)
 	}
 }

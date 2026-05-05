@@ -602,3 +602,21 @@ func TestRetrySendStream_NonStreamProviderReturnsError(t *testing.T) {
 		t.Errorf("got category %s, want bad_request", provErr.Category)
 	}
 }
+
+// --- SupportsStream tests ---
+
+func TestRetrySupportsStream_UnderlyingImplements(t *testing.T) {
+	mock := &streamMockProvider{}
+	rp := NewRetry(mock, RetryConfig{MaxRetries: 3})
+	if !rp.SupportsStream() {
+		t.Error("expected SupportsStream true when underlying provider implements StreamProvider")
+	}
+}
+
+func TestRetrySupportsStream_UnderlyingDoesNotImplement(t *testing.T) {
+	mock := &retryMockProvider{}
+	rp := NewRetry(mock, RetryConfig{MaxRetries: 3})
+	if rp.SupportsStream() {
+		t.Error("expected SupportsStream false when underlying provider does not implement StreamProvider")
+	}
+}

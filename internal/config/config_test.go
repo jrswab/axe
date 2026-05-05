@@ -342,3 +342,62 @@ func TestResolveAPIKey_MiniMax(t *testing.T) {
 		t.Errorf("expected empty string, got %q", got)
 	}
 }
+
+// --- ResolveRegion tests ---
+
+func TestResolveRegion_AWS_REGION(t *testing.T) {
+	t.Setenv("AWS_REGION", "us-west-2")
+	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{"bedrock": {Region: "eu-central-1"}}}
+	if got := cfg.ResolveRegion("bedrock"); got != "us-west-2" {
+		t.Errorf("expected 'us-west-2' (AWS_REGION), got %q", got)
+	}
+}
+
+func TestResolveRegion_AWS_DEFAULT_REGION(t *testing.T) {
+	t.Setenv("AWS_REGION", "")
+	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{"bedrock": {Region: "eu-central-1"}}}
+	if got := cfg.ResolveRegion("bedrock"); got != "us-east-1" {
+		t.Errorf("expected 'us-east-1' (AWS_DEFAULT_REGION), got %q", got)
+	}
+}
+
+func TestResolveRegion_ProviderEnvVar(t *testing.T) {
+	t.Setenv("AWS_REGION", "")
+	t.Setenv("AWS_DEFAULT_REGION", "")
+	t.Setenv("AXE_BEDROCK_REGION", "ap-northeast-1")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{"bedrock": {Region: "eu-central-1"}}}
+	if got := cfg.ResolveRegion("bedrock"); got != "ap-northeast-1" {
+		t.Errorf("expected 'ap-northeast-1' (AXE_BEDROCK_REGION), got %q", got)
+	}
+}
+
+func TestResolveRegion_ConfigFile(t *testing.T) {
+	t.Setenv("AWS_REGION", "")
+	t.Setenv("AWS_DEFAULT_REGION", "")
+	t.Setenv("AXE_BEDROCK_REGION", "")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{"bedrock": {Region: "eu-central-1"}}}
+	if got := cfg.ResolveRegion("bedrock"); got != "eu-central-1" {
+		t.Errorf("expected 'eu-central-1' from config, got %q", got)
+	}
+}
+
+func TestResolveRegion_NilProviders(t *testing.T) {
+	t.Setenv("AWS_REGION", "")
+	t.Setenv("AWS_DEFAULT_REGION", "")
+	cfg := &GlobalConfig{Providers: nil}
+	if got := cfg.ResolveRegion("bedrock"); got != "" {
+		t.Errorf("expected empty string, got %q", got)
+	}
+}
+
+func TestResolveRegion_UnknownProvider(t *testing.T) {
+	t.Setenv("AWS_REGION", "")
+	t.Setenv("AWS_DEFAULT_REGION", "")
+	t.Setenv("AXE_UNKNOWN_REGION", "sa-east-1")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{}}
+	if got := cfg.ResolveRegion("unknown"); got != "sa-east-1" {
+		t.Errorf("expected 'sa-east-1' (AXE_UNKNOWN_REGION), got %q", got)
+	}
+}
