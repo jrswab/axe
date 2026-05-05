@@ -14,7 +14,7 @@ type Options struct {
 	Workdir      string // Override working directory
 	Prompt       string // Inline prompt (takes precedence over stdin)
 	Timeout      int    // Request timeout in seconds (0 = use agent config or default)
-	MaxTokens    int    // Budget max tokens override (0 = use agent config)
+	MaxTokens    *int   // Budget max tokens override (nil = use agent config)
 	ArtifactDir  string // Override artifact directory
 	KeepArtifacts bool  // Preserve auto-generated artifact directories
 	Stream       bool   // Enable streaming

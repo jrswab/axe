@@ -50,7 +50,7 @@ type BudgetExceededError struct {
 }
 
 func (e *BudgetExceededError) Error() string {
-	return fmt.Sprintf("budget exceeded: used %d of %d tokens", e.Used, e.Max)
+	return fmt.Sprintf("budget exceeded: used %d of %d tokens; increase --max-tokens or reduce prompt/tool output", e.Used, e.Max)
 }
 
 // IsConfigError returns true if err is a *ConfigError.

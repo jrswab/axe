@@ -241,8 +241,8 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 
 	// Pre-compute values needed for dry-run and execution
 	effectiveMaxTokens := cfg.Budget.MaxTokens
-	if opts.MaxTokens > 0 {
-		effectiveMaxTokens = opts.MaxTokens
+	if opts.MaxTokens != nil {
+		effectiveMaxTokens = *opts.MaxTokens
 	}
 	effectiveMaxDepth := 3
 	if cfg.SubAgentsConf.MaxDepth > 0 && cfg.SubAgentsConf.MaxDepth <= 5 {
@@ -358,7 +358,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	if len(cfg.Tools) > 0 {
 		resolvedTools, resolveErr := registry.Resolve(cfg.Tools)
 		if resolveErr != nil {
-			return nil, &RuntimeError{Msg: "failed to resolve tools", Err: resolveErr}
+			return nil, &ConfigError{Msg: "failed to resolve tools", Err: resolveErr}
 		}
 		req.Tools = append(req.Tools, resolvedTools...)
 	}
@@ -514,9 +514,11 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		}
 	} else {
 		// Conversation loop: handle tool calls
+		budgetExceeded := false
 		for turn := 0; turn < maxConversationTurns; turn++ {
 			// Check budget before making LLM call
 			if tracker.Exceeded() {
+				budgetExceeded = true
 				break
 			}
 
@@ -566,6 +568,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 
 			// Stop before executing tools if budget is exceeded
 			if tracker.Exceeded() {
+				budgetExceeded = true
 				break
 			}
 
@@ -618,7 +621,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		}
 
 		// Check if we exhausted turns
-		if resp != nil && len(resp.ToolCalls) > 0 {
+		if !budgetExceeded && resp != nil && len(resp.ToolCalls) > 0 {
 			return nil, &RuntimeError{Msg: fmt.Sprintf("agent exceeded maximum conversation turns (%d)", maxConversationTurns)}
 		}
 
@@ -920,12 +923,14 @@ func mapProviderError(err error) error {
 	var provErr *provider.ProviderError
 	if AsProviderError(err, &provErr) {
 		switch provErr.Category {
-		case provider.ErrCategoryAuth, provider.ErrCategoryRateLimit,
-			provider.ErrCategoryTimeout, provider.ErrCategoryOverloaded,
-			provider.ErrCategoryServer:
-			return &RuntimeError{Msg: "provider error", Err: provErr}
+		case provider.ErrCategoryAuth:
+			return &RuntimeError{Msg: "provider auth error: check credentials/token (" + provErr.Message + ")", Err: provErr}
+		case provider.ErrCategoryRateLimit:
+			return &RuntimeError{Msg: "provider rate limit error: backoff or increase quota (" + provErr.Message + ")", Err: provErr}
+		case provider.ErrCategoryTimeout, provider.ErrCategoryOverloaded, provider.ErrCategoryServer:
+			return &RuntimeError{Msg: "provider " + string(provErr.Category) + " error: retry with backoff (" + provErr.Message + ")", Err: provErr}
 		case provider.ErrCategoryBadRequest:
-			return &RuntimeError{Msg: "bad request", Err: provErr}
+			return &RuntimeError{Msg: "bad request: validate request parameters (" + provErr.Message + ")", Err: provErr}
 		}
 	}
 	return &RuntimeError{Msg: "provider call failed", Err: err}

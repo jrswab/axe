@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -73,6 +74,8 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	streamChanged := cmd.Flags().Changed("stream")
 	// Handle --timeout flag override: only override when explicitly changed.
 	timeoutChanged := cmd.Flags().Changed("timeout")
+	// Handle --max-tokens flag override: only override when explicitly changed.
+	maxTokensChanged := cmd.Flags().Changed("max-tokens")
 
 	opts := runner.Options{
 		AgentName:     agentName,
@@ -81,7 +84,6 @@ func runAgent(cmd *cobra.Command, args []string) error {
 		Skill:         flagSkill,
 		Workdir:       flagWorkdir,
 		Prompt:        flagPrompt,
-		MaxTokens:     maxTokens,
 		ArtifactDir:   artifactDir,
 		KeepArtifacts: keepArtifacts,
 		DryRun:        dryRun,
@@ -97,6 +99,10 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	if streamChanged {
 		opts.Stream = stream
 	}
+	if maxTokensChanged {
+		v := maxTokens
+		opts.MaxTokens = &v
+	}
 	// Allow tests to override stdin via Cobra's InOrStdin.
 	if cmdIn := cmd.InOrStdin(); cmdIn != os.Stdin {
 		opts.Stdin = cmdIn
@@ -108,6 +114,14 @@ func runAgent(cmd *cobra.Command, args []string) error {
 	}
 
 	if result.DryRun && result.DryRunInfo != nil {
+		if opts.JSON {
+			data, err := json.Marshal(result)
+			if err != nil {
+				return err
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+			return nil
+		}
 		return printDryRun(cmd.OutOrStdout(), result.DryRunInfo)
 	}
 

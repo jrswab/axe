@@ -40,6 +40,9 @@ func resetRunCmd(t *testing.T) {
 	if f := runCmd.Flags().Lookup("stream"); f != nil {
 		f.Changed = false
 	}
+	if f := runCmd.Flags().Lookup("max-tokens"); f != nil {
+		f.Changed = false
+	}
 	rootCmd.SetIn(os.Stdin)
 }
 
