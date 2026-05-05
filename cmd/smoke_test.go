@@ -316,8 +316,8 @@ func TestSmoke_BadModelFormat(t *testing.T) {
 
 	stdout, stderr, exitCode := runAxe(t, env, "", "run", "basic", "--model", "no-slash-here")
 
-	if exitCode != 1 {
-		t.Fatalf("expected exit code 1, got %d; stderr: %s", exitCode, stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit code 2, got %d; stderr: %s", exitCode, stderr)
 	}
 	if !strings.Contains(stderr, "invalid model format") {
 		t.Errorf("stderr does not contain 'invalid model format': %q", stderr)
