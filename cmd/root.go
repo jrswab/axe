@@ -9,7 +9,7 @@ import (
 )
 
 // Version is the hardcoded version constant for the CLI.
-const Version = "1.9.0"
+const Version = "1.10.0"
 
 var rootCmd = &cobra.Command{
 	Use:   "axe",
