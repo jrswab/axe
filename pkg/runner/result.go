@@ -54,7 +54,9 @@ type Result struct {
 	Model           string           `json:"model"`
 	InputTokens     int              `json:"input_tokens"`
 	OutputTokens    int              `json:"output_tokens"`
+	Cost            float64          `json:"cost"`
 	StopReason      string           `json:"stop_reason"`
+	CacheStatus     string           `json:"cache_status"`
 	ToolCalls       int              `json:"tool_calls"`
 	ToolCallDetails []ToolCallDetail `json:"tool_call_details"`
 	DurationMs      int64            `json:"duration_ms"`
@@ -74,6 +76,12 @@ func (r Result) MarshalJSON() ([]byte, error) {
 	m := make(map[string]interface{})
 
 	m["content"] = r.Content
+	if r.Cost != 0 {
+		m["cost"] = r.Cost
+	}
+	if r.CacheStatus != "" {
+		m["cache_status"] = r.CacheStatus
+	}
 	m["duration_ms"] = r.DurationMs
 	m["input_tokens"] = r.InputTokens
 	m["model"] = r.Model

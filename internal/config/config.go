@@ -12,9 +12,12 @@ import (
 
 // ProviderConfig holds per-provider settings from config.toml.
 type ProviderConfig struct {
-	APIKey  string `toml:"api_key"`
-	BaseURL string `toml:"base_url"`
-	Region  string `toml:"region"`
+	APIKey     string `toml:"api_key"`
+	BaseURL    string `toml:"base_url"`
+	Region     string `toml:"region"`
+	Referer    string `toml:"referer"`
+	Title      string `toml:"title"`
+	Categories string `toml:"categories"`
 }
 
 // GlobalConfig represents the parsed global config file.
@@ -54,11 +57,12 @@ func Load() (*GlobalConfig, error) {
 
 // knownAPIKeyEnvVars maps provider names to their canonical API key environment variables.
 var knownAPIKeyEnvVars = map[string]string{
-	"anthropic": "ANTHROPIC_API_KEY",
-	"openai":    "OPENAI_API_KEY",
-	"opencode":  "OPENCODE_API_KEY",
-	"google":    "GEMINI_API_KEY",
-	"minimax":   "MINIMAX_API_KEY",
+	"anthropic":  "ANTHROPIC_API_KEY",
+	"openai":     "OPENAI_API_KEY",
+	"opencode":   "OPENCODE_API_KEY",
+	"google":     "GEMINI_API_KEY",
+	"minimax":    "MINIMAX_API_KEY",
+	"openrouter": "OPENROUTER_API_KEY",
 }
 
 // APIKeyEnvVar returns the environment variable name used to resolve the API key
@@ -131,5 +135,50 @@ func (c *GlobalConfig) ResolveRegion(providerName string) string {
 		}
 	}
 
+	return ""
+}
+
+// ResolveReferer returns the HTTP-Referer for the given provider.
+// Resolution order: AXE_{PROVIDER_UPPER}_REFERER env var > config file > empty string.
+func (c *GlobalConfig) ResolveReferer(providerName string) string {
+	envVar := "AXE_" + strings.ToUpper(providerName) + "_REFERER"
+	if v := os.Getenv(envVar); v != "" {
+		return v
+	}
+	if c.Providers != nil {
+		if pc, exists := c.Providers[providerName]; exists {
+			return pc.Referer
+		}
+	}
+	return ""
+}
+
+// ResolveTitle returns the X-OpenRouter-Title for the given provider.
+// Resolution order: AXE_{PROVIDER_UPPER}_TITLE env var > config file > empty string.
+func (c *GlobalConfig) ResolveTitle(providerName string) string {
+	envVar := "AXE_" + strings.ToUpper(providerName) + "_TITLE"
+	if v := os.Getenv(envVar); v != "" {
+		return v
+	}
+	if c.Providers != nil {
+		if pc, exists := c.Providers[providerName]; exists {
+			return pc.Title
+		}
+	}
+	return ""
+}
+
+// ResolveCategories returns the X-OpenRouter-Categories for the given provider.
+// Resolution order: AXE_{PROVIDER_UPPER}_CATEGORIES env var > config file > empty string.
+func (c *GlobalConfig) ResolveCategories(providerName string) string {
+	envVar := "AXE_" + strings.ToUpper(providerName) + "_CATEGORIES"
+	if v := os.Getenv(envVar); v != "" {
+		return v
+	}
+	if c.Providers != nil {
+		if pc, exists := c.Providers[providerName]; exists {
+			return pc.Categories
+		}
+	}
 	return ""
 }

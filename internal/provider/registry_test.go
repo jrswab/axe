@@ -131,6 +131,42 @@ func TestSupported_UnknownProvider(t *testing.T) {
 	}
 }
 
+func TestNew_OpenRouter(t *testing.T) {
+	p, err := New("openrouter", "test-key", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p == nil {
+		t.Fatal("expected non-nil provider")
+	}
+}
+
+func TestNew_OpenRouterWithBaseURL(t *testing.T) {
+	p, err := New("openrouter", "test-key", "http://custom:8080")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p == nil {
+		t.Fatal("expected non-nil provider")
+	}
+}
+
+func TestNew_OpenRouterMissingAPIKey(t *testing.T) {
+	_, err := New("openrouter", "", "")
+	if err == nil {
+		t.Fatal("expected error for missing API key")
+	}
+	if !strings.Contains(err.Error(), "API key is required") {
+		t.Errorf("expected 'API key is required', got %q", err.Error())
+	}
+}
+
+func TestSupported_OpenRouter(t *testing.T) {
+	if !Supported("openrouter") {
+		t.Error("expected 'openrouter' to be supported")
+	}
+}
+
 func TestNew_OpenCode(t *testing.T) {
 	p, err := New("opencode", "test-key", "")
 	if err != nil {
@@ -172,7 +208,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "openai", "ollama", "opencode", "google", "minimax", "bedrock"} {
+	for _, name := range []string{"anthropic", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}

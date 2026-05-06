@@ -401,3 +401,52 @@ func TestResolveRegion_UnknownProvider(t *testing.T) {
 		t.Errorf("expected 'sa-east-1' (AXE_UNKNOWN_REGION), got %q", got)
 	}
 }
+
+// --- OpenRouter attribution resolution tests ---
+
+func TestResolveReferer_EnvOverridesConfig(t *testing.T) {
+	t.Setenv("AXE_OPENROUTER_REFERER", "https://env.example.com")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
+		"openrouter": {Referer: "https://config.example.com"},
+	}}
+	if got := cfg.ResolveReferer("openrouter"); got != "https://env.example.com" {
+		t.Errorf("expected env value, got %q", got)
+	}
+}
+
+func TestResolveReferer_ConfigFallback(t *testing.T) {
+	t.Setenv("AXE_OPENROUTER_REFERER", "")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
+		"openrouter": {Referer: "https://config.example.com"},
+	}}
+	if got := cfg.ResolveReferer("openrouter"); got != "https://config.example.com" {
+		t.Errorf("expected config value, got %q", got)
+	}
+}
+
+func TestResolveReferer_UnknownProvider(t *testing.T) {
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{}}
+	if got := cfg.ResolveReferer("unknown"); got != "" {
+		t.Errorf("expected empty string, got %q", got)
+	}
+}
+
+func TestResolveTitle_EnvOverridesConfig(t *testing.T) {
+	t.Setenv("AXE_OPENROUTER_TITLE", "EnvTitle")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
+		"openrouter": {Title: "ConfigTitle"},
+	}}
+	if got := cfg.ResolveTitle("openrouter"); got != "EnvTitle" {
+		t.Errorf("expected env value, got %q", got)
+	}
+}
+
+func TestResolveCategories_EnvOverridesConfig(t *testing.T) {
+	t.Setenv("AXE_OPENROUTER_CATEGORIES", "env-cat")
+	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
+		"openrouter": {Categories: "config-cat"},
+	}}
+	if got := cfg.ResolveCategories("openrouter"); got != "env-cat" {
+		t.Errorf("expected env value, got %q", got)
+	}
+}
