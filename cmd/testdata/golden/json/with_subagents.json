@@ -2,11 +2,11 @@
   "content": "Final answer from sub-agents.",
   "duration_ms": "{{DURATION_MS}}",
   "input_tokens": 20,
-  "model": "claude-sonnet-4-20250514",
+  "model": "gpt-4o",
   "output_tokens": 25,
   "refused": false,
   "retry_attempts": 0,
-  "stop_reason": "end_turn",
+  "stop_reason": "stop",
   "tool_call_details": [
     {
       "duration_ms": "{{TOOL_DURATION_MS}}",

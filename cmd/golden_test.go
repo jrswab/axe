@@ -230,16 +230,16 @@ func TestGolden(t *testing.T) {
 
 		switch a {
 		case "with_subagents":
-			// Parent is anthropic, children (basic, with_skill) are openai.
+			// All agents use OpenRouter (OpenAI-compatible format).
 			// Parent calls tool_use -> 2 child calls -> parent final.
 			tc.mockResponses = []testutil.MockLLMResponse{
-				testutil.AnthropicToolUseResponse("Delegating to sub-agents.", []testutil.MockToolCall{
+				testutil.OpenAIToolCallResponse("Delegating to sub-agents.", []testutil.MockToolCall{
 					{ID: "tc_1", Name: "call_agent", Input: map[string]string{"agent": "basic", "task": "hello"}},
 					{ID: "tc_2", Name: "call_agent", Input: map[string]string{"agent": "with_skill", "task": "hello"}},
 				}),
 				testutil.OpenAIResponse("Hello from basic."),
 				testutil.OpenAIResponse("Hello from with_skill."),
-				testutil.AnthropicResponse("Final answer from sub-agents."),
+				testutil.OpenAIResponse("Final answer from sub-agents."),
 			}
 		case "with_tools":
 			// OpenAI agent with tools. Turn 1: tool call, Turn 2: final response.
@@ -250,7 +250,7 @@ func TestGolden(t *testing.T) {
 				testutil.OpenAIResponse("Directory listed successfully."),
 			}
 		default:
-			// All other agents use openai.
+			// All agents use OpenRouter (OpenAI-compatible format).
 			tc.mockResponses = []testutil.MockLLMResponse{
 				testutil.OpenAIResponse("Hello from mock."),
 			}
@@ -289,10 +289,8 @@ func TestGolden(t *testing.T) {
 				mock := testutil.NewMockLLMServer(t, tc.mockResponses)
 
 				// Set up provider URLs and keys.
-				env["AXE_OPENAI_BASE_URL"] = mock.URL()
-				env["OPENAI_API_KEY"] = "test-key"
-				env["AXE_ANTHROPIC_BASE_URL"] = mock.URL()
-				env["ANTHROPIC_API_KEY"] = "test-key"
+				env["AXE_OPENROUTER_BASE_URL"] = mock.URL()
+				env["OPENROUTER_API_KEY"] = "test-key"
 
 				for k, v := range tc.extraEnv {
 					env[k] = v

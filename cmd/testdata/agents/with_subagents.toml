@@ -1,5 +1,5 @@
 name = "with-subagents"
-model = "anthropic/claude-sonnet-4-20250514"
+model = "openrouter/openai/gpt-4o-mini"
 sub_agents = ["basic", "with_skill"]
 
 [sub_agents_config]
