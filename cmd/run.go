@@ -166,7 +166,9 @@ func printDryRun(out io.Writer, info *runner.DryRunInfo) error {
 
 	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, "--- User Message ---")
-	if info.UserMessage != defaultUserMessage {
+	if info.MessageCount > 0 {
+		_, _ = fmt.Fprintf(out, "(pre-built message history, %d messages)\n", info.MessageCount)
+	} else if info.UserMessage != defaultUserMessage {
 		_, _ = fmt.Fprintln(out, info.UserMessage)
 	} else {
 		_, _ = fmt.Fprintln(out, "(default)")

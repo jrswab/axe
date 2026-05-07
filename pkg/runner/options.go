@@ -22,6 +22,10 @@ type Options struct {
 	Verbose      bool   // Print debug info to stderr
 	JSON         bool   // Wrap output in JSON envelope
 
+	// Messages allows callers to seed the conversation with a pre-built
+	// message history. When non-empty, Prompt and Stdin are ignored.
+	Messages []Message
+
 	// I/O (nil defaults to os.Stdout / os.Stderr / os.Stdin)
 	Stdout io.Writer
 	Stderr io.Writer
