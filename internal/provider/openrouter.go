@@ -358,10 +358,17 @@ func (o *OpenRouter) SendStream(ctx context.Context, req *Request) (*EventStream
 	toolCalls := make(map[int]struct{ id, name string })
 	var finishReason string
 	var gotUsage bool
+	var pendingToolEvents []StreamEvent
 	var pendingToolEnds []StreamEvent
 
 	nextFunc := func() (StreamEvent, error) {
 		for {
+			if len(pendingToolEvents) > 0 {
+				ev := pendingToolEvents[0]
+				pendingToolEvents = pendingToolEvents[1:]
+				return ev, nil
+			}
+
 			if len(pendingToolEnds) > 0 {
 				ev := pendingToolEnds[0]
 				pendingToolEnds = pendingToolEnds[1:]
@@ -390,8 +397,9 @@ func (o *OpenRouter) SendStream(ctx context.Context, req *Request) (*EventStream
 			if sseEvent.Data == "[DONE]" {
 				if !gotUsage {
 					return StreamEvent{
-						Type:       StreamEventDone,
-						StopReason: finishReason,
+						Type:        StreamEventDone,
+						StopReason:  finishReason,
+						CacheStatus: cacheStatus,
 					}, nil
 				}
 				return StreamEvent{}, io.EOF
@@ -431,25 +439,28 @@ func (o *OpenRouter) SendStream(ctx context.Context, req *Request) (*EventStream
 			}
 
 			if len(choice.Delta.ToolCalls) > 0 {
-				tc := choice.Delta.ToolCalls[0]
-				if tc.ID != "" {
-					toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: tc.Function.Name}
-					return StreamEvent{
-						Type:       StreamEventToolStart,
-						ToolCallID: tc.ID,
-						ToolName:   tc.Function.Name,
-					}, nil
+				for _, tc := range choice.Delta.ToolCalls {
+					if tc.ID != "" {
+						toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: tc.Function.Name}
+						pendingToolEvents = append(pendingToolEvents, StreamEvent{
+							Type:       StreamEventToolStart,
+							ToolCallID: tc.ID,
+							ToolName:   tc.Function.Name,
+						})
+					} else {
+						info := toolCalls[tc.Index]
+						args := ""
+						if tc.Function != nil {
+							args = tc.Function.Arguments
+						}
+						pendingToolEvents = append(pendingToolEvents, StreamEvent{
+							Type:       StreamEventToolDelta,
+							ToolCallID: info.id,
+							ToolInput:  args,
+						})
+					}
 				}
-				info := toolCalls[tc.Index]
-				args := ""
-				if tc.Function != nil {
-					args = tc.Function.Arguments
-				}
-				return StreamEvent{
-					Type:       StreamEventToolDelta,
-					ToolCallID: info.id,
-					ToolInput:  args,
-				}, nil
+				continue
 			}
 
 			if choice.FinishReason != nil {

@@ -404,49 +404,76 @@ func TestResolveRegion_UnknownProvider(t *testing.T) {
 
 // --- OpenRouter attribution resolution tests ---
 
-func TestResolveReferer_EnvOverridesConfig(t *testing.T) {
-	t.Setenv("AXE_OPENROUTER_REFERER", "https://env.example.com")
-	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
-		"openrouter": {Referer: "https://config.example.com"},
-	}}
-	if got := cfg.ResolveReferer("openrouter"); got != "https://env.example.com" {
-		t.Errorf("expected env value, got %q", got)
+func TestResolveOpenRouterAttribution(t *testing.T) {
+	cases := []struct {
+		name       string
+		env        map[string]string
+		cfg        *GlobalConfig
+		provider   string
+		fn         string // "referer", "title", or "categories"
+		want       string
+	}{
+		{
+			name:     "referer env overrides config",
+			env:      map[string]string{"AXE_OPENROUTER_REFERER": "https://env.example.com"},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Referer: "https://config.example.com"}}},
+			provider: "openrouter",
+			fn:       "referer",
+			want:     "https://env.example.com",
+		},
+		{
+			name:     "referer config fallback when env empty",
+			env:      map[string]string{"AXE_OPENROUTER_REFERER": ""},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Referer: "https://config.example.com"}}},
+			provider: "openrouter",
+			fn:       "referer",
+			want:     "https://config.example.com",
+		},
+		{
+			name:     "referer unknown provider",
+			env:      map[string]string{},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{}},
+			provider: "unknown",
+			fn:       "referer",
+			want:     "",
+		},
+		{
+			name:     "title env overrides config",
+			env:      map[string]string{"AXE_OPENROUTER_TITLE": "EnvTitle"},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Title: "ConfigTitle"}}},
+			provider: "openrouter",
+			fn:       "title",
+			want:     "EnvTitle",
+		},
+		{
+			name:     "categories env overrides config",
+			env:      map[string]string{"AXE_OPENROUTER_CATEGORIES": "env-cat"},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Categories: "config-cat"}}},
+			provider: "openrouter",
+			fn:       "categories",
+			want:     "env-cat",
+		},
 	}
-}
 
-func TestResolveReferer_ConfigFallback(t *testing.T) {
-	t.Setenv("AXE_OPENROUTER_REFERER", "")
-	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
-		"openrouter": {Referer: "https://config.example.com"},
-	}}
-	if got := cfg.ResolveReferer("openrouter"); got != "https://config.example.com" {
-		t.Errorf("expected config value, got %q", got)
-	}
-}
-
-func TestResolveReferer_UnknownProvider(t *testing.T) {
-	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{}}
-	if got := cfg.ResolveReferer("unknown"); got != "" {
-		t.Errorf("expected empty string, got %q", got)
-	}
-}
-
-func TestResolveTitle_EnvOverridesConfig(t *testing.T) {
-	t.Setenv("AXE_OPENROUTER_TITLE", "EnvTitle")
-	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
-		"openrouter": {Title: "ConfigTitle"},
-	}}
-	if got := cfg.ResolveTitle("openrouter"); got != "EnvTitle" {
-		t.Errorf("expected env value, got %q", got)
-	}
-}
-
-func TestResolveCategories_EnvOverridesConfig(t *testing.T) {
-	t.Setenv("AXE_OPENROUTER_CATEGORIES", "env-cat")
-	cfg := &GlobalConfig{Providers: map[string]ProviderConfig{
-		"openrouter": {Categories: "config-cat"},
-	}}
-	if got := cfg.ResolveCategories("openrouter"); got != "env-cat" {
-		t.Errorf("expected env value, got %q", got)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
+			var got string
+			switch tc.fn {
+			case "referer":
+				got = tc.cfg.ResolveReferer(tc.provider)
+			case "title":
+				got = tc.cfg.ResolveTitle(tc.provider)
+			case "categories":
+				got = tc.cfg.ResolveCategories(tc.provider)
+			default:
+				t.Fatalf("unknown fn %q", tc.fn)
+			}
+			if got != tc.want {
+				t.Errorf("expected %q, got %q", tc.want, got)
+			}
+		})
 	}
 }

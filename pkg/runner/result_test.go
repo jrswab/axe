@@ -5,53 +5,60 @@ import (
 	"testing"
 )
 
-func TestResultMarshalJSON_CostAndCacheStatus(t *testing.T) {
-	r := Result{
-		Content:     "Hello",
-		Cost:        0.00014,
-		CacheStatus: "HIT",
-		InputTokens: 10,
-		OutputTokens: 5,
-		Model:       "openrouter/test",
-		StopReason:  "stop",
+func TestResultMarshalJSON_TableDriven(t *testing.T) {
+	cases := []struct {
+		name         string
+		r            Result
+		wantCost     bool
+		wantCostVal  float64
+		wantCache    bool
+		wantCacheVal string
+	}{
+		{
+			name:         "cost and cache status present",
+			r:            Result{Content: "Hello", Cost: 0.00014, CacheStatus: "HIT", InputTokens: 10, OutputTokens: 5, Model: "openrouter/test", StopReason: "stop"},
+			wantCost:     true,
+			wantCostVal:  0.00014,
+			wantCache:    true,
+			wantCacheVal: "HIT",
+		},
+		{
+			name:      "zero cost and empty cache omitted",
+			r:         Result{Content: "Hello", InputTokens: 10, OutputTokens: 5, Model: "openai/gpt-4", StopReason: "stop"},
+			wantCost:  false,
+			wantCache: false,
+		},
 	}
-	data, err := json.Marshal(r)
-	if err != nil {
-		t.Fatalf("marshal failed: %v", err)
-	}
-	var parsed map[string]interface{}
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		t.Fatalf("unmarshal failed: %v", err)
-	}
-	if cost, ok := parsed["cost"].(float64); !ok || cost != 0.00014 {
-		t.Errorf("expected cost=0.00014, got %v", parsed["cost"])
-	}
-	if cs, ok := parsed["cache_status"].(string); !ok || cs != "HIT" {
-		t.Errorf("expected cache_status=HIT, got %v", parsed["cache_status"])
-	}
-}
 
-func TestResultMarshalJSON_OmitsZeroCostAndEmptyCache(t *testing.T) {
-	r := Result{
-		Content:     "Hello",
-		InputTokens: 10,
-		OutputTokens: 5,
-		Model:       "openai/gpt-4",
-		StopReason:  "stop",
-	}
-	data, err := json.Marshal(r)
-	if err != nil {
-		t.Fatalf("marshal failed: %v", err)
-	}
-	var parsed map[string]interface{}
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		t.Fatalf("unmarshal failed: %v", err)
-	}
-	if _, ok := parsed["cost"]; ok {
-		t.Error("expected cost to be omitted when zero")
-	}
-	if _, ok := parsed["cache_status"]; ok {
-		t.Error("expected cache_status to be omitted when empty")
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := json.Marshal(tc.r)
+			if err != nil {
+				t.Fatalf("marshal failed: %v", err)
+			}
+			var parsed map[string]interface{}
+			if err := json.Unmarshal(data, &parsed); err != nil {
+				t.Fatalf("unmarshal failed: %v", err)
+			}
+			if tc.wantCost {
+				if cost, ok := parsed["cost"].(float64); !ok || cost != tc.wantCostVal {
+					t.Errorf("expected cost=%v, got %v", tc.wantCostVal, parsed["cost"])
+				}
+			} else {
+				if _, ok := parsed["cost"]; ok {
+					t.Error("expected cost to be omitted")
+				}
+			}
+			if tc.wantCache {
+				if cs, ok := parsed["cache_status"].(string); !ok || cs != tc.wantCacheVal {
+					t.Errorf("expected cache_status=%q, got %v", tc.wantCacheVal, parsed["cache_status"])
+				}
+			} else {
+				if _, ok := parsed["cache_status"]; ok {
+					t.Error("expected cache_status to be omitted")
+				}
+			}
+		})
 	}
 }
 

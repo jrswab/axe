@@ -80,3 +80,21 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock, openrouter", providerName)
 	}
 }
+
+// NewOpenRouterProvider creates an OpenRouter provider with attribution headers.
+func NewOpenRouterProvider(apiKey, baseURL, referer, title, categories string) (Provider, error) {
+	var opts []OpenRouterOption
+	if baseURL != "" {
+		opts = append(opts, WithOpenRouterBaseURL(baseURL))
+	}
+	if referer != "" {
+		opts = append(opts, WithReferer(referer))
+	}
+	if title != "" {
+		opts = append(opts, WithTitle(title))
+	}
+	if categories != "" {
+		opts = append(opts, WithCategories(categories))
+	}
+	return NewOpenRouter(apiKey, opts...)
+}

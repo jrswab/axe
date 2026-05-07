@@ -12,54 +12,77 @@ import (
 
 // --- Constructor tests ---
 
-func TestNewOpenRouter_EmptyAPIKey(t *testing.T) {
-	_, err := NewOpenRouter("")
-	if err == nil {
-		t.Fatal("expected error for empty API key")
+func TestNewOpenRouter(t *testing.T) {
+	cases := []struct {
+		name         string
+		apiKey       string
+		opts         []OpenRouterOption
+		wantErr      bool
+		wantErrMsg   string
+		wantBaseURL  string
+		wantReferer  string
+		wantTitle    string
+		wantCategories string
+	}{
+		{
+			name:       "empty API key errors",
+			apiKey:     "",
+			wantErr:    true,
+			wantErrMsg: "API key is required",
+		},
+		{
+			name:        "valid API key",
+			apiKey:      "test-key",
+			wantBaseURL: defaultOpenRouterBaseURL,
+		},
+		{
+			name:        "custom base URL",
+			apiKey:      "test-key",
+			opts:        []OpenRouterOption{WithOpenRouterBaseURL("https://custom.example.com/v1")},
+			wantBaseURL: "https://custom.example.com/v1",
+		},
+		{
+			name:           "all options set",
+			apiKey:         "test-key",
+			opts:           []OpenRouterOption{WithReferer("https://example.com"), WithTitle("My App"), WithCategories("cli,agent")},
+			wantBaseURL:    defaultOpenRouterBaseURL,
+			wantReferer:    "https://example.com",
+			wantTitle:      "My App",
+			wantCategories: "cli,agent",
+		},
 	}
-	if !strings.Contains(err.Error(), "API key is required") {
-		t.Errorf("expected 'API key is required', got %q", err.Error())
-	}
-}
 
-func TestNewOpenRouter_ValidAPIKey(t *testing.T) {
-	o, err := NewOpenRouter("test-key")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if o == nil {
-		t.Fatal("expected non-nil OpenRouter")
-	}
-}
-
-func TestNewOpenRouter_DefaultBaseURL(t *testing.T) {
-	o, _ := NewOpenRouter("test-key")
-	if o.baseURL != defaultOpenRouterBaseURL {
-		t.Errorf("expected default base URL %q, got %q", defaultOpenRouterBaseURL, o.baseURL)
-	}
-}
-
-func TestNewOpenRouter_CustomBaseURL(t *testing.T) {
-	o, _ := NewOpenRouter("test-key", WithOpenRouterBaseURL("https://custom.example.com/v1"))
-	if o.baseURL != "https://custom.example.com/v1" {
-		t.Errorf("expected custom base URL, got %q", o.baseURL)
-	}
-}
-
-func TestNewOpenRouter_Options(t *testing.T) {
-	o, _ := NewOpenRouter("test-key",
-		WithReferer("https://example.com"),
-		WithTitle("My App"),
-		WithCategories("cli,agent"),
-	)
-	if o.referer != "https://example.com" {
-		t.Errorf("referer = %q, want %q", o.referer, "https://example.com")
-	}
-	if o.title != "My App" {
-		t.Errorf("title = %q, want %q", o.title, "My App")
-	}
-	if o.categories != "cli,agent" {
-		t.Errorf("categories = %q, want %q", o.categories, "cli,agent")
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			o, err := NewOpenRouter(tc.apiKey, tc.opts...)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				if !strings.Contains(err.Error(), tc.wantErrMsg) {
+					t.Errorf("expected error containing %q, got %q", tc.wantErrMsg, err.Error())
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if o == nil {
+				t.Fatal("expected non-nil OpenRouter")
+			}
+			if tc.wantBaseURL != "" && o.baseURL != tc.wantBaseURL {
+				t.Errorf("baseURL = %q, want %q", o.baseURL, tc.wantBaseURL)
+			}
+			if o.referer != tc.wantReferer {
+				t.Errorf("referer = %q, want %q", o.referer, tc.wantReferer)
+			}
+			if o.title != tc.wantTitle {
+				t.Errorf("title = %q, want %q", o.title, tc.wantTitle)
+			}
+			if o.categories != tc.wantCategories {
+				t.Errorf("categories = %q, want %q", o.categories, tc.wantCategories)
+			}
+		})
 	}
 }
 

@@ -321,20 +321,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	// Step 15: Create provider
 	var prov provider.Provider
 	if provName == "openrouter" {
-		var opts []provider.OpenRouterOption
-		if baseURL != "" {
-			opts = append(opts, provider.WithOpenRouterBaseURL(baseURL))
-		}
-		if r := globalCfg.ResolveReferer(provName); r != "" {
-			opts = append(opts, provider.WithReferer(r))
-		}
-		if t := globalCfg.ResolveTitle(provName); t != "" {
-			opts = append(opts, provider.WithTitle(t))
-		}
-		if c := globalCfg.ResolveCategories(provName); c != "" {
-			opts = append(opts, provider.WithCategories(c))
-		}
-		prov, err = provider.NewOpenRouter(apiKey, opts...)
+		prov, err = provider.NewOpenRouterProvider(apiKey, baseURL, globalCfg.ResolveReferer(provName), globalCfg.ResolveTitle(provName), globalCfg.ResolveCategories(provName))
 	} else {
 		prov, err = provider.New(provName, apiKey, baseURL)
 	}

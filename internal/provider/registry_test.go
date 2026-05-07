@@ -112,7 +112,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "openai", "ollama", "google", "minimax", "bedrock"} {
+	for _, name := range []string{"anthropic", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
