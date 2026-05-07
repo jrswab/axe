@@ -46,6 +46,7 @@ type DryRunInfo struct {
 	MaxDepth          int
 	Parallel          bool
 	SubAgentTimeout   int
+	MessageCount      int
 }
 
 // Result captures all outputs of a completed agent run.
@@ -66,12 +67,51 @@ type Result struct {
 	Artifacts       []ArtifactInfo   `json:"artifacts"`
 	DryRun          bool             `json:"dry_run"`
 	DryRunInfo      *DryRunInfo      `json:"-"`
+	Messages        []Message        `json:"messages"`
 }
 
 // MarshalJSON produces JSON output that matches the legacy CLI format:
 // fields are alphabetically ordered (via map serialization), budget fields
 // are flattened and only included when a budget is configured, artifacts are
 // only included when non-empty, and dry_run is omitted.
+// serializeMessages converts a slice of Message to JSON-compatible maps,
+// ensuring empty tool_calls and tool_results are present as [] rather than null.
+func serializeMessages(msgs []Message) []map[string]interface{} {
+	out := make([]map[string]interface{}, len(msgs))
+	for i, m := range msgs {
+		entry := map[string]interface{}{
+			"role":         m.Role,
+			"content":      m.Content,
+			"tool_calls":   make([]map[string]interface{}, 0),
+			"tool_results": make([]map[string]interface{}, 0),
+		}
+		if len(m.ToolCalls) > 0 {
+			tcs := make([]map[string]interface{}, len(m.ToolCalls))
+			for j, tc := range m.ToolCalls {
+				tcs[j] = map[string]interface{}{
+					"id":        tc.ID,
+					"name":      tc.Name,
+					"arguments": tc.Arguments,
+				}
+			}
+			entry["tool_calls"] = tcs
+		}
+		if len(m.ToolResults) > 0 {
+			trs := make([]map[string]interface{}, len(m.ToolResults))
+			for j, tr := range m.ToolResults {
+				trs[j] = map[string]interface{}{
+					"call_id":  tr.CallID,
+					"content":  tr.Content,
+					"is_error": tr.IsError,
+				}
+			}
+			entry["tool_results"] = trs
+		}
+		out[i] = entry
+	}
+	return out
+}
+
 func (r Result) MarshalJSON() ([]byte, error) {
 	m := make(map[string]interface{})
 
@@ -104,6 +144,10 @@ func (r Result) MarshalJSON() ([]byte, error) {
 
 	if len(r.Artifacts) > 0 {
 		m["artifacts"] = r.Artifacts
+	}
+
+	if len(r.Messages) > 0 {
+		m["messages"] = serializeMessages(r.Messages)
 	}
 
 	return json.Marshal(m)

@@ -1,6 +1,6 @@
 === Dry Run ===
 
-Model:    anthropic/claude-sonnet-4-20250514
+Model:    openrouter/openai/gpt-4o-mini
 Workdir:  {{WORKDIR}}
 Timeout:  120s
 Params:   temperature=0, max_tokens=0

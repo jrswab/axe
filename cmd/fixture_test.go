@@ -53,8 +53,8 @@ func TestFixtureAgents_BasicHasOnlyRequiredFields(t *testing.T) {
 	if cfg.Name != "basic" {
 		t.Errorf("Name = %q, want %q", cfg.Name, "basic")
 	}
-	if cfg.Model != "openai/gpt-4o" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "openai/gpt-4o")
+	if cfg.Model != "openrouter/openai/gpt-4o-mini" {
+		t.Errorf("Model = %q, want %q", cfg.Model, "openrouter/openai/gpt-4o-mini")
 	}
 
 	// Verify all optional fields are zero-valued

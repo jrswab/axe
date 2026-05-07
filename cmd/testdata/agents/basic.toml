@@ -1,2 +1,2 @@
 name = "basic"
-model = "openai/gpt-4o"
+model = "openrouter/openai/gpt-4o-mini"

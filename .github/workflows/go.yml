@@ -32,6 +32,8 @@ jobs:
         go-version: '1.24'
 
     - name: Test
+      env:
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       run: go test -race -v ./...
 
   build:

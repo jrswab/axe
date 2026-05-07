@@ -289,6 +289,54 @@ stream = true
 	}
 }
 
+func TestRun_PreBuiltMessages_Streaming(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicStreamResponse("Hello from stream with history", 10, 5),
+	})
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+stream = true
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "user", Content: "Prior context"},
+		},
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Content != "Hello from stream with history" {
+		t.Errorf("Content = %q, want %q", result.Content, "Hello from stream with history")
+	}
+	if result.InputTokens != 10 {
+		t.Errorf("InputTokens = %d, want 10", result.InputTokens)
+	}
+	if result.OutputTokens != 5 {
+		t.Errorf("OutputTokens = %d, want 5", result.OutputTokens)
+	}
+	// Content should have been streamed to stdout
+	if !strings.Contains(stdout.String(), "Hello from stream with history") {
+		t.Errorf("stdout missing streamed content: %q", stdout.String())
+	}
+}
+
 func TestRun_BudgetTracking(t *testing.T) {
 	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
 		testutil.AnthropicResponseWithTokens("Within budget", 8, 7),
@@ -535,6 +583,375 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 	if !strings.Contains(out, `"input_tokens"`) {
 		t.Errorf("stdout missing JSON input_tokens field: %q", out)
+	}
+}
+
+func TestRun_PreBuiltMessages_SingleShot(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("Response to pre-built"),
+	})
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "user", Content: "Hello from history"},
+		},
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Content != "Response to pre-built" {
+		t.Errorf("Content = %q, want %q", result.Content, "Response to pre-built")
+	}
+	if len(result.Messages) != 2 {
+		t.Fatalf("Result.Messages len = %d, want 2 (user + assistant)", len(result.Messages))
+	}
+	if result.Messages[0].Role != "user" || result.Messages[0].Content != "Hello from history" {
+		t.Errorf("Messages[0] = %+v", result.Messages[0])
+	}
+	if result.Messages[1].Role != "assistant" || result.Messages[1].Content != "Response to pre-built" {
+		t.Errorf("Messages[1] = %+v", result.Messages[1])
+	}
+}
+
+func TestRun_PreBuiltMessages_ToolLoop(t *testing.T) {
+	// Pre-built history: prior user + assistant tool call + tool result.
+	// Then agent responds with another tool call, then final text.
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Next tool", []testutil.MockToolCall{
+			{ID: "tool_2", Name: "list_directory", Input: map[string]string{"path": "."}},
+		}),
+		testutil.AnthropicResponse("All done"),
+	})
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["list_directory"]
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "user", Content: "First turn"},
+			{
+				Role:    "assistant",
+				Content: "Let me list",
+				ToolCalls: []ToolCall{
+					{ID: "tool_1", Name: "list_directory", Arguments: map[string]string{"path": "/tmp"}},
+				},
+			},
+			{
+				Role: "tool",
+				ToolResults: []ToolResult{
+					{CallID: "tool_1", Content: "a.txt\nb.txt"},
+				},
+			},
+		},
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Content != "All done" {
+		t.Errorf("Content = %q, want %q", result.Content, "All done")
+	}
+	if result.ToolCalls != 1 {
+		t.Errorf("ToolCalls = %d, want 1", result.ToolCalls)
+	}
+	// Should have: user, assistant(1), tool(1), assistant(2), tool(2), assistant(final)
+	if len(result.Messages) != 6 {
+		t.Fatalf("Result.Messages len = %d, want 6", len(result.Messages))
+	}
+	if result.Messages[0].Content != "First turn" {
+		t.Errorf("Messages[0].Content = %q, want 'First turn'", result.Messages[0].Content)
+	}
+	if len(result.Messages[1].ToolCalls) != 1 || result.Messages[1].ToolCalls[0].ID != "tool_1" {
+		t.Errorf("Messages[1].ToolCalls = %+v", result.Messages[1].ToolCalls)
+	}
+	if result.Messages[2].ToolResults[0].CallID != "tool_1" {
+		t.Errorf("Messages[2].ToolResults = %+v", result.Messages[2].ToolResults)
+	}
+	if len(result.Messages[3].ToolCalls) != 1 || result.Messages[3].ToolCalls[0].ID != "tool_2" {
+		t.Errorf("Messages[3].ToolCalls = %+v", result.Messages[3].ToolCalls)
+	}
+	if result.Messages[5].Role != "assistant" || result.Messages[5].Content != "All done" {
+		t.Errorf("Messages[5] = %+v", result.Messages[5])
+	}
+}
+
+func TestRun_PreBuiltMessages_InvalidRole(t *testing.T) {
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+	)
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "user", Content: "ok"},
+			{Role: "system", Content: "bad"},
+		},
+	}
+
+	_, err := Run(context.Background(), opts)
+	if err == nil {
+		t.Fatal("expected error for invalid role")
+	}
+	if !IsConfigError(err) {
+		t.Fatalf("expected ConfigError, got %T: %v", err, err)
+	}
+}
+
+func TestRun_PreBuiltMessages_DanglingCallID(t *testing.T) {
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+	)
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "user", Content: "ok"},
+			{Role: "assistant", ToolCalls: []ToolCall{{ID: "a", Name: "n"}}},
+			{Role: "tool", ToolResults: []ToolResult{{CallID: "b", Content: "x"}}},
+		},
+	}
+
+	_, err := Run(context.Background(), opts)
+	if err == nil {
+		t.Fatal("expected error for dangling call ID")
+	}
+	if !IsConfigError(err) {
+		t.Fatalf("expected ConfigError, got %T: %v", err, err)
+	}
+}
+
+func TestRun_PreBuiltMessages_EmptySlice_FallsBackToPrompt(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("Got prompt"),
+	})
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Prompt:    "My prompt",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages:  []Message{}, // empty but non-nil
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Content != "Got prompt" {
+		t.Errorf("Content = %q, want %q", result.Content, "Got prompt")
+	}
+}
+
+func TestRun_PreBuiltMessages_DryRun(t *testing.T) {
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+	)
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		DryRun:    true,
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+		},
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if !result.DryRun {
+		t.Fatal("expected DryRun = true")
+	}
+	if result.DryRunInfo == nil {
+		t.Fatal("expected DryRunInfo")
+	}
+	if result.DryRunInfo.UserMessage != "(pre-built message history)" {
+		t.Errorf("UserMessage = %q, want %q", result.DryRunInfo.UserMessage, "(pre-built message history)")
+	}
+	if result.DryRunInfo.MessageCount != 2 {
+		t.Errorf("MessageCount = %d, want 2", result.DryRunInfo.MessageCount)
+	}
+}
+
+func TestRun_PreBuiltMessages_MemoryAppend(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("Stored history"),
+	})
+
+	tmpDir := setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`,
+	)
+
+	dataDir := filepath.Join(tmpDir, "data")
+	t.Setenv("XDG_DATA_HOME", dataDir)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "assistant", Content: "Say hi"},
+			{Role: "user", Content: "User task"},
+		},
+	}
+
+	_, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	memPath := filepath.Join(dataDir, "axe", "memory", "test-agent.md")
+	data, err := os.ReadFile(memPath)
+	if err != nil {
+		t.Fatalf("memory file not created: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "User task") {
+		t.Errorf("memory missing first user message task: %q", content)
+	}
+	if !strings.Contains(content, "Stored history") {
+		t.Errorf("memory missing result: %q", content)
+	}
+}
+
+func TestRun_PreBuiltMessages_MemoryAppend_NoUserMessage(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("Stored fallback"),
+	})
+
+	tmpDir := setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[memory]
+enabled = true
+`,
+	)
+
+	dataDir := filepath.Join(tmpDir, "data")
+	t.Setenv("XDG_DATA_HOME", dataDir)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Messages: []Message{
+			{Role: "assistant", Content: "No user here"},
+		},
+	}
+
+	_, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	memPath := filepath.Join(dataDir, "axe", "memory", "test-agent.md")
+	data, err := os.ReadFile(memPath)
+	if err != nil {
+		t.Fatalf("memory file not created: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "(pre-built message history with no user message)") {
+		t.Errorf("memory missing fallback task: %q", content)
 	}
 }
 

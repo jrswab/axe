@@ -58,6 +58,7 @@ func stripAPIKeys(env map[string]string) map[string]string {
 	env["OPENAI_API_KEY"] = ""
 	env["ANTHROPIC_API_KEY"] = ""
 	env["OLLAMA_API_KEY"] = ""
+	env["OPENROUTER_API_KEY"] = ""
 	return env
 }
 
@@ -290,9 +291,9 @@ func TestSmoke_RunDryRun(t *testing.T) {
 		}
 	}
 
-	// Model line uses alignment spacing: "Model:    openai/gpt-4o"
-	if !strings.Contains(stdout, "openai/gpt-4o") {
-		t.Errorf("stdout does not contain model 'openai/gpt-4o': %q", stdout)
+	// Model line uses alignment spacing for the OpenRouter model
+	if !strings.Contains(stdout, "openrouter/openai/gpt-4o-mini") {
+		t.Errorf("stdout does not contain model 'openrouter/openai/gpt-4o-mini': %q", stdout)
 	}
 
 	// Verify "(default)" appears in the User Message section (no stdin or -p flag)
@@ -342,8 +343,8 @@ func TestSmoke_MissingAPIKey(t *testing.T) {
 	if !strings.Contains(stderr, "API key") {
 		t.Errorf("stderr does not contain 'API key': %q", stderr)
 	}
-	if !strings.Contains(stderr, "OPENAI_API_KEY") {
-		t.Errorf("stderr does not contain 'OPENAI_API_KEY': %q", stderr)
+	if !strings.Contains(stderr, "OPENROUTER_API_KEY") {
+		t.Errorf("stderr does not contain 'OPENROUTER_API_KEY': %q", stderr)
 	}
 	if stdout != "" {
 		t.Errorf("expected empty stdout, got: %q", stdout)

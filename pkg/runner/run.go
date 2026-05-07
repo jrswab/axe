@@ -178,21 +178,23 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		return nil, &ConfigError{Msg: "failed to load skill", Err: err}
 	}
 
-	// Step 9: Read stdin
+	// Step 9: Read stdin (only when not using pre-built messages)
 	var stdinContent string
 	var stdinErr error
-	if opts.Stdin != nil {
-		data, readErr := io.ReadAll(opts.Stdin)
-		if readErr != nil {
-			stdinErr = fmt.Errorf("failed to read stdin: %w", readErr)
+	if len(opts.Messages) == 0 {
+		if opts.Stdin != nil {
+			data, readErr := io.ReadAll(opts.Stdin)
+			if readErr != nil {
+				stdinErr = fmt.Errorf("failed to read stdin: %w", readErr)
+			} else {
+				stdinContent = string(data)
+			}
 		} else {
-			stdinContent = string(data)
+			stdinContent, stdinErr = resolve.Stdin()
 		}
-	} else {
-		stdinContent, stdinErr = resolve.Stdin()
-	}
-	if stdinErr != nil {
-		return nil, &RuntimeError{Msg: "failed to read stdin", Err: stdinErr}
+		if stdinErr != nil {
+			return nil, &RuntimeError{Msg: "failed to read stdin", Err: stdinErr}
+		}
 	}
 
 	// Step 10: Build system prompt
@@ -224,12 +226,25 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		}
 	}
 
-	// Step 11: Build user message
-	userMessage := defaultUserMessage
-	if strings.TrimSpace(opts.Prompt) != "" {
-		userMessage = opts.Prompt
-	} else if strings.TrimSpace(stdinContent) != "" {
-		userMessage = stdinContent
+	// Step 11: Build user message (or use pre-built history)
+	// Validate pre-built messages early before any provider setup.
+	if len(opts.Messages) > 0 {
+		if err := validateMessages(opts.Messages); err != nil {
+			return nil, err
+		}
+	}
+
+	var userMessage string
+	if len(opts.Messages) > 0 {
+		// skip Prompt/Stdin/default resolution
+		userMessage = ""
+	} else {
+		userMessage = defaultUserMessage
+		if strings.TrimSpace(opts.Prompt) != "" {
+			userMessage = opts.Prompt
+		} else if strings.TrimSpace(stdinContent) != "" {
+			userMessage = stdinContent
+		}
 	}
 
 	// Step 12: Resolve timeout
@@ -270,6 +285,10 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		for i, s := range cfg.MCPServers {
 			mcpServers[i] = fmt.Sprintf("%s: %s (%s)", s.Name, s.URL, s.Transport)
 		}
+		dryRunUserMessage := userMessage
+		if len(opts.Messages) > 0 {
+			dryRunUserMessage = "(pre-built message history)"
+		}
 		return &Result{
 			Content: "",
 			DryRun:  true,
@@ -283,7 +302,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 				SystemPrompt:    systemPrompt,
 				Skill:           skillContent,
 				Files:           filePaths,
-				UserMessage:     userMessage,
+				UserMessage:     dryRunUserMessage,
 				Memory:          memoryEntries,
 				MemoryEnabled:   cfg.Memory.Enabled,
 				Tools:           cfg.Tools,
@@ -292,6 +311,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 				MaxDepth:        effectiveMaxDepth,
 				Parallel:        parallel,
 				SubAgentTimeout: cfg.SubAgentsConf.Timeout,
+				MessageCount:    len(opts.Messages),
 			},
 			DurationMs: time.Since(start).Milliseconds(),
 		}, nil
@@ -341,10 +361,17 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	prov = retryProv
 
 	// Step 16: Build request
+	var messages []provider.Message
+	if len(opts.Messages) > 0 {
+		messages = toProviderMessages(opts.Messages)
+	} else {
+		messages = []provider.Message{{Role: "user", Content: userMessage}}
+	}
+
 	req := &provider.Request{
 		Model:       modelName,
 		System:      systemPrompt,
-		Messages:    []provider.Message{{Role: "user", Content: userMessage}},
+		Messages:    messages,
 		Temperature: cfg.Params.Temperature,
 		MaxTokens:   cfg.Params.MaxTokens,
 	}
@@ -436,7 +463,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 			skillDisplay = "(none)"
 		}
 		promptSource := "default"
-		if strings.TrimSpace(opts.Prompt) != "" {
+		if len(opts.Messages) > 0 {
+			promptSource = fmt.Sprintf("%d pre-built messages", len(opts.Messages))
+		} else if strings.TrimSpace(opts.Prompt) != "" {
 			promptSource = "flag"
 		} else if strings.TrimSpace(stdinContent) != "" {
 			promptSource = "stdin"
@@ -503,6 +532,11 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 			}
 			return nil, mapProviderError(err)
 		}
+		// Append assistant response to message history
+		req.Messages = append(req.Messages, provider.Message{
+			Role:    "assistant",
+			Content: resp.Content,
+		})
 		totalInputTokens = resp.InputTokens
 		totalOutputTokens = resp.OutputTokens
 		tracker.Add(resp.InputTokens, resp.OutputTokens)
@@ -569,6 +603,13 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 				_, _ = fmt.Fprintf(stderr, "[turn %d] %s: %s (%d tool calls)\n", turn+1, label, resp.StopReason, len(resp.ToolCalls))
 			}
 
+			// Append assistant response to history before deciding if we continue
+			req.Messages = append(req.Messages, provider.Message{
+				Role:      "assistant",
+				Content:   resp.Content,
+				ToolCalls: resp.ToolCalls,
+			})
+
 			// No tool calls: conversation is done
 			if len(resp.ToolCalls) == 0 {
 				break
@@ -607,14 +648,6 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 					})
 				}
 			}
-
-			// Append assistant message with tool calls
-			assistantMsg := provider.Message{
-				Role:      "assistant",
-				Content:   resp.Content,
-				ToolCalls: resp.ToolCalls,
-			}
-			req.Messages = append(req.Messages, assistantMsg)
 
 			// Append tool result message
 			toolResults := make([]provider.ToolResult, len(results))
@@ -670,6 +703,10 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 			Exceeded: tracker.Exceeded(),
 		},
 	}
+	// Only populate Messages for callers who provided a pre-built history.
+	if len(opts.Messages) > 0 {
+		result.Messages = fromProviderMessages(req.Messages)
+	}
 
 	if artifactTracker != nil {
 		entries := artifactTracker.Entries()
@@ -708,7 +745,14 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		if appendErr != nil {
 			_, _ = fmt.Fprintf(stderr, "Warning: failed to save memory for %q: %v\n", opts.AgentName, appendErr)
 		} else {
-			if appendErr = memory.AppendEntry(appendPath, userMessage, resp.Content); appendErr != nil {
+			taskText := userMessage
+			if len(opts.Messages) > 0 {
+				taskText = firstUserMessageContent(opts.Messages)
+				if taskText == "" {
+					taskText = "(pre-built message history with no user message)"
+				}
+			}
+			if appendErr = memory.AppendEntry(appendPath, taskText, resp.Content); appendErr != nil {
 				_, _ = fmt.Fprintf(stderr, "Warning: failed to save memory for %q: %v\n", opts.AgentName, appendErr)
 			}
 		}
