@@ -22,7 +22,9 @@ type StreamEvent struct {
 	ToolInput    string
 	InputTokens  int
 	OutputTokens int
+	Cost         float64
 	StopReason   string
+	CacheStatus  string
 }
 
 type EventStream struct {

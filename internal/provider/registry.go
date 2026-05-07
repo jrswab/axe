@@ -4,13 +4,14 @@ import "fmt"
 
 // supportedProviders lists all provider names accepted by New.
 var supportedProviders = map[string]bool{
-	"anthropic": true,
-	"openai":    true,
-	"ollama":    true,
-	"opencode":  true,
-	"google":    true,
-	"minimax":   true,
-	"bedrock":   true,
+	"anthropic":  true,
+	"openai":     true,
+	"ollama":     true,
+	"opencode":   true,
+	"google":     true,
+	"minimax":    true,
+	"bedrock":    true,
+	"openrouter": true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -68,7 +69,32 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		// baseURL is not used for bedrock
 		return NewBedrock(apiKey)
 
+	case "openrouter":
+		var opts []OpenRouterOption
+		if baseURL != "" {
+			opts = append(opts, WithOpenRouterBaseURL(baseURL))
+		}
+		return NewOpenRouter(apiKey, opts...)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock, openrouter", providerName)
 	}
+}
+
+// NewOpenRouterProvider creates an OpenRouter provider with attribution headers.
+func NewOpenRouterProvider(apiKey, baseURL, referer, title, categories string) (Provider, error) {
+	var opts []OpenRouterOption
+	if baseURL != "" {
+		opts = append(opts, WithOpenRouterBaseURL(baseURL))
+	}
+	if referer != "" {
+		opts = append(opts, WithReferer(referer))
+	}
+	if title != "" {
+		opts = append(opts, WithTitle(title))
+	}
+	if categories != "" {
+		opts = append(opts, WithCategories(categories))
+	}
+	return NewOpenRouter(apiKey, opts...)
 }

@@ -401,3 +401,95 @@ func TestResolveRegion_UnknownProvider(t *testing.T) {
 		t.Errorf("expected 'sa-east-1' (AXE_UNKNOWN_REGION), got %q", got)
 	}
 }
+
+// --- OpenRouter attribution resolution tests ---
+
+func TestResolveOpenRouterAttribution(t *testing.T) {
+	cases := []struct {
+		name       string
+		env        map[string]string
+		cfg        *GlobalConfig
+		provider   string
+		fn         string // "referer", "title", or "categories"
+		want       string
+	}{
+		{
+			name:     "referer env overrides config",
+			env:      map[string]string{"AXE_OPENROUTER_REFERER": "https://env.example.com"},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Referer: "https://config.example.com"}}},
+			provider: "openrouter",
+			fn:       "referer",
+			want:     "https://env.example.com",
+		},
+		{
+			name:     "referer config fallback when env empty",
+			env:      map[string]string{"AXE_OPENROUTER_REFERER": ""},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Referer: "https://config.example.com"}}},
+			provider: "openrouter",
+			fn:       "referer",
+			want:     "https://config.example.com",
+		},
+		{
+			name:     "referer unknown provider",
+			env:      map[string]string{"AXE_OPENROUTER_REFERER": ""},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{}},
+			provider: "unknown",
+			fn:       "referer",
+			want:     "",
+		},
+		{
+			name:     "title config fallback when env empty",
+			env:      map[string]string{"AXE_OPENROUTER_TITLE": ""},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Title: "ConfigTitle"}}},
+			provider: "openrouter",
+			fn:       "title",
+			want:     "ConfigTitle",
+		},
+		{
+			name:     "title unknown provider",
+			env:      map[string]string{"AXE_OPENROUTER_TITLE": ""},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{}},
+			provider: "unknown",
+			fn:       "title",
+			want:     "",
+		},
+		{
+			name:     "categories config fallback when env empty",
+			env:      map[string]string{"AXE_OPENROUTER_CATEGORIES": ""},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{"openrouter": {Categories: "config-cat"}}},
+			provider: "openrouter",
+			fn:       "categories",
+			want:     "config-cat",
+		},
+		{
+			name:     "categories unknown provider",
+			env:      map[string]string{"AXE_OPENROUTER_CATEGORIES": ""},
+			cfg:      &GlobalConfig{Providers: map[string]ProviderConfig{}},
+			provider: "unknown",
+			fn:       "categories",
+			want:     "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
+			var got string
+			switch tc.fn {
+			case "referer":
+				got = tc.cfg.ResolveReferer(tc.provider)
+			case "title":
+				got = tc.cfg.ResolveTitle(tc.provider)
+			case "categories":
+				got = tc.cfg.ResolveCategories(tc.provider)
+			default:
+				t.Fatalf("unknown fn %q", tc.fn)
+			}
+			if got != tc.want {
+				t.Errorf("expected %q, got %q", tc.want, got)
+			}
+		})
+	}
+}

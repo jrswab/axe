@@ -319,7 +319,12 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	}
 
 	// Step 15: Create provider
-	prov, err := provider.New(provName, apiKey, baseURL)
+	var prov provider.Provider
+	if provName == "openrouter" {
+		prov, err = provider.NewOpenRouterProvider(apiKey, baseURL, globalCfg.ResolveReferer(provName), globalCfg.ResolveTitle(provName), globalCfg.ResolveCategories(provName))
+	} else {
+		prov, err = provider.New(provName, apiKey, baseURL)
+	}
 	if err != nil {
 		return nil, &RuntimeError{Msg: "failed to create provider", Err: err}
 	}
@@ -651,7 +656,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		Model:           resp.Model,
 		InputTokens:     totalInputTokens,
 		OutputTokens:    totalOutputTokens,
+		Cost:            resp.Cost,
 		StopReason:      resp.StopReason,
+		CacheStatus:     resp.CacheStatus,
 		ToolCalls:       totalToolCalls,
 		ToolCallDetails: allToolCallDetails,
 		DurationMs:      durationMs,
@@ -718,7 +725,9 @@ func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Resp
 	var content strings.Builder
 	var toolCalls []provider.ToolCall
 	var inputTokens, outputTokens int
+	var cost float64
 	var stopReason string
+	var cacheStatus string
 
 	type pendingCall struct {
 		id   string
@@ -778,7 +787,9 @@ func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Resp
 		case provider.StreamEventDone:
 			inputTokens = ev.InputTokens
 			outputTokens = ev.OutputTokens
+			cost = ev.Cost
 			stopReason = ev.StopReason
+			cacheStatus = ev.CacheStatus
 		}
 	}
 
@@ -787,7 +798,9 @@ func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Resp
 		ToolCalls:    toolCalls,
 		InputTokens:  inputTokens,
 		OutputTokens: outputTokens,
+		Cost:         cost,
 		StopReason:   stopReason,
+		CacheStatus:  cacheStatus,
 	}, nil
 }
 

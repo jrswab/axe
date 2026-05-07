@@ -90,7 +90,9 @@ type Response struct {
 	Model        string
 	InputTokens  int
 	OutputTokens int
+	Cost         float64
 	StopReason   string
+	CacheStatus  string
 	ToolCalls    []ToolCall // Tool calls requested by the LLM. Empty if no tools called.
 }
 
