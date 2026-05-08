@@ -93,6 +93,88 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 }
 
+func TestRun_SingleShot_CacheTokens(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithCacheTokens("Hello with cache", 10, 5, 8, 2),
+	})
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if result.CacheReadTokens != 8 {
+		t.Errorf("CacheReadTokens = %d, want 8", result.CacheReadTokens)
+	}
+	if result.CacheWriteTokens != 2 {
+		t.Errorf("CacheWriteTokens = %d, want 2", result.CacheWriteTokens)
+	}
+}
+
+func TestRun_ConversationLoop_CacheTokensAccumulate(t *testing.T) {
+	// First response: tool call with cache tokens
+	// Second response: final text with different cache tokens
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponseWithCacheTokens("Let me list", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+		}, 20, 10, 15, 5),
+		testutil.AnthropicResponseWithCacheTokens("Done", 8, 4, 3, 1),
+	})
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+tools = ["list_directory"]
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if result.CacheReadTokens != 18 {
+		t.Errorf("CacheReadTokens = %d, want 18 (15+3)", result.CacheReadTokens)
+	}
+	if result.CacheWriteTokens != 6 {
+		t.Errorf("CacheWriteTokens = %d, want 6 (5+1)", result.CacheWriteTokens)
+	}
+}
+
 func TestRun_ConversationLoop_OneToolCall(t *testing.T) {
 	// First response: tool call for list_directory
 	// Second response: final text
@@ -535,6 +617,53 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 	if mock.RequestCount() != 3 {
 		t.Errorf("RequestCount = %d, want 3", mock.RequestCount())
+	}
+}
+
+func TestRun_JSONOutput_CacheTokens(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponseWithCacheTokens("JSON cache test", 10, 5, 8, 2),
+	})
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+
+	opts := Options{
+		AgentName: "test-agent",
+		JSON:      true,
+		Stdout:    stdout,
+		Stderr:    stderr,
+	}
+
+	result, err := Run(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.CacheReadTokens != 8 {
+		t.Errorf("CacheReadTokens = %d, want 8", result.CacheReadTokens)
+	}
+	if result.CacheWriteTokens != 2 {
+		t.Errorf("CacheWriteTokens = %d, want 2", result.CacheWriteTokens)
+	}
+
+	// Verify JSON output includes cache fields
+	out := stdout.String()
+	if !strings.Contains(out, `"cache_read_tokens"`) {
+		t.Errorf("JSON missing cache_read_tokens: %q", out)
+	}
+	if !strings.Contains(out, `"cache_write_tokens"`) {
+		t.Errorf("JSON missing cache_write_tokens: %q", out)
 	}
 }
 

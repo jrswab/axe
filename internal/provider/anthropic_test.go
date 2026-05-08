@@ -890,3 +890,161 @@ func TestAnthropic_Send_AssistantToolCallMessage(t *testing.T) {
 		t.Error("assistant message missing tool_use content block")
 	}
 }
+
+// --- Prompt Caching Tests ---
+
+func TestAnthropic_Send_CachedSystemPrompt_EmitsContentBlocks(t *testing.T) {
+	var gotBody map[string]interface{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &gotBody)
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"content":     []map[string]string{{"type": "text", "text": "ok"}},
+			"model":       "claude-sonnet-4-20250514",
+			"usage":       map[string]int{"input_tokens": 1, "output_tokens": 1},
+			"stop_reason": "end_turn",
+		})
+	}))
+	defer server.Close()
+
+	a, _ := NewAnthropic("key", WithBaseURL(server.URL))
+	_, _ = a.Send(context.Background(), &Request{
+		Model:       "claude-sonnet-4-20250514",
+		System:      "You are a helpful assistant.",
+		CacheConfig: true,
+		Messages:    []Message{{Role: "user", Content: "Hi"}},
+	})
+
+	sysRaw, ok := gotBody["system"].([]interface{})
+	if !ok {
+		t.Fatalf("system should be array when CacheConfig=true, got %T", gotBody["system"])
+	}
+	if len(sysRaw) != 1 {
+		t.Fatalf("system blocks count = %d, want 1", len(sysRaw))
+	}
+	block := sysRaw[0].(map[string]interface{})
+	if block["type"] != "text" {
+		t.Errorf("block.type = %q, want %q", block["type"], "text")
+	}
+	if block["text"] != "You are a helpful assistant." {
+		t.Errorf("block.text = %q, want %q", block["text"], "You are a helpful assistant.")
+	}
+	cacheCtrl, ok := block["cache_control"].(map[string]interface{})
+	if !ok {
+		t.Fatal("cache_control missing on system block")
+	}
+	if cacheCtrl["type"] != "ephemeral" {
+		t.Errorf("cache_control.type = %q, want %q", cacheCtrl["type"], "ephemeral")
+	}
+}
+
+func TestAnthropic_Send_NonCachedSystemPrompt_PlainString(t *testing.T) {
+	var gotBody map[string]interface{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &gotBody)
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"content":     []map[string]string{{"type": "text", "text": "ok"}},
+			"model":       "claude-sonnet-4-20250514",
+			"usage":       map[string]int{"input_tokens": 1, "output_tokens": 1},
+			"stop_reason": "end_turn",
+		})
+	}))
+	defer server.Close()
+
+	a, _ := NewAnthropic("key", WithBaseURL(server.URL))
+	_, _ = a.Send(context.Background(), &Request{
+		Model:       "claude-sonnet-4-20250514",
+		System:      "You are a helpful assistant.",
+		CacheConfig: false,
+		Messages:    []Message{{Role: "user", Content: "Hi"}},
+	})
+
+	sysRaw, ok := gotBody["system"].(string)
+	if !ok {
+		t.Fatalf("system should be plain string when CacheConfig=false, got %T", gotBody["system"])
+	}
+	if sysRaw != "You are a helpful assistant." {
+		t.Errorf("system = %q, want %q", sysRaw, "You are a helpful assistant.")
+	}
+}
+
+func TestAnthropic_Send_CacheUsageParsing(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"content":     []map[string]string{{"type": "text", "text": "Hello from Claude"}},
+			"model":       "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": map[string]interface{}{
+				"input_tokens":                100,
+				"output_tokens":               5,
+				"cache_creation_input_tokens": 80,
+				"cache_read_input_tokens":     10,
+			},
+		})
+	}))
+	defer server.Close()
+
+	a, _ := NewAnthropic("key", WithBaseURL(server.URL))
+	resp, err := a.Send(context.Background(), &Request{
+		Model:       "claude-sonnet-4-20250514",
+		CacheConfig: true,
+		Messages:    []Message{{Role: "user", Content: "Hello"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.InputTokens != 100 {
+		t.Errorf("InputTokens = %d, want 100", resp.InputTokens)
+	}
+	if resp.OutputTokens != 5 {
+		t.Errorf("OutputTokens = %d, want 5", resp.OutputTokens)
+	}
+	if resp.CacheReadTokens != 10 {
+		t.Errorf("CacheReadTokens = %d, want 10", resp.CacheReadTokens)
+	}
+	if resp.CacheWriteTokens != 80 {
+		t.Errorf("CacheWriteTokens = %d, want 80", resp.CacheWriteTokens)
+	}
+}
+
+func TestAnthropic_Send_CacheUsageOmitted(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"content":     []map[string]string{{"type": "text", "text": "Hello"}},
+			"model":       "claude-sonnet-4-20250514",
+			"stop_reason": "end_turn",
+			"usage": map[string]int{
+				"input_tokens":  50,
+				"output_tokens": 5,
+			},
+		})
+	}))
+	defer server.Close()
+
+	a, _ := NewAnthropic("key", WithBaseURL(server.URL))
+	resp, err := a.Send(context.Background(), &Request{
+		Model:       "claude-sonnet-4-20250514",
+		CacheConfig: true,
+		Messages:    []Message{{Role: "user", Content: "Hello"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.CacheReadTokens != 0 {
+		t.Errorf("CacheReadTokens = %d, want 0", resp.CacheReadTokens)
+	}
+	if resp.CacheWriteTokens != 0 {
+		t.Errorf("CacheWriteTokens = %d, want 0", resp.CacheWriteTokens)
+	}
+}

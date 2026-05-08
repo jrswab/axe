@@ -243,3 +243,29 @@ func TestDrainEventStream_EOFWithoutDone(t *testing.T) {
 		t.Errorf("StopReason = %q, want empty", resp.StopReason)
 	}
 }
+
+func TestDrainEventStream_CacheTokensFromDone(t *testing.T) {
+	stream := makeStream([]provider.StreamEvent{
+		{Type: provider.StreamEventDone, InputTokens: 10, OutputTokens: 5, CacheReadTokens: 8, CacheWriteTokens: 2, StopReason: "end_turn"},
+	})
+
+	resp, err := drainEventStream(stream, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.InputTokens != 10 {
+		t.Errorf("InputTokens = %d, want 10", resp.InputTokens)
+	}
+	if resp.OutputTokens != 5 {
+		t.Errorf("OutputTokens = %d, want 5", resp.OutputTokens)
+	}
+	if resp.CacheReadTokens != 8 {
+		t.Errorf("CacheReadTokens = %d, want 8", resp.CacheReadTokens)
+	}
+	if resp.CacheWriteTokens != 2 {
+		t.Errorf("CacheWriteTokens = %d, want 2", resp.CacheWriteTokens)
+	}
+	if resp.StopReason != "end_turn" {
+		t.Errorf("StopReason = %q, want end_turn", resp.StopReason)
+	}
+}

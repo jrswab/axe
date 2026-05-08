@@ -186,3 +186,63 @@ func TestMessage_ToolResultsField(t *testing.T) {
 		t.Error("ToolResults[1].IsError = false, want true")
 	}
 }
+
+func TestResponse_CacheTokens(t *testing.T) {
+	cases := []struct {
+		name             string
+		resp             *Response
+		wantReadTokens   int
+		wantWriteTokens  int
+	}{
+		{
+			name:            "both cache tokens populated",
+			resp:            &Response{Content: "hello", CacheReadTokens: 42, CacheWriteTokens: 7},
+			wantReadTokens:  42,
+			wantWriteTokens: 7,
+		},
+		{
+			name:            "zero values",
+			resp:            &Response{Content: "hello"},
+			wantReadTokens:  0,
+			wantWriteTokens: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.resp.CacheReadTokens != tc.wantReadTokens {
+				t.Errorf("CacheReadTokens = %d, want %d", tc.resp.CacheReadTokens, tc.wantReadTokens)
+			}
+			if tc.resp.CacheWriteTokens != tc.wantWriteTokens {
+				t.Errorf("CacheWriteTokens = %d, want %d", tc.resp.CacheWriteTokens, tc.wantWriteTokens)
+			}
+		})
+	}
+}
+
+func TestRequest_CacheConfig(t *testing.T) {
+	cases := []struct {
+		name            string
+		req             *Request
+		wantCacheConfig bool
+	}{
+		{
+			name:            "cache enabled",
+			req:             &Request{Model: "anthropic/claude-sonnet-4-20250514", CacheConfig: true},
+			wantCacheConfig: true,
+		},
+		{
+			name:            "cache disabled",
+			req:             &Request{Model: "anthropic/claude-sonnet-4-20250514", CacheConfig: false},
+			wantCacheConfig: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.req.CacheConfig != tc.wantCacheConfig {
+				t.Errorf("CacheConfig = %v, want %v", tc.req.CacheConfig, tc.wantCacheConfig)
+			}
+		})
+	}
+}

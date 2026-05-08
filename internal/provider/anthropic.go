@@ -66,7 +66,7 @@ type anthropicRequest struct {
 	Model       string             `json:"model"`
 	MaxTokens   int                `json:"max_tokens"`
 	Messages    []anthropicMessage `json:"messages"`
-	System      string             `json:"system,omitempty"`
+	System      interface{}        `json:"system,omitempty"`
 	Temperature *float64           `json:"temperature,omitempty"`
 	Tools       []anthropicToolDef `json:"tools,omitempty"`
 	Stream      bool               `json:"stream,omitempty"`
@@ -82,14 +82,15 @@ type anthropicMessage struct {
 // Note: We use pointers/interfaces for optional fields so that omitempty works
 // correctly. For tool_result blocks, is_error must always be present.
 type anthropicContentBlock struct {
-	Type      string                 `json:"type"`
-	Text      string                 `json:"text,omitempty"`
-	ID        string                 `json:"id,omitempty"`
-	Name      string                 `json:"name,omitempty"`
-	Input     map[string]interface{} `json:"input,omitempty"`
-	ToolUseID string                 `json:"tool_use_id,omitempty"`
-	Content   string                 `json:"content,omitempty"`
-	IsError   *bool                  `json:"is_error,omitempty"`
+	Type         string                 `json:"type"`
+	Text         string                 `json:"text,omitempty"`
+	ID           string                 `json:"id,omitempty"`
+	Name         string                 `json:"name,omitempty"`
+	Input        map[string]interface{} `json:"input,omitempty"`
+	ToolUseID    string                 `json:"tool_use_id,omitempty"`
+	Content      string                 `json:"content,omitempty"`
+	IsError      *bool                  `json:"is_error,omitempty"`
+	CacheControl map[string]interface{} `json:"cache_control,omitempty"`
 }
 
 // anthropicToolDef is the wire format for a tool definition in the Anthropic API.
@@ -111,8 +112,10 @@ type anthropicResponse struct {
 	Model      string `json:"model"`
 	StopReason string `json:"stop_reason"`
 	Usage      struct {
-		InputTokens  int `json:"input_tokens"`
-		OutputTokens int `json:"output_tokens"`
+		InputTokens              int `json:"input_tokens"`
+		OutputTokens             int `json:"output_tokens"`
+		CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+		CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 	} `json:"usage"`
 }
 
@@ -201,13 +204,35 @@ func convertToAnthropicTools(tools []Tool) []anthropicToolDef {
 			schema["required"] = required
 		}
 
-		result = append(result, anthropicToolDef{
+		td := anthropicToolDef{
 			Name:        tool.Name,
 			Description: tool.Description,
 			InputSchema: schema,
-		})
+		}
+		result = append(result, td)
 	}
 	return result
+}
+
+// buildAnthropicSystem builds the system field for an Anthropic request.
+// When cacheEnabled is true, it returns a content block array with cache_control
+// on the last block. Otherwise, it returns the plain string.
+func buildAnthropicSystem(system string, cacheEnabled bool) interface{} {
+	if system == "" {
+		return nil // nil omits the field with omitempty
+	}
+	if !cacheEnabled {
+		return system
+	}
+	return []map[string]interface{}{
+		{
+			"type": "text",
+			"text": system,
+			"cache_control": map[string]interface{}{
+				"type": "ephemeral",
+			},
+		},
+	}
 }
 
 // Send makes a completion request to the Anthropic Messages API.
@@ -221,7 +246,7 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 		Model:     req.Model,
 		MaxTokens: maxTokens,
 		Messages:  convertToAnthropicMessages(req.Messages),
-		System:    req.System,
+		System:    buildAnthropicSystem(req.System, req.CacheConfig),
 	}
 
 	if req.Temperature != 0 {
@@ -314,12 +339,14 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	return &Response{
-		Content:      textContent,
-		Model:        apiResp.Model,
-		InputTokens:  apiResp.Usage.InputTokens,
-		OutputTokens: apiResp.Usage.OutputTokens,
-		StopReason:   apiResp.StopReason,
-		ToolCalls:    toolCalls,
+		Content:          textContent,
+		Model:            apiResp.Model,
+		InputTokens:      apiResp.Usage.InputTokens,
+		OutputTokens:     apiResp.Usage.OutputTokens,
+		CacheReadTokens:  apiResp.Usage.CacheReadInputTokens,
+		CacheWriteTokens: apiResp.Usage.CacheCreationInputTokens,
+		StopReason:       apiResp.StopReason,
+		ToolCalls:        toolCalls,
 	}, nil
 }
 
@@ -357,7 +384,7 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 		Model:     req.Model,
 		MaxTokens: maxTokens,
 		Messages:  convertToAnthropicMessages(req.Messages),
-		System:    req.System,
+		System:    buildAnthropicSystem(req.System, req.CacheConfig),
 		Stream:    true,
 	}
 
@@ -415,6 +442,8 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 
 	parser := NewSSEParser(httpResp.Body)
 	var inputTokens int
+	var cacheReadTokens int
+	var cacheWriteTokens int
 	blocks := make(map[int]anthropicBlockInfo)
 
 	nextFunc := func() (StreamEvent, error) {
@@ -451,6 +480,8 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 			case "message_start":
 				if event.Message != nil && event.Message.Usage != nil {
 					inputTokens = event.Message.Usage.InputTokens
+					cacheReadTokens = event.Message.Usage.CacheReadInputTokens
+					cacheWriteTokens = event.Message.Usage.CacheCreationInputTokens
 				}
 				continue
 
@@ -520,10 +551,12 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 					outputTokens = event.Usage.OutputTokens
 				}
 				return StreamEvent{
-					Type:         StreamEventDone,
-					StopReason:   stopReason,
-					InputTokens:  inputTokens,
-					OutputTokens: outputTokens,
+					Type:             StreamEventDone,
+					StopReason:       stopReason,
+					InputTokens:      inputTokens,
+					OutputTokens:     outputTokens,
+					CacheReadTokens:  cacheReadTokens,
+					CacheWriteTokens: cacheWriteTokens,
 				}, nil
 
 			case "message_stop":

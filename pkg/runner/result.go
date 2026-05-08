@@ -51,23 +51,25 @@ type DryRunInfo struct {
 
 // Result captures all outputs of a completed agent run.
 type Result struct {
-	Content         string           `json:"content"`
-	Model           string           `json:"model"`
-	InputTokens     int              `json:"input_tokens"`
-	OutputTokens    int              `json:"output_tokens"`
-	Cost            float64          `json:"cost"`
-	StopReason      string           `json:"stop_reason"`
-	CacheStatus     string           `json:"cache_status"`
-	ToolCalls       int              `json:"tool_calls"`
-	ToolCallDetails []ToolCallDetail `json:"tool_call_details"`
-	DurationMs      int64            `json:"duration_ms"`
-	Refused         bool             `json:"refused"`
-	RetryAttempts   int              `json:"retry_attempts"`
-	Budget          BudgetState      `json:"budget"`
-	Artifacts       []ArtifactInfo   `json:"artifacts"`
-	DryRun          bool             `json:"dry_run"`
-	DryRunInfo      *DryRunInfo      `json:"-"`
-	Messages        []Message        `json:"messages"`
+	Content          string           `json:"content"`
+	Model            string           `json:"model"`
+	InputTokens      int              `json:"input_tokens"`
+	OutputTokens     int              `json:"output_tokens"`
+	CacheReadTokens  int              `json:"cache_read_tokens"`
+	CacheWriteTokens int              `json:"cache_write_tokens"`
+	Cost             float64          `json:"cost"`
+	StopReason       string           `json:"stop_reason"`
+	CacheStatus      string           `json:"cache_status"`
+	ToolCalls        int              `json:"tool_calls"`
+	ToolCallDetails  []ToolCallDetail `json:"tool_call_details"`
+	DurationMs       int64            `json:"duration_ms"`
+	Refused          bool             `json:"refused"`
+	RetryAttempts    int              `json:"retry_attempts"`
+	Budget           BudgetState      `json:"budget"`
+	Artifacts        []ArtifactInfo   `json:"artifacts"`
+	DryRun           bool             `json:"dry_run"`
+	DryRunInfo       *DryRunInfo      `json:"-"`
+	Messages         []Message        `json:"messages"`
 }
 
 // MarshalJSON produces JSON output that matches the legacy CLI format:
@@ -121,6 +123,12 @@ func (r Result) MarshalJSON() ([]byte, error) {
 	}
 	if r.CacheStatus != "" {
 		m["cache_status"] = r.CacheStatus
+	}
+	if r.CacheReadTokens != 0 {
+		m["cache_read_tokens"] = r.CacheReadTokens
+	}
+	if r.CacheWriteTokens != 0 {
+		m["cache_write_tokens"] = r.CacheWriteTokens
 	}
 	m["duration_ms"] = r.DurationMs
 	m["input_tokens"] = r.InputTokens

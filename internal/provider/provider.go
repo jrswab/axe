@@ -80,20 +80,23 @@ type Request struct {
 	Messages       []Message
 	Temperature    float64
 	MaxTokens      int
+	CacheConfig    bool
 	Tools          []Tool         // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
 	ResponseFormat ResponseFormat // Optional structured output constraint.
 }
 
 // Response represents an LLM completion response.
 type Response struct {
-	Content      string
-	Model        string
-	InputTokens  int
-	OutputTokens int
-	Cost         float64
-	StopReason   string
-	CacheStatus  string
-	ToolCalls    []ToolCall // Tool calls requested by the LLM. Empty if no tools called.
+	Content          string
+	Model            string
+	InputTokens      int
+	OutputTokens     int
+	CacheReadTokens  int
+	CacheWriteTokens int
+	Cost             float64
+	StopReason       string
+	CacheStatus      string
+	ToolCalls        []ToolCall // Tool calls requested by the LLM. Empty if no tools called.
 }
 
 // Provider defines the interface for LLM providers.
