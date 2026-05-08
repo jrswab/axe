@@ -186,3 +186,27 @@ func TestMessage_ToolResultsField(t *testing.T) {
 		t.Error("ToolResults[1].IsError = false, want true")
 	}
 }
+
+func TestResponse_CacheTokens(t *testing.T) {
+	resp := &Response{
+		Content:          "hello",
+		CacheReadTokens:  42,
+		CacheWriteTokens: 7,
+	}
+	if resp.CacheReadTokens != 42 {
+		t.Errorf("CacheReadTokens = %d, want 42", resp.CacheReadTokens)
+	}
+	if resp.CacheWriteTokens != 7 {
+		t.Errorf("CacheWriteTokens = %d, want 7", resp.CacheWriteTokens)
+	}
+}
+
+func TestRequest_CacheConfig(t *testing.T) {
+	req := &Request{
+		Model:       "anthropic/claude-sonnet-4-20250514",
+		CacheConfig: true,
+	}
+	if !req.CacheConfig {
+		t.Error("CacheConfig = false, want true")
+	}
+}

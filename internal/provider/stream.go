@@ -15,16 +15,18 @@ const (
 )
 
 type StreamEvent struct {
-	Type         string
-	Text         string
-	ToolCallID   string
-	ToolName     string
-	ToolInput    string
-	InputTokens  int
-	OutputTokens int
-	Cost         float64
-	StopReason   string
-	CacheStatus  string
+	Type             string  // one of the constants above
+	Text             string
+	ToolCallID       string
+	ToolName         string
+	ToolInput        string
+	InputTokens      int
+	OutputTokens     int
+	CacheReadTokens  int
+	CacheWriteTokens int
+	Cost             float64
+	StopReason       string
+	CacheStatus      string
 }
 
 type EventStream struct {

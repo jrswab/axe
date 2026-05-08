@@ -130,6 +130,12 @@ func (m *MockLLMServer) RequestCount() int {
 	return m.callIndex
 }
 
+// AnthropicResponseWithCacheTokens returns a MockLLMResponse with cache token counts.
+func AnthropicResponseWithCacheTokens(text string, inputTokens, outputTokens, cacheRead, cacheWrite int) MockLLMResponse {
+	body := fmt.Sprintf(`{"id":"msg_mock","type":"message","role":"assistant","content":[{"type":"text","text":%s}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":%d,"output_tokens":%d,"cache_creation_input_tokens":%d,"cache_read_input_tokens":%d}}`, jsonString(text), inputTokens, outputTokens, cacheWrite, cacheRead)
+	return MockLLMResponse{StatusCode: 200, Body: body}
+}
+
 // AnthropicResponse returns a MockLLMResponse with a valid Anthropic messages API
 // response containing the given text.
 func AnthropicResponse(text string) MockLLMResponse {
@@ -169,6 +175,20 @@ func AnthropicToolUseResponseWithTokens(text string, toolCalls []MockToolCall, i
 	}
 
 	body := fmt.Sprintf(`{"id":"msg_mock","type":"message","role":"assistant","content":[%s],"model":"claude-sonnet-4-20250514","stop_reason":"tool_use","usage":{"input_tokens":%d,"output_tokens":%d}}`, strings.Join(blocks, ","), inputTokens, outputTokens)
+	return MockLLMResponse{StatusCode: 200, Body: body}
+}
+
+// AnthropicToolUseResponseWithCacheTokens returns a MockLLMResponse with tool calls and cache token counts.
+func AnthropicToolUseResponseWithCacheTokens(text string, toolCalls []MockToolCall, inputTokens, outputTokens, cacheRead, cacheWrite int) MockLLMResponse {
+	var blocks []string
+	blocks = append(blocks, fmt.Sprintf(`{"type":"text","text":%s}`, jsonString(text)))
+
+	for _, tc := range toolCalls {
+		inputJSON, _ := json.Marshal(tc.Input)
+		blocks = append(blocks, fmt.Sprintf(`{"type":"tool_use","id":%s,"name":%s,"input":%s}`, jsonString(tc.ID), jsonString(tc.Name), string(inputJSON)))
+	}
+
+	body := fmt.Sprintf(`{"id":"msg_mock","type":"message","role":"assistant","content":[%s],"model":"claude-sonnet-4-20250514","stop_reason":"tool_use","usage":{"input_tokens":%d,"output_tokens":%d,"cache_creation_input_tokens":%d,"cache_read_input_tokens":%d}}`, strings.Join(blocks, ","), inputTokens, outputTokens, cacheWrite, cacheRead)
 	return MockLLMResponse{StatusCode: 200, Body: body}
 }
 

@@ -127,8 +127,11 @@ type openaiResponse struct {
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
 	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
+		PromptTokens        int `json:"prompt_tokens"`
+		CompletionTokens    int `json:"completion_tokens"`
+		PromptTokensDetails struct {
+			CachedTokens int `json:"cached_tokens"`
+		} `json:"prompt_tokens_details"`
 	} `json:"usage"`
 }
 
@@ -345,12 +348,13 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	return &Response{
-		Content:      content,
-		Model:        apiResp.Model,
-		InputTokens:  apiResp.Usage.PromptTokens,
-		OutputTokens: apiResp.Usage.CompletionTokens,
-		StopReason:   apiResp.Choices[0].FinishReason,
-		ToolCalls:    toolCalls,
+		Content:         content,
+		Model:           apiResp.Model,
+		InputTokens:     apiResp.Usage.PromptTokens,
+		OutputTokens:    apiResp.Usage.CompletionTokens,
+		CacheReadTokens: apiResp.Usage.PromptTokensDetails.CachedTokens,
+		StopReason:      apiResp.Choices[0].FinishReason,
+		ToolCalls:       toolCalls,
 	}, nil
 }
 
@@ -533,10 +537,11 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 				if chunk.Usage != nil {
 					gotUsage = true
 					return StreamEvent{
-						Type:         StreamEventDone,
-						InputTokens:  chunk.Usage.PromptTokens,
-						OutputTokens: chunk.Usage.CompletionTokens,
-						StopReason:   finishReason,
+						Type:            StreamEventDone,
+						InputTokens:     chunk.Usage.PromptTokens,
+						OutputTokens:    chunk.Usage.CompletionTokens,
+						CacheReadTokens: chunk.Usage.PromptTokensDetails.CachedTokens,
+						StopReason:      finishReason,
 					}, nil
 				}
 				continue
@@ -637,8 +642,11 @@ type openaiStreamToolCallFunction struct {
 
 // openaiStreamUsage holds token usage info from the streaming usage chunk.
 type openaiStreamUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
+	PromptTokens        int `json:"prompt_tokens"`
+	CompletionTokens    int `json:"completion_tokens"`
+	PromptTokensDetails struct {
+		CachedTokens int `json:"cached_tokens"`
+	} `json:"prompt_tokens_details"`
 }
 
 // openaiStreamOptions controls streaming behavior in the request.

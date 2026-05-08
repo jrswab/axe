@@ -104,9 +104,15 @@ type bedrockToolResultContent struct {
 	Text string `json:"text,omitempty"`
 }
 
+// bedrockCachePoint is the cache point sentinel used for prompt caching.
+type bedrockCachePoint struct {
+	Type string `json:"type"`
+}
+
 // bedrockSystemBlock is a system prompt block in the Bedrock API.
 type bedrockSystemBlock struct {
-	Text string `json:"text"`
+	Text       string               `json:"text"`
+	CachePoint *bedrockCachePoint `json:"cachePoint,omitempty"`
 }
 
 // bedrockInferenceConfig holds temperature and max token settings.
@@ -117,7 +123,8 @@ type bedrockInferenceConfig struct {
 
 // bedrockToolConfig wraps the tool definitions sent to Bedrock.
 type bedrockToolConfig struct {
-	Tools []bedrockToolDef `json:"tools"`
+	Tools      []bedrockToolDef   `json:"tools"`
+	CachePoint *bedrockCachePoint `json:"cachePoint,omitempty"`
 }
 
 // bedrockToolDef is the wire format for a tool definition in the Bedrock API.
@@ -146,8 +153,10 @@ type bedrockOutput struct {
 
 // bedrockUsage contains token usage information from the Bedrock response.
 type bedrockUsage struct {
-	InputTokens  int `json:"inputTokens"`
-	OutputTokens int `json:"outputTokens"`
+	InputTokens            int `json:"inputTokens"`
+	OutputTokens           int `json:"outputTokens"`
+	CacheReadInputTokens   int `json:"cacheReadInputTokens"`
+	CacheWriteInputTokens  int `json:"cacheWriteInputTokens"`
 }
 
 // bedrockErrorResponse represents a Bedrock API error response.
@@ -177,6 +186,14 @@ func buildBedrockRequest(req *Request) bedrockRequest {
 	}
 	if len(req.Tools) > 0 {
 		br.ToolConfig = &bedrockToolConfig{Tools: convertTools(req.Tools)}
+	}
+	if req.CacheConfig {
+		if len(br.System) > 0 {
+			br.System[len(br.System)-1].CachePoint = &bedrockCachePoint{Type: "default"}
+		}
+		if br.ToolConfig != nil {
+			br.ToolConfig.CachePoint = &bedrockCachePoint{Type: "default"}
+		}
 	}
 	return br
 }
@@ -243,10 +260,12 @@ func convertTools(tools []Tool) []bedrockToolDef {
 // parseBedrockResponse converts a Bedrock API response to a provider Response.
 func parseBedrockResponse(resp *bedrockResponse, model string) *Response {
 	r := &Response{
-		Model:        model,
-		StopReason:   resp.StopReason,
-		InputTokens:  resp.Usage.InputTokens,
-		OutputTokens: resp.Usage.OutputTokens,
+		Model:            model,
+		StopReason:       resp.StopReason,
+		InputTokens:      resp.Usage.InputTokens,
+		OutputTokens:     resp.Usage.OutputTokens,
+		CacheReadTokens:  resp.Usage.CacheReadInputTokens,
+		CacheWriteTokens: resp.Usage.CacheWriteInputTokens,
 	}
 	if resp.Output.Message == nil {
 		return r

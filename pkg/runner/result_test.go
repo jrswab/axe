@@ -62,11 +62,11 @@ func TestResultMarshalJSON_TableDriven(t *testing.T) {
 
 func TestResultMarshalJSON_WithMessages(t *testing.T) {
 	result := Result{
-		Content:     "Hello",
-		InputTokens: 10,
+		Content:      "Hello",
+		InputTokens:  10,
 		OutputTokens: 5,
-		Model:       "openai/gpt-4",
-		StopReason:  "stop",
+		Model:        "openai/gpt-4",
+		StopReason:   "stop",
 		Messages: []Message{
 			{Role: "user", Content: "hi"},
 			{Role: "assistant", Content: "Hello"},
@@ -106,11 +106,11 @@ func TestResultMarshalJSON_WithMessages(t *testing.T) {
 
 func TestResultMarshalJSON_WithMessagesAndToolCalls(t *testing.T) {
 	result := Result{
-		Content:     "Done",
-		InputTokens: 10,
+		Content:      "Done",
+		InputTokens:  10,
 		OutputTokens: 5,
-		Model:       "openai/gpt-4",
-		StopReason:  "stop",
+		Model:        "openai/gpt-4",
+		StopReason:   "stop",
 		Messages: []Message{
 			{Role: "user", Content: "list"},
 			{
@@ -222,5 +222,55 @@ func TestToolCallDetailJSON(t *testing.T) {
 	}
 	if inputMap2["mode"] != "full" {
 		t.Fatalf("expected input.mode=full, got %v", inputMap2["mode"])
+	}
+}
+
+func TestResultMarshalJSON_CacheTokens(t *testing.T) {
+	result := Result{
+		Content:          "Hello",
+		InputTokens:      10,
+		OutputTokens:     5,
+		Model:            "openai/gpt-4",
+		StopReason:       "stop",
+		CacheReadTokens:  42,
+		CacheWriteTokens: 7,
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if r, ok := parsed["cache_read_tokens"].(float64); !ok || r != 42 {
+		t.Errorf("cache_read_tokens = %v, want 42", parsed["cache_read_tokens"])
+	}
+	if w, ok := parsed["cache_write_tokens"].(float64); !ok || w != 7 {
+		t.Errorf("cache_write_tokens = %v, want 7", parsed["cache_write_tokens"])
+	}
+}
+
+func TestResultMarshalJSON_CacheTokensOmittedWhenZero(t *testing.T) {
+	result := Result{
+		Content:      "Hello",
+		InputTokens:  10,
+		OutputTokens: 5,
+		Model:        "openai/gpt-4",
+		StopReason:   "stop",
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if _, ok := parsed["cache_read_tokens"]; ok {
+		t.Error("expected cache_read_tokens to be omitted")
+	}
+	if _, ok := parsed["cache_write_tokens"]; ok {
+		t.Error("expected cache_write_tokens to be omitted")
 	}
 }
