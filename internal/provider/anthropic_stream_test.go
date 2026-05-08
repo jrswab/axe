@@ -211,6 +211,57 @@ func TestAnthropic_SendStream_ContextCancelled(t *testing.T) {
 
 // --- Task 2.6: Text streaming ---
 
+func TestAnthropic_SendStream_CacheUsageParsing(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		writeSSE(w, "message_start", `{"type":"message_start","message":{"usage":{"input_tokens":100,"cache_creation_input_tokens":80,"cache_read_input_tokens":10}}}`)
+		writeSSE(w, "content_block_start", `{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`)
+		writeSSE(w, "content_block_delta", `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello from cached prompt"}}`)
+		writeSSE(w, "content_block_stop", `{"type":"content_block_stop","index":0}`)
+		writeSSE(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}`)
+		writeSSE(w, "message_stop", `{"type":"message_stop"}`)
+	}))
+	defer server.Close()
+
+	a, _ := NewAnthropic("key", WithBaseURL(server.URL))
+	stream, err := a.SendStream(context.Background(), &Request{
+		Model:       "claude-sonnet-4-20250514",
+		CacheConfig: true,
+		Messages:    []Message{{Role: "user", Content: "Hello"}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	var gotDone StreamEvent
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if ev.Type == StreamEventDone {
+			gotDone = ev
+		}
+	}
+
+	if gotDone.InputTokens != 100 {
+		t.Errorf("InputTokens = %d, want 100", gotDone.InputTokens)
+	}
+	if gotDone.OutputTokens != 5 {
+		t.Errorf("OutputTokens = %d, want 5", gotDone.OutputTokens)
+	}
+	if gotDone.CacheReadTokens != 10 {
+		t.Errorf("CacheReadTokens = %d, want 10", gotDone.CacheReadTokens)
+	}
+	if gotDone.CacheWriteTokens != 80 {
+		t.Errorf("CacheWriteTokens = %d, want 80", gotDone.CacheWriteTokens)
+	}
+}
+
 func TestAnthropic_SendStream_TextDeltas(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")

@@ -181,9 +181,9 @@ func convertToAnthropicMessages(msgs []Message) []anthropicMessage {
 }
 
 // convertToAnthropicTools converts provider Tools to the Anthropic wire format.
-func convertToAnthropicTools(tools []Tool, cacheEnabled bool) []anthropicToolDef {
+func convertToAnthropicTools(tools []Tool) []anthropicToolDef {
 	var result []anthropicToolDef
-	for i, tool := range tools {
+	for _, tool := range tools {
 		properties := make(map[string]interface{})
 		var required []string
 		for name, param := range tool.Parameters {
@@ -208,9 +208,6 @@ func convertToAnthropicTools(tools []Tool, cacheEnabled bool) []anthropicToolDef
 			Name:        tool.Name,
 			Description: tool.Description,
 			InputSchema: schema,
-		}
-		if cacheEnabled && i == len(tools)-1 {
-			td.InputSchema = schema // cache on input_schema is unsupported; skip for now
 		}
 		result = append(result, td)
 	}
@@ -258,7 +255,7 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	if len(req.Tools) > 0 {
-		body.Tools = convertToAnthropicTools(req.Tools, req.CacheConfig)
+		body.Tools = convertToAnthropicTools(req.Tools)
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -397,7 +394,7 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 	}
 
 	if len(req.Tools) > 0 {
-		body.Tools = convertToAnthropicTools(req.Tools, req.CacheConfig)
+		body.Tools = convertToAnthropicTools(req.Tools)
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -445,6 +442,8 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 
 	parser := NewSSEParser(httpResp.Body)
 	var inputTokens int
+	var cacheReadTokens int
+	var cacheWriteTokens int
 	blocks := make(map[int]anthropicBlockInfo)
 
 	nextFunc := func() (StreamEvent, error) {
@@ -481,6 +480,8 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 			case "message_start":
 				if event.Message != nil && event.Message.Usage != nil {
 					inputTokens = event.Message.Usage.InputTokens
+					cacheReadTokens = event.Message.Usage.CacheReadInputTokens
+					cacheWriteTokens = event.Message.Usage.CacheCreationInputTokens
 				}
 				continue
 
@@ -545,11 +546,9 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 				if event.Delta != nil {
 					stopReason = event.Delta.StopReason
 				}
-				var outputTokens, cacheReadTokens, cacheWriteTokens int
+				var outputTokens int
 				if event.Usage != nil {
 					outputTokens = event.Usage.OutputTokens
-					cacheReadTokens = event.Usage.CacheReadInputTokens
-					cacheWriteTokens = event.Usage.CacheCreationInputTokens
 				}
 				return StreamEvent{
 					Type:             StreamEventDone,

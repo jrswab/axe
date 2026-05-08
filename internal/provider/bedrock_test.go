@@ -283,98 +283,141 @@ func TestBedrock_Send_Temperature(t *testing.T) {
 	}
 }
 
-func TestBedrock_Send_CachePointInSystem(t *testing.T) {
-	var receivedReq bedrockRequest
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewDecoder(r.Body).Decode(&receivedReq)
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(bedrockResponse{
-			Output:     bedrockOutput{Message: &bedrockMessage{Role: "assistant", Content: []bedrockBlock{{Text: "ok"}}}},
-			StopReason: "end_turn",
-		})
-	}))
-	defer server.Close()
-
-	b, _ := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
-	_, _ = b.Send(context.Background(), &Request{
-		Model:       "test-model",
-		System:      "You are helpful.",
-		CacheConfig: true,
-		Messages:    []Message{{Role: "user", Content: "hi"}},
-	})
-
-	if len(receivedReq.System) != 1 {
-		t.Fatalf("expected 1 system block, got %d", len(receivedReq.System))
-	}
-	if receivedReq.System[0].CachePoint == nil {
-		t.Fatal("expected cachePoint on system block")
-	}
-	if receivedReq.System[0].CachePoint.Type != "default" {
-		t.Errorf("cachePoint.type = %q, want %q", receivedReq.System[0].CachePoint.Type, "default")
-	}
-}
-
-func TestBedrock_Send_CacheUsageParsing(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(bedrockResponse{
-			Output: bedrockOutput{Message: &bedrockMessage{
-				Role:    "assistant",
-				Content: []bedrockBlock{{Text: "Hello with cache"}},
-			}},
-			StopReason: "end_turn",
-			Usage: bedrockUsage{
-				InputTokens:           100,
-				OutputTokens:          5,
-				CacheReadInputTokens:  10,
-				CacheWriteInputTokens: 80,
+func TestBedrock_Send_Cache(t *testing.T) {
+	cases := []struct {
+		name                 string
+		setupRequest         func() *Request
+		serverResponse       bedrockResponse
+		wantSystemCachePoint bool
+		wantToolCachePoint   bool
+		wantCacheReadTokens  int
+		wantCacheWriteTokens int
+	}{
+		{
+			name: "system block gets cache point",
+			setupRequest: func() *Request {
+				return &Request{
+					Model:       "test-model",
+					System:      "You are helpful.",
+					CacheConfig: true,
+					Messages:    []Message{{Role: "user", Content: "hi"}},
+				}
 			},
+			serverResponse: bedrockResponse{
+				Output:     bedrockOutput{Message: &bedrockMessage{Role: "assistant", Content: []bedrockBlock{{Text: "ok"}}}},
+				StopReason: "end_turn",
+			},
+			wantSystemCachePoint: true,
+		},
+		{
+			name: "tool config gets cache point when tools present",
+			setupRequest: func() *Request {
+				return &Request{
+					Model:       "test-model",
+					CacheConfig: true,
+					Messages:    []Message{{Role: "user", Content: "hi"}},
+					Tools: []Tool{{
+						Name:        "read_file",
+						Description: "Read a file",
+						Parameters:  map[string]ToolParameter{"path": {Type: "string", Description: "File path", Required: true}},
+					}},
+				}
+			},
+			serverResponse: bedrockResponse{
+				Output:     bedrockOutput{Message: &bedrockMessage{Role: "assistant", Content: []bedrockBlock{{Text: "ok"}}}},
+				StopReason: "end_turn",
+			},
+			wantToolCachePoint: true,
+		},
+		{
+			name: "cache usage parsing",
+			setupRequest: func() *Request {
+				return &Request{
+					Model:    "test-model",
+					Messages: []Message{{Role: "user", Content: "hi"}},
+				}
+			},
+			serverResponse: bedrockResponse{
+				Output: bedrockOutput{Message: &bedrockMessage{
+					Role:    "assistant",
+					Content: []bedrockBlock{{Text: "Hello with cache"}},
+				}},
+				StopReason: "end_turn",
+				Usage: bedrockUsage{
+					InputTokens:           100,
+					OutputTokens:          5,
+					CacheReadInputTokens:  10,
+					CacheWriteInputTokens: 80,
+				},
+			},
+			wantCacheReadTokens:  10,
+			wantCacheWriteTokens: 80,
+		},
+		{
+			name: "cache usage omitted",
+			setupRequest: func() *Request {
+				return &Request{
+					Model:    "test-model",
+					Messages: []Message{{Role: "user", Content: "hi"}},
+				}
+			},
+			serverResponse: bedrockResponse{
+				Output: bedrockOutput{Message: &bedrockMessage{
+					Role:    "assistant",
+					Content: []bedrockBlock{{Text: "Hello"}},
+				}},
+				StopReason: "end_turn",
+				Usage:      bedrockUsage{InputTokens: 10, OutputTokens: 5},
+			},
+			wantCacheReadTokens:  0,
+			wantCacheWriteTokens: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var receivedReq bedrockRequest
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_ = json.NewDecoder(r.Body).Decode(&receivedReq)
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(tc.serverResponse)
+			}))
+			defer server.Close()
+
+			b, _ := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
+			resp, err := b.Send(context.Background(), tc.setupRequest())
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tc.wantSystemCachePoint {
+				if len(receivedReq.System) != 1 {
+					t.Fatalf("expected 1 system block, got %d", len(receivedReq.System))
+				}
+				if receivedReq.System[0].CachePoint == nil {
+					t.Fatal("expected cachePoint on system block")
+				}
+				if receivedReq.System[0].CachePoint.Type != "default" {
+					t.Errorf("cachePoint.type = %q, want %q", receivedReq.System[0].CachePoint.Type, "default")
+				}
+			}
+			if tc.wantToolCachePoint {
+				if receivedReq.ToolConfig == nil {
+					t.Fatal("expected ToolConfig when tools present")
+				}
+				if receivedReq.ToolConfig.CachePoint == nil {
+					t.Fatal("expected cachePoint on ToolConfig")
+				}
+				if receivedReq.ToolConfig.CachePoint.Type != "default" {
+					t.Errorf("toolConfig cachePoint.type = %q, want %q", receivedReq.ToolConfig.CachePoint.Type, "default")
+				}
+			}
+			if resp.CacheReadTokens != tc.wantCacheReadTokens {
+				t.Errorf("CacheReadTokens = %d, want %d", resp.CacheReadTokens, tc.wantCacheReadTokens)
+			}
+			if resp.CacheWriteTokens != tc.wantCacheWriteTokens {
+				t.Errorf("CacheWriteTokens = %d, want %d", resp.CacheWriteTokens, tc.wantCacheWriteTokens)
+			}
 		})
-	}))
-	defer server.Close()
-
-	b, _ := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
-	resp, err := b.Send(context.Background(), &Request{
-		Model:    "test-model",
-		Messages: []Message{{Role: "user", Content: "hi"}},
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp.CacheReadTokens != 10 {
-		t.Errorf("CacheReadTokens = %d, want 10", resp.CacheReadTokens)
-	}
-	if resp.CacheWriteTokens != 80 {
-		t.Errorf("CacheWriteTokens = %d, want 80", resp.CacheWriteTokens)
-	}
-}
-
-func TestBedrock_Send_CacheUsageOmitted(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(bedrockResponse{
-			Output: bedrockOutput{Message: &bedrockMessage{
-				Role:    "assistant",
-				Content: []bedrockBlock{{Text: "Hello"}},
-			}},
-			StopReason: "end_turn",
-			Usage:      bedrockUsage{InputTokens: 10, OutputTokens: 5},
-		})
-	}))
-	defer server.Close()
-
-	b, _ := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
-	resp, err := b.Send(context.Background(), &Request{
-		Model:    "test-model",
-		Messages: []Message{{Role: "user", Content: "hi"}},
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp.CacheReadTokens != 0 {
-		t.Errorf("CacheReadTokens = %d, want 0", resp.CacheReadTokens)
-	}
-	if resp.CacheWriteTokens != 0 {
-		t.Errorf("CacheWriteTokens = %d, want 0", resp.CacheWriteTokens)
 	}
 }

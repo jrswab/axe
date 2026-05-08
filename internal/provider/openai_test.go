@@ -1665,97 +1665,82 @@ func TestOpenAI_Send_JsonSchemaWithoutSchemaReturnsError(t *testing.T) {
 	}
 }
 
-// --- Cache usage tests ---
+func TestOpenAI_CacheUsage(t *testing.T) {
+	cases := []struct {
+		name            string
+		isStream        bool
+		responsePayload []byte
+		wantCacheRead   int
+	}{
+		{
+			name: "send with cached_tokens",
+			responsePayload: []byte(`{
+				"model": "gpt-4o",
+				"choices": [{"message": {"content": "Hello from cached prompt"}, "finish_reason": "stop"}],
+				"usage": {"prompt_tokens": 100, "completion_tokens": 5, "prompt_tokens_details": {"cached_tokens": 80}}
+			}`),
+			wantCacheRead: 80,
+		},
+		{
+			name: "send without cached_tokens",
+			responsePayload: []byte(`{
+				"model": "gpt-4o",
+				"choices": [{"message": {"content": "Hello"}, "finish_reason": "stop"}],
+				"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+			}`),
+			wantCacheRead: 0,
+		},
+		{
+			name:     "stream with cached_tokens",
+			isStream: true,
+			responsePayload: []byte(
+				"data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n" +
+					"data: {\"choices\":[],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":5,\"prompt_tokens_details\":{\"cached_tokens\":60}}}\n\n" +
+					"data: [DONE]\n\n"),
+			wantCacheRead: 60,
+		},
+	}
 
-func TestOpenAI_Send_CacheUsageParsing(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := `{
-			"model": "gpt-4o",
-			"choices": [{
-				"message": {"content": "Hello from cached prompt"},
-				"finish_reason": "stop"
-			}],
-			"usage": {
-				"prompt_tokens": 100,
-				"completion_tokens": 5,
-				"prompt_tokens_details": {"cached_tokens": 80}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tc.isStream {
+					w.Header().Set("Content-Type", "text/event-stream")
+				}
+				_, _ = w.Write(tc.responsePayload)
+			}))
+			defer server.Close()
+
+			o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
+			req := &Request{Model: "gpt-4o", Messages: []Message{{Role: "user", Content: "Hi"}}}
+
+			var got int
+			if tc.isStream {
+				stream, err := o.SendStream(context.Background(), req)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				defer func() { _ = stream.Close() }()
+				// Read the first (and only) event with usage
+				ev, err := stream.Next()
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if ev.Type != StreamEventDone {
+					t.Fatalf("expected StreamEventDone, got %q", ev.Type)
+				}
+				got = ev.CacheReadTokens
+			} else {
+				resp, err := o.Send(context.Background(), req)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				got = resp.CacheReadTokens
 			}
-		}`
-		_, _ = w.Write([]byte(resp))
-	}))
-	defer server.Close()
 
-	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
-	resp, err := o.Send(context.Background(), &Request{
-		Model:    "gpt-4o",
-		Messages: []Message{{Role: "user", Content: "Hi"}},
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp.CacheReadTokens != 80 {
-		t.Errorf("CacheReadTokens = %d, want 80", resp.CacheReadTokens)
-	}
-}
-
-func TestOpenAI_Send_CacheUsageOmitted(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := `{
-			"model": "gpt-4o",
-			"choices": [{
-				"message": {"content": "Hello"},
-				"finish_reason": "stop"
-			}],
-			"usage": {
-				"prompt_tokens": 10,
-				"completion_tokens": 5
+			if got != tc.wantCacheRead {
+				t.Errorf("CacheReadTokens = %d, want %d", got, tc.wantCacheRead)
 			}
-		}`
-		_, _ = w.Write([]byte(resp))
-	}))
-	defer server.Close()
-
-	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
-	resp, err := o.Send(context.Background(), &Request{
-		Model:    "gpt-4o",
-		Messages: []Message{{Role: "user", Content: "Hi"}},
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp.CacheReadTokens != 0 {
-		t.Errorf("CacheReadTokens = %d, want 0", resp.CacheReadTokens)
-	}
-}
-
-func TestOpenAI_SendStream_CacheUsageParsing(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n"))
-		_, _ = w.Write([]byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":5,\"prompt_tokens_details\":{\"cached_tokens\":60}}}\n\n"))
-		_, _ = w.Write([]byte("data: [DONE]\n\n"))
-	}))
-	defer server.Close()
-
-	o, _ := NewOpenAI("key", WithOpenAIBaseURL(server.URL))
-	stream, err := o.SendStream(context.Background(), &Request{
-		Model:    "gpt-4o",
-		Messages: []Message{{Role: "user", Content: "Hi"}},
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	defer func() { _ = stream.Close() }()
-
-	// Skip the done-without-usage event (first finish_reason)
-	ev, err := stream.Next()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if ev.Type != StreamEventDone {
-		t.Fatalf("expected StreamEventDone, got %q", ev.Type)
-	}
-	if ev.CacheReadTokens != 60 {
-		t.Errorf("CacheReadTokens = %d, want 60", ev.CacheReadTokens)
+		})
 	}
 }

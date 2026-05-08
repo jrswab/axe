@@ -368,13 +368,19 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		messages = []provider.Message{{Role: "user", Content: userMessage}}
 	}
 
+	// cacheEnabled defaults to true; agent TOML can opt out via params.cache_enabled.
+	cacheEnabled := true
+	if cfg.Params.CacheEnabled != nil {
+		cacheEnabled = *cfg.Params.CacheEnabled
+	}
+
 	req := &provider.Request{
 		Model:       modelName,
 		System:      systemPrompt,
 		Messages:    messages,
 		Temperature: cfg.Params.Temperature,
 		MaxTokens:   cfg.Params.MaxTokens,
-		CacheConfig: true,
+		CacheConfig: cacheEnabled,
 	}
 
 	if cfg.Params.ResponseFormat.IsSet() {

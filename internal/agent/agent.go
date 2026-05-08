@@ -76,6 +76,7 @@ func (r ResponseFormatConfig) IsSet() bool {
 type ParamsConfig struct {
 	Temperature    float64              `toml:"temperature"`
 	MaxTokens      int                  `toml:"max_tokens"`
+	CacheEnabled   *bool                `toml:"cache_enabled"`
 	ResponseFormat ResponseFormatConfig `toml:"response_format"`
 }
 
