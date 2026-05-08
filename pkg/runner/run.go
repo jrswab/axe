@@ -552,10 +552,10 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 			_, _ = fmt.Fprintf(stderr, "Duration: %dms\n", time.Since(start).Milliseconds())
 			if tracker.Max() > 0 {
 				_, _ = fmt.Fprintf(stderr, "Tokens:   %d input, %d output (cumulative, budget: %d/%d)\n", resp.InputTokens, resp.OutputTokens, tracker.Used(), tracker.Max())
+				_, _ = fmt.Fprintf(stderr, "Cache:    %d read, %d written\n", resp.CacheReadTokens, resp.CacheWriteTokens)
 			} else {
 				_, _ = fmt.Fprintf(stderr, "Tokens:   %d input, %d output\n", resp.InputTokens, resp.OutputTokens)
 			}
-			_, _ = fmt.Fprintf(stderr, "Cache:    %d read, %d written\n", resp.CacheReadTokens, resp.CacheWriteTokens)
 			_, _ = fmt.Fprintf(stderr, "Stop:     %s\n", resp.StopReason)
 		}
 	} else {
@@ -680,10 +680,10 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 			_, _ = fmt.Fprintf(stderr, "Duration: %dms\n", time.Since(start).Milliseconds())
 			if tracker.Max() > 0 {
 				_, _ = fmt.Fprintf(stderr, "Tokens:   %d input, %d output (cumulative, budget: %d/%d)\n", totalInputTokens, totalOutputTokens, tracker.Used(), tracker.Max())
+				_, _ = fmt.Fprintf(stderr, "Cache:    %d read, %d written\n", totalCacheReadTokens, totalCacheWriteTokens)
 			} else {
 				_, _ = fmt.Fprintf(stderr, "Tokens:   %d input, %d output (cumulative)\n", totalInputTokens, totalOutputTokens)
 			}
-			_, _ = fmt.Fprintf(stderr, "Cache:    %d read, %d written\n", totalCacheReadTokens, totalCacheWriteTokens)
 			_, _ = fmt.Fprintf(stderr, "Stop:     %s\n", resp.StopReason)
 		}
 	}
