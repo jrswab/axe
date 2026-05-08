@@ -1,6 +1,6 @@
 ---
 name: release
-description: Prepare code for release (version bumps, changelog, README updates) and create an annotated tag to trigger the GoReleaser workflow.
+description: "Prepare code for release (version bumps, changelog, README updates) and create an annotated tag to trigger the GoReleaser workflow. Use when shipping, publishing, cutting, or preparing a new version or release."
 ---
 
 Your job is to guide the user through a full release for this project. A release includes preparing the code (version bumps, README documentation, changelog), creating an annotated git tag with a `v` prefix (e.g. `v1.5.0`), pushing it to trigger the GoReleaser GitHub Actions workflow, setting release notes, and linking the GHCR Docker image.
@@ -8,14 +8,11 @@ Your job is to guide the user through a full release for this project. A release
 ## Rules
 
 - Always create an **annotated** tag (`git tag -a`), never a lightweight tag.
-- Tag format is `vMAJOR.MINOR.PATCH` following [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-- The changelog MUST follow [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) format.
-- Valid changelog categories: Added, Changed, Deprecated, Removed, Fixed, Security.
-- All version strings MUST be updated before committing. There are three locations (listed in Reference). Run version tests after bumping to catch drift.
+- Tag format is `vMAJOR.MINOR.PATCH` (Semantic Versioning).
+- Changelog follows Keep a Changelog format. Valid categories: Added, Changed, Deprecated, Removed, Fixed, Security.
+- All three version string locations (listed in Reference) MUST be updated before committing. Run version tests after bumping to catch drift.
 - README.md MUST document any user-facing changes — new config fields, CLI flags, behavior changes, exit codes.
-- DO NOT push to master until the user confirms.
-- DO NOT push the tag until the user confirms.
-- DO NOT skip asking the user for the version number, tag annotation message, and changelog review.
+- **User confirmation required** before: pushing to master, pushing the tag, and for the version number, tag annotation message, and changelog review.
 
 ## Steps
 
