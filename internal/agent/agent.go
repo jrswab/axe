@@ -124,6 +124,7 @@ type AgentConfig struct {
 	Files         []string          `toml:"files"`
 	Workdir       string            `toml:"workdir"`
 	Timeout       int               `toml:"timeout"`
+	MaxTurns      int               `toml:"max_turns"`
 	Stream        bool              `toml:"stream"`
 	Tools         []string          `toml:"tools"`
 	AllowedHosts  []string          `toml:"allowed_hosts"`
@@ -158,6 +159,9 @@ func Validate(cfg *AgentConfig) error {
 	}
 	if cfg.Timeout < 0 {
 		return &ValidationError{msg: "timeout must be non-negative"}
+	}
+	if cfg.MaxTurns < 0 {
+		return &ValidationError{msg: "max_turns must be non-negative"}
 	}
 	if cfg.Memory.LastN < 0 {
 		return &ValidationError{msg: "memory.last_n must be non-negative"}
@@ -395,6 +399,9 @@ model = "provider/model-name"
 
 # Run timeout in seconds (optional, default: 120)
 # timeout = 120
+
+# Maximum conversation turns when tools are enabled (optional, default: 50)
+# max_turns = 50
 
 # Enable streaming responses (optional, default: false)
 # stream = false

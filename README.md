@@ -318,6 +318,7 @@ system_prompt = "You are a senior code reviewer. Be concise and actionable."
 skill = "skills/code-review/SKILL.md"
 files = ["src/**/*.go", "CONTRIBUTING.md"]
 workdir = "/home/user/projects/myapp"
+max_turns = 75                # optional; defaults to 50 when unset
 tools = ["read_file", "list_directory", "run_command"]
 sub_agents = ["test-runner", "lint-checker"]
 allowed_hosts = ["api.example.com", "docs.example.com"]
@@ -440,7 +441,7 @@ type = "object"
 
 ## Tools
 
-Agents can use built-in tools to interact with the filesystem and run commands. When tools are enabled, the agent enters a conversation loop — the LLM can make tool calls, receive results, and continue reasoning for up to 50 turns.
+Agents can use built-in tools to interact with the filesystem and run commands. When tools are enabled, the agent enters a conversation loop — the LLM can make tool calls, receive results, and continue reasoning for up to `max_turns` turns (default: 50).
 
 ### Built-in Tools
 

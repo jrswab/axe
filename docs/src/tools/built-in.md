@@ -1,6 +1,6 @@
 # Built-in Tools
 
-When tools are enabled, the agent enters a conversation loop — the LLM can make tool calls, receive results, and continue reasoning for up to 50 turns.
+When tools are enabled, the agent enters a conversation loop — the LLM can make tool calls, receive results, and continue reasoning for up to `max_turns` turns (default: 50).
 
 Enable tools by adding them to the agent's `tools` field:
 

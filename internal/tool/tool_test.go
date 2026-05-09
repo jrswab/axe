@@ -463,6 +463,48 @@ func TestExecuteCallAgent_APIError(t *testing.T) {
 	}
 }
 
+func TestExecuteCallAgent_MaxTurnsConfigured(t *testing.T) {
+	agentsDir := setupToolTestAgentsDir(t)
+
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"id":"msg_%d","type":"message","role":"assistant","content":[{"type":"text","text":"Tool call"},{"type":"tool_use","id":"tool_%d","name":"list_directory","input":{"path":"."}}],"model":"claude-sonnet-4-20250514","stop_reason":"tool_use","usage":{"input_tokens":10,"output_tokens":20}}`, requestCount, requestCount)
+	}))
+	defer server.Close()
+
+	writeToolTestAgent(t, agentsDir, "helper", `name = "helper"
+model = "anthropic/claude-sonnet-4-20250514"
+max_turns = 2
+tools = ["list_directory"]
+`)
+	t.Setenv("ANTHROPIC_API_KEY", "test-key")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL)
+
+	call := provider.ToolCall{
+		ID:        "test-max-turns",
+		Name:      CallAgentToolName,
+		Arguments: map[string]string{"agent": "helper", "task": "loop until max turns"},
+	}
+	opts := ExecuteOptions{
+		AllowedAgents: []string{"helper"},
+		MaxDepth:      3,
+		Depth:         0,
+		GlobalConfig:  &config.GlobalConfig{},
+	}
+	result := ExecuteCallAgent(context.Background(), call, opts)
+	if !result.IsError {
+		t.Fatal("expected IsError=true for max turns exceeded")
+	}
+	if !strings.Contains(result.Content, "sub-agent exceeded maximum conversation turns (2)") {
+		t.Errorf("Content = %q, want configured max turns error", result.Content)
+	}
+	if requestCount != 2 {
+		t.Errorf("requestCount = %d, want 2", requestCount)
+	}
+}
+
 // TestExecuteCallAgent_DepthLimitNoTools verifies that a sub-agent at the depth limit
 // runs without tools injected, even when the sub-agent has sub_agents configured.
 // This tests Req 10.3: tools are only injected when newDepth < MaxDepth.

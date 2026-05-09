@@ -957,7 +957,7 @@ enabled = true
 
 func TestRun_MaxTurnsExceeded(t *testing.T) {
 	// Mock always returns a tool call, never a text response.
-	// Need 50 responses (one per max turn).
+	// Need 50 responses (one per default max turn).
 	responses := make([]testutil.MockLLMResponse, 50)
 	for i := range responses {
 		responses[i] = testutil.AnthropicToolUseResponse("Tool call", []testutil.MockToolCall{
@@ -996,6 +996,51 @@ tools = ["list_directory"]
 	}
 	if !strings.Contains(err.Error(), "exceeded maximum conversation turns") {
 		t.Errorf("error message missing 'exceeded maximum conversation turns': %v", err)
+	}
+}
+
+func TestRun_MaxTurnsConfigured(t *testing.T) {
+	responses := make([]testutil.MockLLMResponse, 2)
+	for i := range responses {
+		responses[i] = testutil.AnthropicToolUseResponse("Tool call", []testutil.MockToolCall{
+			{ID: fmt.Sprintf("tool_%d", i), Name: "list_directory", Input: map[string]string{"path": "."}},
+		})
+	}
+	mock := testutil.NewMockLLMServer(t, responses)
+
+	setupTestEnv(t,
+		`[providers.anthropic]
+api_key = "fake-key"
+`,
+		"test-agent",
+		`name = "test-agent"
+model = "anthropic/claude-sonnet-4-20250514"
+max_turns = 2
+tools = ["list_directory"]
+`,
+	)
+
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+
+	stdout, stderr := newMockStdoutStderr()
+	opts := Options{
+		AgentName: "test-agent",
+		Stdout:    stdout,
+		Stderr:    stderr,
+	}
+
+	_, err := Run(context.Background(), opts)
+	if err == nil {
+		t.Fatal("Run() expected error for configured max turns exceeded, got nil")
+	}
+	if !IsRuntimeError(err) {
+		t.Fatalf("expected RuntimeError, got %T: %v", err, err)
+	}
+	if !strings.Contains(err.Error(), "exceeded maximum conversation turns (2)") {
+		t.Errorf("expected configured max turns in error, got: %v", err)
+	}
+	if got := mock.RequestCount(); got != 2 {
+		t.Errorf("RequestCount = %d, want 2", got)
 	}
 }
 
