@@ -57,7 +57,7 @@ axe/
 
 ### CLI Commands (`cmd/`)
 
-- **run.go** - Main execution: loads agent, resolves context, calls provider, handles conversation loop (max 50 turns), executes tools (parallel by default), manages memory
+- **run.go** - Main execution: loads agent, resolves context, calls provider, handles conversation loop (`max_turns`, default 50), executes tools (parallel by default), manages memory
 - **agents.go** - Agent management: list, show, init (scaffold), edit (opens $EDITOR)
 - **config.go** - Config init (creates XDG dirs, embeds sample skill), path display
 - **gc.go** - Memory garbage collection with LLM-assisted pattern detection or fallback to max_entries
@@ -84,6 +84,7 @@ system_prompt = "..."            # Optional
 skill = "path/to/SKILL.md"       # Optional (absolute, relative to config dir, or bare name)
 files = ["**/*.go", "README.md"] # Optional (glob patterns)
 workdir = "/path/to/dir"         # Optional (default: cwd, supports ~ and $VAR)
+max_turns = 75                # Optional (default: 50 when unset)
 tools = ["read_file", "write_file"] # Optional (valid: list_directory, read_file, write_file, edit_file, run_command, url_fetch, web_search)
 sub_agents = ["agent1", "agent2"] # Optional (allowed sub-agent names)
 
@@ -172,7 +173,7 @@ region = "us-east-1"
 
 ### Conversation Loop
 
-- **Max 50 turns** - Hard limit in `cmd/run.go` `runAgent()`. Prevents infinite loops.
+- **Configurable max turns** - Set `max_turns` in agent TOML to cap tool-driven conversation loops. Defaults to 50 when unset.
 - **Stops on text response** - Loop exits when LLM returns text without tool calls.
 - **Parallel tool execution** - Default behavior. Set `sub_agents_config.parallel = false` for sequential.
 - **Tool call details** - Captured in JSON output with `--json` flag. Includes arguments, results, truncation status, errors.
