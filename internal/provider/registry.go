@@ -12,6 +12,7 @@ var supportedProviders = map[string]bool{
 	"minimax":    true,
 	"bedrock":    true,
 	"openrouter": true,
+	"requesty":   true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -76,8 +77,15 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		}
 		return NewOpenRouter(apiKey, opts...)
 
+	case "requesty":
+		var opts []RequestyOption
+		if baseURL != "" {
+			opts = append(opts, WithRequestyBaseURL(baseURL))
+		}
+		return NewRequesty(apiKey, opts...)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock, openrouter", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock, openrouter, requesty", providerName)
 	}
 }
 
@@ -97,4 +105,19 @@ func NewOpenRouterProvider(apiKey, baseURL, referer, title, categories string) (
 		opts = append(opts, WithCategories(categories))
 	}
 	return NewOpenRouter(apiKey, opts...)
+}
+
+// NewRequestyProvider creates a Requesty provider with attribution headers.
+func NewRequestyProvider(apiKey, baseURL, referer, title string) (Provider, error) {
+	var opts []RequestyOption
+	if baseURL != "" {
+		opts = append(opts, WithRequestyBaseURL(baseURL))
+	}
+	if referer != "" {
+		opts = append(opts, WithRequestyReferer(referer))
+	}
+	if title != "" {
+		opts = append(opts, WithRequestyTitle(title))
+	}
+	return NewRequesty(apiKey, opts...)
 }

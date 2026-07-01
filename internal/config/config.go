@@ -63,6 +63,7 @@ var knownAPIKeyEnvVars = map[string]string{
 	"google":     "GEMINI_API_KEY",
 	"minimax":    "MINIMAX_API_KEY",
 	"openrouter": "OPENROUTER_API_KEY",
+	"requesty":   "REQUESTY_API_KEY",
 }
 
 // APIKeyEnvVar returns the environment variable name used to resolve the API key
