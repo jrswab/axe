@@ -12,6 +12,7 @@ var supportedProviders = map[string]bool{
 	"minimax":    true,
 	"bedrock":    true,
 	"openrouter": true,
+	"edenai":     true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -76,8 +77,15 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		}
 		return NewOpenRouter(apiKey, opts...)
 
+	case "edenai":
+		var opts []OpenAIOption
+		if baseURL != "" {
+			opts = append(opts, WithOpenAIBaseURL(baseURL))
+		}
+		return NewEdenAI(apiKey, opts...)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock, openrouter", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, openai, ollama, opencode, google, minimax, bedrock, openrouter, edenai", providerName)
 	}
 }
 
