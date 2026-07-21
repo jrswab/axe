@@ -6,6 +6,7 @@
 | OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
 | MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |
+| Eden AI | `edenai` | `EDENAI_API_KEY` | `https://api.edenai.run/v3` |
 | Ollama | `ollama` | (none required) | `http://localhost:11434` |
 | OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |
 | AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |

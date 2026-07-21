@@ -343,6 +343,38 @@ func TestResolveAPIKey_MiniMax(t *testing.T) {
 	}
 }
 
+func TestAPIKeyEnvVar_EdenAI(t *testing.T) {
+	if got := APIKeyEnvVar("edenai"); got != "EDENAI_API_KEY" {
+		t.Errorf("expected EDENAI_API_KEY, got %q", got)
+	}
+}
+
+func TestResolveAPIKey_EdenAI(t *testing.T) {
+	// Env var takes precedence over config file.
+	t.Setenv("EDENAI_API_KEY", "edenai-key-from-env")
+	cfg := &GlobalConfig{
+		Providers: map[string]ProviderConfig{
+			"edenai": {APIKey: "edenai-key-from-config"},
+		},
+	}
+	if got := cfg.ResolveAPIKey("edenai"); got != "edenai-key-from-env" {
+		t.Errorf("expected 'edenai-key-from-env', got %q", got)
+	}
+
+	// Config file value used when env var is empty.
+	t.Setenv("EDENAI_API_KEY", "")
+	if got := cfg.ResolveAPIKey("edenai"); got != "edenai-key-from-config" {
+		t.Errorf("expected 'edenai-key-from-config', got %q", got)
+	}
+
+	// Empty string when neither is set.
+	t.Setenv("EDENAI_API_KEY", "")
+	emptyCfg := &GlobalConfig{Providers: map[string]ProviderConfig{}}
+	if got := emptyCfg.ResolveAPIKey("edenai"); got != "" {
+		t.Errorf("expected empty string, got %q", got)
+	}
+}
+
 // --- ResolveRegion tests ---
 
 func TestResolveRegion_AWS_REGION(t *testing.T) {
@@ -406,12 +438,12 @@ func TestResolveRegion_UnknownProvider(t *testing.T) {
 
 func TestResolveOpenRouterAttribution(t *testing.T) {
 	cases := []struct {
-		name       string
-		env        map[string]string
-		cfg        *GlobalConfig
-		provider   string
-		fn         string // "referer", "title", or "categories"
-		want       string
+		name     string
+		env      map[string]string
+		cfg      *GlobalConfig
+		provider string
+		fn       string // "referer", "title", or "categories"
+		want     string
 	}{
 		{
 			name:     "referer env overrides config",
