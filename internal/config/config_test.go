@@ -246,6 +246,9 @@ func TestAPIKeyEnvVar_KnownProvider(t *testing.T) {
 	if got := APIKeyEnvVar("openai"); got != "OPENAI_API_KEY" {
 		t.Errorf("expected OPENAI_API_KEY, got %q", got)
 	}
+	if got := APIKeyEnvVar("atlascloud"); got != "ATLASCLOUD_API_KEY" {
+		t.Errorf("expected ATLASCLOUD_API_KEY, got %q", got)
+	}
 }
 
 func TestAPIKeyEnvVar_UnknownProvider(t *testing.T) {
@@ -406,12 +409,12 @@ func TestResolveRegion_UnknownProvider(t *testing.T) {
 
 func TestResolveOpenRouterAttribution(t *testing.T) {
 	cases := []struct {
-		name       string
-		env        map[string]string
-		cfg        *GlobalConfig
-		provider   string
-		fn         string // "referer", "title", or "categories"
-		want       string
+		name     string
+		env      map[string]string
+		cfg      *GlobalConfig
+		provider string
+		fn       string // "referer", "title", or "categories"
+		want     string
 	}{
 		{
 			name:     "referer env overrides config",

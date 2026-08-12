@@ -15,6 +15,26 @@ func TestNew_Anthropic(t *testing.T) {
 	}
 }
 
+func TestNew_AtlasCloud(t *testing.T) {
+	p, err := New("atlascloud", "test-key", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p == nil {
+		t.Fatal("expected non-nil provider")
+	}
+}
+
+func TestNew_AtlasCloudWithBaseURL(t *testing.T) {
+	p, err := New("atlascloud", "test-key", "http://custom:8080")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p == nil {
+		t.Fatal("expected non-nil provider")
+	}
+}
+
 func TestNew_Bedrock(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKID")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "SECRET")
@@ -69,7 +89,7 @@ func TestNew_UnsupportedProvider(t *testing.T) {
 	if !strings.Contains(err.Error(), `unsupported provider "groq"`) {
 		t.Errorf("expected error to mention 'unsupported provider \"groq\"', got %q", err.Error())
 	}
-	if !strings.Contains(err.Error(), "anthropic, openai, ollama, opencode, google, minimax, bedrock") {
+	if !strings.Contains(err.Error(), "anthropic, atlascloud, openai, ollama, opencode, google, minimax, bedrock") {
 		t.Errorf("expected error to list supported providers, got %q", err.Error())
 	}
 }
@@ -112,7 +132,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode"} {
+	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
@@ -208,7 +228,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter"} {
+	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}
