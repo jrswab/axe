@@ -16,22 +16,29 @@ func TestNew_Anthropic(t *testing.T) {
 }
 
 func TestNew_AtlasCloud(t *testing.T) {
-	p, err := New("atlascloud", "test-key", "")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultAtlasCloudBaseURL},
+		{name: "custom base URL", input: "http://custom:8080", want: "http://custom:8080"},
 	}
-	if p == nil {
-		t.Fatal("expected non-nil provider")
-	}
-}
 
-func TestNew_AtlasCloudWithBaseURL(t *testing.T) {
-	p, err := New("atlascloud", "test-key", "http://custom:8080")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if p == nil {
-		t.Fatal("expected non-nil provider")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("atlascloud", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			atlasCloud, ok := p.(*AtlasCloud)
+			if !ok {
+				t.Fatalf("provider type = %T, want *AtlasCloud", p)
+			}
+			if atlasCloud.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", atlasCloud.baseURL, tt.want)
+			}
+		})
 	}
 }
 

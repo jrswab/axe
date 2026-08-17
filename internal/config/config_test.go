@@ -240,14 +240,22 @@ func TestResolveBaseURL_EmptyEnvVar(t *testing.T) {
 }
 
 func TestAPIKeyEnvVar_KnownProvider(t *testing.T) {
-	if got := APIKeyEnvVar("anthropic"); got != "ANTHROPIC_API_KEY" {
-		t.Errorf("expected ANTHROPIC_API_KEY, got %q", got)
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "Anthropic", input: "anthropic", want: "ANTHROPIC_API_KEY"},
+		{name: "OpenAI", input: "openai", want: "OPENAI_API_KEY"},
+		{name: "Atlas Cloud", input: "atlascloud", want: "ATLASCLOUD_API_KEY"},
 	}
-	if got := APIKeyEnvVar("openai"); got != "OPENAI_API_KEY" {
-		t.Errorf("expected OPENAI_API_KEY, got %q", got)
-	}
-	if got := APIKeyEnvVar("atlascloud"); got != "ATLASCLOUD_API_KEY" {
-		t.Errorf("expected ATLASCLOUD_API_KEY, got %q", got)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := APIKeyEnvVar(tt.input); got != tt.want {
+				t.Errorf("APIKeyEnvVar(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
 	}
 }
 
