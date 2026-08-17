@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Atlas Cloud provider using the OpenAI-compatible Chat Completions API
+
 ## [1.10.0] - 2026-05-05
 
 ### Added
