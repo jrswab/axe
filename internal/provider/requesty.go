@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strings"
 )
 
 const (
@@ -19,9 +20,11 @@ const (
 type RequestyOption func(*Requesty)
 
 // WithRequestyBaseURL sets a custom base URL for the Requesty provider.
+// Trailing slashes are removed so that appending "/chat/completions"
+// never produces a double slash.
 func WithRequestyBaseURL(url string) RequestyOption {
 	return func(o *Requesty) {
-		o.baseURL = url
+		o.baseURL = strings.TrimRight(url, "/")
 	}
 }
 
@@ -427,11 +430,15 @@ func (o *Requesty) SendStream(ctx context.Context, req *Request) (*EventStream, 
 			if len(choice.Delta.ToolCalls) > 0 {
 				for _, tc := range choice.Delta.ToolCalls {
 					if tc.ID != "" {
-						toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: tc.Function.Name}
+						name := ""
+						if tc.Function != nil {
+							name = tc.Function.Name
+						}
+						toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: name}
 						pendingToolEvents = append(pendingToolEvents, StreamEvent{
 							Type:       StreamEventToolStart,
 							ToolCallID: tc.ID,
-							ToolName:   tc.Function.Name,
+							ToolName:   name,
 						})
 					} else {
 						info := toolCalls[tc.Index]
