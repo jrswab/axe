@@ -41,6 +41,12 @@ func TestNewRequesty(t *testing.T) {
 			wantBaseURL: "https://custom.example.com/v1",
 		},
 		{
+			name:        "custom base URL with trailing slash",
+			apiKey:      "test-key",
+			opts:        []RequestyOption{WithRequestyBaseURL("https://custom.example.com/v1/")},
+			wantBaseURL: "https://custom.example.com/v1",
+		},
+		{
 			name:        "all options set",
 			apiKey:      "test-key",
 			opts:        []RequestyOption{WithRequestyReferer("https://example.com"), WithRequestyTitle("My App")},
