@@ -578,6 +578,7 @@ The first directory containing a matching `<name>.toml` wins.
 | Provider | API Key Env Var | Default Base URL |
 |---|---|---|
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
+| Atlas Cloud | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
@@ -589,6 +590,8 @@ The first directory containing a matching `<name>.toml` wins.
 - Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)
 
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
+
+For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
 
 ## License
 
