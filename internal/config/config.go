@@ -58,6 +58,7 @@ func Load() (*GlobalConfig, error) {
 // knownAPIKeyEnvVars maps provider names to their canonical API key environment variables.
 var knownAPIKeyEnvVars = map[string]string{
 	"anthropic":  "ANTHROPIC_API_KEY",
+	"atlascloud": "ATLASCLOUD_API_KEY",
 	"openai":     "OPENAI_API_KEY",
 	"opencode":   "OPENCODE_API_KEY",
 	"google":     "GEMINI_API_KEY",
