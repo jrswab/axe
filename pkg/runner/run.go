@@ -29,8 +29,8 @@ import (
 // defaultUserMessage is sent when no stdin content is piped.
 const defaultUserMessage = "Execute the task described in your instructions."
 
-// maxConversationTurns is the safety limit for the conversation loop.
-const maxConversationTurns = 50
+// defaultMaxConversationTurns is the default safety limit for the conversation loop.
+const defaultMaxConversationTurns = 50
 
 const maxToolOutputBytes = 1024
 
@@ -74,6 +74,11 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	}
 	if opts.Skill != "" {
 		cfg.Skill = opts.Skill
+	}
+
+	maxConversationTurns := cfg.MaxTurns
+	if maxConversationTurns == 0 {
+		maxConversationTurns = defaultMaxConversationTurns
 	}
 
 	// Step 4: Parse model

@@ -94,6 +94,9 @@ var agentsShowCmd = &cobra.Command{
 		if cfg.Timeout > 0 {
 			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Timeout:", cfg.Timeout)
 		}
+		if cfg.MaxTurns > 0 {
+			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Max Turns:", cfg.MaxTurns)
+		}
 		if len(cfg.Tools) > 0 {
 			_, _ = fmt.Fprintf(w, "%-16s%s\n", "Tools:", strings.Join(cfg.Tools, ", "))
 		}

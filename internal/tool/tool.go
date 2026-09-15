@@ -22,8 +22,8 @@ import (
 // CallAgentToolName is the constant name for the sub-agent invocation tool.
 const CallAgentToolName = toolname.CallAgent
 
-// maxConversationTurns is the safety limit for the conversation loop.
-const maxConversationTurns = 50
+// defaultMaxConversationTurns is the default safety limit for the conversation loop.
+const defaultMaxConversationTurns = 50
 
 // ExecuteOptions holds configuration for executing a call_agent tool call.
 type ExecuteOptions struct {
@@ -363,6 +363,11 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 // runConversationLoop runs the multi-turn conversation loop for a sub-agent.
 // If the sub-agent has no tools, this is a single-shot call.
 func runConversationLoop(ctx context.Context, prov provider.Provider, req *provider.Request, cfg *agent.AgentConfig, registry *Registry, depth int, opts ExecuteOptions, toolWorkdir string) (*provider.Response, error) {
+	maxConversationTurns := cfg.MaxTurns
+	if maxConversationTurns == 0 {
+		maxConversationTurns = defaultMaxConversationTurns
+	}
+
 	var lastResp *provider.Response
 	for turn := 0; turn < maxConversationTurns; turn++ {
 		// Check budget before making LLM call

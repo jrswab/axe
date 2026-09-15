@@ -270,6 +270,33 @@ timeout = 120
 	}
 }
 
+func TestAgentsShow_MaxTurns(t *testing.T) {
+	agentsDir := setupTestAgentsDir(t)
+
+	toml := `name = "turn-limited"
+model = "anthropic/claude-sonnet-4-20250514"
+max_turns = 25
+`
+	writeTestAgent(t, agentsDir, "turn-limited", toml)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(new(bytes.Buffer))
+	rootCmd.SetArgs([]string{"agents", "show", "turn-limited"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	checks := []string{"Max Turns:", "25"}
+	for _, check := range checks {
+		if !strings.Contains(output, check) {
+			t.Errorf("show output missing %q\nfull output:\n%s", check, output)
+		}
+	}
+}
+
 func TestAgentsShow_NoSubAgentsConfig(t *testing.T) {
 	agentsDir := setupTestAgentsDir(t)
 	writeTestAgent(t, agentsDir, "nosubagents", "name = \"nosubagents\"\nmodel = \"openai/gpt-4o\"")

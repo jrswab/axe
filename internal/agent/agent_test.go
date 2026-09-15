@@ -110,6 +110,7 @@ system_prompt = "You are helpful."
 skill = "skills/sample/SKILL.md"
 files = ["src/**/*.go", "README.md"]
 workdir = "/tmp/work"
+max_turns = 75
 sub_agents = ["helper", "reviewer"]
 
 [memory]
@@ -147,6 +148,9 @@ max_tokens = 4096
 	}
 	if cfg.Workdir != "/tmp/work" {
 		t.Errorf("Workdir = %q, want %q", cfg.Workdir, "/tmp/work")
+	}
+	if cfg.MaxTurns != 75 {
+		t.Errorf("MaxTurns = %d, want 75", cfg.MaxTurns)
 	}
 	if len(cfg.SubAgents) != 2 || cfg.SubAgents[0] != "helper" || cfg.SubAgents[1] != "reviewer" {
 		t.Errorf("SubAgents = %v, want [helper reviewer]", cfg.SubAgents)
@@ -1748,6 +1752,66 @@ func TestValidate_TopLevelTimeoutZeroAndPositive(t *testing.T) {
 	}
 }
 
+func TestLoad_TopLevelMaxTurns(t *testing.T) {
+	agentsDir := setupAgentsDir(t)
+
+	tomlContent := `
+name = "max-turns-agent"
+model = "openai/gpt-4o"
+max_turns = 75
+`
+	writeAgentFile(t, agentsDir, "max-turns-agent", tomlContent)
+
+	cfg, err := Load("max-turns-agent", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.MaxTurns != 75 {
+		t.Errorf("MaxTurns = %d, want 75", cfg.MaxTurns)
+	}
+}
+
+func TestValidate_TopLevelMaxTurnsNegative(t *testing.T) {
+	cfg := &AgentConfig{
+		Name:     "x",
+		Model:    "p/m",
+		MaxTurns: -1,
+	}
+	err := Validate(cfg)
+	if err == nil {
+		t.Fatal("expected error for max_turns=-1, got nil")
+	}
+	want := "max_turns must be non-negative"
+	if err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestValidate_TopLevelMaxTurnsZeroAndPositive(t *testing.T) {
+	tests := []struct {
+		name     string
+		maxTurns int
+	}{
+		{name: "zero", maxTurns: 0},
+		{name: "positive", maxTurns: 75},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &AgentConfig{
+				Name:     "x",
+				Model:    "p/m",
+				MaxTurns: tc.maxTurns,
+			}
+			err := Validate(cfg)
+			if err != nil {
+				t.Fatalf("expected no error for max_turns=%d, got %v", tc.maxTurns, err)
+			}
+		})
+	}
+}
+
 func TestScaffold_IncludesTopLevelTimeout(t *testing.T) {
 	out, err := Scaffold("test")
 	if err != nil {
@@ -1755,6 +1819,16 @@ func TestScaffold_IncludesTopLevelTimeout(t *testing.T) {
 	}
 	if !strings.Contains(out, "# timeout = 120") {
 		t.Errorf("scaffold output missing '# timeout = 120'\nfull output:\n%s", out)
+	}
+}
+
+func TestScaffold_IncludesTopLevelMaxTurns(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "# max_turns = 50") {
+		t.Errorf("scaffold output missing '# max_turns = 50'\nfull output:\n%s", out)
 	}
 }
 
