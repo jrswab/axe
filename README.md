@@ -580,6 +580,7 @@ The first directory containing a matching `<name>.toml` wins.
 |---|---|---|
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| Eden AI | `EDENAI_API_KEY` | `https://api.edenai.run/v3` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
@@ -593,6 +594,8 @@ The first directory containing a matching `<name>.toml` wins.
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
+
+For Eden AI, model ids carry the upstream vendor as a prefix, such as `edenai/openai/gpt-4o-mini` or `edenai/anthropic/claude-haiku-4-5`.
 
 ## License
 

@@ -248,6 +248,7 @@ func TestAPIKeyEnvVar_KnownProvider(t *testing.T) {
 		{name: "Anthropic", input: "anthropic", want: "ANTHROPIC_API_KEY"},
 		{name: "OpenAI", input: "openai", want: "OPENAI_API_KEY"},
 		{name: "Atlas Cloud", input: "atlascloud", want: "ATLASCLOUD_API_KEY"},
+		{name: "Eden AI", input: "edenai", want: "EDENAI_API_KEY"},
 	}
 
 	for _, tt := range tests {
@@ -351,6 +352,35 @@ func TestResolveAPIKey_MiniMax(t *testing.T) {
 	emptyCfg := &GlobalConfig{Providers: map[string]ProviderConfig{}}
 	if got := emptyCfg.ResolveAPIKey("minimax"); got != "" {
 		t.Errorf("expected empty string, got %q", got)
+	}
+}
+
+func TestResolveAPIKey_EdenAI(t *testing.T) {
+	withConfig := &GlobalConfig{
+		Providers: map[string]ProviderConfig{
+			"edenai": {APIKey: "edenai-key-from-config"},
+		},
+	}
+	emptyConfig := &GlobalConfig{Providers: map[string]ProviderConfig{}}
+
+	tests := []struct {
+		name string
+		env  string
+		cfg  *GlobalConfig
+		want string
+	}{
+		{name: "env var takes precedence over config", env: "edenai-key-from-env", cfg: withConfig, want: "edenai-key-from-env"},
+		{name: "config used when env var is empty", env: "", cfg: withConfig, want: "edenai-key-from-config"},
+		{name: "empty when neither is set", env: "", cfg: emptyConfig, want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("EDENAI_API_KEY", tt.env)
+			if got := tt.cfg.ResolveAPIKey("edenai"); got != tt.want {
+				t.Errorf("ResolveAPIKey(\"edenai\") = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
