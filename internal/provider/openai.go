@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -27,11 +29,32 @@ func WithOpenAIBaseURL(url string) OpenAIOption {
 	}
 }
 
+// withOpenAICostHeader makes the provider read the request cost (USD) from a
+// response header, for OpenAI-compatible gateways that report it.
+func withOpenAICostHeader(header string) OpenAIOption {
+	return func(o *OpenAI) {
+		o.costHeader = header
+	}
+}
+
 // OpenAI implements the Provider interface for the OpenAI Chat Completions API.
 type OpenAI struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey     string
+	baseURL    string
+	costHeader string
+	client     *http.Client
+}
+
+// responseCost parses the configured cost header; 0 when unset or unparsable.
+func (o *OpenAI) responseCost(header http.Header) float64 {
+	if o.costHeader == "" {
+		return 0
+	}
+	cost, err := strconv.ParseFloat(strings.TrimSpace(header.Get(o.costHeader)), 64)
+	if err != nil || cost < 0 {
+		return 0
+	}
+	return cost
 }
 
 // NewOpenAI creates a new OpenAI provider. Returns an error if apiKey is empty.
@@ -353,6 +376,7 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 		InputTokens:     apiResp.Usage.PromptTokens,
 		OutputTokens:    apiResp.Usage.CompletionTokens,
 		CacheReadTokens: apiResp.Usage.PromptTokensDetails.CachedTokens,
+		Cost:            o.responseCost(httpResp.Header),
 		StopReason:      apiResp.Choices[0].FinishReason,
 		ToolCalls:       toolCalls,
 	}, nil
@@ -481,14 +505,25 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 		return nil, o.handleErrorResponse(httpResp.StatusCode, respBody)
 	}
 
+	cost := o.responseCost(httpResp.Header)
 	parser := NewSSEParser(httpResp.Body)
 	toolCalls := make(map[int]struct{ id, name string })
 	var finishReason string
 	var gotUsage bool
+	// Usage that arrived on a chunk that also carried choices (LiteLLM does
+	// this); reported with the done event at [DONE].
+	var trailingUsage *openaiStreamUsage
+	var pendingToolEvents []StreamEvent
 	var pendingToolEnds []StreamEvent
 
 	nextFunc := func() (StreamEvent, error) {
 		for {
+			if len(pendingToolEvents) > 0 {
+				ev := pendingToolEvents[0]
+				pendingToolEvents = pendingToolEvents[1:]
+				return ev, nil
+			}
+
 			if len(pendingToolEnds) > 0 {
 				ev := pendingToolEnds[0]
 				pendingToolEnds = pendingToolEnds[1:]
@@ -516,10 +551,18 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 			if sseEvent.Data == "[DONE]" {
 				if !gotUsage {
-					return StreamEvent{
+					gotUsage = true
+					done := StreamEvent{
 						Type:       StreamEventDone,
 						StopReason: finishReason,
-					}, nil
+						Cost:       o.streamCost(cost, trailingUsage),
+					}
+					if trailingUsage != nil {
+						done.InputTokens = trailingUsage.PromptTokens
+						done.OutputTokens = trailingUsage.CompletionTokens
+						done.CacheReadTokens = trailingUsage.PromptTokensDetails.CachedTokens
+					}
+					return done, nil
 				}
 				return StreamEvent{}, io.EOF
 			}
@@ -541,10 +584,16 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 						InputTokens:     chunk.Usage.PromptTokens,
 						OutputTokens:    chunk.Usage.CompletionTokens,
 						CacheReadTokens: chunk.Usage.PromptTokensDetails.CachedTokens,
+						Cost:            o.streamCost(cost, chunk.Usage),
 						StopReason:      finishReason,
 					}, nil
 				}
 				continue
+			}
+
+			if chunk.Usage != nil {
+				usage := *chunk.Usage
+				trailingUsage = &usage
 			}
 
 			choice := chunk.Choices[0]
@@ -557,25 +606,39 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 			}
 
 			if len(choice.Delta.ToolCalls) > 0 {
-				tc := choice.Delta.ToolCalls[0]
-				if tc.ID != "" {
-					toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: tc.Function.Name}
-					return StreamEvent{
-						Type:       StreamEventToolStart,
-						ToolCallID: tc.ID,
-						ToolName:   tc.Function.Name,
-					}, nil
+				// Some backends (Gemini through LiteLLM, among others) send a
+				// whole call, id and arguments, in one delta, and may send
+				// several calls per chunk; queue every event instead of only
+				// the first.
+				for _, tc := range choice.Delta.ToolCalls {
+					args := ""
+					if tc.Function != nil {
+						args = tc.Function.Arguments
+					}
+					if tc.ID != "" {
+						name := ""
+						if tc.Function != nil {
+							name = tc.Function.Name
+						}
+						toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: name}
+						pendingToolEvents = append(pendingToolEvents, StreamEvent{
+							Type:       StreamEventToolStart,
+							ToolCallID: tc.ID,
+							ToolName:   name,
+						})
+						if args == "" {
+							continue
+						}
+					}
+					pendingToolEvents = append(pendingToolEvents, StreamEvent{
+						Type:       StreamEventToolDelta,
+						ToolCallID: toolCalls[tc.Index].id,
+						ToolInput:  args,
+					})
 				}
-				info := toolCalls[tc.Index]
-				args := ""
-				if tc.Function != nil {
-					args = tc.Function.Arguments
+				if choice.FinishReason == nil {
+					continue
 				}
-				return StreamEvent{
-					Type:       StreamEventToolDelta,
-					ToolCallID: info.id,
-					ToolInput:  args,
-				}, nil
 			}
 
 			if choice.FinishReason != nil {
@@ -647,6 +710,18 @@ type openaiStreamUsage struct {
 	PromptTokensDetails struct {
 		CachedTokens int `json:"cached_tokens"`
 	} `json:"prompt_tokens_details"`
+	// Cost is reported in the usage block by gateways such as LiteLLM, whose
+	// cost header cannot be known when a stream starts.
+	Cost float64 `json:"cost"`
+}
+
+// streamCost prefers the response header; gateways that report cost fall back
+// to the usage block. Plain OpenAI reports neither.
+func (o *OpenAI) streamCost(headerCost float64, usage *openaiStreamUsage) float64 {
+	if headerCost > 0 || o.costHeader == "" || usage == nil || usage.Cost < 0 {
+		return headerCost
+	}
+	return usage.Cost
 }
 
 // openaiStreamOptions controls streaming behavior in the request.

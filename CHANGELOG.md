@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Atlas Cloud provider using the OpenAI-compatible Chat Completions API
+- LiteLLM proxy provider (`litellm/<model>`), with per-request cost reported from the proxy
 
 ## [1.10.0] - 2026-05-05
 

@@ -59,6 +59,7 @@ func Load() (*GlobalConfig, error) {
 var knownAPIKeyEnvVars = map[string]string{
 	"anthropic":  "ANTHROPIC_API_KEY",
 	"atlascloud": "ATLASCLOUD_API_KEY",
+	"litellm":    "LITELLM_API_KEY",
 	"openai":     "OPENAI_API_KEY",
 	"opencode":   "OPENCODE_API_KEY",
 	"google":     "GEMINI_API_KEY",
