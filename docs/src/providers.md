@@ -7,6 +7,7 @@
 | OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
 | MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |
+| Eden AI | `edenai` | `EDENAI_API_KEY` | `https://api.edenai.run/v3` |
 | Ollama | `ollama` | (none required) | `http://localhost:11434` |
 | OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |
 | AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |
@@ -31,6 +32,9 @@ api_key = "sk-ant-..."
 [providers.atlascloud]
 api_key = "..."
 
+[providers.edenai]
+api_key = "..."
+
 [providers.google]
 api_key = "AIza..."
 
@@ -48,6 +52,8 @@ region = "us-east-1"
 Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
+
+Eden AI is a gateway, so its model ids carry the upstream vendor as a prefix. For example, set an agent model to `edenai/openai/gpt-4o-mini`, `edenai/anthropic/claude-haiku-4-5` or `edenai/mistral/mistral-small-latest`. Set `AXE_EDENAI_BASE_URL` to `https://api.eu.edenai.run/v3` to route through the EU endpoint.
 
 ## Streaming Support
 
