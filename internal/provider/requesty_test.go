@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +28,7 @@ func TestNewRequesty(t *testing.T) {
 			name:       "empty API key errors",
 			apiKey:     "",
 			wantErr:    true,
-			wantErrMsg: "API key is required",
+			wantErrMsg: "Requesty API key is required; set REQUESTY_API_KEY",
 		},
 		{
 			name:        "valid API key",
@@ -65,6 +66,13 @@ func TestNewRequesty(t *testing.T) {
 				}
 				if !strings.Contains(err.Error(), tc.wantErrMsg) {
 					t.Errorf("expected error containing %q, got %q", tc.wantErrMsg, err.Error())
+				}
+				var providerErr *ProviderError
+				if !errors.As(err, &providerErr) {
+					t.Fatalf("expected ProviderError, got %T", err)
+				}
+				if providerErr.Category != ErrCategoryAuth {
+					t.Errorf("error category = %q, want %q", providerErr.Category, ErrCategoryAuth)
 				}
 				return
 			}

@@ -54,7 +54,10 @@ type Requesty struct {
 // NewRequesty creates a new Requesty provider. Returns an error if apiKey is empty.
 func NewRequesty(apiKey string, opts ...RequestyOption) (*Requesty, error) {
 	if apiKey == "" {
-		return nil, fmt.Errorf("API key is required")
+		return nil, &ProviderError{
+			Category: ErrCategoryAuth,
+			Message:  "Requesty API key is required; set REQUESTY_API_KEY",
+		}
 	}
 
 	o := &Requesty{
