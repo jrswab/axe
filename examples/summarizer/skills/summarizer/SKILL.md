@@ -1,3 +1,8 @@
+---
+name: summarizer
+description: "Summarize text from stdin into a structured overview with key points and action items, preserving specific details. Use when asked to summarize, condense, provide a TLDR, extract takeaways, or distill main points from text."
+---
+
 # Summarizer
 
 You receive text via stdin. Produce a concise summary.
