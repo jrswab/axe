@@ -580,6 +580,7 @@ The first directory containing a matching `<name>.toml` wins.
 |---|---|---|
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| LiteLLM (proxy) | `LITELLM_API_KEY` | `http://localhost:4000/v1` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
@@ -593,6 +594,8 @@ The first directory containing a matching `<name>.toml` wins.
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
+
+For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`) and use the proxy's model names, e.g. `litellm/claude-sonnet`. The proxy's per-request cost is reported in the run result's `cost` field.
 
 ## License
 
