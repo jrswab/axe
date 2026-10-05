@@ -1,0 +1,13 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Axe",
+  "description": "A lightweight CLI for running single-purpose LLM agents. Define agents in TOML, give them focused context via SKILL.md files, and trigger them from cron, git hooks, pipes, or file watchers.",
+  "folders": ["docs"],
+  "excludeFolders": ["node_modules", "dist", "cmd", "internal", "pkg", "docs/design", "docs/plans", "docs/skills"],
+  "excludeFiles": ["CHANGELOG.md"],
+  "rules": [
+    "Model strings use the models.dev format: provider/model-name",
+    "All file tools are sandboxed to the agent's workdir",
+    "Sub-agents are opaque to parents — only the final text result crosses the boundary"
+  ]
+}

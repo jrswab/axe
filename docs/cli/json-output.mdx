@@ -1,4 +1,8 @@
-# JSON Output
+---
+title: "JSON Output"
+description: "The `--json` flag wraps the agent's output in a JSON envelope with metadata for scripting and observability."
+---
+
 
 The `--json` flag wraps the agent's output in a JSON envelope with metadata for scripting and observability.
 
@@ -73,8 +77,8 @@ Each entry in the `tool_call_details` array represents one tool invocation:
 
 ## Streaming Compatibility
 
-When `--stream` and `--json` are both enabled, streaming is used internally but the output is still delivered as a single JSON envelope. No incremental text is printed to stdout — the JSON remains safe for machine parsing. See [Run Flags — Streaming](run-flags.md#streaming) for details.
+When `--stream` and `--json` are both enabled, streaming is used internally but the output is still delivered as a single JSON envelope. No incremental text is printed to stdout — the JSON remains safe for machine parsing. See [Run Flags — Streaming](run-flags.mdx#streaming) for details.
 
 ## Refusal Detection
 
-The `refused` field is set to `true` when axe detects that the LLM declined to complete the task. Detection is heuristic — it scans the response for phrases like "I cannot", "I'm unable to", "I must decline", etc. See the [Refusal Detection](refusal-detection.md) page for details.
+The `refused` field is set to `true` when axe detects that the LLM declined to complete the task. Detection is heuristic — it scans the response for phrases like "I cannot", "I'm unable to", "I must decline", etc. See the [Refusal Detection](refusal-detection.mdx) page for details.

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://context7.com/schema/docs7.json",
+  "name": "Axe Documentation",
+  "description": "A lightweight CLI for running single-purpose LLM agents. Think make for AI — define agents in TOML, give them focused context via SKILL.md files, and trigger them from anywhere.",
+  "colors": {
+    "primary": "#16A34A"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Guide",
+        "pages": ["index"]
+      },
+      {
+        "group": "Getting Started",
+        "pages": [
+          "getting-started/installation",
+          "getting-started/quick-start"
+        ]
+      },
+      {
+        "group": "CLI Reference",
+        "pages": [
+          "cli/commands",
+          "cli/run-flags",
+          "cli/exit-codes",
+          "cli/json-output",
+          "cli/refusal-detection"
+        ]
+      },
+      {
+        "group": "Configuration",
+        "pages": [
+          "configuration/agent-config",
+          "configuration/retry",
+          "configuration/token-budget",
+          "configuration/output-allowlist"
+        ]
+      },
+      {
+        "group": "Tools",
+        "pages": ["tools/built-in", "tools/mcp"]
+      },
+      {
+        "group": "Skills",
+        "pages": ["skills"]
+      },
+      {
+        "group": "Providers",
+        "pages": ["providers"]
+      },
+      {
+        "group": "Docker",
+        "pages": [
+          "docker/building",
+          "docker/running",
+          "docker/compose",
+          "docker/security"
+        ]
+      },
+      {
+        "group": "Local Agent Directories",
+        "pages": ["local-agents"]
+      }
+    ]
+  }
+}

@@ -1,4 +1,8 @@
-# Providers
+---
+title: "Providers"
+description: "Supported LLM providers, their names, API key environment variables, and base URLs."
+---
+
 
 | Provider | Provider Name | API Key Env Var | Default Base URL |
 |---|---|---|---|
@@ -53,7 +57,7 @@ Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an
 
 All providers except AWS Bedrock support response streaming via the `--stream` flag or the `stream = true` TOML field. If a provider does not support streaming, the setting is silently ignored and the request falls back to non-streaming.
 
-See [Run Flags — Streaming](cli/run-flags.md#streaming) for usage details and how streaming interacts with `--json`.
+See [Run Flags — Streaming](cli/run-flags.mdx#streaming) for usage details and how streaming interacts with `--json`.
 
 ## AWS Bedrock
 
