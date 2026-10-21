@@ -275,6 +275,83 @@ func TestGemini_Send_OmitsZeroTemperature(t *testing.T) {
 	}
 }
 
+func TestGemini_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name   string
+		stream bool
+	}{
+		{"Send", false},
+		{"SendStream", true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody []byte
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var err error
+				gotBody, err = io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("failed to read request body: %v", err)
+				}
+				response := `{"candidates":[{"content":{"role":"model","parts":[{"text":"ok"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":2}}`
+				if tc.stream {
+					w.Header().Set("Content-Type", "text/event-stream")
+					_, _ = fmt.Fprint(w, geminiSSEChunk(response))
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(response))
+			}))
+			defer server.Close()
+
+			g, err := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			req := &Request{
+				Model:           "gemini-2.0-flash",
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+				MaxTokens:       100,
+			}
+			if tc.stream {
+				stream, err := g.SendStream(context.Background(), req)
+				if err != nil {
+					t.Fatalf("unexpected SendStream error: %v", err)
+				}
+				defer func() { _ = stream.Close() }()
+				for {
+					_, err := stream.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						t.Fatalf("unexpected stream error: %v", err)
+					}
+				}
+			} else if _, err := g.Send(context.Background(), req); err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+
+			var body map[string]interface{}
+			if err := json.Unmarshal(gotBody, &body); err != nil {
+				t.Fatalf("failed to parse request body: %v", err)
+			}
+			genCfg, ok := body["generationConfig"].(map[string]interface{})
+			if !ok || genCfg["maxOutputTokens"] != float64(100) {
+				t.Errorf("generationConfig = %v, want maxOutputTokens 100", body["generationConfig"])
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if strings.Contains(string(gotBody), `"`+key+`"`) {
+					t.Errorf("body contains %q: %s", key, gotBody)
+				}
+			}
+		})
+	}
+}
+
 func TestGemini_Send_IncludesMaxTokens(t *testing.T) {
 	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
 		testutil.GeminiResponse("ok"),

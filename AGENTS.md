@@ -100,7 +100,8 @@ max_entries = 100    # Default: 100 (warn when exceeded)
 path = "/custom/path" # Optional (default: $XDG_DATA_HOME/axe/memory/{agent-name}.md)
 
 [params]
-temperature = 0.7  # Default: 0 (omitted if 0)
+temperature = 0.7  # Optional (OpenAI/Atlas Cloud send explicit 0)
+reasoning_effort = "low" # Optional (OpenAI/Atlas Cloud only, no value validation)
 max_tokens = 4096  # Default: 0 (provider default)
 
 [artifacts]

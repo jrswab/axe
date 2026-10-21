@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Atlas Cloud provider using the OpenAI-compatible Chat Completions API
+- `reasoning_effort` in agent TOML `[params]`, passed through unchanged without validation. OpenAI and Atlas Cloud send it as a top-level field when non-empty. Other providers ignore it.
+
+### Changed
+- OpenAI and Atlas Cloud send `"temperature": 0` when agent TOML explicitly sets `temperature = 0`. Unset temperature remains omitted, and other providers are unchanged. This changes behavior for agents that set `temperature = 0.0`.
 
 ## [1.10.0] - 2026-05-05
 

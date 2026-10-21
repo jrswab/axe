@@ -245,11 +245,13 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 
 	// Step 12: Build request
 	req := &provider.Request{
-		Model:       modelName,
-		System:      systemPrompt,
-		Messages:    []provider.Message{{Role: "user", Content: userMessage}},
-		Temperature: cfg.Params.Temperature,
-		MaxTokens:   cfg.Params.MaxTokens,
+		Model:           modelName,
+		System:          systemPrompt,
+		Messages:        []provider.Message{{Role: "user", Content: userMessage}},
+		Temperature:     cfg.Params.Temperature,
+		TemperatureSet:  cfg.Params.TemperatureSet,
+		MaxTokens:       cfg.Params.MaxTokens,
+		ReasoningEffort: cfg.Params.ReasoningEffort,
 	}
 
 	// Inject tools if sub-agent has sub_agents and depth allows

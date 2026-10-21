@@ -14,14 +14,14 @@ import (
 
 func TestNewOpenRouter(t *testing.T) {
 	cases := []struct {
-		name         string
-		apiKey       string
-		opts         []OpenRouterOption
-		wantErr      bool
-		wantErrMsg   string
-		wantBaseURL  string
-		wantReferer  string
-		wantTitle    string
+		name           string
+		apiKey         string
+		opts           []OpenRouterOption
+		wantErr        bool
+		wantErrMsg     string
+		wantBaseURL    string
+		wantReferer    string
+		wantTitle      string
 		wantCategories string
 	}{
 		{
@@ -95,8 +95,8 @@ func TestOpenRouter_Send_Success(t *testing.T) {
 			"model": "anthropic/claude-sonnet-4",
 			"choices": []map[string]interface{}{
 				{
-					"message": map[string]string{"content": "Hello from OpenRouter"},
-					"finish_reason": "stop",
+					"message":              map[string]string{"content": "Hello from OpenRouter"},
+					"finish_reason":        "stop",
 					"native_finish_reason": "end_turn",
 				},
 			},
@@ -187,6 +187,90 @@ func TestOpenRouter_Send_RequestFormat(t *testing.T) {
 	}
 	if gotModel != "openai/gpt-5" {
 		t.Errorf("expected model 'openai/gpt-5', got %q", gotModel)
+	}
+}
+
+func TestOpenRouter_ReasoningEffortIgnored(t *testing.T) {
+	methods := []struct {
+		name     string
+		isStream bool
+		wantBody string
+	}{
+		{
+			name:     "Send",
+			wantBody: `{"model":"openai/gpt-5","messages":[{"role":"user","content":"Hi"}]}`,
+		},
+		{
+			name:     "SendStream",
+			isStream: true,
+			wantBody: `{"model":"openai/gpt-5","messages":[{"role":"user","content":"Hi"}],"stream":true,"stream_options":{"include_usage":true}}`,
+		},
+	}
+	tests := []struct {
+		name           string
+		effort         string
+		temperatureSet bool
+	}{
+		{name: "empty"},
+		{name: "low", effort: "low"},
+		{name: "explicit zero", temperatureSet: true},
+	}
+
+	for _, method := range methods {
+		t.Run(method.name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					var gotBody []byte
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						gotBody, _ = io.ReadAll(r.Body)
+						if method.isStream {
+							w.Header().Set("Content-Type", "text/event-stream")
+							_, _ = w.Write([]byte("data: [DONE]\n\n"))
+							return
+						}
+						_ = json.NewEncoder(w).Encode(map[string]interface{}{
+							"choices": []map[string]interface{}{{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"}},
+							"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+						})
+					}))
+					defer server.Close()
+
+					o, _ := NewOpenRouter("test-key", WithOpenRouterBaseURL(server.URL))
+					req := &Request{
+						Model:           "openai/gpt-5",
+						Messages:        []Message{{Role: "user", Content: "Hi"}},
+						ReasoningEffort: tt.effort,
+						TemperatureSet:  tt.temperatureSet,
+					}
+					if method.isStream {
+						stream, err := o.SendStream(context.Background(), req)
+						if err != nil {
+							t.Fatalf("unexpected error: %v", err)
+						}
+						defer func() { _ = stream.Close() }()
+					} else if _, err := o.Send(context.Background(), req); err != nil {
+						t.Fatalf("unexpected error: %v", err)
+					}
+
+					var body map[string]interface{}
+					if err := json.Unmarshal(gotBody, &body); err != nil {
+						t.Fatalf("failed to parse request body: %v", err)
+					}
+					if _, ok := body["reasoning_effort"]; ok {
+						t.Error("OpenRouter request body should not contain reasoning_effort")
+					}
+					if _, ok := body["reasoning"]; ok {
+						t.Error("OpenRouter request body should not contain a nested reasoning object")
+					}
+					if _, ok := body["temperature"]; ok {
+						t.Error("OpenRouter request body should omit zero temperature even when explicitly set")
+					}
+					if string(gotBody) != method.wantBody {
+						t.Errorf("request body = %s, want %s", gotBody, method.wantBody)
+					}
+				})
+			}
+		})
 	}
 }
 
@@ -302,8 +386,8 @@ func TestOpenRouter_Send_GracefulDegradation(t *testing.T) {
 
 func TestOpenRouter_Send_ErrorResponses(t *testing.T) {
 	tests := []struct {
-		status   int
-		wantCat  ErrorCategory
+		status  int
+		wantCat ErrorCategory
 	}{
 		{400, ErrCategoryBadRequest},
 		{401, ErrCategoryAuth},

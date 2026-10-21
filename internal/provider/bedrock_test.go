@@ -283,6 +283,67 @@ func TestBedrock_Send_Temperature(t *testing.T) {
 	}
 }
 
+func TestBedrock_Send_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name      string
+		maxTokens int
+	}{
+		{"without inference config", 0},
+		{"with inference config", 100},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]interface{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Errorf("failed to parse request body: %v", err)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(bedrockResponse{
+					Output:     bedrockOutput{Message: &bedrockMessage{Role: "assistant", Content: []bedrockBlock{{Text: "ok"}}}},
+					StopReason: "end_turn",
+				})
+			}))
+			defer server.Close()
+
+			b, err := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			resp, err := b.Send(context.Background(), &Request{
+				Model:           "test-model",
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+				MaxTokens:       tc.maxTokens,
+			})
+			if err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+			if resp.Content != "ok" {
+				t.Errorf("Content = %q, want ok", resp.Content)
+			}
+			cfg, hasConfig := gotBody["inferenceConfig"].(map[string]interface{})
+			if hasConfig != (tc.maxTokens > 0) {
+				t.Errorf("inferenceConfig present = %v, want %v", hasConfig, tc.maxTokens > 0)
+			}
+			if tc.maxTokens > 0 && cfg["maxTokens"] != float64(tc.maxTokens) {
+				t.Errorf("maxTokens = %v, want %d", cfg["maxTokens"], tc.maxTokens)
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if _, exists := gotBody[key]; exists {
+					t.Errorf("body contains %q: %v", key, gotBody[key])
+				}
+				if _, exists := cfg[key]; exists {
+					t.Errorf("inferenceConfig contains %q: %v", key, cfg[key])
+				}
+			}
+		})
+	}
+}
+
 func TestBedrock_Send_Cache(t *testing.T) {
 	cases := []struct {
 		name                 string

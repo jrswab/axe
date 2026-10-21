@@ -228,6 +228,44 @@ max_tokens = 4096
 	}
 }
 
+func TestAgentsShow_Params(t *testing.T) {
+	tests := []struct {
+		name   string
+		params string
+		want   string
+	}{
+		{name: "omitted"},
+		{name: "empty effort", params: "[params]\nreasoning_effort = \"\""},
+		{name: "low effort", params: "[params]\nreasoning_effort = \"low\"", want: "Reasoning:      low\n"},
+		{name: "explicit zero", params: "[params]\ntemperature = 0", want: "Temperature:    0\n"},
+		{name: "nonzero", params: "[params]\ntemperature = 0.7", want: "Temperature:    0.7\n"},
+		{
+			name:   "both params",
+			params: "[params]\ntemperature = 0.0\nreasoning_effort = \"low\"",
+			want:   "Temperature:    0\nReasoning:      low\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agentsDir := setupTestAgentsDir(t)
+			writeTestAgent(t, agentsDir, "params-agent", "name = \"params-agent\"\nmodel = \"openai/gpt-4o\"\n"+tt.params)
+
+			buf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(new(bytes.Buffer))
+			rootCmd.SetArgs([]string{"agents", "show", "params-agent"})
+			if err := rootCmd.Execute(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			want := "Name:           params-agent\nModel:          openai/gpt-4o\n" + tt.want
+			if got := buf.String(); got != want {
+				t.Errorf("show output = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
 func TestAgentsShow_SubAgentsConfig(t *testing.T) {
 	agentsDir := setupTestAgentsDir(t)
 
