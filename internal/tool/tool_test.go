@@ -301,6 +301,61 @@ system_prompt = "You are a helper."
 	}
 }
 
+func TestExecuteCallAgent_ParamsPresence(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        string
+		wantRaw       string
+		wantEffortRaw string
+	}{
+		{name: "explicit zero", params: "[params]\ntemperature = 0.0", wantRaw: "0"},
+		{name: "nonzero", params: "[params]\ntemperature = 0.7", wantRaw: "0.7"},
+		{name: "reasoning effort low", params: "[params]\nreasoning_effort = \"low\"", wantEffortRaw: `"low"`},
+		{name: "unset"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agentsDir := setupToolTestAgentsDir(t)
+			var gotBody []byte
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotBody, _ = io.ReadAll(r.Body)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"model":   "gpt-4o",
+					"choices": []map[string]interface{}{{"message": map[string]string{"content": "done"}, "finish_reason": "stop"}},
+					"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+				})
+			}))
+			defer server.Close()
+
+			writeToolTestAgent(t, agentsDir, "helper", "name = \"helper\"\nmodel = \"openai/gpt-4o\"\n"+tt.params)
+			t.Setenv("OPENAI_API_KEY", "test-key")
+			t.Setenv("AXE_OPENAI_BASE_URL", server.URL)
+			result := ExecuteCallAgent(context.Background(), provider.ToolCall{
+				ID:        "params-test",
+				Name:      CallAgentToolName,
+				Arguments: map[string]string{"agent": "helper", "task": "say hello"},
+			}, ExecuteOptions{
+				AllowedAgents: []string{"helper"},
+				MaxDepth:      3,
+				GlobalConfig:  &config.GlobalConfig{},
+			})
+			if result.IsError {
+				t.Fatalf("ExecuteCallAgent() error = %s", result.Content)
+			}
+			var body map[string]json.RawMessage
+			if err := json.Unmarshal(gotBody, &body); err != nil {
+				t.Fatalf("failed to parse request body: %v", err)
+			}
+			if got := string(body["temperature"]); got != tt.wantRaw {
+				t.Errorf("temperature = %q, want %q", got, tt.wantRaw)
+			}
+			if got := string(body["reasoning_effort"]); got != tt.wantEffortRaw {
+				t.Errorf("reasoning_effort = %q, want %q", got, tt.wantEffortRaw)
+			}
+		})
+	}
+}
+
 func TestExecuteCallAgent_WithContext(t *testing.T) {
 	agentsDir := setupToolTestAgentsDir(t)
 

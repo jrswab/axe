@@ -41,6 +41,10 @@ type toolExecResult struct {
 
 // Run executes an agent with the given options and returns the result.
 func Run(ctx context.Context, opts Options) (*Result, error) {
+	return run(ctx, opts, provider.New)
+}
+
+func run(ctx context.Context, opts Options, newProvider func(string, string, string) (provider.Provider, error)) (*Result, error) {
 	start := time.Now()
 
 	stdout := opts.Stdout
@@ -278,6 +282,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		if cfg.Params.ResponseFormat.IsSet() {
 			paramsLine += fmt.Sprintf(", response_format=%s", cfg.Params.ResponseFormat.Type)
 		}
+		if cfg.Params.ReasoningEffort != "" {
+			paramsLine += fmt.Sprintf(", reasoning_effort=%s", cfg.Params.ReasoningEffort)
+		}
 		filePaths := make([]string, len(files))
 		for i, f := range files {
 			filePaths[i] = f.Path
@@ -348,7 +355,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	if provName == "openrouter" {
 		prov, err = provider.NewOpenRouterProvider(apiKey, baseURL, globalCfg.ResolveReferer(provName), globalCfg.ResolveTitle(provName), globalCfg.ResolveCategories(provName))
 	} else {
-		prov, err = provider.New(provName, apiKey, baseURL)
+		prov, err = newProvider(provName, apiKey, baseURL)
 	}
 	if err != nil {
 		return nil, &RuntimeError{Msg: "failed to create provider", Err: err}
@@ -380,12 +387,14 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	}
 
 	req := &provider.Request{
-		Model:       modelName,
-		System:      systemPrompt,
-		Messages:    messages,
-		Temperature: cfg.Params.Temperature,
-		MaxTokens:   cfg.Params.MaxTokens,
-		CacheConfig: cacheEnabled,
+		Model:           modelName,
+		System:          systemPrompt,
+		Messages:        messages,
+		Temperature:     cfg.Params.Temperature,
+		TemperatureSet:  cfg.Params.TemperatureSet,
+		MaxTokens:       cfg.Params.MaxTokens,
+		ReasoningEffort: cfg.Params.ReasoningEffort,
+		CacheConfig:     cacheEnabled,
 	}
 
 	if cfg.Params.ResponseFormat.IsSet() {
@@ -491,6 +500,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		paramsLine := fmt.Sprintf("temperature=%g, max_tokens=%d", cfg.Params.Temperature, cfg.Params.MaxTokens)
 		if cfg.Params.ResponseFormat.IsSet() {
 			paramsLine += fmt.Sprintf(", response_format=%s", cfg.Params.ResponseFormat.Type)
+		}
+		if cfg.Params.ReasoningEffort != "" {
+			paramsLine += fmt.Sprintf(", reasoning_effort=%s", cfg.Params.ReasoningEffort)
 		}
 		_, _ = fmt.Fprintf(stderr, "Params:   %s\n", paramsLine)
 		if cfg.Memory.Enabled {

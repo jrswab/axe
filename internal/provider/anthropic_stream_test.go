@@ -154,6 +154,69 @@ func TestAnthropic_SendStream_OmitsZeroTemperature(t *testing.T) {
 	}
 }
 
+func TestAnthropic_SendStream_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name        string
+		newProvider func(string, ...AnthropicOption) (*Anthropic, error)
+		model       string
+	}{
+		{"anthropic", NewAnthropic, "claude-sonnet-4-20250514"},
+		{"minimax", NewMiniMax, "MiniMax-M2.5"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]interface{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Errorf("failed to parse request body: %v", err)
+				}
+				w.Header().Set("Content-Type", "text/event-stream")
+				writeSSE(w, "message_start", `{"type":"message_start","message":{"usage":{"input_tokens":1}}}`)
+				writeSSE(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}`)
+				writeSSE(w, "message_stop", `{"type":"message_stop"}`)
+			}))
+			defer server.Close()
+
+			a, err := tc.newProvider("test-key", WithBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			stream, err := a.SendStream(context.Background(), &Request{
+				Model:           tc.model,
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+			})
+			if err != nil {
+				t.Fatalf("unexpected SendStream error: %v", err)
+			}
+			defer func() { _ = stream.Close() }()
+			for {
+				_, err := stream.Next()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					t.Fatalf("unexpected stream error: %v", err)
+				}
+			}
+			if gotBody["stream"] != true {
+				t.Errorf("stream = %v, want true", gotBody["stream"])
+			}
+			if gotBody["model"] != tc.model {
+				t.Errorf("model = %v, want %q", gotBody["model"], tc.model)
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if _, exists := gotBody[key]; exists {
+					t.Errorf("body contains %q: %v", key, gotBody[key])
+				}
+			}
+		})
+	}
+}
+
 // --- Task 2.5: Error responses (pre-stream) ---
 
 func TestAnthropic_SendStream_ErrorResponse(t *testing.T) {

@@ -72,14 +72,15 @@ type openaiJSONSchemaConfig struct {
 
 // openaiRequest is the JSON body sent to the OpenAI Chat Completions API.
 type openaiRequest struct {
-	Model          string                `json:"model"`
-	Messages       []openaiMessage       `json:"messages"`
-	Temperature    *float64              `json:"temperature,omitempty"`
-	MaxTokens      *int                  `json:"max_completion_tokens,omitempty"`
-	Tools          []openaiToolDef       `json:"tools,omitempty"`
-	Stream         bool                  `json:"stream,omitempty"`
-	StreamOptions  *openaiStreamOptions  `json:"stream_options,omitempty"`
-	ResponseFormat *openaiResponseFormat `json:"response_format,omitempty"`
+	Model           string                `json:"model"`
+	Messages        []openaiMessage       `json:"messages"`
+	Temperature     *float64              `json:"temperature,omitempty"`
+	MaxTokens       *int                  `json:"max_completion_tokens,omitempty"`
+	ReasoningEffort string                `json:"reasoning_effort,omitempty"`
+	Tools           []openaiToolDef       `json:"tools,omitempty"`
+	Stream          bool                  `json:"stream,omitempty"`
+	StreamOptions   *openaiStreamOptions  `json:"stream_options,omitempty"`
+	ResponseFormat  *openaiResponseFormat `json:"response_format,omitempty"`
 }
 
 // openaiMessage is the wire format for a message in the OpenAI API.
@@ -243,11 +244,12 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	messages = append(messages, req.Messages...)
 
 	body := openaiRequest{
-		Model:    req.Model,
-		Messages: convertToOpenAIMessages(messages),
+		Model:           req.Model,
+		Messages:        convertToOpenAIMessages(messages),
+		ReasoningEffort: req.ReasoningEffort,
 	}
 
-	if req.Temperature != 0 {
+	if req.Temperature != 0 || req.TemperatureSet {
 		temp := req.Temperature
 		body.Temperature = &temp
 	}
@@ -411,13 +413,14 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 	messages = append(messages, req.Messages...)
 
 	body := openaiRequest{
-		Model:         req.Model,
-		Messages:      convertToOpenAIMessages(messages),
-		Stream:        true,
-		StreamOptions: &openaiStreamOptions{IncludeUsage: true},
+		Model:           req.Model,
+		Messages:        convertToOpenAIMessages(messages),
+		ReasoningEffort: req.ReasoningEffort,
+		Stream:          true,
+		StreamOptions:   &openaiStreamOptions{IncludeUsage: true},
 	}
 
-	if req.Temperature != 0 {
+	if req.Temperature != 0 || req.TemperatureSet {
 		temp := req.Temperature
 		body.Temperature = &temp
 	}
@@ -621,17 +624,17 @@ type openaiStreamChoice struct {
 
 // openaiStreamDelta is the delta object within a streaming choice.
 type openaiStreamDelta struct {
-	Content   *string                   `json:"content,omitempty"`
-	Role      string                    `json:"role,omitempty"`
-	ToolCalls []openaiStreamToolCall    `json:"tool_calls,omitempty"`
+	Content   *string                `json:"content,omitempty"`
+	Role      string                 `json:"role,omitempty"`
+	ToolCalls []openaiStreamToolCall `json:"tool_calls,omitempty"`
 }
 
 // openaiStreamToolCall is a tool call entry within a streaming delta.
 type openaiStreamToolCall struct {
-	Index    int                             `json:"index"`
-	ID       string                          `json:"id,omitempty"`
-	Type     string                          `json:"type,omitempty"`
-	Function *openaiStreamToolCallFunction   `json:"function,omitempty"`
+	Index    int                           `json:"index"`
+	ID       string                        `json:"id,omitempty"`
+	Type     string                        `json:"type,omitempty"`
+	Function *openaiStreamToolCallFunction `json:"function,omitempty"`
 }
 
 // openaiStreamToolCallFunction holds function info within a streaming tool call.

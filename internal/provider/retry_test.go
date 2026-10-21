@@ -16,9 +16,11 @@ type retryMockProvider struct {
 	responses []*Response
 	errors    []error
 	calls     int
+	requests  []Request
 }
 
 func (m *retryMockProvider) Send(ctx context.Context, req *Request) (*Response, error) {
+	m.requests = append(m.requests, *req)
 	i := m.calls
 	m.calls++
 	if i < len(m.errors) && m.errors[i] != nil {
@@ -516,8 +518,75 @@ type streamMockProvider struct {
 	streamErr    error
 }
 
-func (m *streamMockProvider) SendStream(_ context.Context, _ *Request) (*EventStream, error) {
+func (m *streamMockProvider) SendStream(_ context.Context, req *Request) (*EventStream, error) {
+	m.requests = append(m.requests, *req)
 	return m.streamResult, m.streamErr
+}
+
+func TestRetry_PreservesRequestParameters(t *testing.T) {
+	cases := []struct {
+		name           string
+		effort         string
+		temperatureSet bool
+		temperature    float64
+	}{
+		{"explicit zero", "low", true, 0},
+		{"unset", "", false, 0},
+		{"custom effort", "model-specific", false, 0.7},
+	}
+	modes := []struct {
+		name       string
+		maxRetries int
+		retry      bool
+		stream     bool
+	}{
+		{name: "Send without retries"},
+		{name: "Send with retries enabled", maxRetries: 1},
+		{name: "Send after retry", maxRetries: 1, retry: true},
+		{name: "SendStream", maxRetries: 1, stream: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, mode := range modes {
+				t.Run(mode.name, func(t *testing.T) {
+					mock := &streamMockProvider{}
+					wantCalls := 1
+					if mode.retry {
+						mock.errors = []error{&ProviderError{Category: ErrCategoryRateLimit}}
+						wantCalls = 2
+					}
+					rp := NewRetry(mock, RetryConfig{MaxRetries: mode.maxRetries, Backoff: "fixed", InitialDelayMs: 1})
+					req := &Request{
+						ReasoningEffort: tc.effort,
+						TemperatureSet:  tc.temperatureSet,
+						Temperature:     tc.temperature,
+					}
+					if mode.stream {
+						mock.streamResult = NewEventStream(io.NopCloser(bytes.NewReader(nil)), func() (StreamEvent, error) {
+							return StreamEvent{}, io.EOF
+						})
+						stream, err := rp.SendStream(context.Background(), req)
+						if err != nil {
+							t.Fatalf("unexpected SendStream error: %v", err)
+						}
+						defer func() { _ = stream.Close() }()
+					} else if _, err := rp.Send(context.Background(), req); err != nil {
+						t.Fatalf("unexpected Send error: %v", err)
+					}
+
+					if len(mock.requests) != wantCalls {
+						t.Fatalf("captured requests = %d, want %d", len(mock.requests), wantCalls)
+					}
+					for i, got := range mock.requests {
+						if got.ReasoningEffort != tc.effort || got.TemperatureSet != tc.temperatureSet || got.Temperature != tc.temperature {
+							t.Errorf("request %d: effort=%q, temperatureSet=%v, temperature=%v, want %q/%v/%v", i, got.ReasoningEffort, got.TemperatureSet, got.Temperature, tc.effort, tc.temperatureSet, tc.temperature)
+						}
+					}
+				})
+			}
+		})
+	}
 }
 
 func TestRetrySendStream_DelegatesToStreamProvider(t *testing.T) {

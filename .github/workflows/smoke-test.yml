@@ -60,7 +60,7 @@ jobs:
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
 
@@ -84,9 +84,9 @@ jobs:
         echo "$OUTPUT"
         [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
 
-    - name: provider-opencode
+    - name: provider-openrouter
       run: |
-        OUTPUT=$(./axe run --agents-dir .github/smoke-agents provider-opencode -p "Reply with only the word: pong")
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents provider-openrouter -p "Reply with only the word: pong")
         echo "$OUTPUT"
         [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
 
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
     steps:
     - uses: actions/checkout@v4
@@ -154,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
 
@@ -202,7 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
 
