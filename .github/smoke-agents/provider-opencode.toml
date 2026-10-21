@@ -1,3 +1,0 @@
-name = "provider-opencode"
-model = "opencode/minimax-m2.5"
-description = "Smoke test: OpenCode provider connectivity"
