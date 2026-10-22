@@ -206,6 +206,7 @@ region = "us-east-1"
 
 - **GitHub Actions** - `.github/workflows/go.yml` runs tests and linting on push/PR.
 - **Release workflow** - `.github/workflows/release.yml` uses GoReleaser on tag push.
+- **Provider key check** - `.github/workflows/provider-key-check.yml` runs daily and on demand. `.github/scripts/provider-key-check.sh` probes each smoke-test key and opens or updates one issue on auth or billing failure.
 - **GoReleaser** - `.goreleaser.yml` builds multi-platform binaries, creates GitHub release.
 - **Linting** - `.golangci.yml` configures golangci-lint. Run with `golangci-lint run`.
 
