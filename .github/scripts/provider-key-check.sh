@@ -3,16 +3,22 @@
 # or missing-secret failure, it opens or updates one GitHub issue and exits 1.
 # Transient errors (rate limit, network, 5xx) print a row but do not fail the run.
 set -euo pipefail
+shopt -s inherit_errexit
 
 readonly ISSUE_TITLE="Provider API key check failed"
 readonly DETAIL_MAX=200
 
 # classify prints ok, auth, billing, rate_limit, or error for an HTTP status and body.
-# Billing body patterns run before status codes because OpenAI sends insufficient_quota with HTTP 429.
+# 5xx is checked first and is transient, even when the body mentions billing.
+# Billing body patterns run before other status codes because OpenAI sends insufficient_quota with HTTP 429.
 classify() {
   local code=$1 body=$2
   if [[ $code == 2?? ]]; then
     echo ok
+    return
+  fi
+  if [[ $code == 5?? ]]; then
+    echo error
     return
   fi
   if grep -Eqi 'insufficient_quota|credit_balance|credit balance|billing_error|insufficient credits|spend_limit_exceeded|usage_limit_exceeded' <<<"$body"; then
@@ -28,19 +34,21 @@ classify() {
 }
 
 # probe sends one request for a provider and prints a TSV row: name, class, HTTP code, detail.
-# Args: name, key, url, then extra curl args. The key never appears in the detail.
+# Args: name, key, url, curl header config lines, JSON body. Headers go to curl on stdin and the
+# body goes to a temp file, so the key never appears in curl or jq argv. The key never appears in the detail.
 probe() {
-  local name=$1 key=$2 url=$3
-  shift 3
+  local name=$1 key=$2 url=$3 headers=$4 payload=$5
   if [[ -z $key ]]; then
     printf '%s\tmissing\t000\tsecret is not set\n' "$name"
     return
   fi
-  local body_file code body cls detail
+  local req_file body_file code body cls detail
+  req_file=$(mktemp)
   body_file=$(mktemp)
-  code=$(curl -sS --max-time 60 -o "$body_file" -w '%{http_code}' "$@" "$url" 2>/dev/null) || code=000
+  trap 'rm -f "$req_file" "$body_file"; trap - RETURN' RETURN
+  printf '%s' "$payload" >"$req_file"
+  code=$(printf '%s\n' "$headers" | curl -sS --max-time 60 -K - --data-binary "@$req_file" -o "$body_file" -w '%{http_code}' "$url" 2>/dev/null) || code=000
   body=$(<"$body_file")
-  rm -f "$body_file"
   cls=$(classify "$code" "$body")
   detail=${body//"$key"/[REDACTED]}
   detail=${detail//$'\n'/ }
@@ -55,17 +63,18 @@ probe_providers() {
   local anthropic=${ANTHROPIC_API_KEY:-} openai=${OPENAI_API_KEY:-}
   local openrouter=${OPENROUTER_API_KEY:-} tavily=${TAVILY_API_KEY:-}
   probe anthropic "$anthropic" "${AXE_ANTHROPIC_BASE_URL:-https://api.anthropic.com}/v1/messages" \
-    -H "x-api-key: $anthropic" -H "anthropic-version: 2023-06-01" -H "content-type: application/json" \
-    -d '{"model":"claude-haiku-4-5","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
+    "$(printf 'header = "x-api-key: %s"\nheader = "anthropic-version: 2023-06-01"\nheader = "content-type: application/json"' "$anthropic")" \
+    '{"model":"claude-haiku-4-5","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
   probe openai "$openai" "${AXE_OPENAI_BASE_URL:-https://api.openai.com/v1}/chat/completions" \
-    -H "Authorization: Bearer $openai" -H "content-type: application/json" \
-    -d '{"model":"gpt-4o-mini","max_completion_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
+    "$(printf 'header = "Authorization: Bearer %s"\nheader = "content-type: application/json"' "$openai")" \
+    '{"model":"gpt-4o-mini","max_completion_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
   probe openrouter "$openrouter" "${AXE_OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}/chat/completions" \
-    -H "Authorization: Bearer $openrouter" -H "content-type: application/json" \
-    -d '{"model":"minimax/minimax-m2.5","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
+    "$(printf 'header = "Authorization: Bearer %s"\nheader = "content-type: application/json"' "$openrouter")" \
+    '{"model":"minimax/minimax-m2.5","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
+  # The key reaches jq through its environment, not argv.
   probe tavily "$tavily" "${AXE_TAVILY_BASE_URL:-https://api.tavily.com}/search" \
-    -H "Authorization: Bearer $tavily" -H "content-type: application/json" \
-    -d "$(jq -cn --arg k "$tavily" '{query:"ping",max_results:1,search_depth:"basic",api_key:$k}')"
+    "$(printf 'header = "Authorization: Bearer %s"\nheader = "content-type: application/json"' "$tavily")" \
+    "$(TAVILY_API_KEY=$tavily jq -cn '{query:"ping",max_results:1,search_depth:"basic",api_key:env.TAVILY_API_KEY}')"
 }
 
 # upsert_issue opens the failure issue, or edits the open one, so only one issue exists.
@@ -85,7 +94,7 @@ upsert_issue() {
       echo "Run: $run_url"
     fi
   } >"$body_file"
-  number=$(gh issue list --state open --limit 200 --json number,title \
+  number=$(gh issue list --state open --limit 200 --search "\"$ISSUE_TITLE\" in:title" --json number,title \
     --jq "[.[] | select(.title == \"$ISSUE_TITLE\") | .number] | first // empty")
   if [[ -n $number ]]; then
     gh issue edit "$number" --body-file "$body_file"
@@ -97,13 +106,15 @@ upsert_issue() {
 
 main() {
   local -a rows=()
-  local name cls code detail failed=0
+  local name cls code detail failed=0 output
+  # inherit_errexit lets a failed probe_providers abort this capture. Rows print only after a full run.
+  output=$(probe_providers)
   while IFS=$'\t' read -r name cls code detail; do
     rows+=("$(printf '%-11s %-10s HTTP %s %s' "$name" "$cls" "$code" "$detail")")
     case $cls in
       auth | billing | missing) failed=1 ;;
     esac
-  done < <(probe_providers)
+  done <<<"$output"
   printf '%s\n' "${rows[@]}"
   if ((failed)); then
     upsert_issue "${rows[@]}"
