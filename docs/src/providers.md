@@ -4,6 +4,7 @@
 |---|---|---|---|
 | Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `atlascloud` | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| Cheaper Inference | `cheaperinference` | `CHEAPER_INFERENCE_API_KEY` | `https://api.cheaperinference.com/v1` |
 | OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
 | MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |
@@ -31,6 +32,9 @@ api_key = "sk-ant-..."
 [providers.atlascloud]
 api_key = "..."
 
+[providers.cheaperinference]
+api_key = "..."
+
 [providers.google]
 api_key = "AIza..."
 
@@ -48,6 +52,8 @@ region = "us-east-1"
 Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
+
+Cheaper Inference uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `cheaperinference/gpt-5.4-mini`.
 
 ## Streaming Support
 
