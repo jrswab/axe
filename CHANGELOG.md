@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-21
+
 ### Added
 - Atlas Cloud provider using the OpenAI-compatible Chat Completions API
+- OpenRouter provider support with streaming, configurable app attribution, and `cost` / `cache_status` in `--json` output (#85)
 - `reasoning_effort` in agent TOML `[params]`, passed through unchanged without validation. OpenAI and Atlas Cloud send it as a top-level field when non-empty. Other providers ignore it.
+- Pre-built message history in `pkg/runner` via `Options.Messages`, with updated history returned in `Result.Messages` (#86)
+- Prompt caching for Anthropic and Bedrock (`cache_enabled` in `[params]`, default: true), plus OpenAI cache reporting. Non-zero `cache_read_tokens` and `cache_write_tokens` appear in `--json` output (#87)
+- Configurable `max_turns` in agent TOML (default: 50 when unset or zero) (#88)
 
 ### Changed
 - OpenAI and Atlas Cloud send `"temperature": 0` when agent TOML explicitly sets `temperature = 0`. Unset temperature remains omitted, and other providers are unchanged. This changes behavior for agents that set `temperature = 0.0`.
@@ -138,7 +144,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - staticcheck/errcheck lint issues
 - Duplicate error silencing, glob validation, and nil ExitError guard
 
-[unreleased]: https://github.com/jrswab/axe/compare/v1.10.0...HEAD
+[unreleased]: https://github.com/jrswab/axe/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/jrswab/axe/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/jrswab/axe/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/jrswab/axe/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/jrswab/axe/compare/v1.7.1...v1.8.0
