@@ -9,6 +9,7 @@
 | MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |
 | Ollama | `ollama` | (none required) | `http://localhost:11434` |
 | OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |
+| Runcrate | `runcrate` | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
 | AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |
 
 The "Provider Name" column is the value used in the `model` field of your agent TOML — e.g., `model = "google/gemini-2.0-flash"`.
@@ -41,6 +42,9 @@ api_key = "..."
 api_key = "sk-..."
 base_url = "https://your-openai-proxy.example.com"
 
+[providers.runcrate]
+api_key = "..."
+
 [providers.bedrock]
 region = "us-east-1"
 ```
@@ -48,6 +52,8 @@ region = "us-east-1"
 Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
+
+Runcrate serves open-weight models through the OpenAI-compatible Chat Completions API. For example, set an agent model to `runcrate/deepseek-ai/DeepSeek-V4.1-Flash`.
 
 ## Streaming Support
 

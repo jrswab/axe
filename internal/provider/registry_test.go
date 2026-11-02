@@ -42,6 +42,33 @@ func TestNew_AtlasCloud(t *testing.T) {
 	}
 }
 
+func TestNew_Runcrate(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultRuncrateBaseURL},
+		{name: "custom base URL", input: "http://custom:8080", want: "http://custom:8080"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("runcrate", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			runcrate, ok := p.(*Runcrate)
+			if !ok {
+				t.Fatalf("provider type = %T, want *Runcrate", p)
+			}
+			if runcrate.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", runcrate.baseURL, tt.want)
+			}
+		})
+	}
+}
+
 func TestNew_Bedrock(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKID")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "SECRET")
@@ -139,7 +166,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode"} {
+	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode", "runcrate"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
@@ -235,7 +262,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter"} {
+	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter", "runcrate"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}
