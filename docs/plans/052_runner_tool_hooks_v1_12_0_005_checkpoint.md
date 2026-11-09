@@ -22,16 +22,38 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, the external Go API contract (D1), and runs on the parallel tool dispatch path in `executeToolCalls` (`pkg/runner/run.go:896`, parallel branch `:985-1018`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `checklist-pending`
+- Current phase: `implement`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T0: `unchecked`
+- T1: `unchecked`
+- T2.1: `unchecked`
+- T2.2: `unchecked`
+- T2.3: `unchecked`
+- T2.4: `unchecked`
+- T2.5: `unchecked`
+- T2.6: `unchecked`
+- T2.7: `unchecked`
+- T2.8: `unchecked`
+- T3.0: `unchecked`
+- T3.1: `unchecked`
+- T3.2: `unchecked`
+- T3.3: `unchecked`
+- T3.4: `unchecked`
+- T3.5: `unchecked`
+- T4: `unchecked`
+- T5: `unchecked`
+- T6: `unchecked`
+- T7: `unchecked`
+- T7.1: `unchecked`
+- T8: `unchecked`
+- T9: `unchecked`
 - Milestone checkbox: `unchecked`
 - Review: not started
 - Blockers: none
 - Relevant work: `uncommitted` — the two new spec and checkpoint files are untracked; no code, milestone doc, or 004 artifact is changed; nothing committed.
-- Next safe action: Write 005 implementation checklist (implement skill), spec-lint, planning review
-- Last completed phase/task/gate and timestamp: 005 spec planning review round 3 APPROVED (failing rounds so far 2/3), 2026-11-09T19:22:42.174559+00:00
+- Next safe action: Apply post-cap F1 fix to 005 checklist and spec, then explore check
+- Last completed phase/task/gate and timestamp: 005 checklist planning review round 1 CHANGES REQUESTED; FAILING-ROUND CAP REACHED (3/3: spec r1, spec r2, checklist r1), 2026-11-09T19:39:50.612283+00:00
 
 ## Gate evidence
 
@@ -129,8 +151,50 @@ Round 3 review at 75f95e0: APPROVED, F1/F6/F7 resolved, no new findings. spec-li
 
 - Next action: Write 005 implementation checklist (implement skill), spec-lint, planning review
 
+### 005 checklist drafted 3919eb2; spec-lint PASS
+
+- Gate: 005 checklist drafted 3919eb2; spec-lint PASS
+- Commands/results:
+spec-lint --root <repo> docs/plans/052_runner_tool_hooks_v1_12_0_005_implement.md: exit 0, 81 citations, 0 findings. Orchestrator decision: Action carried via unexported toolExecResult.Action (option a).
+- HEAD commit SHA: `3919eb2a4f43cedb18dd21655cfb115660a13dd9`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Planning review of 005 checklist, round 1 (failing rounds so far 2/3)
+
+### 005 checklist planning review round 1 CHANGES REQUESTED; FAILING-ROUND CAP REACHED (3/3: spec r1, spec r2, checklist r1)
+
+- Gate: 005 checklist planning review round 1 CHANGES REQUESTED; FAILING-ROUND CAP REACHED (3/3: spec r1, spec r2, checklist r1)
+- Commands/results:
+Unresolved at cap: F1 (blocking) implement.md:86 and :100 (and spec test 2 / 3(f)) prescribe capturingProvider.requests[1], but capturingProvider.Send (pkg/runner/run_test.go:50-52) returns text only, so no tool runs and requests[1] does not exist (run.go:645-648). Reviewer fix: use testutil.NewMockLLMServer with AnthropicToolUseResponse then AnthropicResponse in T2.2 and T2.3(f), decode tool result from mock.Requests[1].Body; do not change capturingProvider. Plan: apply fix to checklist and spec, one explore check, then Phase 3 with per-task TDD gates; no further planning review.
+- HEAD commit SHA: `3919eb2a4f43cedb18dd21655cfb115660a13dd9`
+- Relevant work: `committed` — stash ref `bc22ca41f4f0f363c9fb2d19d9f6cab321f1ada8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Apply post-cap F1 fix to 005 checklist and spec, then explore check
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's test 6 (`--json` golden unchanged) is a regression check through `cmd/golden_test.go`, which may need a writable `~/.cache/axe` in this sandbox (environmental, as recorded for 004).
 - Blockers: `none`
-- Next action: Write 005 implementation checklist (implement skill), spec-lint, planning review
+- Next action: Apply post-cap F1 fix to 005 checklist and spec, then explore check
