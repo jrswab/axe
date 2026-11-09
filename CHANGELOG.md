@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make check` and CI now run a pinned apidiff check of `pkg/runner` against `v1.11.0`; incompatible changes fail the check.
 - `Options.ToolHook` in `pkg/runner` lets a host allow, deny, or stub each tool call before dispatch. A denied call is not run and returns an error result. A hook with a non-empty `sub_agents` list is a `ConfigError`.
 - `Options.ToolObserver` in `pkg/runner` receives one metadata-only `ToolEvent` per tool call after each turn's calls finish: the call, the effective action, the call ID, whether it failed, the result length, the dispatch duration, and the turn. It never includes result text. A nil observer changes nothing.
+- `Options.MCPServers` in `pkg/runner` adds MCP servers from code, merged after the agent's TOML servers. A duplicate name is a `ConfigError`. Header values are never printed, and a header variable that is unset is a `ConfigError`. A nil or empty list changes nothing.
 
 ## [1.11.0] - 2026-10-21
 
