@@ -2,9 +2,9 @@
 
 ## Section 1: Context Summary
 
-Milestone 004 of the v1.12.0 runner tool-hooks release lets a host program decide, per tool call, whether axe runs the call (allow), refuses it (deny, an error result the model sees), or substitutes a stub result. The decision is made by one host closure, `Options.ToolHook`, before any dispatch of the turn, so a denied call never reaches a builtin, an MCP server, or `call_agent`. The change is additive to `pkg/runner` (new `ToolAction`, `ToolAllow`, `ToolDeny`, `ToolStub`, `ToolDecision`, `ToolHook`, and the `Options.ToolHook` field). A nil hook keeps today's behavior byte for byte. A hook with a non-empty `sub_agents` list is a `ConfigError`, because the hook does not propagate to sub-agents. Hook errors and panics deny with a fixed text so raw error text never reaches the model. Cancellation during the decision pass dispatches nothing and returns the context error. Source: `docs/plans/052_runner_tool_hooks_v1_12_0_004_spec.md` (Sections 1 and 2, R1-R14, OD1-OD9, acceptance tests 1-13, failure modes 1-9) and `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md` (entry 004, D6). Predecessors 002 and 003 are complete. Baseline commit `09d100d`; HEAD at checklist time is `2bfbab1`.
+Milestone 004 of the v1.12.0 runner tool-hooks release lets a host program decide, per tool call, whether axe runs the call (allow), refuses it (deny, an error result the model sees), or substitutes a stub result. The decision is made by one host closure, `Options.ToolHook`, before any dispatch of the turn, so a denied call never reaches a builtin, an MCP server, or `call_agent`. The change is additive to `pkg/runner` (new `ToolAction`, `ToolAllow`, `ToolDeny`, `ToolStub`, `ToolDecision`, `ToolHook`, and the `Options.ToolHook` field). A nil hook keeps today's behavior byte for byte. A hook with a non-empty `sub_agents` list is a `ConfigError`, because the hook does not propagate to sub-agents. Hook errors and panics deny with a fixed text so raw error text never reaches the model. Cancellation during the decision pass dispatches nothing and returns the context error. Source: `docs/plans/052_runner_tool_hooks_v1_12_0_004_spec.md` (Sections 1 and 2, R1-R14, OD1-OD9, acceptance tests 1-13, failure modes 1-9) and `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md` (entry 004, D6). Predecessors 002 and 003 are complete. Baseline commit `09d100d`; HEAD at checklist time is `3f7f7d0`.
 
-Commit is not authorized in this checklist. Do not push. Do not change files outside the list in each task. Do not edit the spec, the checkpoint, or the milestones document; those are orchestrator records. The working tree already has an uncommitted edit to `docs/plans/052_runner_tool_hooks_v1_12_0_004_checkpoint.md` (orchestrator); do not stage or revert it.
+Commit is not authorized in this checklist. Do not push. Do not change files outside the list in each task. Do not edit the spec, the checkpoint, or the milestones document; those are orchestrator records. Execution starts from a clean tree; do not stage or revert an orchestrator edit; stop and report if one appears.
 
 Scope of changed files (spec R14): `pkg/runner/hook.go` (new), `pkg/runner/options.go`, `pkg/runner/run.go`, `pkg/runner/run_test.go`, `pkg/runner/hook_mcp_test.go` (new), and `CHANGELOG.md` (one `[Unreleased]` Added bullet, task T7.1; required by `CONTRIBUTING.md:185`). Nothing else.
 
@@ -54,7 +54,7 @@ Test-selection convention: no command in this checklist selects tests by name. D
     - `rg -n "ToolHook" pkg/runner/options.go pkg/runner/hook.go` → the field and the type.
     - `rg -n "run goroutine|sub_agents" pkg/runner/hook.go pkg/runner/options.go` → at least one line each.
     - The keyed-literal compatibility of existing `Options{...}` literals is proven by `go build ./...` and `go vet ./pkg/runner/`; no separate grep is required.
-  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race`.
+  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
 ### Phase 2: Red tests (serial, test-only; every declared test must fail or be marked as a guard before Phase 3)
 
@@ -145,7 +145,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
     - `go test ./pkg/runner` → the guards and pre-existing tests pass; the still-red tests fail as expected (record the list).
     - `go vet ./pkg/runner/` → exit 0.
     - `rg -n "executeToolCalls\(" --glob '*.go' .` → exactly the definition and the one call site.
-  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race`.
+  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
 - [ ] **T3.2: Green: deny result and unknown action (R4, R8)**
   - Budget: 30 min
@@ -216,7 +216,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
     - `go test ./pkg/runner` → `ok` (R11; all pre-existing tests pass unchanged).
     - `go build ./...` → exit 0.
     - `go vet ./pkg/runner/` → exit 0.
-  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race`.
+  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
 - [ ] **T5: Acceptance test 7, parallel turn under the race detector (R2, R13)**
   - Budget: 30 min
