@@ -23,8 +23,8 @@ Test-selection convention: no command in this checklist selects tests by name. D
   - Files: none (read-only).
   - Commands and expected results (run in the repository root):
     - `git merge-base --is-ancestor 09d100d HEAD; echo "exit=$?"` → `exit=0`.
-    - `git diff --name-only 09d100d HEAD` → only `docs/plans/052_runner_tool_hooks_v1_12_0_003_checkpoint.md`, `docs/plans/052_runner_tool_hooks_v1_12_0_004_checkpoint.md`, `docs/plans/052_runner_tool_hooks_v1_12_0_004_spec.md`.
-    - `git status --porcelain` → only ` M docs/plans/052_runner_tool_hooks_v1_12_0_004_checkpoint.md` (orchestrator edit, not ours; leave it).
+    - `git diff --name-only 09d100d HEAD -- . ':(exclude)docs/plans/'` → no output (no file outside `docs/plans/` changed since `09d100d`). Orchestrator checkpoint commits may add further Markdown files under `docs/plans/`; those are allowed. At checklist time the list is `docs/plans/052_runner_tool_hooks_v1_12_0_003_checkpoint.md`, `docs/plans/052_runner_tool_hooks_v1_12_0_004_checkpoint.md`, `docs/plans/052_runner_tool_hooks_v1_12_0_004_spec.md`, `docs/plans/052_runner_tool_hooks_v1_12_0_004_implement.md`.
+    - `git status --porcelain` → no output (clean tree). If an orchestrator edit is present, stop and report; do not stage or revert it.
     - `go test ./pkg/runner` → `ok`. This is the R11 baseline.
     - `go test -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestToolHook'` → no output; no test with prefix `TestToolHook` exists yet.
     - `ls pkg/runner/hook.go pkg/runner/hook_mcp_test.go 2>&1` → both report "No such file".
@@ -64,11 +64,11 @@ Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the
   - Budget: 30 min
   - Depends on: T1.
   - File: `pkg/runner/run_test.go`. Add two functions at the end of the file:
-    - `TestToolHookNilHookUnchanged` (acceptance test 1, guard). Model: one `list_directory` call on `.`, then text. No `ToolHook` set. Assert `Content`, `ToolCalls == 1`, and that the tool result sent in the second request carries a non-error result. This test is a regression guard: it passes at HEAD and after T3.x. It is recorded as a guard, not a red test.
+    - `TestToolHookNilHookUnchanged` (acceptance test 1, guard). Model: one `list_directory` call on `.`, then text. No `ToolHook` set. Create the workdir with `t.TempDir()` holding one file `a.txt` and one empty directory `sub/`, and set `Options.Workdir` to it. Assert `Content`, `ToolCalls == 1`, and that the tool result sent in the second request has `IsError: false` and content exactly `a.txt\nsub/`. The expected content follows `internal/tool/list_directory.go:78` (`os.ReadDir`, sorted by name) and `:95-104` (names joined by `\n`, directories suffixed `/`). This test is a regression guard: it passes at HEAD and after T3.x. It is recorded as a guard, not a red test.
     - `TestToolHookDenyWriteFile` (acceptance test 2). Model: one `write_file` call with `path` = `out.txt` and `content` = `hi`, then text. `ToolHook` returns `ToolDecision{Action: ToolDeny}` with empty `Content`. Assert: `filepath.Join(workdir, "out.txt")` does not exist (`os.Stat` returns `ErrNotExist`); the tool result in the second request has `IsError: true` and content `tool call denied by host policy`; `Run` returns no error. Use `tools = ["write_file"]` in the agent TOML and `Options.Workdir` = `t.TempDir()`. Add a second table case where the hook returns `ToolDecision{Action: ToolDeny, Content: "no writes"}` and asserts the content is `no writes`.
   - Red step: run `go test ./pkg/runner`; the new test `TestToolHookDenyWriteFile` fails (the file is created because the hook is never called; the tool result is not an error). Record the failing assertion text.
   - Guard: the guard test `TestToolHookNilHookUnchanged` passes in the same run now and must still pass after T3.x.
-  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above; the race run is required once T3.2 is green.
+  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above; the race run is required once T3.1 is green.
 
 - [ ] **T2.2: Red: acceptance tests 6 (arguments as parsed, copy) and 13 (unknown action) (R5, R8, R13)**
   - Budget: 30 min
