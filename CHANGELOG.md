@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Scheduled `provider-key-check` workflow. It makes one minimal call per smoke-test provider key (Anthropic, OpenAI, OpenRouter, Tavily) and opens or updates one issue when a key fails with an auth, billing, or missing-secret error.
+- `make check` and CI now run a pinned apidiff check of `pkg/runner` against `v1.11.0`; incompatible changes fail the check.
 
 ## [1.11.0] - 2026-10-21
 

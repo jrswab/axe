@@ -48,3 +48,18 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+
+  apidiff:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+
+    - name: Check API compatibility
+      run: make apidiff

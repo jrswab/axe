@@ -34,12 +34,11 @@ This file is the compatibility promise for axe v1 releases. It follows Go 1 styl
 - The zero value of every new key or field keeps today's behavior.
 - No GODEBUG-style switch is used in v1.
 
-## Enforcement (planned)
+## Enforcement
 
-- An apidiff check compares `pkg/runner` against the `v1.11.0` tag. It runs in `make check` and in CI.
-- The check is invoked as `go run golang.org/x/exp/cmd/apidiff@<pinned version>`. It is not added to `go.mod`.
-- The gate lands in milestone 002. It is not active today.
-- The pin is recorded when the gate lands. It is a concrete version, not `latest`.
+- `make apidiff` compares `pkg/runner` against the `v1.11.0` tag. It runs in `make check` and in the `apidiff` CI job in `.github/workflows/go.yml`.
+- The check is invoked as `go run golang.org/x/exp/cmd/apidiff@v0.0.0-20261106192419-47ce03d25ef0`. The concrete pin is recorded in the `Makefile`; the tool is not added to `go.mod`.
+- The gate fails on any incompatible report and on any tool or package-load error.
 
 ## Deprecation
 
@@ -50,5 +49,5 @@ This file is the compatibility promise for axe v1 releases. It follows Go 1 styl
 
 These changes shipped before this policy. They are recorded here and are not reverted.
 
-1. **1.11.0 `temperature = 0` behavior change.** OpenAI and Atlas Cloud send `"temperature": 0` when agent TOML sets `temperature = 0`. This shipped in a minor release with no opt-out. See `CHANGELOG.md:24`.
+1. **1.11.0 `temperature = 0` behavior change.** OpenAI and Atlas Cloud send `"temperature": 0` when agent TOML sets `temperature = 0`. This shipped in a minor release with no opt-out. See `CHANGELOG.md:25`.
 2. **Minimum Go raised to 1.26.0.** Milestone 000 raised the `go` directive. `go.mod:3` is `go 1.26.0`, and `go.mod:5` is `toolchain go1.26.10`. The prior minimum was 1.25.0. Importers on Go 1.25 cannot build `pkg/runner` after this change.
