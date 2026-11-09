@@ -21,8 +21,8 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — COMPATIBILITY.md publishes an external contract (the compatibility promise for public API, CLI, TOML, JSON, and runtime behavior), so the fast-lane condition "leaves external contracts untouched" fails.
-- Current phase: `execute`
-- Current task: T8
+- Current phase: `complete`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
@@ -32,11 +32,11 @@ Absolute paths inside the Repository root (the feature worktree).
 - T6: `checked`
 - T7: `checked`
 - T8: `checked`
-- Milestone checkbox: `unchecked`
+- Milestone checkbox: `checked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: Milestone 001 code review on defd01d..HEAD, then completion gate
-- Last completed phase/task/gate and timestamp: Milestone 001 T1-T8 verification PASS (commit 5ed92b4), 2026-11-09T15:38:26.538019+00:00
+- Next safe action: Restart validation on 001, factory-sync, push with factory-gh push --require-open-pr, then select milestone 002
+- Last completed phase/task/gate and timestamp: Completion gate PASS at c155560: factory-sync exit 0 (ahead 23, behind 0, no conflicts, shared_files []); factory-gate test PASS /tmp/factory-gate-1001/gate-test-c155560591ab-20261109T154426Z.log; factory-gate lint PASS /tmp/factory-gate-1001/gate-lint-c155560591ab-20261109T154426Z.log; spec-lint 001 spec+implement exit 0; docs-lint --since defd01d exit 0 (180 files, 0 findings); spec R1-R8 satisfied; git status clean, 2026-11-09T15:47:23.878970+00:00
 
 ## Gate evidence
 
@@ -143,8 +143,29 @@ Orchestrator edit before commit: removed 'Behavior is not selected by environmen
 
 - Next action: Milestone 001 code review on defd01d..HEAD, then completion gate
 
+### Completion gate PASS at c155560: factory-sync exit 0 (ahead 23, behind 0, no conflicts, shared_files []); factory-gate test PASS /tmp/factory-gate-1001/gate-test-c155560591ab-20261109T154426Z.log; factory-gate lint PASS /tmp/factory-gate-1001/gate-lint-c155560591ab-20261109T154426Z.log; spec-lint 001 spec+implement exit 0; docs-lint --since defd01d exit 0 (180 files, 0 findings); spec R1-R8 satisfied; git status clean
+
+- Gate: Completion gate PASS at c155560: factory-sync exit 0 (ahead 23, behind 0, no conflicts, shared_files []); factory-gate test PASS /tmp/factory-gate-1001/gate-test-c155560591ab-20261109T154426Z.log; factory-gate lint PASS /tmp/factory-gate-1001/gate-lint-c155560591ab-20261109T154426Z.log; spec-lint 001 spec+implement exit 0; docs-lint --since defd01d exit 0 (180 files, 0 findings); spec R1-R8 satisfied; git status clean
+- Commands/results:
+R7 gap closed in c155560: spec R7 (spec:108) now excludes the predecessor Factory record docs/plans/052_runner_tool_hooks_v1_12_0_000_checkpoint.md. Scope command output at c155560 (exit 0): AGENTS.md, CHANGELOG.md, COMPATIBILITY.md, README.md. Code review round 1 APPROVED WITH NITS (nit F1 fixed in ca6566d); R7 change is a spec-only Factory-record fix, no re-review needed.
+- HEAD commit SHA: `c155560591abf0184f9c7e0f2f0f0aa7342c548c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Restart validation on 001, factory-sync, push with factory-gh push --require-open-pr, then select milestone 002
+
 ## Limitations & blockers
 
 - Limitations: planning and implementation verification passed. Only the apidiff pin remains unverified until milestone 002.
 - Blockers: `none`
-- Next action: Completion gate for milestone 001 (code review round 1 APPROVED WITH NITS; nit F1 fixed).
+- Next action: Restart validation on 001, factory-sync, push with factory-gh push --require-open-pr, then select milestone 002
