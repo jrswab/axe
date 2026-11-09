@@ -651,7 +651,7 @@ Option A: none. Option B: additive, and `nil` keeps the current rule.
 ### 5.1 Versioning
 
 - Current: `cmd/root.go:12` `const Version = "1.11.0"`. The version test asserts it at `cmd/version_test.go:19`.
-- Changelog: `CHANGELOG.md:8` `## [Unreleased]`, then `## [1.11.0] - 2026-10-21` at `:10`.
+- Changelog: `CHANGELOG.md:8` `## [Unreleased]`, then `## [1.11.0] - 2026-10-21` at `:13`.
 - Release trigger: tag push matching `v*` (`.github/workflows/release.yml:5-8`). The release notes come from the matching CHANGELOG section.
 - All A1-A9 options are additive. Under semver for a 1.x module, that is a minor bump. Proposed: `v1.12.0`. See Q10.
 
@@ -659,7 +659,7 @@ Steps for axe (Jaron, in `/home/jaron/dev/axe`):
 
 1. Implement A1 (and any other accepted items) with tests.
 2. Add a CHANGELOG entry under `## [Unreleased]`.
-3. Bump `cmd/root.go:12` and update `cmd/version_test.go:19` to match.
+3. Bump all three version strings to match: `cmd/root.go:12`, `cmd/version_test.go:19`, and `internal/mcpclient/mcpclient.go:43`. Run `go test ./cmd/ -run TestVersion -count=1` to confirm.
 4. Run `make check` (`Makefile:10`).
 5. Tag and push `v1.12.0`. Jaron pushes. This doc does not authorize a push.
 
