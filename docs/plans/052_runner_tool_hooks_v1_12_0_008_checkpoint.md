@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Run checklist planning review round 1
-- Last completed phase/task/gate and timestamp: Checklist drafted; spec-lint PASS (pre checklist review round 1), 2026-11-09T23:39:18.424112+00:00
+- Next safe action: Run checklist planning review round 2
+- Last completed phase/task/gate and timestamp: Checklist review round 1 CHANGES REQUESTED (failing planning round 2 of 3); fixes applied; spec-lint PASS, 2026-11-09T23:44:48.404152+00:00
 
 ## Gate evidence
 
@@ -124,8 +124,29 @@ factory-sync (args []): exit 0, base origin/master, ahead 102, behind 0, conflic
 
 - Next action: Run checklist planning review round 1
 
+### Checklist review round 1 CHANGES REQUESTED (failing planning round 2 of 3); fixes applied; spec-lint PASS
+
+- Gate: Checklist review round 1 CHANGES REQUESTED (failing planning round 2 of 3); fixes applied; spec-lint PASS
+- Commands/results:
+Round 1 findings: F1 blocking implement.md:191 post-edit check pinned dry-run at run.go:322 (fixed: relative rg -n position compare); F2 blocking implement.md:192 DryRunInfo -A 12 window too short (fixed: brace-matched awk extraction of full literal and type, positive control verified); F3 nit implement.md:7 stale HEAD wording (fixed). Extra: implement.md:278 run.go:126 post-edit dependency replaced by symbol match. spec-lint spec+checklist: exit 0 (67 / 79 citations, 0 findings).
+- HEAD commit SHA: `d0c539c0706d1b46ea0f114776667cc305fba16a`
+- Relevant work: `uncommitted` — stash ref `2538f6cac6d0c2fb13a80b7b3f522896afb774e5` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_008_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run checklist planning review round 2
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: Run checklist planning review round 1
+- Next action: Run checklist planning review round 2

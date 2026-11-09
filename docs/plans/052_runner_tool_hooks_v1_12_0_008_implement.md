@@ -4,7 +4,7 @@
 
 Milestone 008 of the v1.12.0 runner tool-hooks release lets a host set the turn cap per run in code. `Options.MaxTurns int` is added to the `Options` struct (`pkg/runner/options.go:16`); the new field goes after `Tools` (`pkg/runner/options.go:61`). A value `> 0` overrides the agent's TOML `max_turns`; `0` keeps it; a TOML value of `0` or unset falls back to `defaultMaxConversationTurns` (50, `pkg/runner/run.go:36-37`) (R3, OS2). A negative value is a `ConfigError` checked before the dry-run return, so live and dry-run modes both reject it and send no provider request (R2, OS1). The loop statement (`pkg/runner/run.go:630`) and the turn-limit error text (`pkg/runner/run.go:760`) keep their wording; only the effective cap changes, so a configured `MaxTurns: 2` reports `exceeded maximum conversation turns (2)` (R4, OS3). A budget break still skips the turn-limit error (guard `pkg/runner/run.go:759-761`, OS8). The dry run does not display the cap, and `cmd/` is unchanged (R6, OS4). `agent.Load` still validates TOML `max_turns` (`internal/agent/agent.go:167-169`, OS6). Sub-agents do not inherit the option: a `call_agent` child resolves its own TOML cap with the 50 fallback (`internal/tool/tool.go:368`, loop `:374`, error `:452`) (R9, OS7). One `[Unreleased]` `Added` bullet is the only `CHANGELOG.md` change (R10, OS9).
 
-Source: `docs/plans/052_runner_tool_hooks_v1_12_0_008_spec.md` (Sections 1 and 2, R1-R11, OS1-OS12). Milestone entry 008 is `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:228-236`; its line citations are stale, and this checklist uses the spec's corrected citations, re-verified at HEAD `bb9f625` (code unchanged since `7f56dae`). Predecessor: none (`Depends on: none`). Milestone 007 (`Options.Tools`) is the precedent for the validation and CHANGELOG pattern.
+Source: `docs/plans/052_runner_tool_hooks_v1_12_0_008_spec.md` (Sections 1 and 2, R1-R11, OS1-OS12). Milestone entry 008 is `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:228-236`; its line citations are stale, and this checklist uses the spec's corrected citations, verified against the code at `bb9f625` (code unchanged since `7f56dae`; `d0c539c` changes only `docs/plans/`). Predecessor: none (`Depends on: none`). Milestone 007 (`Options.Tools`) is the precedent for the validation and CHANGELOG pattern.
 
 Commit is not authorized in this checklist. Do not push. Do not edit records: the spec, the checkpoint (`docs/plans/052_runner_tool_hooks_v1_12_0_008_checkpoint.md`), and the milestones document are orchestrator records. Tasks are committed one at a time by the orchestrator. In-task checks read the working tree; the scope check in T8 reads the committed range `7f56dae..HEAD`.
 
@@ -188,8 +188,8 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Depends on: T3.2.
   - Files: none expected. If a check fails, fix only `pkg/runner/run.go` in the lines changed by T3.1 or T3.2; do not change tests or other files.
   - Checks (working tree, in-task):
-    - `rg -n "if opts.DryRun \{" pkg/runner/run.go` → `pkg/runner/run.go:322`; the validation (T3.1) appears above that line (R2, OS1). Confirm the validation line number is smaller than 322.
-    - `rg -n "DryRunInfo\{" -A 12 pkg/runner/run.go` shows no `MaxTurns` field (OS4).
+    - `rg -n "if opts.MaxTurns < 0 \{" pkg/runner/run.go` and `rg -n "if opts.DryRun \{" pkg/runner/run.go` → one match each; the validation line number is smaller than the dry-run line number (R2, OS1). Compare these two positions only. Do not compare against pre-edit line numbers: T3.1 and T3.2 shift `if opts.DryRun {` away from its pre-edit line.
+    - The complete `DryRunInfo` literal and type have no `MaxTurns` field (OS4). Brace-match the literal in `pkg/runner/run.go` and the type in `pkg/runner/result.go` (no fixed line window): `{ awk '/DryRunInfo: &DryRunInfo\{/{f=1;d=0} f{n=gsub(/\{/,"{"); m=gsub(/\}/,"}"); d+=n-m; print; if(d==0) f=0}' pkg/runner/run.go; awk '/^type DryRunInfo struct \{/{f=1} f{print} f&&/^\}/{exit}' pkg/runner/result.go; } | rg MaxTurns; echo "exit=$?"` → no match (`exit=1`).
     - `rg -n "if !budgetExceeded && resp != nil" pkg/runner/run.go` → one match, unchanged (OS8).
     - `rg -n "MaxTurns" internal/tool/tool.go` → `internal/tool/tool.go:368` only (the child cap from its own TOML; OS7). No `opts.MaxTurns` use in `internal/tool/`.
     - `git diff --exit-code -- internal cmd` → `exit=0` (working tree; no edits outside `pkg/runner`).
@@ -275,7 +275,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `rg -n "MaxTurns int" pkg/runner/options.go` → the field (R1).
     - `rg -n "overrides|sub-agents do not inherit" pkg/runner/options.go` → each doc claim present (R10).
     - `rg -n "Options.MaxTurns" CHANGELOG.md` → one bullet (R10).
-    - `git diff 7f56dae..HEAD -- pkg/runner/run.go | rg '^-' | rg -v '^---'` → no output (additions only in `run.go`; the cap line at `pkg/runner/run.go:126` is kept, so no removed line is expected). Any removed line is a failure; report it.
+    - `git diff 7f56dae..HEAD -- pkg/runner/run.go | rg '^-' | rg -v '^---'` → no output (additions only in `run.go`; the `maxConversationTurns := cfg.MaxTurns` line is kept, so no removed line is expected). Any removed line is a failure; report it.
     - `git diff 7f56dae..HEAD -- pkg/runner/options.go | rg '^-' | rg -v '^---'` → no output (additions only).
     - `git diff 7f56dae..HEAD -- pkg/runner/run.go | rg -n 'Options.MaxTurns must be non-negative|opts.MaxTurns > 0'` → one match each.
   - Step 3 (spec and checklist lint, one call): `~/.agents/scripts/spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_008_spec.md docs/plans/052_runner_tool_hooks_v1_12_0_008_implement.md; echo "exit=$?"` → `exit=0`.
@@ -338,7 +338,7 @@ The focused run is the `TestMaxTurnsOption_` family in `pkg/runner` (T4, T5). `m
 
 ## Blockers
 
-None. The spec is approved, and every citation in the spec and in this checklist matches HEAD `bb9f625`. Spec-lint passes with exit 0 on the spec. See "Spec observations" in the Assumptions for a non-blocking citation drift.
+None. The spec is approved, and every citation in the spec and in this checklist matches the code at `bb9f625` (code unchanged since `7f56dae`; `d0c539c` changes only `docs/plans/`). Spec-lint passes with exit 0 on the spec. See "Spec observations" in the Assumptions for a non-blocking citation drift.
 
 ## Parallel Work and Serial Dependencies
 
