@@ -22,13 +22,30 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
-- Current phase: `checklist-pending`
+- Current phase: `implement`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T0: `unchecked`
+- T1: `unchecked`
+- T2.1: `unchecked`
+- T2.2: `unchecked`
+- T2.3: `unchecked`
+- T2.4: `unchecked`
+- T3.1: `unchecked`
+- T3.2: `unchecked`
+- T3.3: `unchecked`
+- T3.4: `unchecked`
+- T3.5: `unchecked`
+- T4: `unchecked`
+- T5: `unchecked`
+- T6: `unchecked`
+- T7: `unchecked`
+- T7.1: `unchecked`
+- T8: `unchecked`
+- T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Draft implementation checklist 007_implement.md, then checklist planning review r1
-- Last completed phase/task/gate and timestamp: Spec planning review r1 APPROVED, 2026-11-09T22:18:07.031362+00:00
+- Next safe action: Checklist planning review r2 (prior finding verbatim), then --phase execute
+- Last completed phase/task/gate and timestamp: Checklist planning review r1 CHANGES REQUESTED; fix applied, 2026-11-09T22:34:48.966968+00:00
 
 ## Gate evidence
 
@@ -86,8 +103,29 @@ spec-lint --root . 007_spec.md exit 0 (65 citations, 0 findings); docs-lint 1 --
 
 - Next action: Draft implementation checklist 007_implement.md, then checklist planning review r1
 
+### Checklist planning review r1 CHANGES REQUESTED; fix applied
+
+- Gate: Checklist planning review r1 CHANGES REQUESTED; fix applied
+- Commands/results:
+Checklist drafted ef4c584 (spec-lint exit 0: spec 65, checklist 79 citations; docs-lint --since de43f3c exit 0, 196 files). Spec citation fix 452dd57 (run.go:454 -> :455). Checklist review r1 at 452dd57: CHANGES REQUESTED, 1 blocking finding: implement.md:141 and :343 claimed TestTools_OptionReplacesTOMLList request assertion green after T3.1, but the effective list arrives in T3.2. Fix: both assertions red after T3.1; red at T3.2 on dry-run only. grep -F of both quoted texts 0 hits; spec-lint exit 0. Failing planning rounds: 1 of 3 (spec r1 APPROVED, checklist r1 failed). Open item for implementer: test 5 fixture uses TOML tools = ["read_file"] (checklist Assumption 2).
+- HEAD commit SHA: `452dd57216746dd857e57d4f6404bc990a9bdf3e`
+- Relevant work: `uncommitted` — stash ref `2764b80c8434a997a5ac8004d21248796561be60` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_007_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Checklist planning review r2 (prior finding verbatim), then --phase execute
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Draft implementation checklist 007_implement.md, then checklist planning review r1
+- Next action: Checklist planning review r2 (prior finding verbatim), then --phase execute

@@ -138,7 +138,7 @@ Shared test conventions (file `pkg/runner/tools_option_test.go`, new, created in
 Order: T3.1 (validation) → T3.2 (effective list, live path) → T3.3 (dry-run report) → T3.4 (shadowing and sub-agent verification) → T3.5 (all green). All green tasks edit `pkg/runner/run.go` only, so they are serial.
 
 Expected FAIL set after each green task (the race run in each task must show only these; any other FAIL is a stop):
-- After T3.1: `TestTools_OptionReplacesTOMLList` (request assertion is green but the dry-run assertion is red), `TestTools_EmptyListNoToolsKey`, `TestTools_MCPShadowingFollowsEffectiveList/b_builtin_removed`, `TestTools_SubAgentNotInherited`.
+- After T3.1: `TestTools_OptionReplacesTOMLList` (request and dry-run assertions both red; the effective list arrives in T3.2, so the live request still uses `cfg.Tools`), `TestTools_EmptyListNoToolsKey`, `TestTools_MCPShadowingFollowsEffectiveList/b_builtin_removed`, `TestTools_SubAgentNotInherited`.
 - After T3.2: `TestTools_OptionReplacesTOMLList` (dry-run `DryRunInfo.Tools` assertion only).
 - After T3.3 and T3.4: none.
 
@@ -340,7 +340,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
 
 | Acceptance test | Test function | Red task | Green task | Note |
 |---|---|---|---|---|
-| 1 non-nil list replaces TOML; request has only those tools; mutation; dry-run `DryRunInfo.Tools` | `TestTools_OptionReplacesTOMLList` | T2.1 | T3.2 (request, mutation), T3.3 (dry run) | Red at T3.1 and T3.2 on the dry-run assertion only. |
+| 1 non-nil list replaces TOML; request has only those tools; mutation; dry-run `DryRunInfo.Tools` | `TestTools_OptionReplacesTOMLList` | T2.1 | T3.2 (request, mutation), T3.3 (dry run) | Red at T3.1 on the request and dry-run assertions; red at T3.2 on the dry-run assertion only. |
 | 2 unknown name `ConfigError`: `bogus`, `empty`, `call_agent`; live and dry; zero requests | `TestTools_UnknownNameConfigError` | T2.1 | T3.1 | |
 | 3 empty non-nil list: no `tools` key; `Run` succeeds | `TestTools_EmptyListNoToolsKey` | T2.2 | T3.2 | |
 | 4 nil with TOML tools: request carries TOML tools | `TestTools_NilUsesTOMLList` | T2.2 (`[guard]`, PASS at HEAD) | none (guard; stays PASS) | Guard, R7. |
