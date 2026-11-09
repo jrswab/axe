@@ -167,7 +167,7 @@ Tests 1, 2, 6, 7, 8, 9, 10, 12, and 13 are in `pkg/runner/run_test.go`. Tests 3,
 4. **Stub an MCP tool.** A hook stubs an MCP tool with `Content: "stub text"`. The server records zero calls. The model receives `Content` equal to `stub text` and `IsError: false`.
 5. **Allow a read MCP tool.** A hook allows an MCP tool that carries a non-empty `Content` in its decision. The server records one call, and the result is the server's result. `Content` in the decision is ignored (R6).
 6. **Hook receives arguments as parsed.** A hook records `call.Arguments` for a call with two string arguments and compares them with the arguments the provider parsed (the values the mock LLM sent). A hook that mutates its copy does not change the dispatched call's arguments (R5).
-7. **Parallel turn, three calls.** `TestToolHookParallelTurn`: a turn with three calls under `parallel = true` (model: `TestRun_ParallelToolExecution` at `pkg/runner/run_test.go:431-476`). The hook runs three times in model order. A shared, mutex-protected log records each hook call and each builtin dispatch (for example by a read-only builtin). Every hook entry precedes every dispatch entry. The test runs under `-race`.
+7. **Parallel turn, three calls.** `TestToolHookParallelTurn`: the model returns three parallel `write_file` calls (`a.txt`, `b.txt`, `c.txt`) in one turn under `parallel = true` (model: `TestRun_ParallelToolExecution` at `pkg/runner/run_test.go:431-476`). The hook runs three times in model order, records each call ID in a mutex-protected log, and on each invocation asserts that none of the three target files exists in the workdir yet. All three calls are allowed. After the run all three files exist. This observes "hook runs three times in model order, before any dispatch" through file creation, with no new seam; a dispatch that has started but not yet created its file is not detected. The test runs under `-race`.
 8. **Hook returns an error.** The call is denied with the OD1 text. The error's message is absent from the tool result content, the messages sent in the next request, and `ToolCallDetails` output when `JSON` is set (R7).
 9. **Hook panics.** The call is denied with the OD1 text. The run completes with a `Result` and no error. The panic value is absent from the tool result.
 10. **Sub-agents with a hook.** An agent with a non-empty `sub_agents` list and a non-nil `ToolHook`: `Run` returns a value for which `IsConfigError` is true, and the mock LLM server receives zero requests (R10).
@@ -179,10 +179,10 @@ Each MCP test (3-5) uses a local helper in `pkg/runner/hook_mcp_test.go` that cr
 
 ### R14: Scope boundary
 
-- Changed tracked files for this milestone are: `pkg/runner/hook.go` (new), `pkg/runner/options.go`, `pkg/runner/run.go`, `pkg/runner/run_test.go`, and `pkg/runner/hook_mcp_test.go` (new).
-- `go.mod`, `go.sum`, `cmd/`, `internal/`, `COMPATIBILITY.md`, `CHANGELOG.md`, `README.md`, `AGENTS.md`, and `Makefile` are not changed (OD8, milestone scope).
+- Changed tracked files for this milestone are: `pkg/runner/hook.go` (new), `pkg/runner/options.go`, `pkg/runner/run.go`, `pkg/runner/run_test.go`, and `pkg/runner/hook_mcp_test.go` (new), plus one `[Unreleased]` `Added` bullet in `CHANGELOG.md` for `Options.ToolHook`. The CHANGELOG entry is required by `CONTRIBUTING.md:185` ("Update CHANGELOG.md with your changes"); it is the only `CHANGELOG.md` change.
+- `go.mod`, `go.sum`, `cmd/`, `internal/`, `COMPATIBILITY.md`, `README.md`, `AGENTS.md`, and `Makefile` are not changed (OD8, milestone scope).
 - No golden file changes (`cmd/testdata/golden/`). No CLI flag, TOML key, or `--json` field.
-- Verification: `git diff --name-only 09d100d` lists only the five files above plus Factory records.
+- Verification: `git diff --name-only 09d100d` lists only the six files above plus Factory records.
 
 ## Parallelizable work
 
@@ -207,7 +207,7 @@ go vet ./pkg/runner/                                                 # expect: e
 go test ./pkg/runner/                                                # expect: exit 0
 rg -n "ToolHook" pkg/runner/options.go pkg/runner/hook.go            # expect: the field and the type
 rg -n "tool call denied by host policy" pkg/runner/                  # expect: exactly one constant definition
-git diff --name-only 09d100d -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_004_*'   # expect: pkg/runner/hook.go, hook_mcp_test.go, options.go, run.go, run_test.go
+git diff --name-only 09d100d -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_004_*'   # expect: CHANGELOG.md, pkg/runner/hook.go, hook_mcp_test.go, options.go, run.go, run_test.go
 git diff --exit-code 09d100d -- go.mod go.sum cmd internal cmd/testdata   # expect: exit 0
 ~/.agents/scripts/spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_004_spec.md   # expect: exit 0
 ~/.agents/scripts/docs-lint --since 09d100d /home/jaron/dev/axe/runner-tool-hooks                                                   # expect: exit 0
