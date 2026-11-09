@@ -21,15 +21,22 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — COMPATIBILITY.md publishes an external contract (the compatibility promise for public API, CLI, TOML, JSON, and runtime behavior), so the fast-lane condition "leaves external contracts untouched" fails.
-- Current phase: `checklist-pending`
-- Current task: none
+- Current phase: `execute`
+- Current task: T8
 - Task states — checklist checkboxes render from this list:
-none
+- T1: `checked`
+- T2: `checked`
+- T3: `checked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T8: `checked`
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Last completed phase/task/gate and timestamp: Milestone 001 spec planning review PASS (round 2), 2026-11-09T15:33:03.743617+00:00
-- Next safe action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_001_implement.md, then checklist planning review
+- Next safe action: Milestone 001 code review on defd01d..HEAD, then completion gate
+- Last completed phase/task/gate and timestamp: Milestone 001 T1-T8 verification PASS (commit 5ed92b4), 2026-11-09T15:38:26.538019+00:00
 
 ## Gate evidence
 
@@ -89,8 +96,55 @@ Checkpoint checklist path set to the planned implement.md path (uncommitted at t
 
 - Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_001_implement.md, then checklist planning review
 
+### Milestone 001 checklist planning review PASS (round 1, APPROVED WITH NITS)
+
+- Gate: Milestone 001 checklist planning review PASS (round 1, APPROVED WITH NITS)
+- Commands/results:
+spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_001_implement.md at d08fb0a: exit 0, 30 citations, 0 findings. checklist-test-gate-audit: not present in repo.
+Checklist review round 1 (at d08fb0a): APPROVED WITH NITS. Nit F1 verbatim: 'docs/plans/052_runner_tool_hooks_v1_12_0_001_implement.md:21,27 - one level-2 heading per surface (or one table row per surface) vs. After check rg -n "^#" COMPATIBILITY.md shows a heading or row for each surface; table rows can never satisfy the check. Fix: drop the table-row option and the or row wording.' Fixed in 5ed92b4 (grep -F both strings: 0 hits).
+Failing planning rounds for 001: 1 of 3.
+- HEAD commit SHA: `5ed92b426b92bc231eda9249c959cd9611831b72`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T1
+
+### Milestone 001 T1-T8 verification PASS (commit 5ed92b4)
+
+- Gate: Milestone 001 T1-T8 verification PASS (commit 5ed92b4)
+- Commands/results:
+T1-T6: each Before check failed (test -f COMPATIBILITY.md exit 1; rg misses) and each After check passed. COMPATIBILITY.md: five surface headings (:5,:12,:17,:22,:27), opt-in/zero value/no GODEBUG (:33-35), apidiff planned for milestone 002 with no pin (:39-42), deprecate never remove until /v2, exceptions CHANGELOG.md:24 and go.mod:3/go.mod:5. Links: README.md:19 (Overview prose), AGENTS.md:224 (before ## Custom Instructions at :226), CHANGELOG.md:3 (header).
+T7: git diff --quiet defd01d -- go.mod go.sum Makefile .github pkg internal cmd exit 0; frozen draft docs/plans/runner-tool-hooks-and-options.md unchanged (exit 0); README/AGENTS 0 deleted lines; CHANGELOG 1 line replaced.
+T8 acceptance replay: all spec commands pass; AGENTS ordering test exit 0; rg golang.org/x/exp go.mod no lines; spec-lint 001_spec exit 0; docs-lint --since origin/master exit 0, 180 files, 0 findings.
+Orchestrator edit before commit: removed 'Behavior is not selected by environment variables.' from COMPATIBILITY.md:35 (goes beyond D2; axe reads AXE_* env vars). docs-lint after: exit 0.
+- HEAD commit SHA: `5ed92b426b92bc231eda9249c959cd9611831b72`
+- Relevant work: `committed` — stash ref `4f022be52460742b563ea26e107a84775696daf8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Milestone 001 code review on defd01d..HEAD, then completion gate
+
 ## Limitations & blockers
 
 - Limitations: spec planning review not yet run. Apidiff pin is unverified until milestone 002 (per the spec). COMPATIBILITY.md not yet written.
 - Blockers: `none`
-- Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_001_implement.md, then checklist planning review
+- Next action: Milestone 001 code review on defd01d..HEAD, then completion gate

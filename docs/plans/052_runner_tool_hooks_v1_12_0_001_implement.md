@@ -16,7 +16,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
 
 ### Phase 1: Policy file (serial: T1 → T2 → T3, all edit `COMPATIBILITY.md`)
 
-- [ ] **T1: `COMPATIBILITY.md` — create the file, opening statement, and five surface rules (R1, R2)**
+- [x] **T1: `COMPATIBILITY.md` — create the file, opening statement, and five surface rules (R1, R2)**
   - File: create `COMPATIBILITY.md` at the repository root.
   - Content: a level-1 title, an opening statement that the file is the compatibility promise for axe v1 releases, and one level-2 heading per surface: `pkg/runner` exported API, CLI flags and exit codes, agent TOML keys, `--json` output fields, default runtime behavior.
   - API rules (D1): no exported identifier removed or changed; additions allowed; callers use keyed struct literals; exported structs are not compared with `==`.
@@ -27,7 +27,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
   - After (must pass): `test -f COMPATIBILITY.md` exits 0; `rg -n -i "api|cli|toml|json|runtime" COMPATIBILITY.md` shows a rule for each of the five surfaces; `rg -n "^#" COMPATIBILITY.md` shows a heading for each surface.
   - Per-task gate: `git diff --name-only -- '*.go'` prints nothing.
 
-- [ ] **T2: `COMPATIBILITY.md` — opt-in rule for behavior changes and the planned enforcement section (R3, R4)**
+- [x] **T2: `COMPATIBILITY.md` — opt-in rule for behavior changes and the planned enforcement section (R3, R4)**
   - Depends on: T1.
   - File: `COMPATIBILITY.md`, append two sections.
   - R3 section: state D2. New behavior is opt-in through a new TOML key or `Options` field. The zero value keeps today's behavior. No GODEBUG-style switch is used in v1.
@@ -43,7 +43,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
     - `rg -n "golang.org/x/exp" go.mod` exits 1 (no lines; `go.mod` is unchanged).
   - Per-task gate: `git diff --name-only -- '*.go'` prints nothing.
 
-- [ ] **T3: `COMPATIBILITY.md` — deprecation rule and the two pre-policy exceptions (R5)**
+- [x] **T3: `COMPATIBILITY.md` — deprecation rule and the two pre-policy exceptions (R5)**
   - Depends on: T2.
   - File: `COMPATIBILITY.md`, append one deprecation section and one exceptions section.
   - Deprecation (D4): in v1, deprecate and never remove. Removal waits for `/v2`.
@@ -61,7 +61,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
 
 ### Phase 2: Links (parallel after T1; each task edits one file, so T4, T5, and T6 can run in any order)
 
-- [ ] **T4: `README.md` — link to `COMPATIBILITY.md` in the Overview prose (R6, README)**
+- [x] **T4: `README.md` — link to `COMPATIBILITY.md` in the Overview prose (R6, README)**
   - Depends on: T1.
   - File: `README.md`, insert one new prose paragraph after `README.md:17` (the "Axe is the executor, not the scheduler" paragraph) and before `## Features` at `README.md:19`. The paragraph reads: "The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md)."
   - Re-read `README.md:13-20` immediately before the edit. Do not change any existing line.
@@ -70,7 +70,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
   - After (must pass): `rg -n "COMPATIBILITY\.md" README.md` prints exactly one line, and that line number is between 13 and 19 after the insert. `git diff -U0 -- README.md` shows only `+` lines.
   - Per-task gate: `git diff --name-only -- '*.go'` prints nothing.
 
-- [ ] **T5: `AGENTS.md` — link to `COMPATIBILITY.md` in the Project Docs section (R6, AGENTS)**
+- [x] **T5: `AGENTS.md` — link to `COMPATIBILITY.md` in the Project Docs section (R6, AGENTS)**
   - Depends on: T1.
   - File: `AGENTS.md`, insert one new paragraph after `AGENTS.md:222` (the "Design docs live in `./docs/`" paragraph) and before `## Custom Instructions` at `AGENTS.md:224`. The paragraph reads: "The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md)."
   - Do not place the link inside `## Custom Instructions`. That section is preserved verbatim by codebase-summary (`AGENTS.md:224`).
@@ -82,7 +82,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
     - `git diff -U0 -- AGENTS.md` shows only `+` lines.
   - Per-task gate: `git diff --name-only -- '*.go'` prints nothing.
 
-- [ ] **T6: `CHANGELOG.md` — link to `COMPATIBILITY.md` in the header, lines 1–6 (R6, CHANGELOG)**
+- [x] **T6: `CHANGELOG.md` — link to `COMPATIBILITY.md` in the header, lines 1–6 (R6, CHANGELOG)**
   - Depends on: T1.
   - File: `CHANGELOG.md`, append a sentence to the end of line 3 (`All notable changes to this project will be documented in this file.`). The line then reads: "All notable changes to this project will be documented in this file. The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md)."
   - Append to line 3 and not as a new line. A new line in the header would move the SemVer sentence at `CHANGELOG.md:6` out of lines 1–6. The spec's header range is lines 1–6, and the SemVer sentence is not changed (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:150`).
@@ -97,7 +97,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
 
 ### Phase 3: Scope and lint verification (after T1–T6)
 
-- [ ] **T7: Scope boundary check before commit (R7)**
+- [x] **T7: Scope boundary check before commit (R7)**
   - Depends on: T1, T2, T3, T4, T5, T6.
   - No file edits. Verification only.
   - Verify:
@@ -108,7 +108,7 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
     - `rg -n "golang.org/x/exp" go.mod` exits 1 (no lines).
   - After commit (Factory runs this, not this task): `git diff --name-only defd01d -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_001_*' ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md'` must list only `COMPATIBILITY.md`, `README.md`, `AGENTS.md`, and `CHANGELOG.md`.
 
-- [ ] **T8: Documentation lint and full acceptance replay (R8)**
+- [x] **T8: Documentation lint and full acceptance replay (R8)**
   - Depends on: T7.
   - No file edits. Verification only.
   - Verify:
