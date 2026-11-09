@@ -279,6 +279,6 @@ factory-gh gh pr checks 103: exit 0. build pass 23s, config-sections pass 35s, d
 
 ## Limitations & blockers
 
-- Limitations: remaining work: (a) T15 — PR #103 CI: all GitHub Actions jobs passed in the latest snapshot; CodeRabbit check was pending. (b) Milestone 000 code review round 1 in progress at HEAD ecdab5e (backend APPROVED; spec/records CHANGES REQUESTED on checkpoint records). (c) Completion gate not yet run.
+- Limitations: remaining work: (a) spec/records code review round 2 on the checkpoint fix (round 1 at HEAD ecdab5e: backend APPROVED; spec/records CHANGES REQUESTED, three checkpoint findings fixed in f710854). (b) Completion gate not yet run. T15 is done: PR #103 CI passed all GitHub Actions jobs; CodeRabbit reported skipping.
 - Blockers: `none` — the factory-gates.json blocker cleared when PR #104 merged to master (538632e) and factory-sync merged it into the branch (ecdab5e).
 - Next action: Commit checkpoint review fixes, rerun factory-gate test at new HEAD, spec/records review round 2, then completion gate
