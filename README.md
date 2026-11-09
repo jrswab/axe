@@ -590,6 +590,7 @@ The first directory containing a matching `<name>.toml` wins.
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
+| Standard Compute | `STANDARDCOMPUTE_API_KEY` | `https://api.stdcmpt.com/v1` |
 | AWS Bedrock | (uses AWS credentials) | Region-based |
 
 **AWS Bedrock Configuration:**
@@ -600,6 +601,8 @@ The first directory containing a matching `<name>.toml` wins.
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
+
+Standard Compute uses the OpenAI-compatible Chat Completions API. Set an agent model to `standardcompute/StandardCompute` to route each request to the cheapest enabled model that can handle it, with automatic fallback, or pin a model with any id from `GET https://api.stdcmpt.com/v1/models` (for example `standardcompute/<model-id>`). See https://standardcompute.com.
 
 ## License
 
