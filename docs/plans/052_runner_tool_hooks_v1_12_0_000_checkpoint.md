@@ -339,6 +339,6 @@ Completion gate:
 
 ## Limitations & blockers
 
-- Limitations: remaining work: (a) spec/records code review round 3 on be94237..HEAD, after round 2 fixes F4 and F5 at 6ebb5e5 (round 1 at HEAD ecdab5e: backend APPROVED; spec/records CHANGES REQUESTED, three checkpoint findings fixed in f710854). (b) Completion gate not yet run. T15 is done: PR #103 CI passed all GitHub Actions jobs; CodeRabbit reported skipping.
-- Blockers: `none` — the factory-gates.json blocker cleared when PR #104 merged to master (538632e) and factory-sync merged it into the branch (ecdab5e).
-- Next action: Commit checkpoint/checklist/milestone tick, push, then milestone 001 (full lane)
+- Limitations: none open. Milestone 000 is complete: review gate and completion gate PASS at c1d1121 (see the last gate entry above). Spec/records review round 3 and the completion gate are done; T9 (host Docker build) and T15 (PR #103 CI) are done.
+- Blockers: none. Milestone 000 has no open limitations or blockers.
+- Next action: Milestone 001 (full lane): spec planning review of `docs/plans/052_runner_tool_hooks_v1_12_0_001_spec.md`.
