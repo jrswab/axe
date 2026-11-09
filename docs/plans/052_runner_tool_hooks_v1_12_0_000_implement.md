@@ -121,7 +121,7 @@ These tasks change only YAML `go-version` lines. They are independent of Phase 1
   - Verify: `git diff --stat -- pkg/ internal/ cmd/` prints no output. The only module changes are the `go` directive, toolchain, `golang.org/x/net` v0.62.0, and indirect changes produced by `go get`/`go mod tidy`.
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T15: CI verification after push (R3 acceptance, R5 CI; not run in the sandbox)**
+- [x] **T15: CI verification after push (R3 acceptance, R5 CI; not run in the sandbox)**
   - Depends on: T1–T14, and the branch pushed. Pushing requires Jaron's approval under the standing rules; this milestone does not authorize it.
   - Verify: the setup-go jobs in `go.yml` and `smoke-test.yml` resolve Go 1.26.x and pass, and the lint action passes. Record the run URL and result. The CI run is the verification for `actions/setup-go` and `golangci-lint-action@v7` behavior, which the spec did not check in the sandbox.
 

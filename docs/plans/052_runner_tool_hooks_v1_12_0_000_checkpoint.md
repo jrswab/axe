@@ -21,8 +21,8 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — changes `go.mod` toolchain and a dependency version (build configuration, dependency change), so the fast-lane conditions fail.
-- Current phase: `blocked`
-- Current task: T9
+- Current phase: `execute`
+- Current task: T15
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
@@ -38,12 +38,12 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `checked`
 - T13: `checked`
 - T14: `checked`
-- T15: `unchecked`
+- T15: `checked`
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: Wait for Jaron to merge PR #104; then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1; re-snapshot PR #103 checks for T15
-- Last completed phase/task/gate and timestamp: T9 Docker build PASS (host, run by Jaron), 2026-11-09T15:06:30.869949+00:00
+- Next safe action: Commit checkpoint review fixes, rerun factory-gate test at new HEAD, spec/records review round 2, then completion gate
+- Last completed phase/task/gate and timestamp: T15 PR #103 CI PASS, 2026-11-09T15:11:44.560139+00:00
 
 ## Gate evidence
 
@@ -77,7 +77,7 @@ Planning-cap evidence stays separate: count failing planning rounds, list unreso
 - `git status --porcelain`: `` (empty)
 - Relevant work: `committed` — stash ref `none`
 
-- Decisions: user chose to pin toolchain go1.26.10, keep `go 1.25.0`, upgrade `golang.org/x/net` to v0.62.0; milestone 001 takes the full lane.
+- Decisions: user chose Q4=O4a: raise the go directive to `go 1.26.0` with `toolchain go1.26.10`, upgrade `golang.org/x/net` to v0.62.0 (x/net v0.62.0 declares go 1.26.0; stdlib findings have only go1.26 fixes); milestone 001 takes the full lane.
 
 - Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
 
@@ -235,8 +235,50 @@ Host command (Jaron, 10:05): docker build -t axe:go126 /home/jaron/dev/axe/runne
 
 - Next action: Wait for Jaron to merge PR #104; then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1; re-snapshot PR #103 checks for T15
 
+### Blocker cleared: sync + test gate PASS at ecdab5e; review round 1 (backend APPROVED, spec/records CHANGES REQUESTED; fixes uncommitted)
+
+- Gate: Blocker cleared: sync + test gate PASS at ecdab5e; review round 1 (backend APPROVED, spec/records CHANGES REQUESTED; fixes uncommitted)
+- Commands/results:
+factory-sync (origin/master): exit 0, ahead 12, behind 1, shared_files [.gitignore], conflicts [], head_after ecdab5e1ecd957eb25ea673f52e05dcaab951fdd (merge of PR #104 538632e). factory-gate run --gate test at ecdab5e: poll exit 0, state exited 0, log /tmp/factory-gate-1001/gate-test-ecdab5e1ecd9-20261109T150726Z.log (go test -race ./..., 18 packages ok). records-stale-check be94237: exit 0 (no TAGS.md/.mem/changelog.d). docs-lint --since origin/master: docs-lint 1, exit 0, 176 Markdown files, 0 findings. Review scope be94237..ecdab5e: 10 commits, 16 files -> split; backend (11 files) round 1 Verdict: APPROVED, no nits; UI subset empty; spec/records (5 files) round 1 Verdict: CHANGES REQUESTED, 3 blocking findings on this checkpoint: F1 `Current task: T9` stale (fixed by this write: current task T15); F2 line 80 `keep go 1.25.0` contradicts go.mod (fixed: records Q4=O4a go 1.26.0 + toolchain go1.26.10; grep -F zero hits); F3 lines 240-241 stale limitations/blockers (fixed; grep -F zero hits). docs-lint after fix: exit 0.
+- HEAD commit SHA: `ecdab5e1ecd957eb25ea673f52e05dcaab951fdd`
+- Relevant work: `uncommitted` — stash ref `531fb58702d3d37b3fe1ef681adbe7c6aa4c993b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_000_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T15
+
+### T15 PR #103 CI PASS
+
+- Gate: T15 PR #103 CI PASS
+- Commands/results:
+factory-gh gh pr checks 103: exit 0. build pass 23s, config-sections pass 35s, dry-run pass 28s, lint pass 26s, piped-input pass 1m29s, providers pass 27s, test pass 1m56s, tools pass 55s (runs 42641304854, 42641304692). CodeRabbit: skipping (not a failure).
+- HEAD commit SHA: `ecdab5e1ecd957eb25ea673f52e05dcaab951fdd`
+- Relevant work: `uncommitted` — stash ref `70ee878808ab2e72df6245288993b88ddda21cc1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_000_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit checkpoint review fixes, rerun factory-gate test at new HEAD, spec/records review round 2, then completion gate
+
 ## Limitations & blockers
 
-- Limitations: `Spec and checklist files do not exist yet (spec phase). Govulncheck baseline has not been re-run after the pin; acceptance is unverified until implementation.`
-- Blockers: `none`
-- Next action: Wait for Jaron to merge PR #104; then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1; re-snapshot PR #103 checks for T15
+- Limitations: remaining work: (a) T15 — PR #103 CI: all GitHub Actions jobs passed in the latest snapshot; CodeRabbit check was pending. (b) Milestone 000 code review round 1 in progress at HEAD ecdab5e (backend APPROVED; spec/records CHANGES REQUESTED on checkpoint records). (c) Completion gate not yet run.
+- Blockers: `none` — the factory-gates.json blocker cleared when PR #104 merged to master (538632e) and factory-sync merged it into the branch (ecdab5e).
+- Next action: Commit checkpoint review fixes, rerun factory-gate test at new HEAD, spec/records review round 2, then completion gate
