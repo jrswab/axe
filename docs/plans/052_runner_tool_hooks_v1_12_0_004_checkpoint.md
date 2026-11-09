@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, which is the external Go API contract (D1), and edits the parallel dispatch path in `executeToolCalls` (`pkg/runner/run.go:890`, parallel branch `:945-974`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T4
+- Current task: T8
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -39,19 +39,19 @@ Absolute paths inside the Repository root (the feature worktree).
 - T3.3: `checked`
 - T3.4: `checked`
 - T3.5: `checked`
-- T4: `unchecked`
-- T5: `unchecked`
-- T6: `unchecked`
-- T7: `unchecked`
-- T7.1: `unchecked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T7.1: `checked`
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
 - Review: `pending`
 - Blockers: none
 - Relevant work: `uncommitted` — spec and checkpoint are new untracked files; the 003 checkpoint Review line is modified (uncommitted). No implementation change.
-- Next safe action: Implement T4
-- Last completed phase/task/gate and timestamp: T3.1-T3.5 green gate PASS at 6a9d741, 2026-11-09T18:32:21.926593+00:00
+- Next safe action: Run T8 scope checks
+- Last completed phase/task/gate and timestamp: T4-T7.1 gates PASS at 848f262, 2026-11-09T18:37:43.574931+00:00
 
 ## Gate evidence
 
@@ -162,10 +162,31 @@ Run on 1c26a86 + uncommitted hook.go/run.go (committed unchanged as 6a9d741). go
 
 - Next action: Implement T4
 
+### T4-T7.1 gates PASS at 848f262
+
+- Gate: T4-T7.1 gates PASS at 848f262
+- Commands/results:
+T4-T7 verification-only at 74affae: go test -v ./pkg/runner exit 0 (12 TestToolHook* PASS incl. 6 subcases); go test -race -v ./pkg/runner exit 0, no DATA RACE; go build ./... 0; go vet ./... 0; golangci-lint run ./... 0 issues; make apidiff exit 0, stdout 0 bytes, no leftover temp dirs. T7.1: CHANGELOG.md:13 [Unreleased] Added bullet for Options.ToolHook, numstat 1/0, git diff --check clean; committed 848f262.
+- HEAD commit SHA: `848f26202d3cf5ba3a359b01d823e035af3dccc2`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run T8 scope checks
+
 ## Limitations & blockers
 
 - Limitations:
   - The spec's focused race command (`go test -race -run TestToolHookParallelTurn ./pkg/runner`, milestone test 11) is not in the spec's fenced acceptance block. The test does not exist yet, so `spec-lint` reports "selects no test in current files" for it. It is stated in prose as R13 test 11 and must be added to the implementation checklist.
   - No code is written in this phase. Tests 1-13 in the spec are unimplemented.
 - Blockers: `none`
-- Next action: Implement T4
+- Next action: Run T8 scope checks

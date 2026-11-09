@@ -207,7 +207,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
 
 ### Phase 4: Full package verification (serial, after Phase 3)
 
-- [ ] **T4: Acceptance tests 1-10, 12, 13 green in one run; R11 nil-hook check (R11, R13)**
+- [x] **T4: Acceptance tests 1-10, 12, 13 green in one run; R11 nil-hook check (R11, R13)**
   - Budget: 30 min
   - Depends on: T3.1-T3.5.
   - Files: none (verification only).
@@ -218,7 +218,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
     - `go vet ./pkg/runner/` → exit 0.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T5: Acceptance test 7, parallel turn under the race detector (R2, R13)**
+- [x] **T5: Acceptance test 7, parallel turn under the race detector (R2, R13)**
   - Budget: 30 min
   - Depends on: T2.4, T3.1, T4.
   - Command: `go test -race -v ./pkg/runner`; `--- PASS: TestToolHookParallelTurn` appears, the exit code is 0, and the output has no `DATA RACE` lines.
@@ -227,14 +227,14 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
 
 ### Phase 5: Lint, API gate, scope, and records checks (serial, last)
 
-- [ ] **T6: `golangci-lint run` (lint gate, R11 and repository lint)**
+- [x] **T6: `golangci-lint run` (lint gate, R11 and repository lint)**
   - Budget: 30 min
   - Depends on: T5.
   - Command (repository root): `golangci-lint run; echo "exit=$?"`. Expected: `exit=0` with no findings. Run as a single call; a timeout is not a pass, so report it.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; it runs the lint on `./pkg/runner` changes from T1-T5.
   - No file changes. Any finding in the new files (`pkg/runner/hook.go`, `pkg/runner/hook_mcp_test.go`) or in the changed regions of `pkg/runner/run.go` and `pkg/runner/run_test.go` is a failure of the task that introduced it; fix it in that task's file, then re-run T4 and T6.
 
-- [ ] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1, D1)**
+- [x] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1, D1)**
   - Budget: 30 min
   - Depends on: T6.
   - Command: `make apidiff >/tmp/axe-m004-apidiff-out.txt 2>/tmp/axe-m004-apidiff-err.txt; echo "exit=$?"`. Expected: `exit=0`; `wc -c </tmp/axe-m004-apidiff-out.txt` → `0`. The gate compares `pkg/runner` with `v1.11.0` and treats any `-incompatible` report as failure; additions do not fail it (`docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md` probe evidence).
@@ -243,7 +243,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
   - No file changes.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.ToolHook` (R14; `CONTRIBUTING.md:185`)**
+- [x] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.ToolHook` (R14; `CONTRIBUTING.md:185`)**
   - Budget: 15 min
   - Depends on: T7.
   - File: `CHANGELOG.md` only. Under `## [Unreleased]`, `### Added`, append one bullet after the last existing bullet of that section: "- `Options.ToolHook` in `pkg/runner` lets a host allow, deny, or stub each tool call before dispatch. A denied call is not run and returns an error result. A hook with a non-empty `sub_agents` list is a `ConfigError`." Form follows the milestone 002 bullet (`git show 9f1782f -- CHANGELOG.md`). No other section or line changes.
