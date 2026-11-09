@@ -37,7 +37,8 @@ release-notes.md
 .opencode/
 .entire/
 .kiro/
-.agents/
+.agents/*
+!.agents/factory-gates.json
 
 # Documentation Tools
 docs/book/
