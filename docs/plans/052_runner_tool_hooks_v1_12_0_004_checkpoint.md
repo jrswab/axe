@@ -47,7 +47,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `checked`
 - T9: `checked`
 - Milestone checkbox: `checked`
-- Review: `pending`
+- Review: approved — backend round 1, spec/records round 2, 09d100d..7bf6d87
 - Blockers: none
 - Relevant work: `committed` — implementation, tests, and CHANGELOG committed through 7703ebe; the worktree has no uncommitted changes.
 - Next safe action: Restart-validate 004, push PR #103, then start milestone 005
