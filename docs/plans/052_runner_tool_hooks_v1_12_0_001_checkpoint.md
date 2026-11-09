@@ -15,20 +15,21 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_001_spec.md`
-- Implementation checklist: `none (full lane; checklist not yet planned)`
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_001_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_001_checkpoint.md`
 
 ## State
 
 - Lane: `full` — COMPATIBILITY.md publishes an external contract (the compatibility promise for public API, CLI, TOML, JSON, and runtime behavior), so the fast-lane condition "leaves external contracts untouched" fails.
-- Current phase: `spec`
-- Current task: `none`
+- Current phase: `checklist-pending`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
-- none
+none
 - Milestone checkbox: `unchecked`
-- Last completed phase/task/gate and timestamp: `Setup (clean tree at defd01d; milestone 000 complete, checkpoint 000 limitations updated) and spec drafted; 2026-11-09T15:27:52+0000`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
+- Last completed phase/task/gate and timestamp: Milestone 001 spec planning review PASS (round 2), 2026-11-09T15:33:03.743617+00:00
+- Next safe action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_001_implement.md, then checklist planning review
 
 ## Gate evidence
 
@@ -62,8 +63,34 @@ Planning-cap evidence stays separate: count failing planning rounds, list unreso
 none
 ```
 
+### Milestone 001 spec planning review PASS (round 2)
+
+- Gate: Milestone 001 spec planning review PASS (round 2)
+- Commands/results:
+spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_001_spec.md: exit 0, 45 citations, 0 findings (at 23cc89f).
+docs-lint --since origin/master: exit 0, 178 files, 0 findings.
+Spec review round 1 (at c99312c): CHANGES REQUESTED, F1 go.mod x/exp check pattern, F2 AGENTS.md link boundary, F3 scope diff included Factory records. Fixed in 23cc89f.
+Spec review round 2 (at 23cc89f): APPROVED, F1-F3 resolved, no new findings.
+Failing planning rounds so far: 1 of 3.
+Checkpoint checklist path set to the planned implement.md path (uncommitted at this write).
+- HEAD commit SHA: `23cc89f1b13b597c4ccb96b7f87e2735444820cf`
+- Relevant work: `uncommitted` — stash ref `6c45fb867a1e965ef2ce8dac90ab8ff4d2b1990e` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_001_implement.md, then checklist planning review
+
 ## Limitations & blockers
 
 - Limitations: spec planning review not yet run. Apidiff pin is unverified until milestone 002 (per the spec). COMPATIBILITY.md not yet written.
 - Blockers: `none`
-- Next action: Spec planning review of `docs/plans/052_runner_tool_hooks_v1_12_0_001_spec.md`
+- Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_001_implement.md, then checklist planning review
