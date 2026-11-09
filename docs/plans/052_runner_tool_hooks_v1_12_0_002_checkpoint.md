@@ -22,14 +22,14 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone enforces the `pkg/runner` external contract (the apidiff gate) and edits shared CI (`.github/workflows/go.yml`, `Makefile`). The fast-lane condition "external contracts untouched" fails, and the milestone adds a pinned third-party tool to the build path.
-- Current phase: `execute`
-- Current task: T11
+- Current phase: `complete`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1.1: `checked`
 - T1.2: `checked`
 - T1.3: `checked`
-- T2: `unchecked`
+- T2: `checked`
 - T3: `checked`
 - T4: `checked`
 - T5: `checked`
@@ -38,11 +38,11 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `checked`
 - T9: `checked`
 - T10: `checked`
-- T11: `unchecked`
-- T12: `unchecked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Run factory-gate test and lint at HEAD, then records review and code review round 1 (range 423a399..HEAD)
-- Last completed phase/task/gate and timestamp: T6-T10 behavior probes PASS (T6/T9 at 181d857, T7/T8/T10 rerun at 61932d2), 2026-11-09T16:58:57.984609+00:00
+- T11: `checked`
+- T12: `checked`
+- Milestone checkbox: `checked`
+- Next safe action: Milestone 002 complete; select milestone 003
+- Last completed phase/task/gate and timestamp: Milestone 002 review round 1 PASS and completion gate PASS at 15067a7, 2026-11-09T17:04:55.126914+00:00
 
 ## Gate evidence
 
@@ -187,6 +187,27 @@ Probe run 1 at 181d857 (report /tmp/axe-m002-t6-t11.MzPGW6/report.md): T6 PASS (
 
 - Next action: Run factory-gate test and lint at HEAD, then records review and code review round 1 (range 423a399..HEAD)
 
+### Milestone 002 review round 1 PASS and completion gate PASS at 15067a7
+
+- Gate: Milestone 002 review round 1 PASS and completion gate PASS at 15067a7
+- Commands/results:
+Records review: docs-lint --since 423a399 (docs-lint 1) PASS 183 files 0 findings at 7b2d2f8 and again at 15067a7 worktree. records-stale-check 423a399: no removed or renamed names. Code review round 1, range 423a399..7b2d2f8, test evidence /tmp/factory-gate-1001/gate-test-7b2d2f8e0efa-20261109T165906Z.log (exit 0), lint /tmp/factory-gate-1001/gate-lint-7b2d2f8e0efa-20261109T165906Z.log (exit 0): backend (Makefile, go.yml, COMPATIBILITY.md) Verdict: APPROVED, no findings; spec/records (CHANGELOG.md, docs/plans 002 files) Verdict: APPROVED WITH NITS. Nit 1 verbatim: 'checkpoint.md:20 (nit) - The Artifacts entry still says the implement checklist is "not yet written; planned path," but it exists'. Nit 2 verbatim: 'checkpoint.md:193 (nit) - Stale limitation: "the gate itself is not yet implemented, so make apidiff and the CI job have not run."' Both fixed in 15067a7; grep -F of both offending strings: 0 hits; docs-lint PASS. Completion gate: factory-sync exit 0 (ahead 35, behind 0, no conflicts) at 15067a7; factory-gate test (go test -race ./...) exited 0 /tmp/factory-gate-1001/gate-test-15067a7bbdb1-20261109T170249Z.log; factory-gate lint (golangci-lint run) exited 0 /tmp/factory-gate-1001/gate-lint-15067a7bbdb1-20261109T170249Z.log; local make apidiff exit 0 empty stdout (T5/T11). Pushed 423a399..15067a7 to PR 103 (factory-gh push --require-open-pr). CI snapshot: apidiff pass 48s (run 42660801276), lint/build/smoke pass, test pending at snapshot. Spec R1-R11 compared by both reviewers: all met. git status clean; no pre-existing changes. Known follow-up outside 002: AGENTS.md:207 says go.yml covers tests and linting. spec-lint on this checkpoint reports 6 citation-format findings in history lines 131/152/173 (checkpoints are not spec-lint artifacts; not blocking).
+- HEAD commit SHA: `15067a7bbdb1898f9dc790cc859e19bba3b715eb`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Milestone 002 complete; select milestone 003
+
 ## Limitations & blockers
 
 - Limitations:
@@ -194,4 +215,4 @@ Probe run 1 at 181d857 (report /tmp/axe-m002-t6-t11.MzPGW6/report.md): T6 PASS (
   - `gh` is not authenticated in this sandbox; action defaults were read from raw GitHub URLs at tags `v4` and `v5`.
   - `AGENTS.md:207` describes `go.yml` as "tests and linting"; this milestone does not edit it (outside milestone 002 scope). Flagged for the orchestrator, not changed.
 - Blockers: `none`
-- Next action: Run factory-gate test and lint at HEAD, then records review and code review round 1 (range 423a399..HEAD)
+- Next action: Milestone 002 complete; select milestone 003

@@ -105,7 +105,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `rg -n "set -e|pipefail" Makefile` → no lines.
   - Gate: `git diff --name-only -- '*.go' go.mod go.sum` prints nothing.
 
-- [ ] **T2: `.github/workflows/go.yml` — add `apidiff` job (R5)**
+- [x] **T2: `.github/workflows/go.yml` — add `apidiff` job (R5)**
   - Budget: 30 min
   - Depends on: none (independent of T1.x).
   - File: `.github/workflows/go.yml`. Add one job `apidiff` after the existing `build` job (`.github/workflows/go.yml:39`; its last step line is `:50`, `run: go build -v ./...`).
@@ -228,7 +228,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `git diff -U0 423a399 -- CHANGELOG.md | rg -c '^\+([^+]|$)'` → `1`.
     - `git status --porcelain` → only the four files above (tracked), the checklist and checkpoint and spec (untracked or Factory records), and nothing else.
 
-- [ ] **T11: Acceptance replay (all spec "Acceptance commands") and `make check` hand-off**
+- [x] **T11: Acceptance replay (all spec "Acceptance commands") and `make check` hand-off**
   - Budget: 30 min
   - Depends on: T10.
   - Files: none (verification only).
@@ -254,7 +254,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Note on `make check`: it runs `golangci-lint run` and `go test ./...` (`Makefile:7`, `Makefile:4`), so it may exceed short tool timeouts. The writer task runs `make apidiff` and `make -n check` (T5, T11 lines 1-2). The full `make check` (`exit=0`) is run by the orchestrator's factory-gate with a long timeout. Do not treat a timeout here as a failure of the change; report it.
   - Host step (orchestrator): the `apidiff` CI job passes on the pushed branch (R5 host step).
 
-- [ ] **T12: Records at completion (orchestrator, not the writer)**
+- [x] **T12: Records at completion (orchestrator, not the writer)**
   - Budget: 30 min
   - Files: the checkpoint `docs/plans/052_runner_tool_hooks_v1_12_0_002_checkpoint.md` and the milestone checkbox `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:154` (`[ ] 002` becomes `[x] 002`). Both are Factory records excluded from R11's scope check.
   - Do not change the milestone entry beyond the checkbox (spec Rejected approaches).
