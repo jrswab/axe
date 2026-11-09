@@ -60,6 +60,12 @@ type Options struct {
 	// sub-agents do not inherit the list.
 	Tools []string
 
+	// MaxTurns overrides the agent's TOML max_turns when > 0. A value of 0
+	// keeps the TOML value; a TOML value of 0 or unset means 50.
+	// A negative value is a ConfigError in live and dry-run modes;
+	// sub-agents do not inherit the value.
+	MaxTurns int
+
 	// I/O (nil defaults to os.Stdout / os.Stderr / os.Stdin)
 	Stdout io.Writer
 	Stderr io.Writer
