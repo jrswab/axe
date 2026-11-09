@@ -23,13 +23,29 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `checklist-pending`
+- Current phase: `implement`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T0: `unchecked`
+- T1: `unchecked`
+- T2.1: `unchecked`
+- T2.2: `unchecked`
+- T2.3: `unchecked`
+- T2.4: `unchecked`
+- T3.1: `unchecked`
+- T3.2: `unchecked`
+- T3.3: `unchecked`
+- T3.4: `unchecked`
+- T4: `unchecked`
+- T5: `unchecked`
+- T6: `unchecked`
+- T7: `unchecked`
+- T7.1: `unchecked`
+- T8: `unchecked`
+- T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Write the 008 implementation checklist (implement skill), spec-lint it, then run checklist planning review round 1
-- Last completed phase/task/gate and timestamp: Spec planning review round 2 APPROVED (no findings), 2026-11-09T23:25:02.146388+00:00
+- Next safe action: Run checklist planning review round 1
+- Last completed phase/task/gate and timestamp: Checklist drafted; spec-lint PASS (pre checklist review round 1), 2026-11-09T23:39:18.424112+00:00
 
 ## Gate evidence
 
@@ -87,8 +103,29 @@ spec-lint 008 spec exit 0 (66 citations) before round 1. Round 1 (first dispatch
 
 - Next action: Write the 008 implementation checklist (implement skill), spec-lint it, then run checklist planning review round 1
 
+### Checklist drafted; spec-lint PASS (pre checklist review round 1)
+
+- Gate: Checklist drafted; spec-lint PASS (pre checklist review round 1)
+- Commands/results:
+factory-sync (args []): exit 0, base origin/master, ahead 102, behind 0, conflicts [], synced true, head bb9f625. milestone-entries: exit 0, 13 entries. spec-lint --root <repo> 008_spec.md 008_implement.md: exit 0 (spec 67 citations 0 findings; checklist 81 citations 0 findings). checklist-test-gate-audit: not present in repo.
+- HEAD commit SHA: `bb9f625ea04b6e2196df344e209c01cee0dab5b7`
+- Relevant work: `uncommitted` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+?? docs/plans/052_runner_tool_hooks_v1_12_0_008_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+5b2b216fab4c5cbaa2efbd71e6d3140a42b5a659  "docs/plans/052_runner_tool_hooks_v1_12_0_008_implement.md"
+```
+
+- Next action: Run checklist planning review round 1
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: Write the 008 implementation checklist (implement skill), spec-lint it, then run checklist planning review round 1
+- Next action: Run checklist planning review round 1
