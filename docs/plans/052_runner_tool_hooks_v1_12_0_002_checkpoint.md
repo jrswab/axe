@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone enforces the `pkg/runner` external contract (the apidiff gate) and edits shared CI (`.github/workflows/go.yml`, `Makefile`). The fast-lane condition "external contracts untouched" fails, and the milestone adds a pinned third-party tool to the build path.
 - Current phase: `execute`
-- Current task: none
+- Current task: T0
 - Task states — checklist checkboxes render from this list:
 - T0: `unchecked`
 - T1.1: `unchecked`
@@ -42,7 +42,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - Milestone checkbox: `unchecked`
 - Next safe action: Implement T0
-- Last completed phase/task/gate and timestamp: Checklist planning review round 1 CHANGES REQUESTED (F1 blocking: recipe shape/false self-compare; F2 blocking: corrupted-export probe line not joined; F3 nit: shared temp-dir count). Third failing planning round for milestone 002 (spec r1, spec r2, checklist r1): failing-round cap reached. Fixes applied; post-cap explore check CHECK: PASS (F1, F2, F3 FIXED; dynamic make -n parse blocked by read-only guard, to be confirmed in T1.3). Phase 3 proceeds with per-task gates., 2026-11-09T16:21:48.450472+00:00
+- Last completed phase/task/gate and timestamp: Post-cap mechanical fix of stale T0 precondition (58eceb6) PASS, 2026-11-09T16:26:02.655244+00:00
 
 ## Gate evidence
 
@@ -120,6 +120,27 @@ spec-lint --root <repo> 002_implement.md and 002_spec.md: both PASS, 0 findings 
 
 ```text
 4c7d23a9786556fa5fa52176cb2a386e7be707ed  "docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md"
+```
+
+- Next action: Implement T0
+
+### Post-cap mechanical fix of stale T0 precondition (58eceb6) PASS
+
+- Gate: Post-cap mechanical fix of stale T0 precondition (58eceb6) PASS
+- Commands/results:
+factory-sync (args []) exit 0: ahead 27, behind 0, shared_files [], conflicts [], synced true at b0eff05. go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks exit 0 (go1.26.10; govulncheck: No vulnerabilities found). Post-cap mechanical fix (planning review cap reached; no new planning review): 002_implement.md T0 precondition now requires HEAD descending from b0eff05 (git merge-base --is-ancestor b0eff05 HEAD), git diff --name-only b0eff05 HEAD -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_002_*' empty, git status --porcelain --untracked-files=no empty; Section 1 baseline :7 now b0eff05. Remaining 3920c71 hits at :317 and :340 are historical citation records. spec-lint --root <repo> 002_implement.md exit 0 (36 citations, 0 findings). Committed 58eceb6.
+- HEAD commit SHA: `58eceb6e907c33442d4cd83700ea7c971ee4495a`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
 ```
 
 - Next action: Implement T0
