@@ -18,7 +18,7 @@ Test-selection convention: no command in this checklist selects tests by name. D
 
 ### Phase 0: Pre-flight (serial, read-only)
 
-- [ ] **T0: Pre-flight: HEAD ancestry, tree state, baseline package tests, declared names absent**
+- [x] **T0: Pre-flight: HEAD ancestry, tree state, baseline package tests, declared names absent**
   - Budget: 30 min
   - Files: none (read-only).
   - Commands and expected results (run in the repository root):
@@ -35,7 +35,7 @@ Test-selection convention: no command in this checklist selects tests by name. D
 
 ### Phase 1: Enabling surface (serial)
 
-- [ ] **T1: Public API surface and doc contract (R1, R12)**
+- [x] **T1: Public API surface and doc contract (R1, R12)**
   - Budget: 30 min
   - Depends on: T0.
   - Enables: T2.1-T2.7 (test code needs the identifiers to compile) and T3.x (implementation).
