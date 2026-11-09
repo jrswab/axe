@@ -16,7 +16,7 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md`
-- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md` (not yet written; planned path)
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_002_checkpoint.md`
 
 ## State
@@ -190,7 +190,7 @@ Probe run 1 at 181d857 (report /tmp/axe-m002-t6-t11.MzPGW6/report.md): T6 PASS (
 ## Limitations & blockers
 
 - Limitations:
-  - The apidiff pin was verified by a probe in this session; the gate itself is not yet implemented, so `make apidiff` and the CI job have not run.
+  - The apidiff pin was verified by probe and by local `make apidiff` runs; the CI `apidiff` job has not run yet (T2 host step pending).
   - `gh` is not authenticated in this sandbox; action defaults were read from raw GitHub URLs at tags `v4` and `v5`.
   - `AGENTS.md:207` describes `go.yml` as "tests and linting"; this milestone does not edit it (outside milestone 002 scope). Flagged for the orchestrator, not changed.
 - Blockers: `none`
