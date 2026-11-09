@@ -22,28 +22,28 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — changes `go.mod` toolchain and a dependency version (build configuration, dependency change), so the fast-lane conditions fail.
 - Current phase: `execute`
-- Current task: T4
+- Current task: T9
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
-- T4: `unchecked`
-- T5: `unchecked`
-- T6: `unchecked`
-- T7: `unchecked`
-- T8: `unchecked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T8: `checked`
 - T9: `unchecked`
-- T10: `unchecked`
-- T11: `unchecked`
-- T12: `unchecked`
-- T13: `unchecked`
-- T14: `unchecked`
+- T10: `checked`
+- T11: `checked`
+- T12: `checked`
+- T13: `checked`
+- T14: `checked`
 - T15: `unchecked`
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: Implement T4
-- Last completed phase/task/gate and timestamp: T1-T3 verification PASS (commit 4f126f7), 2026-11-09T14:21:03.784093+00:00
+- Next safe action: T9: Jaron runs docker build on host; then review gate
+- Last completed phase/task/gate and timestamp: T4-T8, T10-T14 verification PASS (commit 4674a4f), 2026-11-09T14:26:53.225971+00:00
 
 ## Gate evidence
 
@@ -151,8 +151,29 @@ go.mod: go 1.26.0, toolchain go1.26.10, x/net v0.55.0->v0.62.0, x/sys v0.45.0->v
 
 - Next action: Implement T4
 
+### T4-T8, T10-T14 verification PASS (commit 4674a4f)
+
+- Gate: T4-T8, T10-T14 verification PASS (commit 4674a4f)
+- Commands/results:
+Workflows go.yml:19,32,47, smoke-test.yml:19,70,105,164,212, release.yml:24 -> go-version-file: go.mod; YAML parse ok x3; rg '1\.24' and 'go-version:' in .github/workflows: no hits. Dockerfile:2 golang:1.26-alpine. AGENTS.md:215, README.md:40,50, CONTRIBUTING.md:19, installation.md:3,32 -> 1.26. Repo-wide rg '1\.25' (excluding docs/plans, CHANGELOG.md, go.sum): only internal/hostcheck/hostcheck_test.go:119 (IP). GOTOOLCHAIN=go1.26.10 go build ./...: exit 0. golangci-lint run: 0 issues. git diff --exit-code 543bf32 -- pkg/ internal/ cmd/: exit 0. docs-lint --since origin/master: PASS 0 findings. Per-task gates: pkgs empty. T9 (host docker build) and T15 (CI after push) pending.
+- HEAD commit SHA: `4674a4f06e931e5a08a2f50d1ca2c6225bfcfd26`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: T9: Jaron runs docker build on host; then review gate
+
 ## Limitations & blockers
 
 - Limitations: `Spec and checklist files do not exist yet (spec phase). Govulncheck baseline has not been re-run after the pin; acceptance is unverified until implementation.`
 - Blockers: `none`
-- Next action: Implement T4
+- Next action: T9: Jaron runs docker build on host; then review gate

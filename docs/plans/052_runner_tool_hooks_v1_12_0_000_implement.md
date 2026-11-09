@@ -40,28 +40,28 @@ Commit is not authorized. Do not push. Do not change files outside the list in e
 
 These tasks change only YAML `go-version` lines. They are independent of Phase 1 at the file level. Run them after T1 so the directive they read is the new one.
 
-- [ ] **T4: `.github/workflows/go.yml` — read Go version from `go.mod` (R3, part 1)**
+- [x] **T4: `.github/workflows/go.yml` — read Go version from `go.mod` (R3, part 1)**
   - Replace `go-version: '1.24'` with `go-version-file: go.mod` at the three setup-go steps: `.github/workflows/go.yml:19`, `:32`, `:47`.
   - Verify:
     - `rg -n "go-version" .github/workflows/go.yml` shows only `go-version-file: go.mod` at those three lines.
     - `ruby -ryaml -e 'YAML.load_file(".github/workflows/go.yml"); puts "ok"'` prints `ok`. If ruby is absent, use `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/go.yml')); print('ok')"`.
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T5: `.github/workflows/smoke-test.yml` — read Go version from `go.mod` (R3, part 2)**
+- [x] **T5: `.github/workflows/smoke-test.yml` — read Go version from `go.mod` (R3, part 2)**
   - Replace `go-version: '1.24'` with `go-version-file: go.mod` at the five setup-go steps: `.github/workflows/smoke-test.yml:19`, `:70`, `:105`, `:164`, `:212`.
   - Verify:
     - `rg -n "go-version" .github/workflows/smoke-test.yml` shows only `go-version-file: go.mod` at those five lines.
     - YAML parse check as in T4 for `.github/workflows/smoke-test.yml`.
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T6: `.github/workflows/release.yml` — replace `stable` with `go.mod` (R3, part 3)**
+- [x] **T6: `.github/workflows/release.yml` — replace `stable` with `go.mod` (R3, part 3)**
   - Replace `go-version: stable` with `go-version-file: go.mod` at `.github/workflows/release.yml:24`.
   - Verify:
     - `rg -n "go-version" .github/workflows/release.yml` shows only `go-version-file: go.mod`.
     - YAML parse check as in T4 for `.github/workflows/release.yml`.
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T7: `.github/workflows/` — no Go-version pin remains (R3 acceptance)**
+- [x] **T7: `.github/workflows/` — no Go-version pin remains (R3 acceptance)**
   - Depends on: T4, T5, T6.
   - No file edits. Verification only.
   - Verify: `rg -n "1\.24" .github/workflows/` prints no output. `rg -n "go-version:" .github/workflows/` prints no output.
@@ -69,7 +69,7 @@ These tasks change only YAML `go-version` lines. They are independent of Phase 1
 
 ### Phase 3: Dockerfile (parallel with Phase 2)
 
-- [ ] **T8: `Dockerfile` — base image to Go 1.26 (R6, edit only)**
+- [x] **T8: `Dockerfile` — base image to Go 1.26 (R6, edit only)**
   - Change `Dockerfile:2` from `FROM golang:1.25-alpine AS build` to `FROM golang:1.26-alpine AS build`. Lines 7 (`go mod download`) and 12 (`go build`) are unchanged.
   - Verify:
     - `rg -n "golang:" Dockerfile` prints `2:FROM golang:1.26-alpine AS build`.
@@ -84,21 +84,21 @@ These tasks change only YAML `go-version` lines. They are independent of Phase 1
 
 ### Phase 4: Documentation (parallel with Phases 2 and 3)
 
-- [ ] **T10: `AGENTS.md` and `README.md` — Go-version mentions (R7, part 1)**
+- [x] **T10: `AGENTS.md` and `README.md` — Go-version mentions (R7, part 1)**
   - `AGENTS.md:215`: `golang:1.25-alpine` → `golang:1.26-alpine`. No other `AGENTS.md` line changes.
   - `README.md:40`: `Requires Go 1.25+.` → `Requires Go 1.26+.`
   - `README.md:50`: change `1.25` to `1.26` in that sentence only.
   - Verify: `rg -n "1\.25" AGENTS.md README.md` prints no output. `rg -n "1\.26" AGENTS.md README.md` shows lines 215 (AGENTS.md), 40 and 50 (README.md).
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T11: `CONTRIBUTING.md` and `docs/src/getting-started/installation.md` — Go-version mentions (R7, part 2)**
+- [x] **T11: `CONTRIBUTING.md` and `docs/src/getting-started/installation.md` — Go-version mentions (R7, part 2)**
   - `CONTRIBUTING.md:19`: `- Go 1.25.0 or later` → `- Go 1.26.0 or later`. No other line changes.
   - `docs/src/getting-started/installation.md:3`: `Requires **Go 1.25+**.` → `Requires **Go 1.26+**.`
   - `docs/src/getting-started/installation.md:32`: change `older than 1.25` to `older than 1.26` in that sentence only.
   - Verify: `rg -n "1\.25" CONTRIBUTING.md docs/src/getting-started/installation.md` prints no output.
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T12: Repository-wide Go-version sweep (R7 acceptance)**
+- [x] **T12: Repository-wide Go-version sweep (R7 acceptance)**
   - Depends on: T10, T11, T8, T4, T5, T6.
   - No file edits. Verification only.
   - Verify:
@@ -108,14 +108,14 @@ These tasks change only YAML `go-version` lines. They are independent of Phase 1
 
 ### Phase 5: Build, lint, and no-API-change checks (after Phases 1–4)
 
-- [ ] **T13: Build and lint (R5, part 1)**
+- [x] **T13: Build and lint (R5, part 1)**
   - Depends on: T1, T2, T3.
   - Verify:
     - `GOTOOLCHAIN=go1.26.10 go build ./...` exits 0.
     - `golangci-lint run` reports `0 issues.`
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T14: No public API or behavior change (R8)**
+- [x] **T14: No public API or behavior change (R8)**
   - Depends on: T1–T12.
   - No file edits. Verification only.
   - Verify: `git diff --stat -- pkg/ internal/ cmd/` prints no output. The only module changes are the `go` directive, toolchain, `golang.org/x/net` v0.62.0, and indirect changes produced by `go get`/`go mod tidy`.
