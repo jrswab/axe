@@ -46,7 +46,7 @@ The milestone entry cites two lines that do not match current code. This spec us
 
 - **Constraint, compatibility.** The additions are `MCPServer`, `Options.MCPServers`, and the `internal/agent` validator function. The apidiff gate (`Makefile:14`) compares `pkg/runner` against `v1.11.0`, and additions do not fail it.
 - **Constraint, public types.** `MCPServer` uses only `string` and `map[string]string`, with no `internal/` type in its signature (D1).
-- **Constraint, error classification.** Connect failures from an unset header variable are `ConfigError`. All other connect failures stay `RuntimeError` (`pkg/runner/run.go:448-450`).
+- **Constraint, error classification.** Connect failures from an unset header variable are `ConfigError`. All other connect failures stay `RuntimeError` (`pkg/runner/run.go:476-478`).
 - **Constraint, header secrets.** A header value may contain a literal credential. No error, verbose line, or dry-run field may contain a header value or header text other than the header's name (R9, R10).
 - **Assumption, test environment.** Acceptance tests for header expansion must set the referenced environment variable. They use `t.Setenv`, as existing tests do (`internal/mcpclient/mcpclient_test.go:59`, `pkg/runner/run_test.go:264`). The milestone's "no `t.Setenv`" describes what a host does, not the test harness. Tests that call `t.Setenv` cannot use `t.Parallel`.
 - **Assumption, URL secrets.** A URL that contains a secret in its query string is printed in the dry run and verbose output, as TOML URLs are today. This milestone does not change URL printing (Limitations).
@@ -120,7 +120,7 @@ Requirements R1-R5 are the public API and merge rules. R6-R9 are validation, exp
 
 ### R11: Caller data is not modified
 
-- `Run` does not modify `Options.MCPServers`, the slice, or any `Headers` map in it. Expansion produces a new map inside `ExpandHeaders` (`internal/envinterp/envinterp.go:12-17`), called from `mcpclient.Connect`.
+- `Run` does not modify `Options.MCPServers`, the slice, or any `Headers` map in it. Expansion produces a new map inside `ExpandHeaders` (`internal/envinterp/envinterp.go:28-33`), called from `mcpclient.Connect`.
 - Verification: acceptance test 8 (R15).
 
 ### R12: Sub-agents do not receive the option list

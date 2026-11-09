@@ -192,7 +192,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - Add an unexported type `unsetEnvError struct { name string }` with `Error() string` returning `fmt.Sprintf("environment variable %q is not set or empty", e.name)` (same text as today at `internal/envinterp/envinterp.go:47`) and `Unwrap() error` returning `ErrUnsetEnv`.
     - In expandValue (internal/envinterp/envinterp.go:46-47), replace `expandErr = fmt.Errorf("environment variable %q is not set or empty", name)` with `expandErr = &unsetEnvError{name: name}`.
     - ExpandHeaders at internal/envinterp/envinterp.go:21 is unchanged; its `%w` wrap keeps the header key in the text.
-  - Green targets: T2.6 `TestExpandHeaders_UnsetEnvSentinel`; existing `TestExpandHeaders_MissingVar` (`internal/envinterp/envinterp_test.go:78`), `TestExpandHeaders_EmptyVar` (`:90`), and the other `TestExpandHeaders_*` tests pass unchanged.
+  - Green targets: T2.6 `TestExpandHeaders_UnsetEnvSentinel`; existing `TestExpandHeaders_MissingVar` (`internal/envinterp/envinterp_test.go:79`), `TestExpandHeaders_EmptyVar` (`:91`), and the other `TestExpandHeaders_*` tests pass unchanged.
   - Verification:
     - `go test -v ./internal/envinterp | rg -- '--- (PASS|FAIL): TestExpandHeaders_'` → every line `PASS`.
     - `rg -n "unsetEnvError|ErrUnsetEnv" internal/envinterp/envinterp.go` → the type, the `Unwrap`, the sentinel, and the single construction site.
@@ -355,7 +355,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
 | R6 transport and URL errors from the option list, `Options.MCPServers[i]` label | T2.2 (3), T2.7 (12), T3.0, T3.2 |
 | R7 header expansion from both sources | T2.3 (5), T3.3 |
 | R8 unset header variable is `ConfigError`, matchable by sentinel | T2.2 (4), T2.6 (11), T3.1, T3.3 |
-| R9 other connect failures unchanged | T3.3 (`RuntimeError` at `pkg/runner/run.go:450`), T4 (`TestConnect_UnreachableServer`, `internal/mcpclient/mcpclient_test.go:47`) |
+| R9 other connect failures unchanged | T3.3 (`RuntimeError` at `pkg/runner/run.go:478`), T4 (`TestConnect_UnreachableServer`, `internal/mcpclient/mcpclient_test.go:47`) |
 | R10 no header text in any output | T2.2 (4), T2.3 (6), T2.5 (10), T2.7 (12), T3.3 |
 | R11 caller data not modified | T2.4 (8), T3.2 (copy), T3.4 |
 | R12 sub-agents do not receive the option list | T2.5 (9, red), T3.3 (green), T3.4 (confirm) |
@@ -387,9 +387,9 @@ Every acceptance test 1-12 maps to a red task and a green or guard task. The spe
 
 - Changed signatures: none. Additions only.
   - `agent.Validate` (`internal/agent/agent.go:148`): signature unchanged. Callers: `internal/agent/agent.go:270` (inside `Load`), `cmd/fixture_test.go:35`, `cmd/fixture_test.go:189`. No caller update needed.
-  - `envinterp.ExpandHeaders` (`internal/envinterp/envinterp.go:12`): signature unchanged. Callers: `internal/mcpclient/mcpclient.go:26`, and `internal/envinterp/envinterp_test.go` (lines `:14`, `:32`, `:47`, `:65`, `:81`, `:94`, `:104`, `:115`, `:130`, `:143`, `:156`). No caller update needed.
+  - `envinterp.ExpandHeaders` (`internal/envinterp/envinterp.go:28`): signature unchanged. Callers: `internal/mcpclient/mcpclient.go:26`, and `internal/envinterp/envinterp_test.go` (lines `:14`, `:32`, `:47`, `:65`, `:81`, `:94`, `:104`, `:115`, `:130`, `:143`, `:156`). No caller update needed.
   - `mcpclient.Connect` (`internal/mcpclient/mcpclient.go:25`): signature unchanged. Callers: pkg/runner/run.go:445, internal/tool/tool.go:292. No caller update needed (OS9).
-  - `runner.Options` (`pkg/runner/options.go:6`): gains one field. Keyed literal at `cmd/run.go:80` and keyed literals in `pkg/runner/*_test.go` compile unchanged.
+  - `runner.Options` (`pkg/runner/options.go:16`): gains one field. Keyed literal at `cmd/run.go:80` and keyed literals in `pkg/runner/*_test.go` compile unchanged.
   - `ValidateMCPServers`, `MCPServer`, `ErrUnsetEnv`: new identifiers, no prior callers.
 - Extreme acceptance inputs and probe evidence (read-only, at writing time):
   - Blank and whitespace-only name: `strings.TrimSpace(server.Name) == ""` at `internal/agent/agent.go:185`. Expected `ConfigError` for both sources (R3, R6). Covered by the T2.7 `blank name` row and T2.2 `empty_name`.
