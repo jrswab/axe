@@ -251,6 +251,11 @@ func Validate(cfg *AgentConfig) error {
 	return nil
 }
 
+// ValidateMCPServers checks MCP server configuration, using prefix to label errors.
+func ValidateMCPServers(servers []MCPServerConfig, prefix string) error {
+	return nil
+}
+
 // loadFromPath reads and parses an agent TOML configuration file from a specific path.
 // It returns the raw read/parse/validate errors (without any wrapping) so the caller
 // can handle them appropriately.

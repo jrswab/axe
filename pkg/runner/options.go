@@ -2,6 +2,16 @@ package runner
 
 import "io"
 
+// MCPServer configures a Model Context Protocol server. Its fields match the
+// agent's MCP server configuration. Headers uses ${VAR} syntax; header values
+// are credentials and are never printed.
+type MCPServer struct {
+	Name      string
+	URL       string
+	Transport string
+	Headers   map[string]string
+}
+
 // Options configures a single agent execution run.
 type Options struct {
 	// Agent loading
@@ -35,6 +45,12 @@ type Options struct {
 	// It is ignored when nil, is not called for dry runs (DryRun), and does
 	// not change the result.
 	ToolObserver ToolObserver
+
+	// MCPServers adds servers merged after the agent's TOML servers in slice
+	// order. A nil or empty value adds no servers. Duplicate names across or
+	// within the two sources are a ConfigError. In dry runs, header variables
+	// are not read, and sub-agents do not inherit the list.
+	MCPServers []MCPServer
 
 	// I/O (nil defaults to os.Stdout / os.Stderr / os.Stdin)
 	Stdout io.Writer

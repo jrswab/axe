@@ -2485,3 +2485,77 @@ func TestScaffold_IncludesResponseFormatConfig(t *testing.T) {
 		t.Errorf("scaffold output missing table form example\nfull output:\n%s", out)
 	}
 }
+
+func TestValidateMCPServers_SharedRules(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		servers  []MCPServerConfig
+		want     string
+		contains bool
+	}{
+		{
+			name:    "blank_name",
+			servers: []MCPServerConfig{{Name: " \t", URL: "http://localhost:8080/mcp", Transport: "sse"}},
+			want:    "mcp_servers[0].name is required",
+		},
+		{
+			name:    "blank_url",
+			servers: []MCPServerConfig{{Name: "local", URL: " \t", Transport: "sse"}},
+			want:    "mcp_servers[0].url is required",
+		},
+		{
+			name:     "malformed_url",
+			servers:  []MCPServerConfig{{Name: "local", URL: "not a url", Transport: "sse"}},
+			want:     "mcp_servers[0].url is invalid",
+			contains: true,
+		},
+		{
+			name:    "scheme_ftp",
+			servers: []MCPServerConfig{{Name: "local", URL: "ftp://example.com/mcp", Transport: "sse"}},
+			want:    `mcp_servers[0].url must use http or https scheme, got "ftp"`,
+		},
+		{
+			name:    "missing_host",
+			servers: []MCPServerConfig{{Name: "local", URL: "http:///mcp", Transport: "sse"}},
+			want:    "mcp_servers[0].url must include a host",
+		},
+		{
+			name:    "transport_ws",
+			servers: []MCPServerConfig{{Name: "local", URL: "http://localhost:8080/mcp", Transport: "ws"}},
+			want:    "mcp_servers[0].transport must be one of: sse, streamable-http",
+		},
+		{
+			name: "duplicate_name",
+			servers: []MCPServerConfig{
+				{Name: "local", URL: "http://localhost:8080/one", Transport: "sse"},
+				{Name: "local", URL: "http://localhost:8080/two", Transport: "streamable-http"},
+			},
+			want: `mcp_servers names must be unique: "local"`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for i := range tt.servers {
+				tt.servers[i].Headers = map[string]string{"X-Secret": "secret-literal-value"}
+			}
+			for _, prefix := range []string{"mcp_servers", "Options.MCPServers"} {
+				t.Run(prefix, func(t *testing.T) {
+					err := ValidateMCPServers(tt.servers, prefix)
+					if err == nil {
+						t.Fatal("ValidateMCPServers() error = nil, want validation error")
+					}
+					want := strings.ReplaceAll(tt.want, "mcp_servers", prefix)
+					if tt.contains {
+						if !strings.Contains(err.Error(), want) {
+							t.Errorf("ValidateMCPServers() error = %q, want containing %q", err.Error(), want)
+						}
+					} else if got := err.Error(); got != want {
+						t.Errorf("ValidateMCPServers() error = %q, want %q", got, want)
+					}
+					if strings.Contains(err.Error(), "secret-literal-value") {
+						t.Error("validation error contains a literal header secret")
+					}
+				})
+			}
+		})
+	}
+}

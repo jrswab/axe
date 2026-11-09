@@ -1,6 +1,7 @@
 package envinterp
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -159,5 +160,42 @@ func TestExpandHeaders_InputNotModified(t *testing.T) {
 	}
 	if headers["Authorization"] != "Bearer ${TOKEN}" {
 		t.Fatalf("input map modified: got %q", headers["Authorization"])
+	}
+}
+
+func TestExpandHeaders_UnsetEnvSentinel(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		value string
+		want  string
+		empty bool
+	}{
+		{
+			name:  "unset",
+			value: "Bearer ${UNSET_006_VAR}",
+			want:  `header "Authorization": environment variable "UNSET_006_VAR" is not set or empty`,
+		},
+		{
+			name:  "empty",
+			value: "Bearer ${EMPTY_006_VAR}",
+			want:  `header "Authorization": environment variable "EMPTY_006_VAR" is not set or empty`,
+			empty: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.empty {
+				t.Setenv("EMPTY_006_VAR", "")
+			}
+			_, err := ExpandHeaders(map[string]string{"Authorization": tt.value})
+			if err == nil {
+				t.Fatal("ExpandHeaders() error = nil, want unset variable error")
+			}
+			if !errors.Is(err, ErrUnsetEnv) {
+				t.Errorf("errors.Is(ExpandHeaders() error, ErrUnsetEnv) = false, error = %v", err)
+			}
+			if got := err.Error(); got != tt.want {
+				t.Errorf("ExpandHeaders() error = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
