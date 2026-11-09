@@ -1,6 +1,13 @@
 package runner
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+const toolDenyText = "tool call denied by host policy"
+
+var errHookPanic = errors.New("tool hook panicked")
 
 // ToolAction specifies how the runner handles a tool call.
 type ToolAction string
@@ -36,3 +43,18 @@ type ToolDecision struct {
 // A hook error or panic denies the call with the fixed text
 // "tool call denied by host policy"; raw error or panic text is not returned.
 type ToolHook func(ctx context.Context, call ToolCall) (ToolDecision, error)
+
+func callToolHook(ctx context.Context, hook ToolHook, call ToolCall) (decision ToolDecision, err error) {
+	args := make(map[string]string, len(call.Arguments))
+	for key, value := range call.Arguments {
+		args[key] = value
+	}
+	call.Arguments = args
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = errHookPanic
+		}
+	}()
+	return hook(ctx, call)
+}
