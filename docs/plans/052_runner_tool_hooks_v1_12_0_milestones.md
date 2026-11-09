@@ -158,7 +158,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
   - Compatibility impact: none on users. CI and `make check` gain one step.
   - Acceptance: `make check` and the CI job fail when `pkg/runner` has an incompatible change against `v1.11.0`, and pass on the unmodified tree. `go.mod` and `go.sum` are unchanged. The pin is recorded and is a concrete version, not `latest`. A test change that removes an exported identifier in a scratch copy makes the gate fail.
 
-- [ ] 003: Read the CI Go version from `go.mod` in all workflows
+- [x] 003: Read the CI Go version from `go.mod` in all workflows
   - Slice enabled: CI builds and tests on the toolchain the module declares (`go.mod:3`, `go 1.26.0`, with `toolchain go1.26.10`).
   - Depends on: none technically; ordered before features so later gates run on the declared toolchain.
   - Scope: milestone 000 (decision Q5, B2) already changes every setup-go step to `go-version-file: go.mod`: `.github/workflows/go.yml` (lines 19, 32, 47), `.github/workflows/smoke-test.yml` (lines 19, 70, 105, 164, 212), and `.github/workflows/release.yml:24` (`stable`). After 000 this milestone verifies and covers only the remainder: any other workflow or version read that 000 did not change. At `be94237` the remainder is none, so 003 is a verification step. The `go` directive stays `1.26.0` (decision Q4, O4a); `go.mod` carries `toolchain go1.26.10`, which `GOTOOLCHAIN=auto` honors at build time.
