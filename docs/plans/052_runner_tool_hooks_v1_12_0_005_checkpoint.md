@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, the external Go API contract (D1), and runs on the parallel tool dispatch path in `executeToolCalls` (`pkg/runner/run.go:896`, parallel branch `:985-1018`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `spec`
+- Current phase: `checklist-pending`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 none
@@ -30,8 +30,8 @@ none
 - Review: not started
 - Blockers: none
 - Relevant work: `uncommitted` — the two new spec and checkpoint files are untracked; no code, milestone doc, or 004 artifact is changed; nothing committed.
-- Next safe action: Planning review of 005 spec, round 2
-- Last completed phase/task/gate and timestamp: 005 spec planning review round 1 CHANGES REQUESTED (failing round 1/3); fixes committed cefc765; spec-lint PASS, 2026-11-09T19:17:27.613011+00:00
+- Next safe action: Write 005 implementation checklist (implement skill), spec-lint, planning review
+- Last completed phase/task/gate and timestamp: 005 spec planning review round 3 APPROVED (failing rounds so far 2/3), 2026-11-09T19:22:42.174559+00:00
 
 ## Gate evidence
 
@@ -87,8 +87,50 @@ Round 1 review: CHANGES REQUESTED, 5 blocking: F1 no dispatch-cancel test; F2 su
 
 - Next action: Planning review of 005 spec, round 2
 
+### 005 spec planning review round 2 CHANGES REQUESTED (failing round 2/3); fixes committed 75f95e0; spec-lint PASS
+
+- Gate: 005 spec planning review round 2 CHANGES REQUESTED (failing round 2/3); fixes committed 75f95e0; spec-lint PASS
+- Commands/results:
+Round 2 review: F2-F5 resolved; F1 open (test 10 timing-dependent); new F6 (no hook ToolAllow case), F7 (observer-set JSON-off ToolCallDetails nil untested). Fixed in 75f95e0: test 10 marker-synchronized cancel with exec sleep (probe: plain sleep orphan holds pipe 30s, exec form 302ms); test 3(f); test 2 nil assertion. spec-lint exit 0, 166 citations, 0 findings.
+- HEAD commit SHA: `75f95e0f66f4c6918906e19c8d69dcb3aafd357b`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Planning review of 005 spec, round 3
+
+### 005 spec planning review round 3 APPROVED (failing rounds so far 2/3)
+
+- Gate: 005 spec planning review round 3 APPROVED (failing rounds so far 2/3)
+- Commands/results:
+Round 3 review at 75f95e0: APPROVED, F1/F6/F7 resolved, no new findings. spec-lint exit 0, 166 citations.
+- HEAD commit SHA: `75f95e0f66f4c6918906e19c8d69dcb3aafd357b`
+- Relevant work: `committed` — stash ref `aa69ac6d8a6b67c8a4e6b46890e274710d91ff36` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write 005 implementation checklist (implement skill), spec-lint, planning review
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's test 6 (`--json` golden unchanged) is a regression check through `cmd/golden_test.go`, which may need a writable `~/.cache/axe` in this sandbox (environmental, as recorded for 004).
 - Blockers: `none`
-- Next action: Planning review of 005 spec, round 2
+- Next action: Write 005 implementation checklist (implement skill), spec-lint, planning review
