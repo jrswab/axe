@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T3.1
+- Current task: T4
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -31,11 +31,11 @@ Absolute paths inside the Repository root (the feature worktree).
 - T2.2: `checked`
 - T2.3: `checked`
 - T2.4: `checked`
-- T3.1: `unchecked`
-- T3.2: `unchecked`
-- T3.3: `unchecked`
-- T3.4: `unchecked`
-- T3.5: `unchecked`
+- T3.1: `checked`
+- T3.2: `checked`
+- T3.3: `checked`
+- T3.4: `checked`
+- T3.5: `checked`
 - T4: `unchecked`
 - T5: `unchecked`
 - T6: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T3.1
-- Last completed phase/task/gate and timestamp: T2.1-T2.4 red gate PASS at fa9561f, 2026-11-09T22:51:27.480497+00:00
+- Next safe action: Implement T4
+- Last completed phase/task/gate and timestamp: T3.1-T3.5 verification PASS at 20217a0, 2026-11-09T23:01:42.370854+00:00
 
 ## Gate evidence
 
@@ -187,8 +187,29 @@ pkg/runner/tools_option_test.go (new). go test -race -v ./pkg/runner exit 1 with
 
 - Next action: Implement T3.1
 
+### T3.1-T3.5 verification PASS at 20217a0
+
+- Gate: T3.1-T3.5 verification PASS at 20217a0
+- Commands/results:
+pkg/runner/run.go: toolname import :29, validation before dry-run :106-111, effective list copy :112-115, registry resolve :456-457, DryRunInfo.Tools :363. Staged states matched checklist: T3.1 exit 1 (4 expected red families), T3.2 exit 1 (only dry-run assertion tools_option_test.go:61), T3.3-T3.5 exit 0. All TestTools_ PASS. go test -race ./pkg/runner ok; go test -count=1 ./pkg/runner ok; go build ./... 0; go vet 0; golangci-lint 0 issues; gofmt clean; internal/tool and internal/mcpclient unchanged vs de43f3c; spec-lint 007 spec+implement exit 0 after line-number refresh.
+- HEAD commit SHA: `20217a0cac21025833e14788b86179c2a94800d1`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T4
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Implement T3.1
+- Next action: Implement T4

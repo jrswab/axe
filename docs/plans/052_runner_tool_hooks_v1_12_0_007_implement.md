@@ -142,7 +142,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
 - After T3.2: `TestTools_OptionReplacesTOMLList` (dry-run `DryRunInfo.Tools` assertion only).
 - After T3.3 and T3.4: none.
 
-- [ ] **T3.1: Green: validate `Options.Tools` before the dry-run return (R2)**
+- [x] **T3.1: Green: validate `Options.Tools` before the dry-run return (R2)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.4.
@@ -167,7 +167,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
     - `go vet ./pkg/runner/` → `exit=0`.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: as listed above; any other FAIL is a stop.
 
-- [ ] **T3.2: Green: effective built-in list for the live run (R4, R5, R11)**
+- [x] **T3.2: Green: effective built-in list for the live run (R4, R5, R11)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.1.
@@ -194,7 +194,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
     - `go vet ./pkg/runner/` → `exit=0`.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: `TestTools_OptionReplacesTOMLList` (dry-run assertion) only.
 
-- [ ] **T3.3: Green: dry run reports the effective list (R6, R7)**
+- [x] **T3.3: Green: dry run reports the effective list (R6, R7)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.2.
@@ -210,7 +210,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
     - `go test -count=1 ./cmd` is run in T4 (`XDG_CACHE_HOME` needed there).
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: none.
 
-- [ ] **T3.4: Verify shadowing and sub-agent boundary (R9, R11, R12); no code expected**
+- [x] **T3.4: Verify shadowing and sub-agent boundary (R9, R11, R12); no code expected**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T3.3.
@@ -225,7 +225,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
     - `rg -n "opts.Tools\[.*\] *=|opts.Tools = " pkg/runner/run.go` → no output (`exit=1`): no write to the caller slice.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files unless a fix is needed; if none, the derived package list is empty. If a fix to `pkg/runner/run.go` was needed, the package is `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: none.
 
-- [ ] **T3.5: Green: all acceptance tests 1-6 pass; TOML and nil behavior unchanged (R7, R13)**
+- [x] **T3.5: Green: all acceptance tests 1-6 pass; TOML and nil behavior unchanged (R7, R13)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.1, T3.2, T3.3, T3.4.
