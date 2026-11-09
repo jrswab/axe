@@ -131,7 +131,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
 
 ### Phase 3: Green implementation (serial, all in `pkg/runner`)
 
-- [ ] **T3.1: Green: decision pass wiring, hook call with recover, error and panic deny (R2, R7)**
+- [x] **T3.1: Green: decision pass wiring, hook call with recover, error and panic deny (R2, R7)**
   - Budget: 30 min
   - Depends on: T2.1-T2.3 (red), T2.5 (red, MCP helper compiles).
   - Files:
@@ -147,7 +147,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
     - `rg -n "executeToolCalls\(" --glob '*.go' .` → exactly the definition and the one call site.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.2: Green: deny result and unknown action (R4, R8)**
+- [x] **T3.2: Green: deny result and unknown action (R4, R8)**
   - Budget: 30 min
   - Depends on: T3.1.
   - File: `pkg/runner/run.go`, the decision pass in `executeToolCalls`, and `pkg/runner/hook.go` for the action switch (a small unexported `func decisionAction(d ToolDecision) ToolAction` is acceptable; no exported change).
@@ -162,7 +162,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
     - `rg -n "tool call denied by host policy" pkg/runner/` → exactly one constant definition in `pkg/runner/hook.go` (plus test assertions in `run_test.go` and `hook_mcp_test.go`, which are string literals; record the lines and confirm the constant definition is the only non-test match).
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.3: Green: stub result and allow ignores content (R5, R6)**
+- [x] **T3.3: Green: stub result and allow ignores content (R5, R6)**
   - Budget: 30 min
   - Depends on: T3.2.
   - File: `pkg/runner/run.go` (decision pass), `pkg/runner/hook.go` if a helper is needed.
@@ -176,7 +176,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
     - `go test ./pkg/runner` → guards pass; tests 10, 12 still red; record.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.4: Green: cancellation during the decision pass (R9)**
+- [x] **T3.4: Green: cancellation during the decision pass (R9)**
   - Budget: 30 min
   - Depends on: T3.3.
   - File: `pkg/runner/run.go` (decision pass; the turn-level check; the error return path in `run`), `pkg/runner/hook.go` if the error construction is shared.
@@ -192,7 +192,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
     - `rg -n "tool hook: run canceled" pkg/runner/` → one line in `pkg/runner/run.go` or `pkg/runner/hook.go`.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.5: Green: sub-agents with a hook fail closed (R10)**
+- [x] **T3.5: Green: sub-agents with a hook fail closed (R10)**
   - Budget: 30 min
   - Depends on: T2.6 (red), T1.
   - File: `pkg/runner/run.go`, immediately after the agent load error check at `pkg/runner/run.go:70-73` (the `return nil, &ConfigError{Msg: "failed to load agent", Err: err}` at `:72`) and before the overrides block at `:75`.

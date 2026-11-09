@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, which is the external Go API contract (D1), and edits the parallel dispatch path in `executeToolCalls` (`pkg/runner/run.go:890`, parallel branch `:945-974`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T3.1
+- Current task: T4
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -34,11 +34,11 @@ Absolute paths inside the Repository root (the feature worktree).
 - T2.5: `checked`
 - T2.6: `checked`
 - T2.7: `checked`
-- T3.1: `unchecked`
-- T3.2: `unchecked`
-- T3.3: `unchecked`
-- T3.4: `unchecked`
-- T3.5: `unchecked`
+- T3.1: `checked`
+- T3.2: `checked`
+- T3.3: `checked`
+- T3.4: `checked`
+- T3.5: `checked`
 - T4: `unchecked`
 - T5: `unchecked`
 - T6: `unchecked`
@@ -50,8 +50,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - Review: `pending`
 - Blockers: none
 - Relevant work: `uncommitted` — spec and checkpoint are new untracked files; the 003 checkpoint Review line is modified (uncommitted). No implementation change.
-- Next safe action: Implement T3.1
-- Last completed phase/task/gate and timestamp: T2.1-T2.7 red gate PASS (new tests fail for missing behavior) at f983772, 2026-11-09T18:23:43.614528+00:00
+- Next safe action: Implement T4
+- Last completed phase/task/gate and timestamp: T3.1-T3.5 green gate PASS at 6a9d741, 2026-11-09T18:32:21.926593+00:00
 
 ## Gate evidence
 
@@ -141,10 +141,31 @@ Go pre-flight: go-toolchain-check exit 0 (go1.26.0/go1.26.10, govulncheck no vul
 
 - Next action: Implement T3.1
 
+### T3.1-T3.5 green gate PASS at 6a9d741
+
+- Gate: T3.1-T3.5 green gate PASS at 6a9d741
+- Commands/results:
+Run on 1c26a86 + uncommitted hook.go/run.go (committed unchanged as 6a9d741). go test -v ./pkg/runner exit 0 (all 12 TestToolHook* and pre-existing PASS); go build ./... 0; go vet ./... 0; gofmt -l empty; golangci-lint run ./... 0 issues; per-task race gate ./pkg/runner exit 0, no DATA RACE; go test ./cmd/... exit 1 only from read-only ~/.cache/axe in sandbox, rerun with temporary XDG_CACHE_HOME exit 0 (environmental, cmd/run_test.go:50 isolates only XDG_CONFIG_HOME).
+- HEAD commit SHA: `6a9d741f0bce8fe62d1d61c293bec738bd26d41a`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T4
+
 ## Limitations & blockers
 
 - Limitations:
   - The spec's focused race command (`go test -race -run TestToolHookParallelTurn ./pkg/runner`, milestone test 11) is not in the spec's fenced acceptance block. The test does not exist yet, so `spec-lint` reports "selects no test in current files" for it. It is stated in prose as R13 test 11 and must be added to the implementation checklist.
   - No code is written in this phase. Tests 1-13 in the spec are unimplemented.
 - Blockers: `none`
-- Next action: Implement T3.1
+- Next action: Implement T4
