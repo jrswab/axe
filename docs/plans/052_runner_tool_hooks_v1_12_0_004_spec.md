@@ -23,6 +23,7 @@
 - **OD6 (orchestrator).** Doc comments state: the hook is called sequentially on the run goroutine, in model order, before any dispatch of that turn; concurrent `Run` calls that share one hook may call it concurrently, so the host must make it safe; a deny differs from ordinary tool errors (`AGENTS.md:165`) because the tool never runs.
 - **OD7 (orchestrator).** The fail-closed check keys on `len(cfg.SubAgents) > 0` only. `call_agent` is injected only when that condition holds (`pkg/runner/run.go:423-424`), so a sub-agent call cannot be reached without a non-empty `sub_agents` list. This is stated as a boundary, not as a general guarantee about model output (see Requirement R10).
 - **OD8 (orchestrator).** No dependency is added. No CLI, TOML, or `--json` change. Nil-hook behavior is byte-identical.
+- **OD9 (orchestrator).** An unknown action (including the empty string) always yields the fixed OD1 text `tool call denied by host policy` with `IsError: true`. `decision.Content` is ignored for an unknown action, because the host's intent is unknown (fail closed). This overrides OD2's "`decision.Content` when non-empty" rule for unknown actions only.
 
 ### Current values (verified at HEAD `09d100d`)
 
@@ -92,7 +93,7 @@ Requirements R1-R3 are the public API and wiring. R4-R9 are the decision semanti
 ### R2: Decision pass before any dispatch, in model order
 
 - When `ToolHook` is non-nil and a turn has tool calls, the hook is called once per call, in model order, on the run goroutine, before any call of that turn is dispatched. This holds for single-call turns, sequential turns (`parallel = false`), and parallel turns.
-- The decision pass happens inside the turn after `totalToolCalls` is counted (`pkg/runner/run.go:653`) and before dispatch (`:662`).
+- The decision pass happens inside `executeToolCalls` (`pkg/runner/run.go:890`), before both the sequential branch (`:927`) and the parallel branch (`:945`). `executeToolCalls` gains the hook as a parameter and an `error` return. Its single call site (`pkg/runner/run.go:662`) returns that error from the run unwrapped (the cancellation `RuntimeError`, OD5). `totalToolCalls` (`:653`) is still counted before the call, so denied and stubbed calls are counted.
 - The hook receives the run context (`pkg/runner/run.go:332-333`) and a `ToolCall` whose `Arguments` is a copy (R5).
 - Verification: R13 tests 2, 5, and 7.
 
@@ -104,7 +105,7 @@ Requirements R1-R3 are the public API and wiring. R4-R9 are the decision semanti
 ### R4: Deny is an error result and dispatches nothing
 
 - A call decided `ToolDeny`, or a call whose decision is an error (R7), or a call with an unknown action (R8), is not dispatched: no builtin executor runs, no MCP call is sent, and no `call_agent` runs.
-- Its result has `CallID` equal to the call ID, `IsError: true`, and `Content` as in OD2: `decision.Content` when non-empty, else the OD1 text for `ToolDeny`.
+- Its result has `CallID` equal to the call ID and `IsError: true`. For `ToolDeny`, `Content` is as in OD2: `decision.Content` when non-empty, else the OD1 text. For an error (R7) or an unknown action (R8), `Content` is always the OD1 text.
 - Other calls in the same turn are unaffected. The run continues (D6, Q2).
 - Verification: acceptance tests 2, 3, 8, 9 (R13).
 
@@ -128,8 +129,8 @@ Requirements R1-R3 are the public API and wiring. R4-R9 are the decision semanti
 
 ### R8: Unknown action is a deny
 
-- A decision whose `Action` is not `ToolAllow`, `ToolDeny`, or `ToolStub` (including the empty string) is treated as `ToolDeny` with the OD1 text when `Content` is empty, as in R4 (OD1, D6).
-- Verification: an acceptance test in `pkg/runner/run_test.go` with a hook that returns `ToolAction("")` (R13 test 13).
+- A decision whose `Action` is not `ToolAllow`, `ToolDeny`, or `ToolStub` (including the empty string) is denied (D6). Its result has `IsError: true` and `Content` equal to the fixed OD1 text `tool call denied by host policy`, whatever `decision.Content` holds, empty or non-empty (OD9). `decision.Content` is not read for an unknown action.
+- Verification: acceptance test 13 (R13) in `pkg/runner/run_test.go`, with a hook that returns `ToolAction("")` and a second case that returns an unknown action with non-empty `Content`. In both cases the tool result content equals the fixed text.
 
 ### R9: Cancellation dispatches nothing and returns the context error
 
@@ -172,7 +173,7 @@ Tests 1, 2, 6, 7, 8, 9, 10, 12, and 13 are in `pkg/runner/run_test.go`. Tests 3,
 10. **Sub-agents with a hook.** An agent with a non-empty `sub_agents` list and a non-nil `ToolHook`: `Run` returns a value for which `IsConfigError` is true, and the mock LLM server receives zero requests (R10).
 11. **Focused race test.** Run `TestToolHookParallelTurn` with `-race` in `pkg/runner`. The full `go test -race ./...` run is Factory's completion gate, not this milestone's check.
 12. **Cancel during decision.** A turn with two calls. The hook for call 1 cancels the parent context and returns a valid decision. Neither call executes (no file written; no MCP call), the hook is not called for call 2, and `Run` returns an error with `IsRuntimeError` true and `errors.Is(err, context.Canceled)` true (R9).
-13. **Unknown action (R8 case).** A hook returns `ToolAction("")`. The call is denied as in R4 and the run continues.
+13. **Unknown action (R8 case).** Table cases: a hook returns `ToolAction("")` with empty `Content`; and a hook returns an unknown action (for example `ToolAction("bogus")`) with non-empty `Content`. In each case the call is denied, the tool result has `IsError: true` and `Content` equal to the fixed OD1 text `tool call denied by host policy` (the decision `Content` is ignored, OD9), and the run continues.
 
 Each MCP test (3-5) uses a local helper in `pkg/runner/hook_mcp_test.go` that creates the go-sdk `mcp.NewServer`, registers one tool, and serves it with `mcp.NewStreamableHTTPHandler` under `httptest.NewServer`, closed by `t.Cleanup`. The helper counts calls with an atomic counter. The agent TOML uses `[[mcp_servers]]` with `transport = "streamable-http"` and the server URL, as in `cmd/run_mcp_integration_test.go:65-69`.
 
@@ -223,6 +224,8 @@ The full `go test -race ./...` run is Factory's completion gate, not a check of 
 5. **Sub-agent run bypasses the hook.** A `call_agent` path runs without the hook. Mitigation: R10 rejects a hook with a non-empty `sub_agents` list before any provider call.
 6. **Dry run calls the hook.** Mitigation: the dry-run return (`pkg/runner/run.go:279`) is before the decision pass, and the milestone states dry runs do not invoke hooks.
 7. **Panic escapes the decision pass.** Mitigation: R7 recovers panics from the hook call only.
+8. **Cancellation error dropped at the call site.** `executeToolCalls` returns the cancellation error but the caller ignores it, so the turn continues. Mitigation: the single call site at `pkg/runner/run.go:662` returns the error from the run (R2, R9, test 12).
+9. **Unknown action leaks host `Content`.** A hook returns an unknown action with non-empty `Content`, and that content reaches the model. Mitigation: OD9 and R8, with test 13's second case asserting the fixed text.
 
 ## Limitations
 
