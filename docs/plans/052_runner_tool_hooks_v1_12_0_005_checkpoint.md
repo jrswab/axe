@@ -16,12 +16,12 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_005_spec.md`
-- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_005_implement.md` (not yet created)
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_005_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md`
 
 ## State
 
-- Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, the external Go API contract (D1), and runs on the parallel tool dispatch path in `executeToolCalls` (`pkg/runner/run.go:896`, parallel branch `:985-1018`). The fast-lane condition "external contracts untouched" fails.
+- Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, the external Go API contract (D1), and runs on the parallel tool dispatch path in `executeToolCalls` (`pkg/runner/run.go:925`, parallel branch `:1016-1049`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
 - Current task: T9
 - Task states — checklist checkboxes render from this list:
@@ -51,7 +51,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - Milestone checkbox: `unchecked`
 - Review: not started
 - Blockers: none
-- Relevant work: `uncommitted` — the two new spec and checkpoint files are untracked; no code, milestone doc, or 004 artifact is changed; nothing committed.
+- Relevant work: `committed` — through commit `aaa97a1` (records) on branch `runner-tool-hooks`.
 - Next safe action: Review gate: records-stale-check c2620fb, docs-lint --since c2620fb, factory-gate test+lint at HEAD, split review (backend pkg/runner + CHANGELOG; spec/records docs/plans) round 1 range c2620fb..HEAD
 - Last completed phase/task/gate and timestamp: T9 records PASS (checkpoint/checkbox agreement verified at 250533a; milestone checkbox deferred to Factory completion gate), 2026-11-09T20:22:43.496895+00:00
 

@@ -49,7 +49,7 @@
 - `pkg/runner/options.go:6` `type Options struct`. `:29-32` `ToolHook`. `:39-42` I/O fields; `Stderr` at `:41`.
 - `pkg/runner/messages.go:98-102`: public `ToolCall` (`ID`, `Name`, `Arguments map[string]string`).
 - `internal/provider/provider.go:41-45`: provider-side `ToolCall`. `:48-52`: `ToolResult{CallID, Content string, IsError bool}`.
-- `pkg/runner/run.go:37-41`: `toolExecResult{Result provider.ToolResult; Duration time.Duration}`.
+- `pkg/runner/run.go:37-41`: `toolExecResult`. The c2620fb pre-change shape is `toolExecResult{Result provider.ToolResult; Duration time.Duration}` (`git show c2620fb:pkg/runner/run.go`, `:37-40`). The implementation adds `Action ToolAction` (current `pkg/runner/run.go:40`).
 - `pkg/runner/run.go:55-57`: `stderr` defaults to `os.Stderr` when `opts.Stderr` is nil.
 - `pkg/runner/run.go:75-77`: `ToolHook` with `sub_agents` is `ConfigError`.
 - `pkg/runner/run.go:283`: `if opts.DryRun` returns at `:283-334`.
@@ -61,7 +61,7 @@
 - `pkg/runner/run.go:690-704`: JSON `ToolCallDetail` loop. `:699` `truncateOutput(results[i].Result.Content)`, `:701` `Turn: turn`, `:702` `DurationMs`.
 - `pkg/runner/run.go:707-711`: tool result message built from `results[i].Result`, in model order.
 - `pkg/runner/run.go:925`: `executeToolCalls` returns `([]toolExecResult, error)`.
-- `pkg/runner/run.go:963-993`: decision pass. `:966-967` hook call and `ctx.Err()` check. `:970-972` error sets `ToolDeny`. `:973` deny text. `:974-986` action switch; unknown actions fall through with the deny text. `:988` `toolExecResult{Result: r}` with no `Duration`. `:990-992` cancellation `RuntimeError`.
+- `pkg/runner/run.go:963-993`: decision pass. `:966-967` hook call and `ctx.Err()` check. `:970-972` error sets `ToolDeny`. `:973` deny text. `:974-986` action switch; unknown actions fall through with the deny text. c2620fb baseline `pkg/runner/run.go:957` `toolExecResult{Result: r}` with no `Duration` (current code at `:988` is `toolExecResult{Result: r, Action: decision.Action}`). `:990-992` cancellation `RuntimeError`.
 - `pkg/runner/run.go:995-1014`: sequential branch. `:997-998` skips handled calls. `:1002-1003` MCP dispatch. `:1014` `Duration: time.Since(start)`.
 - `pkg/runner/run.go:1016-1048`: parallel branch. `:1027` goroutine. `:1042` `Duration: time.Since(start)`. `:1045-1048` join loop places results by index.
 - `pkg/runner/run.go:1051`: `return results, nil`.
