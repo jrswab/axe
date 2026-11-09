@@ -5,7 +5,7 @@
 ### Source
 
 - Milestone: `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md`, entry 006 (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203-215`). Scope and acceptance tests 1-7 are taken from that entry, as bounded by D8 (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:70`) and the compatibility rules D1 and D2.
-- Predecessors: milestone 002 (apidiff gate) is complete (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:154`, `[x] 002`). `Makefile:14` defines the `apidiff` target that `make check` runs (`Makefile:12`).
+- Predecessors: milestone 002 (apidiff gate) and milestone 005 (`Options.ToolObserver`) are complete (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:154`, `[x] 002`; `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:189`, `[x] 005`). `Makefile:14` defines the `apidiff` target that `make check` runs (`Makefile:12`).
 - Baseline: branch `runner-tool-hooks`, HEAD `a13e3bcf8b914fad1d17692da00e4ff79eca05bd`, clean tree at spec time. Milestones 004 and 005 are committed and reflected in the current code (`pkg/runner/options.go:29-37`, `pkg/runner/run.go:37-41`).
 - Lane: full. The milestone adds an exported type and an exported field to `pkg/runner`, the external API (D1). It moves credential-bearing headers (`Headers`) through a new input path, and it changes config validation. The fast-lane conditions "external contracts untouched" and "no security-sensitive path" both fail.
 

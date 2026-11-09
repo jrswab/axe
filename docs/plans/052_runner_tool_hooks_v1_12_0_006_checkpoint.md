@@ -16,7 +16,7 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_006_spec.md`
-- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_006_implement.md` (not yet written)
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_006_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_006_checkpoint.md`
 
 ## State
@@ -181,5 +181,5 @@ Session sync: factory-sync (origin/master) exit 0, ahead 79, behind 0, shared_fi
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's "no `t.Setenv`" describes the host, not the test harness; the spec's tests use `t.Setenv`. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005). The PR 103 state was not re-verified by this agent: `gh pr view` failed for missing auth (sandbox credential limit; not retried).
-- Blockers: BLOCKED (orchestrator decision needed, not a spec gap): milestone entry 006 cites stale lines. `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203-215` cites the text match at `pkg/runner/run.go:443`, but the match is at `:447` (`:443` is the verbose connect `Fprintf`). It cites the dry-run server list at `pkg/runner/run.go:296-300`, but it is at `:300-303`. The spec uses the verified lines. The milestone document was not edited (out of scope for this phase).
+- Blockers: none. (Earlier blocker, resolved at b567390: milestone entry 006 cited stale `pkg/runner/run.go` lines; corrected to `:475` and `:328-331`. See the T4-T9 gate evidence.)
 - Next action: Review gate: records-stale-check a13e3bc, docs-lint --since a13e3bc, factory-gate test+lint at HEAD, split review (backend, spec/records) round 1 range a13e3bc..HEAD

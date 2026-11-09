@@ -338,7 +338,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
 - [x] **T9: Records (orchestrator, not the writer)**
   - Budget: 30 min
   - Owner: orchestrator, after T8.
-  - Files: `docs/plans/052_runner_tool_hooks_v1_12_0_006_checkpoint.md` (phase, task states, gate evidence) and the milestone checkbox `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203` (`- [ ] 006` becomes `- [x] 006`). Do not change the milestone entry beyond the checkbox. Record the milestone entry's stale run.go citations (listed in Blockers) in the checkpoint only, if the orchestrator decides; this checklist does not edit the milestone text.
+  - Files: `docs/plans/052_runner_tool_hooks_v1_12_0_006_checkpoint.md` (phase, task states, gate evidence). The milestone entry `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203-215` may receive a line-number-only citation refresh (as done in b567390). The milestone checkbox (`- [ ] 006` to `- [x] 006`) is rendered by factory-checkpoint at the Factory completion gate, after review, not in T9. T9 does not change that checkbox.
   - Owner: orchestrator. This writer does not touch these files.
 
 ---
