@@ -23,10 +23,10 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: none
+- Current task: T2.1
 - Task states — checklist checkboxes render from this list:
-- T0: `unchecked`
-- T1: `unchecked`
+- T0: `checked`
+- T1: `checked`
 - T2.1: `unchecked`
 - T2.2: `unchecked`
 - T2.3: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T0
-- Last completed phase/task/gate and timestamp: Checklist planning review round 2 APPROVED (no findings); prior round-1 blocker verified resolved, 2026-11-09T22:36:54.853057+00:00
+- Next safe action: Implement T2.1
+- Last completed phase/task/gate and timestamp: T0+T1 verification PASS at fa21002, 2026-11-09T22:45:16.126931+00:00
 
 ## Gate evidence
 
@@ -145,8 +145,29 @@ factory-sync args [] exit 0: base origin/master, ahead 88, behind 0, shared_file
 
 - Next action: Implement T0
 
+### T0+T1 verification PASS at fa21002
+
+- Gate: T0+T1 verification PASS at fa21002
+- Commands/results:
+T0: stale expectations at implement.md:48-49 (HEAD ba1feb7, modified checkpoint) replaced with ancestry checks (merge-base --is-ancestor ba1feb7 HEAD; no non-docs/plans diff); all T0 checks matched; go-toolchain-check exit 0. T1: Options.Tools declared pkg/runner/options.go:55-62. go build ./... 0; go vet ./pkg/runner 0; golangci-lint run ./pkg/runner 0 issues; per-task gate go test -race ./pkg/runner ok; spec-lint 007 spec+implement PASS (milestones doc has 33 historical stale-citation findings, outside the gate). Commit fa21002.
+- HEAD commit SHA: `fa210022b91b1b93ec18c06b0d8147845ac2c840`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T2.1
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Implement T0
+- Next action: Implement T2.1
