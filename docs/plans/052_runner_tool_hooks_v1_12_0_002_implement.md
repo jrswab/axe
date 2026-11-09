@@ -145,8 +145,8 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Bullet text: states that `make check` and CI now run a pinned apidiff check of `pkg/runner` against `v1.11.0`, and that an incompatible change fails the check.
   - No other line changes.
   - Verification:
-    - `git diff -U0 423a399 -- CHANGELOG.md | rg -c "^[-+][^-+]"` → `1`.
-    - `git diff -U0 423a399 -- CHANGELOG.md | rg -c "^-[^-]"` → `0` (no removed lines; checked again in T10).
+    - `git diff -U0 423a399 -- CHANGELOG.md | rg -c '^\+([^+]|$)'` → `1` (added content lines; `+++` header excluded).
+    - `git diff -U0 423a399 -- CHANGELOG.md | rg -c '^-([^-]|$)'` → no output, exit 1 (zero removed content lines; `---` header excluded; checked again in T10).
   - Gate: `git diff --name-only -- '*.go' go.mod go.sum` prints nothing.
 
 ### Phase 2: Repository verification (serial, after T1.3, T2, T3, T4)
@@ -226,7 +226,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `git diff --name-only 423a399 -- '*.go'` → no lines.
     - `git diff --exit-code 423a399 -- go.mod go.sum; echo "exit=$?"` → `exit=0`.
     - `git worktree list | diff - /tmp/axe-m002-worktrees-before.txt` → no output.
-    - `git diff -U0 423a399 -- CHANGELOG.md | rg -c "^[-+][^-+]"` → `1`.
+    - `git diff -U0 423a399 -- CHANGELOG.md | rg -c '^\+([^+]|$)'` → `1`.
     - `git status --porcelain` → only the four files above (tracked), the checklist and checkpoint and spec (untracked or Factory records), and nothing else.
 
 - [ ] **T11: Acceptance replay (all spec "Acceptance commands") and `make check` hand-off**
@@ -245,7 +245,8 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     rg -n "make apidiff" .github/workflows/go.yml                            # expect: one line
     rg -n -i "planned|not active|lands in" COMPATIBILITY.md                  # expect: no lines
     git diff --exit-code 423a399 -- go.mod go.sum                            # expect: exit 0
-    git diff -U0 423a399 -- CHANGELOG.md | rg -c "^[-+][^-+]"                # expect: 1
+    git diff -U0 423a399 -- CHANGELOG.md | rg -c '^\+([^+]|$)'               # expect: 1
+    git diff -U0 423a399 -- CHANGELOG.md | rg -c '^-([^-]|$)'                # expect: no output, exit 1 (zero removed)
     ls -d "${TMPDIR:-/tmp}"/axe-apidiff.* 2>/dev/null | wc -l                # expect: 0 (before and after each run)
     git diff --name-only 423a399 -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_002_*' ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md'   # expect: .github/workflows/go.yml, CHANGELOG.md, COMPATIBILITY.md, Makefile
     ~/.agents/scripts/spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md   # expect: exit 0
