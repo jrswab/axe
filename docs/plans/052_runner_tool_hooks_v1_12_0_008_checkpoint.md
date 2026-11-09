@@ -23,13 +23,13 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `spec`
+- Current phase: `checklist-pending`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-- none (no tasks yet; the checklist is not written)
+none
 - Milestone checkbox: `unchecked`
-- Next safe action: spec planning review round 1 (the orchestrator dispatches it).
-- Last completed phase/task/gate and timestamp: setup gate (clean tree at `7f56dae`), recorded at spec start.
+- Next safe action: Write the 008 implementation checklist (implement skill), spec-lint it, then run checklist planning review round 1
+- Last completed phase/task/gate and timestamp: Spec planning review round 2 APPROVED (no findings), 2026-11-09T23:25:02.146388+00:00
 
 ## Gate evidence
 
@@ -66,8 +66,29 @@ none at setup
 - Relevant work: `uncommitted` — stash ref `none`; untracked spec and checkpoint only.
 - Next action: spec planning review round 1 (the orchestrator dispatches it).
 
+### Spec planning review round 2 APPROVED (no findings)
+
+- Gate: Spec planning review round 2 APPROVED (no findings)
+- Commands/results:
+spec-lint 008 spec exit 0 (66 citations) before round 1. Round 1 (first dispatch returned no output and was redispatched): CHANGES REQUESTED, 3 blocking (F1 unset case lacked 50-response fixture; F2 sub-agent test could pass with inherited cap, tool.go:335-345; F3 negative test lacked value assertion) + 1 nit (OS1-OS11 -> OS1-OS12). Fixed in 5527af8; spec-lint exit 0 (67 citations). Round 2: Verdict APPROVED, no findings. Failing planning rounds for 008: 1 of 3.
+- HEAD commit SHA: `5527af8314558a5c9ee45ca364139b2124a62d41`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write the 008 implementation checklist (implement skill), spec-lint it, then run checklist planning review round 1
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: spec planning review round 1 (the orchestrator dispatches it).
+- Next action: Write the 008 implementation checklist (implement skill), spec-lint it, then run checklist planning review round 1
