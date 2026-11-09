@@ -256,7 +256,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
   - Files: none (verification only).
   - Commands and expected results:
     - `git diff --name-only 09d100d -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_*'` → exactly `CHANGELOG.md`, `pkg/runner/hook.go`, `pkg/runner/hook_mcp_test.go`, `pkg/runner/options.go`, `pkg/runner/run.go`, `pkg/runner/run_test.go`. (Untracked new files appear only with `git status --porcelain`; check both.)
-    - `git status --porcelain` → those six paths plus the orchestrator's checkpoint edit and any Factory records; nothing else.
+    - `git status --porcelain` → those six paths plus any Factory records; nothing else.
     - `git diff --exit-code 09d100d -- go.mod go.sum cmd internal cmd/testdata` → exit 0.
     - `rg -n "ToolHook" pkg/runner/options.go pkg/runner/hook.go` → the field and the type.
     - `rg -n "tool call denied by host policy" pkg/runner/` → one constant definition (in `pkg/runner/hook.go`); the other matches are test assertions.
@@ -316,7 +316,7 @@ Every acceptance test 1-13 maps to exactly one task of each kind above. The spec
 ## Caller Coverage and Extreme Input Probes (Phase 2 Gate)
 
 - Changed signatures:
-  - `executeToolCalls` (`pkg/runner/run.go:890`): gains a `hook ToolHook` parameter and an `error` return. Callers: `pkg/runner/run.go:662` only (`rg -n "executeToolCalls\(" --glob '*.go' .` at HEAD `2bfbab1` returns lines 662 and 890). Caller update assigned to T3.1.
+  - `executeToolCalls` (`pkg/runner/run.go:890`): gains a `hook ToolHook` parameter and an `error` return. Callers: `pkg/runner/run.go:662` only (`rg -n "executeToolCalls\(" --glob '*.go' .` at HEAD `3f7f7d0` returns lines 662 and 890). Caller update assigned to T3.1.
   - `run` (`pkg/runner/run.go:47`) and `Run` (`pkg/runner/run.go:43`): unchanged signatures.
   - `Options` (`pkg/runner/options.go:6`): gains one field. Existing `Options{...}` literals in `cmd/run.go:80` and `pkg/runner/*_test.go` are keyed. Compile check in T1 (`go build ./...`, `go vet ./pkg/runner/`) covers them.
 - Extreme acceptance inputs and recorded evidence:
