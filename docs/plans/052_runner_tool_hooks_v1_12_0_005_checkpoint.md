@@ -47,13 +47,13 @@ Absolute paths inside the Repository root (the feature worktree).
 - T7: `checked`
 - T7.1: `checked`
 - T8: `checked`
-- T9: `unchecked`
+- T9: `checked`
 - Milestone checkbox: `unchecked`
 - Review: not started
 - Blockers: none
 - Relevant work: `uncommitted` — the two new spec and checkpoint files are untracked; no code, milestone doc, or 004 artifact is changed; nothing committed.
-- Next safe action: T9 records: commit records, then review gates (records-stale-check c2620fb, factory-gate test+lint, review split per scope)
-- Last completed phase/task/gate and timestamp: T4-T8 PASS (CHANGELOG a85cf51; citation refresh uncommitted at this write), 2026-11-09T20:20:41.593819+00:00
+- Next safe action: Review gate: records-stale-check c2620fb, docs-lint --since c2620fb, factory-gate test+lint at HEAD, split review (backend pkg/runner + CHANGELOG; spec/records docs/plans) round 1 range c2620fb..HEAD
+- Last completed phase/task/gate and timestamp: T9 records PASS (checkpoint/checkbox agreement verified at 250533a; milestone checkbox deferred to Factory completion gate), 2026-11-09T20:22:43.496895+00:00
 
 ## Gate evidence
 
@@ -280,8 +280,29 @@ T4: go test -v ./pkg/runner all 23 observer lines PASS; go build, go vet clean; 
 
 - Next action: T9 records: commit records, then review gates (records-stale-check c2620fb, factory-gate test+lint, review split per scope)
 
+### T9 records PASS (checkpoint/checkbox agreement verified at 250533a; milestone checkbox deferred to Factory completion gate)
+
+- Gate: T9 records PASS (checkpoint/checkbox agreement verified at 250533a; milestone checkbox deferred to Factory completion gate)
+- Commands/results:
+explore: 23 task IDs match checklist; 22 [x] + T9 agree with checkpoint states; tree clean at 250533a; factory-sync behind 0 (origin/master); milestone-entries PASS 13 entries. Relevant work is committed at 250533a (supersedes stale 'uncommitted' note).
+- HEAD commit SHA: `250533a4ad1ee6bc87e9278acb89b827fda2a500`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Review gate: records-stale-check c2620fb, docs-lint --since c2620fb, factory-gate test+lint at HEAD, split review (backend pkg/runner + CHANGELOG; spec/records docs/plans) round 1 range c2620fb..HEAD
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's test 6 (`--json` golden unchanged) is a regression check through `cmd/golden_test.go`, which may need a writable `~/.cache/axe` in this sandbox (environmental, as recorded for 004).
 - Blockers: `none`
-- Next action: T9 records: commit records, then review gates (records-stale-check c2620fb, factory-gate test+lint, review split per scope)
+- Next action: Review gate: records-stale-check c2620fb, docs-lint --since c2620fb, factory-gate test+lint at HEAD, split review (backend pkg/runner + CHANGELOG; spec/records docs/plans) round 1 range c2620fb..HEAD

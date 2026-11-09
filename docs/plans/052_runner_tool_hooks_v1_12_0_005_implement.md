@@ -298,7 +298,7 @@ Phase 2 red-run check: after T2.1-T2.8, run `go test -v ./pkg/runner | rg -- '--
   - No file changes.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T9: Records (orchestrator, not the writer)**
+- [x] **T9: Records (orchestrator, not the writer)**
   - Budget: 30 min
   - Files: `docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md` and the milestone checkbox `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:189` (`[ ] 005` becomes `[x] 005`). Do not change the milestone entry beyond the checkbox.
   - Owner: orchestrator after T8.
