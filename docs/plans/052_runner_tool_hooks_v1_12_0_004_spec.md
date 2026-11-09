@@ -93,7 +93,7 @@ Requirements R1-R3 are the public API and wiring. R4-R9 are the decision semanti
 ### R2: Decision pass before any dispatch, in model order
 
 - When `ToolHook` is non-nil and a turn has tool calls, the hook is called once per call, in model order, on the run goroutine, before any call of that turn is dispatched. This holds for single-call turns, sequential turns (`parallel = false`), and parallel turns.
-- The decision pass happens inside `executeToolCalls` (`pkg/runner/run.go:890`), before both the sequential branch (`:927`) and the parallel branch (`:945`). `executeToolCalls` gains the hook as a parameter and an `error` return. Its single call site (`pkg/runner/run.go:662`) returns that error from the run unwrapped (the cancellation `RuntimeError`, OD5). `totalToolCalls` (`:653`) is still counted before the call, so denied and stubbed calls are counted.
+- The decision pass happens inside `executeToolCalls` (`pkg/runner/run.go:896`), before both the sequential branch (`:927`) and the parallel branch (`:945`). `executeToolCalls` gains the hook as a parameter and an `error` return. Its single call site (`pkg/runner/run.go:662`) returns that error from the run unwrapped (the cancellation `RuntimeError`, OD5). `totalToolCalls` (`:656`) is still counted before the call, so denied and stubbed calls are counted.
 - The hook receives the run context (`pkg/runner/run.go:332-333`) and a `ToolCall` whose `Arguments` is a copy (R5).
 - Verification: R13 tests 2, 5, and 7.
 
