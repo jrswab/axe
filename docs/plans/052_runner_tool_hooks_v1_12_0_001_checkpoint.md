@@ -145,6 +145,6 @@ Orchestrator edit before commit: removed 'Behavior is not selected by environmen
 
 ## Limitations & blockers
 
-- Limitations: spec planning review not yet run. Apidiff pin is unverified until milestone 002 (per the spec). COMPATIBILITY.md not yet written.
+- Limitations: planning and implementation verification passed. Only the apidiff pin remains unverified until milestone 002.
 - Blockers: `none`
-- Next action: Milestone 001 code review on defd01d..HEAD, then completion gate
+- Next action: Completion gate for milestone 001 (code review round 1 APPROVED WITH NITS; nit F1 fixed).
