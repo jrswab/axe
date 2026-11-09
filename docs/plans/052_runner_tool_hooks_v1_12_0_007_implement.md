@@ -45,8 +45,8 @@ if [ -n "$pkgs" ]; then go test -race $pkgs; fi
   - Commands and expected results (repository root):
     - `git merge-base --is-ancestor de43f3c HEAD; echo "exit=$?"` → `exit=0`. Verified at writing time (HEAD `ba1feb7`).
     - `git diff --name-only de43f3c HEAD -- . ':(exclude)docs/plans/'` → no output. Verified at writing time.
-    - `git status --porcelain` → only ` M docs/plans/052_runner_tool_hooks_v1_12_0_007_checkpoint.md` (orchestrator record). Verified at writing time. Any other path: stop and report.
-    - `git rev-parse --short HEAD` → `ba1feb7`. Verified at writing time.
+    - `git status --porcelain` → no output (clean tree). Any modified or untracked path: stop and report.
+    - HEAD descends from `ba1feb7` (`git merge-base --is-ancestor ba1feb7 HEAD` exits 0) and `git diff --name-only ba1feb7 HEAD -- . ':(exclude)docs/plans/'` is empty.
     - `rg -n 'TestTools_' --glob '*.go' .` → no output, `exit=1`. Verified at writing time (names absent).
     - `test -e pkg/runner/tools_option_test.go; echo "exit=$?"` → `exit=1`. Verified at writing time.
     - `rg -n "Options.Tools|Tools \[\]string" pkg/runner/options.go; echo "exit=$?"` → `exit=1`. Verified at writing time (field absent).

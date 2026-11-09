@@ -52,6 +52,14 @@ type Options struct {
 	// are not read, and sub-agents do not inherit the list.
 	MCPServers []MCPServer
 
+	// Tools replaces the agent's TOML built-in tool list when non-nil,
+	// including an empty list. A nil value uses the agent's TOML tool list.
+	// Each name is checked against the built-in set; an unknown or empty
+	// name is a ConfigError. The list does not limit MCP tools or call_agent.
+	// A built-in removed by the list no longer shadows a same-named MCP tool;
+	// sub-agents do not inherit the list.
+	Tools []string
+
 	// I/O (nil defaults to os.Stdout / os.Stderr / os.Stdin)
 	Stdout io.Writer
 	Stderr io.Writer
