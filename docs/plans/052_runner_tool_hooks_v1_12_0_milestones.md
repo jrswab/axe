@@ -137,6 +137,13 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
 
 ## Section 2: Milestones
 
+- [ ] 000: Clear the govulncheck findings by pinning toolchain go1.26.10 and upgrading golang.org/x/net to v0.62.0
+  - Slice enabled: govulncheck exits 0 on the module, so the release gate starts clean.
+  - Depends on: none.
+  - Scope: the baseline `~/.agents/scripts/go-toolchain-check ./` run reports 37 govulncheck findings. 36 list the Go standard library. 6 list `golang.org/x/net@v0.55.0`: GO-2026-6860 (reached at `internal/tool/url_fetch.go:85`, fixed in v0.62.0) and GO-2026-6603, 6610, 6611, 6612, 6617 (each also lists `net/http`). Ten standard-library findings have no go1.25 fix: GO-2026-6809 (`crypto/x509`, needs go1.26.10) and GO-2026-6603, 6605, 6607, 6608, 6610, 6611, 6612, 6613, 6617 (`net/http`, `crypto/tls`, `net/textproto`, needs go1.26.9). Changes: add `toolchain go1.26.10` to `go.mod`; keep the `go 1.25.0` directive at `go.mod:3` unchanged; run `go get golang.org/x/net@v0.62.0` and `go mod tidy`, accepting any transitive bumps tidy requires. `go.sum` changes with them.
+  - Compatibility impact: no public API change. The `go` directive stays `1.25.0`, so importers of `pkg/runner` keep a minimum of Go 1.25.0. Go ignores a dependency's `toolchain` line. Builds inside this module and CI use go1.26.10.
+  - Acceptance: `~/.agents/scripts/go-toolchain-check ./` exits 0 with no govulncheck findings. `go build ./...`, `go test -race ./...`, and `golangci-lint run` pass. `go.mod` contains `go 1.25.0` and `toolchain go1.26.10`.
+
 - [ ] 001: Publish the compatibility policy in `COMPATIBILITY.md` and link it from the README, AGENTS.md, and the CHANGELOG header
   - Slice enabled: every later feature milestone states its compatibility impact against a written policy.
   - Depends on: none.
@@ -154,7 +161,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
 - [ ] 003: Read the CI Go version from `go.mod` in all workflows
   - Slice enabled: CI builds and tests on the toolchain the module declares (`go.mod:3`, `go 1.25.0`).
   - Depends on: none technically; ordered before features so later gates run on the declared toolchain.
-  - Scope: replace each `go-version: '1.24'` in `.github/workflows/go.yml` (lines 19, 32, 47) and `.github/workflows/smoke-test.yml` (lines 19, 70, 105, 164, 212) with `go-version-file: go.mod`.
+  - Scope: replace each `go-version: '1.24'` in `.github/workflows/go.yml` (lines 19, 32, 47) and `.github/workflows/smoke-test.yml` (lines 19, 70, 105, 164, 212) with `go-version-file: go.mod`. After 000, `go.mod` also carries `toolchain go1.26.10`; CI must build with that toolchain, and `go-version-file: go.mod` honors the `toolchain` line in setup-go versions that read it. The `go` directive stays `1.25.0`.
   - Compatibility impact: none on users. CI only.
   - Acceptance: no `'1.24'` literal remains in `.github/workflows/`. Each setup-go step uses `go-version-file: go.mod`. The workflow YAML parses. The CI run resolves Go 1.25.x.
 
@@ -264,7 +271,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
 
 - [ ] 012: Release v1.12.0 with changelog, three version strings, README, and a tag Jaron pushes
   - Slice enabled: a user installs `v1.12.0` and sees every accepted change in the changelog, release notes, and README.
-  - Depends on: 001–011.
+  - Depends on: 000, 001–011.
   - Scope:
     - `CHANGELOG.md`: a `## [1.12.0]` section, dated the day Jaron confirms the tag, above `## [1.11.0]` (`CHANGELOG.md:13`). Keep the Unreleased provider-key-check entry (`CHANGELOG.md:11`) under `### Added`. Added: tool hook, `ToolObserver`, `Options.MCPServers`, `Options.Tools`, `Options.MaxTurns`, `Options.APIKey`, `Options.BaseURL`. Fixed: large-integer MCP argument coercion (010), including replay text to the model for affected integers (`1e+06` becomes `1000000`). Deprecated: none. Add the `[1.12.0]` compare link at the bottom. Add the `COMPATIBILITY.md` link in the header if not already present (001).
     - Version strings: `cmd/root.go:12`, `cmd/version_test.go:19`, and `internal/mcpclient/mcpclient.go:43`. All three read `1.12.0`.
