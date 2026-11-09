@@ -22,12 +22,13 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
-- Current phase: `spec`
-- Current task: `none`
-- Task states: `none` (planning; no checklist yet)
+- Current phase: `checklist-pending`
+- Current task: none
+- Task states — checklist checkboxes render from this list:
+none
 - Milestone checkbox: `unchecked`
-- Last completed phase/task/gate and timestamp: Spec drafted and spec-lint PASS (65 citations, 0 findings) and docs-lint PASS at 2026-11-09T22:14Z, at `de43f3c`.
-- Next safe action: Spec planning review round 1
+- Next safe action: Draft implementation checklist 007_implement.md, then checklist planning review r1
+- Last completed phase/task/gate and timestamp: Spec planning review r1 APPROVED, 2026-11-09T22:18:07.031362+00:00
 
 ## Gate evidence
 
@@ -64,8 +65,29 @@ Planning-cap evidence stays separate: count failing planning rounds, list unreso
 
 - Next action: Spec planning review round 1 (the orchestrator dispatches it).
 
+### Spec planning review r1 APPROVED
+
+- Gate: Spec planning review r1 APPROVED
+- Commands/results:
+spec-lint --root . 007_spec.md exit 0 (65 citations, 0 findings); docs-lint 1 --since de43f3c exit 0 (195 files, 0 findings). Spec review round 1 at ba1feb7: APPROVED, no findings. Failing planning rounds: 0 of 3.
+- HEAD commit SHA: `ba1feb715548fb1cf495b879c8dfed15c287683c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Draft implementation checklist 007_implement.md, then checklist planning review r1
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Spec planning review round 1
+- Next action: Draft implementation checklist 007_implement.md, then checklist planning review r1
