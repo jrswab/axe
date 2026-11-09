@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported type (`MCPServer`) and an exported field (`Options.MCPServers`) to `pkg/runner`, the external API (D1). It changes config validation (a shared validator) and moves credential-bearing headers through a new input path (security-sensitive). The fast-lane conditions "external contracts untouched" and "no security-sensitive path" both fail.
 - Current phase: `execute`
-- Current task: T4
+- Current task: T9
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -40,16 +40,16 @@ Absolute paths inside the Repository root (the feature worktree).
 - T3.3: `checked`
 - T3.4: `checked`
 - T3.5: `checked`
-- T4: `unchecked`
-- T5: `unchecked`
-- T6: `unchecked`
-- T7: `unchecked`
-- T7.1: `unchecked`
-- T8: `unchecked`
-- T9: `unchecked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T7.1: `checked`
+- T8: `checked`
+- T9: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T4
-- Last completed phase/task/gate and timestamp: T3.0-T3.5 PASS (green committed e9f8cf4), 2026-11-09T21:38:17.720238+00:00
+- Next safe action: Review gate: records-stale-check a13e3bc, docs-lint --since a13e3bc, factory-gate test+lint at HEAD, split review (backend, spec/records) round 1 range a13e3bc..HEAD
+- Last completed phase/task/gate and timestamp: T4-T9 verification PASS at b567390, 2026-11-09T21:58:32.835835+00:00
 
 ## Gate evidence
 
@@ -157,8 +157,29 @@ T3.0 agent tests ok; T3.1 envinterp+mcpclient ok; T3.2 exactly 7 permitted red f
 
 - Next action: Implement T4
 
+### T4-T9 verification PASS at b567390
+
+- Gate: T4-T9 verification PASS at b567390
+- Commands/results:
+Session sync: factory-sync (origin/master) exit 0, ahead 79, behind 0, shared_files [], conflicts []. T4 PASS at d33282c: go test -count=1 ./internal/agent ./internal/envinterp ./internal/mcpclient ./pkg/runner ok x4; selected filter 161 PASS 0 FAIL; XDG_CACHE_HOME-scoped go test ./cmd ok; go build ./... and go vet clean; git diff --exit-code a13e3bc -- internal/mcpclient cmd internal/tool go.mod go.sum empty; go test -race ./internal/agent ./internal/envinterp ./pkg/runner ok. T5 PASS: go test -race -v (3 pkgs) exit 0, 431 PASS 0 FAIL, TestMCPServers_ 33 PASS 0 FAIL, rg DATA RACE exit 1 (no match). T6 PASS: golangci-lint run 0 issues (v2.14.0). T7 PASS: make apidiff exit 0, stdout 0 bytes, stderr 204 B (go toolchain switch notice only), axe-apidiff.* leftovers 0. T7.1 PASS: CHANGELOG.md:15 bullet, numstat 1 0, committed 929d8d4. T8 PASS at 929d8d4 with orchestrator substitution: working-tree status/diff checks replaced by a13e3bc..HEAD committed-range equivalents (tasks committed per task; same precedent as 005 T8); 8 expected paths, mcp_servers_test.go A, forbidden surfaces unchanged, removed-line checks only permitted lines (run.go 5, agent.go 25 inline validator lines), clean tree. spec-lint initially exit 1 (5 stale citations); fixed by line-number-only refresh b567390 (also corrected milestone entry 006 run.go citations to :475 and :328-331, resolving the checkpoint stale-citation note). spec-lint exit 0: implement 135 citations, spec 85 citations, 0 findings. docs-lint 1 --since a13e3bc (merge-base a13e3bcf8b91) exit 0: 193 Markdown files, 0 findings. Race derivation on no-change T8: changed=<> pkgs=<>. T9 records by orchestrator: this update.
+- HEAD commit SHA: `b5673908a26d3e3e8c4d9f789cd92a5f1f669c7b`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Review gate: records-stale-check a13e3bc, docs-lint --since a13e3bc, factory-gate test+lint at HEAD, split review (backend, spec/records) round 1 range a13e3bc..HEAD
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's "no `t.Setenv`" describes the host, not the test harness; the spec's tests use `t.Setenv`. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005). The PR 103 state was not re-verified by this agent: `gh pr view` failed for missing auth (sandbox credential limit; not retried).
 - Blockers: BLOCKED (orchestrator decision needed, not a spec gap): milestone entry 006 cites stale lines. `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203-215` cites the text match at `pkg/runner/run.go:443`, but the match is at `:447` (`:443` is the verbose connect `Fprintf`). It cites the dry-run server list at `pkg/runner/run.go:296-300`, but it is at `:300-303`. The spec uses the verified lines. The milestone document was not edited (out of scope for this phase).
-- Next action: Implement T4
+- Next action: Review gate: records-stale-check a13e3bc, docs-lint --since a13e3bc, factory-gate test+lint at HEAD, split review (backend, spec/records) round 1 range a13e3bc..HEAD

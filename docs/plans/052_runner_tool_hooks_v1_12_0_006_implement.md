@@ -267,7 +267,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
 
 ### Phase 4: Full package verification (serial, after Phase 3)
 
-- [ ] **T4: Focused and regression verification; TOML and CLI unchanged (R13)**
+- [x] **T4: Focused and regression verification; TOML and CLI unchanged (R13)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T3.5.
@@ -281,7 +281,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - `git diff --exit-code a13e3bc -- internal/mcpclient cmd internal/tool go.mod go.sum` → exit 0.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./internal/agent`, `./internal/envinterp`, `./pkg/runner`; run `go test -race ./internal/agent ./internal/envinterp ./pkg/runner`.
 
-- [ ] **T5: Race run of the MCP tests, including parallel tool execution (R2, R5, R9)**
+- [x] **T5: Race run of the MCP tests, including parallel tool execution (R2, R5, R9)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T4.
@@ -290,7 +290,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
   - Pass condition: step 1 exit 0 (its own exit code), every `TestMCPServers_` line in the saved file `PASS`, and no `DATA RACE` in the saved file. The helper server's request counter and `Authorization` recorder are the most likely race sites; they are mutex- or atomic-protected (T2.1).
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./internal/agent`, `./internal/envinterp`, `./pkg/runner`; run `go test -race ./internal/agent ./internal/envinterp ./pkg/runner`.
 
-- [ ] **T6: `golangci-lint run` (lint gate)**
+- [x] **T6: `golangci-lint run` (lint gate)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T5.
@@ -298,7 +298,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
   - Any finding in `pkg/runner/options.go`, `pkg/runner/run.go`, `pkg/runner/mcp_servers_test.go`, `internal/agent/agent.go`, `internal/agent/agent_test.go`, `internal/envinterp/envinterp.go`, or `internal/envinterp/envinterp_test.go` is a failure of the task that introduced it; fix it in that task's file, then re-run T4 and T6.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; it runs lint on the T1-T5 changes.
 
-- [ ] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1, D1)**
+- [x] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1, D1)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T6.
@@ -308,7 +308,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
   - No file changes.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.MCPServers` (R14, OS10; `CONTRIBUTING.md:185`)**
+- [x] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.MCPServers` (R14, OS10; `CONTRIBUTING.md:185`)**
   - Budget: 15 min
   - Owner: code
   - Depends on: T7.
@@ -316,7 +316,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
   - Verification: `git diff --numstat -- CHANGELOG.md` → `1	0	CHANGELOG.md`; `git diff -- CHANGELOG.md` shows one added line inside `[Unreleased]` `### Added`; `rg -n "Options.MCPServers" CHANGELOG.md` → one match.
   - Per-task gate: no Go file changes; `git diff --name-only -- '*.go'` is unchanged by this task, so no race run is needed.
 
-- [ ] **T8: Scope, API, and removed-line checks (R13, R14, R15)**
+- [x] **T8: Scope, API, and removed-line checks (R13, R14, R15)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T7.1.
@@ -335,7 +335,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
   - No file changes.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T9: Records (orchestrator, not the writer)**
+- [x] **T9: Records (orchestrator, not the writer)**
   - Budget: 30 min
   - Owner: orchestrator, after T8.
   - Files: `docs/plans/052_runner_tool_hooks_v1_12_0_006_checkpoint.md` (phase, task states, gate evidence) and the milestone checkbox `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203` (`- [ ] 006` becomes `- [x] 006`). Do not change the milestone entry beyond the checkbox. Record the milestone entry's stale run.go citations (listed in Blockers) in the checkpoint only, if the orchestrator decides; this checklist does not edit the milestone text.
