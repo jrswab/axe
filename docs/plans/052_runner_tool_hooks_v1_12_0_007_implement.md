@@ -238,7 +238,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
 
 ### Phase 4: Full package verification (serial, after Phase 3)
 
-- [ ] **T4: Focused and regression verification; TOML, CLI, and sub-agent paths unchanged (R7, R8, R13)**
+- [x] **T4: Focused and regression verification; TOML, CLI, and sub-agent paths unchanged (R7, R8, R13)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T3.5.
@@ -254,7 +254,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
     - `git diff --exit-code de43f3c -- internal/mcpclient cmd internal/tool internal/agent internal/toolname internal/envinterp go.mod go.sum` → `exit=0`.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty. T5 runs the race run.
 
-- [ ] **T5: Race run of the `TestTools_` family and the package (R2, R4, R9, R11)**
+- [x] **T5: Race run of the `TestTools_` family and the package (R2, R4, R9, R11)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T4.
@@ -263,7 +263,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - Pass condition: step 1 exit 0, every `TestTools_` line `PASS`, and no `DATA RACE`. The option list is copied (T3.2) and read-only after the copy, so no race site is expected; the MCP helper's recorder is mutex-protected (`pkg/runner/mcp_servers_test.go:22-26`).
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T6: `golangci-lint run` (lint gate)**
+- [x] **T6: `golangci-lint run` (lint gate)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T5.
@@ -271,7 +271,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - Any finding in `pkg/runner/options.go`, `pkg/runner/run.go`, or `pkg/runner/tools_option_test.go` is a failure of the task that introduced it; fix it in that task's file, then re-run T4 and T6.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1, D1)**
+- [x] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1, D1)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T6.
@@ -281,7 +281,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - No file changes.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.Tools` (R10, OS11; `CONTRIBUTING.md:185`)**
+- [x] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.Tools` (R10, OS11; `CONTRIBUTING.md:185`)**
   - Budget: 15 min
   - Owner: code
   - Depends on: T7.
