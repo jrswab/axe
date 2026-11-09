@@ -88,7 +88,7 @@ Red-run rule: a red test is "red" only if it compiles and fails on an assertion.
 
 Shared test conventions (file `pkg/runner/tools_option_test.go`, new, created in T2.1): each test uses `setupTestEnv` (`pkg/runner/run_test.go:24`) and `newMockStdoutStderr` (`pkg/runner/run_test.go:44`); `Workdir: t.TempDir()`, `Stdin: strings.NewReader("")`; `t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())`; mock responses from `testutil.AnthropicToolUseResponse` (`internal/testutil/mockserver.go:154`) and `testutil.AnthropicResponse` (`internal/testutil/mockserver.go:141`). No test uses `t.Parallel`. Definition checks read `mock.Requests[0].Body` (the first request has no tool-use history); `mock.Requests[i].Body` is a string (`internal/testutil/mockserver.go:27`).
 
-- [ ] **T2.1: Red: acceptance tests 1 and 2 (R2, R4, R6, R11)**
+- [x] **T2.1: Red: acceptance tests 1 and 2 (R2, R4, R6, R11)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T1.
@@ -99,7 +99,7 @@ Shared test conventions (file `pkg/runner/tools_option_test.go`, new, created in
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestTools_OptionReplacesTOMLList` (request body contains `"read_file"`, and the dry run reports the TOML list) and `--- FAIL: TestTools_UnknownNameConfigError` (each subtest, live and dry, has no error). Filter with `rg -- '--- (PASS|FAIL): TestTools_'`. Record the failing assertions.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above (`go test -race -v ./pkg/runner`); the race run must be green from T3.3.
 
-- [ ] **T2.2: Red: acceptance tests 3, 4 (guard), 5 (R5, R7, R9)**
+- [x] **T2.2: Red: acceptance tests 3, 4 (guard), 5 (R5, R7, R9)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.1.
@@ -114,7 +114,7 @@ Shared test conventions (file `pkg/runner/tools_option_test.go`, new, created in
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestTools_EmptyListNoToolsKey` (body has `tools` key), `--- PASS: TestTools_NilUsesTOMLList` (guard), `--- PASS: TestTools_MCPShadowingFollowsEffectiveList/a_builtin_kept` (guard), and `--- FAIL: TestTools_MCPShadowingFollowsEffectiveList/b_builtin_removed` (the MCP `read_file` is skipped at HEAD because the TOML built-in shadows it, so `Returns a greeting` is absent). Filter with `rg -- '--- (PASS|FAIL): TestTools_'`. Record the failing assertions.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above.
 
-- [ ] **T2.3: Red: acceptance test 6 (R11, R12)**
+- [x] **T2.3: Red: acceptance test 6 (R11, R12)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.2.
@@ -123,7 +123,7 @@ Shared test conventions (file `pkg/runner/tools_option_test.go`, new, created in
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestTools_SubAgentNotInherited` (parent body has no `write_file`: the TOML tools are empty and `Options.Tools` is ignored at HEAD, so the parent request has no built-in tool). Filter with `rg -- '--- (PASS|FAIL): TestTools_SubAgentNotInherited'`. Record the failing assertion.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above.
 
-- [ ] **T2.4: Red-run check (all acceptance tests)**
+- [x] **T2.4: Red-run check (all acceptance tests)**
   - Budget: 15 min
   - Owner: code (verification)
   - Depends on: T2.3.

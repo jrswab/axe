@@ -23,14 +23,14 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T2.1
+- Current task: T3.1
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
-- T2.1: `unchecked`
-- T2.2: `unchecked`
-- T2.3: `unchecked`
-- T2.4: `unchecked`
+- T2.1: `checked`
+- T2.2: `checked`
+- T2.3: `checked`
+- T2.4: `checked`
 - T3.1: `unchecked`
 - T3.2: `unchecked`
 - T3.3: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T2.1
-- Last completed phase/task/gate and timestamp: T0+T1 verification PASS at fa21002, 2026-11-09T22:45:16.126931+00:00
+- Next safe action: Implement T3.1
+- Last completed phase/task/gate and timestamp: T2.1-T2.4 red gate PASS at fa9561f, 2026-11-09T22:51:27.480497+00:00
 
 ## Gate evidence
 
@@ -166,8 +166,29 @@ T0: stale expectations at implement.md:48-49 (HEAD ba1feb7, modified checkpoint)
 
 - Next action: Implement T2.1
 
+### T2.1-T2.4 red gate PASS at fa9561f
+
+- Gate: T2.1-T2.4 red gate PASS at fa9561f
+- Commands/results:
+pkg/runner/tools_option_test.go (new). go test -race -v ./pkg/runner exit 1 with exactly the expected red: TestTools_OptionReplacesTOMLList, TestTools_UnknownNameConfigError (6 subtests), TestTools_EmptyListNoToolsKey, TestTools_MCPShadowingFollowsEffectiveList/b_builtin_removed, TestTools_SubAgentNotInherited; guards TestTools_NilUsesTOMLList and MCP a_builtin_kept PASS; no pre-existing failures, no races. go test -race ./pkg/runner -skip ^TestTools_ ok. go vet 0; golangci-lint 0 issues; gofmt clean; spec-lint 007 exit 0. Assumptions confirmed: Test 5 TOML tools=[read_file]; error wording noncontract (spec:25,183).
+- HEAD commit SHA: `fa9561f823ad32839fd3bffae3b7963b33a437d9`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T3.1
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Implement T2.1
+- Next action: Implement T3.1
