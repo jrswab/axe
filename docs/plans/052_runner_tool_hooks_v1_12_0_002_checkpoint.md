@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone enforces the `pkg/runner` external contract (the apidiff gate) and edits shared CI (`.github/workflows/go.yml`, `Makefile`). The fast-lane condition "external contracts untouched" fails, and the milestone adds a pinned third-party tool to the build path.
 - Current phase: `execute`
-- Current task: T6
+- Current task: T11
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1.1: `checked`
@@ -33,16 +33,16 @@ Absolute paths inside the Repository root (the feature worktree).
 - T3: `checked`
 - T4: `checked`
 - T5: `checked`
-- T6: `unchecked`
-- T7: `unchecked`
-- T8: `unchecked`
-- T9: `unchecked`
-- T10: `unchecked`
+- T6: `checked`
+- T7: `checked`
+- T8: `checked`
+- T9: `checked`
+- T10: `checked`
 - T11: `unchecked`
 - T12: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T6-T11 behavior probes
-- Last completed phase/task/gate and timestamp: T0-T5 verification PASS at 9f1782f (T2 local only; host CI pending), 2026-11-09T16:33:48.209233+00:00
+- Next safe action: Run factory-gate test and lint at HEAD, then records review and code review round 1 (range 423a399..HEAD)
+- Last completed phase/task/gate and timestamp: T6-T10 behavior probes PASS (T6/T9 at 181d857, T7/T8/T10 rerun at 61932d2), 2026-11-09T16:58:57.984609+00:00
 
 ## Gate evidence
 
@@ -166,6 +166,27 @@ code agent at 049d5d8 then committed 9f1782f (Makefile, .github/workflows/go.yml
 
 - Next action: Implement T6-T11 behavior probes
 
+### T6-T10 behavior probes PASS (T6/T9 at 181d857, T7/T8/T10 rerun at 61932d2)
+
+- Gate: T6-T10 behavior probes PASS (T6/T9 at 181d857, T7/T8/T10 rerun at 61932d2)
+- Commands/results:
+Probe run 1 at 181d857 (report /tmp/axe-m002-t6-t11.MzPGW6/report.md): T6 PASS (make exit 2, stdout '- IsRuntimeError: removed'); T9 PASS (unloadable package and corrupted export both exit 2); T11 writer portion PASS (make apidiff, static checks, spec-lint, docs-lint). T7/T8/T10 failed on checklist commands, not gate behavior: make -C banners in stdout; guard refused tag -d; stale worktree snapshot. Post-cap mechanical fix 61932d2 (--no-print-directory; T8 uses git clone --no-tags; per-run worktree snapshot; spec :174 sentence matched); spec-lint exit 0. Rerun at 61932d2 (report /tmp/axe-m002-rerun.v4Yh4O/report.md): T7 make exit 0, stdout 0 bytes, TMPDIR 0; T8 make exit 2, R3 message names v1.11.0 and fetch, repo-root tag intact, TMPDIR 0; T10 all six checks PASS, worktree diff empty. Scratch clones removed by literal-path rm. No Go package changed. T11 waits for full make check equivalent (factory-gate test + lint) and T2 waits for host CI.
+- HEAD commit SHA: `61932d2ca1d5a7ebc64bab07f272255715dae278`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run factory-gate test and lint at HEAD, then records review and code review round 1 (range 423a399..HEAD)
+
 ## Limitations & blockers
 
 - Limitations:
@@ -173,4 +194,4 @@ code agent at 049d5d8 then committed 9f1782f (Makefile, .github/workflows/go.yml
   - `gh` is not authenticated in this sandbox; action defaults were read from raw GitHub URLs at tags `v4` and `v5`.
   - `AGENTS.md:207` describes `go.yml` as "tests and linting"; this milestone does not edit it (outside milestone 002 scope). Flagged for the orchestrator, not changed.
 - Blockers: `none`
-- Next action: Implement T6-T11 behavior probes
+- Next action: Run factory-gate test and lint at HEAD, then records review and code review round 1 (range 423a399..HEAD)

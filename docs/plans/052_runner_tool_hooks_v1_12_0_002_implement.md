@@ -166,7 +166,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
 
 ### Phase 3: Behavior checks in scratch clones (R10 cases 2-4; R4 failure checks; R3, R7). Each task creates its own scratch clone with the setup block above and removes it afterward. Tasks T6-T9 can run in parallel after T5.
 
-- [ ] **T6: R10 case 2 (removed identifier fails) and R7 temp-dir count**
+- [x] **T6: R10 case 2 (removed identifier fails) and R7 temp-dir count**
   - Budget: 30 min
   - Depends on: T5.
   - Scratch: a fresh clone per the setup block.
@@ -179,7 +179,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Cleanup: `rm -rf "$(dirname "$S")"`.
   - Gate: the repository tree is unchanged: `git status --porcelain` lists no `pkg/` file.
 
-- [ ] **T7: R10 case 3 (added identifier passes)**
+- [x] **T7: R10 case 3 (added identifier passes)**
   - Budget: 30 min
   - Depends on: T5.
   - Scratch: a fresh clone per the setup block.
@@ -190,7 +190,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `ls -A "$PT" | wc -l` → `0`.
   - Cleanup: `rm -rf "$(dirname "$S")"`.
 
-- [ ] **T8: R10 case 4 (tool error on missing tag) and R3 tag message**
+- [x] **T8: R10 case 4 (tool error on missing tag) and R3 tag message**
   - Budget: 30 min
   - Depends on: T5.
   - Scratch: a clone made without tags, then the same checkout and copy steps as the setup block: `S="$(mktemp -d)/clone" && git clone --quiet --no-tags /home/jaron/dev/axe/runner-tool-hooks "$S" && git -C "$S" checkout --detach 423a3994c56c9e8ee055e03072b80f6741589f68 && mkdir -p "$S/.github/workflows" && cp Makefile "$S/" && cp .github/workflows/go.yml "$S/.github/workflows/" && cp COMPATIBILITY.md CHANGELOG.md "$S/"`. The clone lacks `v1.11.0`; there is no tag-delete step.
@@ -201,7 +201,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `ls -A "$PT" | wc -l` → `0`.
   - Cleanup: `rm -rf "$(dirname "$S")"` (also removes `probe-tmp`).
 
-- [ ] **T9: R4 failure checks: unloadable package and corrupted export**
+- [x] **T9: R4 failure checks: unloadable package and corrupted export**
   - Budget: 30 min
   - Depends on: T5.
   - Scratch: two fresh clones, one per case. Both via the setup block.
@@ -216,7 +216,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
 
 ### Phase 4: Scope, acceptance replay, and records (serial, last)
 
-- [ ] **T10: Scope boundary, worktree registry, and no-Go-change checks (R3, R6, R11)**
+- [x] **T10: Scope boundary, worktree registry, and no-Go-change checks (R3, R6, R11)**
   - Budget: 30 min
   - Depends on: T1.3, T2, T3, T4, T5, T6-T9.
   - Files: none (verification only).
