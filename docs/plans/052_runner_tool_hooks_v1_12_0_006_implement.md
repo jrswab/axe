@@ -166,7 +166,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -race -v ./pkg/runner ./int
 
 Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinterp`) are independent and may run in either order. T3.2 needs T3.0. T3.3 needs T3.1 and T3.2. T3.4 needs T3.3. T3.5 needs all.
 
-- [ ] **T3.0: Green: move the TOML rules into `ValidateMCPServers` (R3, R6, R13)**
+- [x] **T3.0: Green: move the TOML rules into `ValidateMCPServers` (R3, R6, R13)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.7.
@@ -183,7 +183,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - `go vet ./internal/agent/` → exit 0.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./internal/agent`; run `go test -race ./internal/agent`.
 
-- [ ] **T3.1: Green: `unsetEnvError` matchable by `ErrUnsetEnv`, text unchanged (R8, OS5)**
+- [x] **T3.1: Green: `unsetEnvError` matchable by `ErrUnsetEnv`, text unchanged (R8, OS5)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.7.
@@ -200,7 +200,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - `go vet ./internal/envinterp/` → exit 0.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./internal/envinterp`; run `go test -race ./internal/envinterp`.
 
-- [ ] **T3.2: Green: merged effective set, validation before dry-run, cross-source duplicates, dry-run list (R2, R3, R4, R10)**
+- [x] **T3.2: Green: merged effective set, validation before dry-run, cross-source duplicates, dry-run list (R2, R3, R4, R10)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.0, T2.1-T2.5 (red).
@@ -220,7 +220,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - `go vet ./pkg/runner/` → exit 0.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Until T3.3 is green, the only expected failures are these named tests: `TestMCPServers_OptionsOnlyToolsInRequest` and `TestMCPServers_MergedDistinctNames` (request part, noted above), `TestMCPServers_UnsetHeaderEnvConfigError` (`unset` and `empty` subtests), `TestMCPServers_HeaderExpandedOnWire`, `TestMCPServers_VerboseNoHeaders`, `TestMCPServers_RunDoesNotMutateOptions`, and `TestMCPServers_SubAgentNotInherited` (test 9 red until T3.3 connects the option server; its request assertion is `mock.Requests[0].Body` containing `mcp_parent_only`). Record which tests fail and stop if any other test fails.
 
-- [ ] **T3.3: Green: connect loop over the effective set, sentinel mapping, verbose line, header wiring (R5, R7, R8, R9, R10)**
+- [x] **T3.3: Green: connect loop over the effective set, sentinel mapping, verbose line, header wiring (R5, R7, R8, R9, R10)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.1, T3.2.
@@ -240,7 +240,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - `go vet ./pkg/runner/` → exit 0.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.4: Green: caller data not mutated; sub-agents do not inherit the list (R11, R12)**
+- [x] **T3.4: Green: caller data not mutated; sub-agents do not inherit the list (R11, R12)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.3.
@@ -252,7 +252,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - `rg -n "opts.MCPServers\[.*\] *=|opts.MCPServers = " pkg/runner/run.go` → no output (no write to the caller slice or map).
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.5: Green: all `TestMCPServers_*`, `TestExpandHeaders_UnsetEnvSentinel`, and `TestValidateMCPServers_SharedRules` pass; TOML-only behavior unchanged (R13)**
+- [x] **T3.5: Green: all `TestMCPServers_*`, `TestExpandHeaders_UnsetEnvSentinel`, and `TestValidateMCPServers_SharedRules` pass; TOML-only behavior unchanged (R13)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.0, T3.1, T3.2, T3.3, T3.4.
