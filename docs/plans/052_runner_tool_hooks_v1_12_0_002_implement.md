@@ -4,7 +4,7 @@
 
 Milestone 002 of the v1.12.0 runner tool-hooks release turns the compatibility policy from milestone 001 into an enforced gate. A pinned apidiff check compares `pkg/runner` against the `v1.11.0` tag. It runs as `go run golang.org/x/exp/cmd/apidiff@<pin>` (not added to `go.mod`) through one `make apidiff` target, wired into `make check` (`Makefile:9`) and into a new `apidiff` CI job. The gate treats any stdout report from `apidiff -incompatible` as a failure, because apidiff exits 0 on an incompatible change. The base tree is extracted from `git archive v1.11.0` into a `mktemp -d` directory with a trap, not created with `git worktree add`, because this checkout is a linked worktree of the shared bare repository. The milestone also updates `COMPATIBILITY.md` from "(planned)" to active and adds one CHANGELOG entry under `[Unreleased]`. It changes no Go source, `go.mod`, or `go.sum`. Source: `docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md` (Sections 1 and 2, R1-R11, Acceptance commands).
 
-Baseline: HEAD `3920c71` (spec commit). The code baseline is `423a399`; the only changes since it are the checkpoint and spec under `docs/plans/052_runner_tool_hooks_v1_12_0_002_*`. The tree is clean at HEAD.
+Baseline: `b0eff05` (the commit that adds this checklist; descendants may change only `docs/plans/052_runner_tool_hooks_v1_12_0_002_*` files). The code baseline is `423a399`; the only changes since it are the checkpoint and spec under `docs/plans/052_runner_tool_hooks_v1_12_0_002_*`. The tree is clean at HEAD.
 
 ---
 
@@ -28,8 +28,9 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Budget: 30 min
   - Files: none (read-only).
   - Commands and expected results:
-    - `git rev-parse --short HEAD` → `3920c71`.
-    - `git status --porcelain` → only `?? docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md` (this checklist) and any Factory records. No tracked file is modified.
+    - `git merge-base --is-ancestor b0eff05 HEAD` → exit 0 (HEAD is `b0eff05` or a descendant).
+    - `git diff --name-only b0eff05 HEAD -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_002_*'` → no output (any commits after `b0eff05` touch only `docs/plans/052_runner_tool_hooks_v1_12_0_002_*` files).
+    - `git status --porcelain --untracked-files=no` → no output (tracked tree clean).
     - `git rev-parse --verify 'v1.11.0^{commit}'` → `20e6ada179b08cef050c4b436a2497182efcf2ee`.
     - `go list -m -json golang.org/x/exp@v0.0.0-20261106192419-47ce03d25ef0` → JSON whose `Version` is `v0.0.0-20261106192419-47ce03d25ef0`. (Re-verifies the probe pin, spec "Probe evidence": "the implementation must re-verify the pin". Needs network on a cold cache.)
     - `ls -d "${TMPDIR:-/tmp}"/axe-apidiff.* 2>/dev/null | wc -l` → `0`.
