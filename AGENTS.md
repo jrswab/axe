@@ -212,7 +212,7 @@ region = "us-east-1"
 
 ## Docker
 
-- **Dockerfile** - Multi-stage build: golang:1.25-alpine → alpine:latest.
+- **Dockerfile** - Multi-stage build: golang:1.26-alpine → alpine:latest.
 - **Security** - Non-root user (UID 10001), read-only rootfs, all caps dropped, no new privileges.
 - **Volumes** - Mount config to `/home/axe/.config/axe`, data to `/home/axe/.local/share/axe`.
 - **Compose** - `docker-compose.yml` includes Ollama sidecar with `--profile ollama`.

@@ -16,7 +16,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Lint
       uses: golangci/golangci-lint-action@v7
@@ -29,7 +29,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Test
       env:
@@ -44,7 +44,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build
       run: go build -v ./...

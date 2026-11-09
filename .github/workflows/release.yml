@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version-file: go.mod
       - name: Extract changelog for this version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"

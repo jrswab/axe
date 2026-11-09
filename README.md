@@ -37,7 +37,7 @@ Axe is the executor, not the scheduler. It is designed to be composed with stand
 
 ## Installation
 
-Requires Go 1.25+.
+Requires Go 1.26+.
 
 **Pre-built binaries** (no Go required) are available for Linux, macOS, and Windows on the [GitHub Releases page](https://github.com/jrswab/axe/releases/latest).
 
@@ -47,7 +47,7 @@ Install via Go:
 go install github.com/jrswab/axe@latest
 ```
 
-> If this fails with `invalid go version`, your Go toolchain is older than 1.25. Upgrade from [go.dev/dl](https://go.dev/dl/) or download a pre-built binary instead.
+> If this fails with `invalid go version`, your Go toolchain is older than 1.26. Upgrade from [go.dev/dl](https://go.dev/dl/) or download a pre-built binary instead.
 
 Or build from source:
 

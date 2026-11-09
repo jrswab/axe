@@ -22,11 +22,11 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — changes `go.mod` toolchain and a dependency version (build configuration, dependency change), so the fast-lane conditions fail.
 - Current phase: `execute`
-- Current task: none
+- Current task: T4
 - Task states — checklist checkboxes render from this list:
-- T1: `unchecked`
-- T2: `unchecked`
-- T3: `unchecked`
+- T1: `checked`
+- T2: `checked`
+- T3: `checked`
 - T4: `unchecked`
 - T5: `unchecked`
 - T6: `unchecked`
@@ -42,8 +42,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: Implement T1
-- Last completed phase/task/gate and timestamp: Checklist planning review round 2 APPROVED WITH NITS, 2026-11-09T14:13:44.382065+00:00
+- Next safe action: Implement T4
+- Last completed phase/task/gate and timestamp: T1-T3 verification PASS (commit 4f126f7), 2026-11-09T14:21:03.784093+00:00
 
 ## Gate evidence
 
@@ -130,8 +130,29 @@ Checklist review round 1: CHANGES REQUESTED (F1 completion gate lacked writable-
 
 - Next action: Implement T1
 
+### T1-T3 verification PASS (commit 4f126f7)
+
+- Gate: T1-T3 verification PASS (commit 4f126f7)
+- Commands/results:
+go.mod: go 1.26.0, toolchain go1.26.10, x/net v0.55.0->v0.62.0, x/sys v0.45.0->v0.49.0 (indirect). GOTOOLCHAIN=go1.26.10 go get: exit 0. go mod tidy: exit 0. go list -m golang.org/x/net: v0.62.0. rg x/net v0.55.0: no hits. go mod verify: all modules verified. go-toolchain-check ./: exit 0, govulncheck No vulnerabilities found. go build ./...: exit 0. golangci-lint run: 0 issues. Per-task gate: changed/pkgs empty, exit 0. No pkg/internal/cmd diff. Note: run-detached was denied by command guard (writes outside worktree); direct foreground commands used.
+- HEAD commit SHA: `4f126f70543eb642bc9ce51ba47ca51b360b51cb`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T4
+
 ## Limitations & blockers
 
 - Limitations: `Spec and checklist files do not exist yet (spec phase). Govulncheck baseline has not been re-run after the pin; acceptance is unverified until implementation.`
 - Blockers: `none`
-- Next action: Implement T1
+- Next action: Implement T4

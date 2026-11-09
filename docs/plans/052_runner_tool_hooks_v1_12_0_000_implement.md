@@ -12,14 +12,14 @@ Commit is not authorized. Do not push. Do not change files outside the list in e
 
 ### Phase 1: Module files (serial: T1 → T2 → T3)
 
-- [ ] **T1: `go.mod` — pin the `go` directive and toolchain (R1)**
+- [x] **T1: `go.mod` — pin the `go` directive and toolchain (R1)**
   - File: `go.mod:3` change `go 1.25.0` to `go 1.26.0`. Add the line `toolchain go1.26.10` directly after it.
   - Do not edit `go.sum` or the `require` block in this task.
   - Verify:
     - `go mod edit -json | rg '"Go"|"Toolchain"'` prints `"Go": "1.26.0"` and `"Toolchain": "go1.26.10"`.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This milestone changes no .go files, so the derived package list is expected to be empty. Derivation: `git diff --name-only -- '*.go'` must print nothing before commit; if it prints a file, derive its package with `go list -f '{{.ImportPath}}' ./path/to/dir` and run `go test -race` on that package only.
 
-- [ ] **T2: `go.mod` and `go.sum` — upgrade `golang.org/x/net` to v0.62.0 (R2)**
+- [x] **T2: `go.mod` and `go.sum` — upgrade `golang.org/x/net` to v0.62.0 (R2)**
   - Depends on: T1.
   - Command (run in repository root): `GOTOOLCHAIN=go1.26.10 go get golang.org/x/net@v0.62.0`, then `GOTOOLCHAIN=go1.26.10 go mod tidy`.
   - Expected transitive change: `golang.org/x/sys` v0.45.0 → v0.49.0 (indirect). Accept any other bump tidy requires. Do not pin indirect modules by hand.
@@ -30,7 +30,7 @@ Commit is not authorized. Do not push. Do not change files outside the list in e
     - `GOTOOLCHAIN=go1.26.10 go mod verify` exits 0.
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T3: Govulncheck is clean (R4)**
+- [x] **T3: Govulncheck is clean (R4)**
   - Depends on: T1, T2.
   - No file edits. Verification only.
   - Verify: `~/.agents/scripts/go-toolchain-check ./` exits 0 and reports no findings. Record the output and exit status in the checkpoint notes. If it exits 3 or lists any GO id, stop and report the GO id to the orchestrator. Do not add a suppression.
