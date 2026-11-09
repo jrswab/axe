@@ -27,7 +27,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - Task states — checklist checkboxes render from this list:
 none
 - Milestone checkbox: `checked`
-- Review: `pending`
+- Review: `approved` — round 2, edaec20..65e0695
 - Relevant work: `committed` — no implementation change; only this new checkpoint is untracked.
 - Next safe action: Milestone 003 complete; restart-validate, sync, then select milestone 004
 - Last completed phase/task/gate and timestamp: 003 completion gate PASS, 2026-11-09T17:16:22.307467+00:00
