@@ -214,7 +214,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
     6. `DryRunInfo.MCPServers` includes the code-supplied server and no header text.
     7. TOML-only tests pass unchanged.
 
-- [ ] 007: Limit built-in tools from code with `Options.Tools`
+- [x] 007: Limit built-in tools from code with `Options.Tools`
   - Slice enabled: a host sets the built-in tool list per run without a generated TOML file.
   - Depends on: 006 (MCP tools remain unaffected by this list).
   - Scope: add `Tools []string` to `Options`. `nil` uses the TOML list (`pkg/runner/run.go:413-419`). Validate names with the same rule as `internal/agent/agent.go:176-180`; unknown names are `ConfigError`. Document that the list does not limit MCP tools or `call_agent` (`run.go:423`).

@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
-- Current phase: `execute`
+- Current phase: `complete`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
@@ -43,9 +43,9 @@ Absolute paths inside the Repository root (the feature worktree).
 - T7.1: `checked`
 - T8: `checked`
 - T9: `checked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Review gate: records-stale-check de43f3c, docs-lint --since de43f3c, factory-gate test and lint at HEAD, split review de43f3c..HEAD
-- Last completed phase/task/gate and timestamp: T8 scope verification PASS at f8bb97d; T9 records written, 2026-11-09T23:11:48.212296+00:00
+- Milestone checkbox: `checked`
+- Next safe action: Commit completion, sync, push to PR #103, then start milestone 008
+- Last completed phase/task/gate and timestamp: Review round 1 APPROVED (backend + spec/records); completion gate PASS at 0e5c5e9, 2026-11-09T23:16:13.666424+00:00
 
 ## Gate evidence
 
@@ -250,8 +250,29 @@ T8 (range de43f3c..HEAD, clean tree): non-plan files = CHANGELOG.md, pkg/runner/
 
 - Next action: Review gate: records-stale-check de43f3c, docs-lint --since de43f3c, factory-gate test and lint at HEAD, split review de43f3c..HEAD
 
+### Review round 1 APPROVED (backend + spec/records); completion gate PASS at 0e5c5e9
+
+- Gate: Review round 1 APPROVED (backend + spec/records); completion gate PASS at 0e5c5e9
+- Commands/results:
+Review prep: records-stale-check de43f3c: no removed or renamed names. docs-lint 1 --since de43f3c exit 0 (196 files, 0 findings). Review range de43f3c..HEAD (>5 commits) split: backend (options.go, run.go, tools_option_test.go) Verdict APPROVED; spec/records (CHANGELOG.md, 007 spec/implement/checkpoint) Verdict APPROVED; no nits. Completion: factory-sync args [] exit 0 (ahead 98, behind 0, no merge, HEAD unchanged 0e5c5e9). (1) go test -race ./... gate-test-0e5c5e92d3b3-20261109T231159Z exit 0; lint gate-lint-0e5c5e92d3b3-20261109T231203Z exit 0. (2) explore audit R1-R12, R12.1-R12.6, milestone AC1-4 + compat all MET; minor non-blocking coverage notes: R6 nil dry-run equality and R5 no-tool-loop are implementation-only. (3) git status clean; changed files de43f3c..HEAD = CHANGELOG.md, options.go, run.go, tools_option_test.go, 007 spec/implement/checkpoint, all accounted for; no pre-existing changes. (4) milestone 007 rendered checked.
+- HEAD commit SHA: `0e5c5e92d3b3cd9d8d9b77104df779dc39dcbbe6`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit completion, sync, push to PR #103, then start milestone 008
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Review gate: records-stale-check de43f3c, docs-lint --since de43f3c, factory-gate test and lint at HEAD, split review de43f3c..HEAD
+- Next action: Commit completion, sync, push to PR #103, then start milestone 008
