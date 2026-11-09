@@ -76,7 +76,7 @@ These tasks change only YAML `go-version` lines. They are independent of Phase 1
     - `rg -n "go mod download|go build" Dockerfile` still shows lines 7 and 12.
   - Per-task gate: as in T1 (expected derived package list is empty).
 
-- [ ] **T9: Docker host build (R6, host step; not run in the sandbox)**
+- [x] **T9: Docker host build (R6, host step; not run in the sandbox)**
   - Depends on: T1, T2, T8.
   - Owner: Jaron runs `docker build .` on a host with Docker. The orchestrator verifies the result. Not delegated to a subagent. The sandbox masks the Docker socket.
   - Expected: exit 0, and the build reports go1.26.10 (through the base image or the `GOTOOLCHAIN=auto` download). If the download fails, the build fails with a toolchain error; report it, do not add `GOTOOLCHAIN=local`.

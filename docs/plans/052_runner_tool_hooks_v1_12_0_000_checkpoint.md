@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — changes `go.mod` toolchain and a dependency version (build configuration, dependency change), so the fast-lane conditions fail.
 - Current phase: `blocked`
-- Current task: none
+- Current task: T9
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
@@ -32,7 +32,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T6: `checked`
 - T7: `checked`
 - T8: `checked`
-- T9: `unchecked`
+- T9: `checked`
 - T10: `checked`
 - T11: `checked`
 - T12: `checked`
@@ -42,8 +42,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: Wait for Jaron to merge PR #104 and run docker build (T9); then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1
-- Last completed phase/task/gate and timestamp: Session resume: milestone sync PASS; gate-config PR #104 opened; PR #103 CI snapshot (CodeRabbit pending), 2026-11-09T15:03:20.360142+00:00
+- Next safe action: Wait for Jaron to merge PR #104; then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1; re-snapshot PR #103 checks for T15
+- Last completed phase/task/gate and timestamp: T9 Docker build PASS (host, run by Jaron), 2026-11-09T15:06:30.869949+00:00
 
 ## Gate evidence
 
@@ -214,8 +214,29 @@ milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0
 
 - Next action: Wait for Jaron to merge PR #104 and run docker build (T9); then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1
 
+### T9 Docker build PASS (host, run by Jaron)
+
+- Gate: T9 Docker build PASS (host, run by Jaron)
+- Commands/results:
+Host command (Jaron, 10:05): docker build -t axe:go126 /home/jaron/dev/axe/runner-tool-hooks -> FINISHED 26.9s (16/16). Base images: golang:1.26-alpine@sha256:87c65a688975c0b1d4585d204874c45ca78354670e3a5f11368c5a492303d696, alpine:3.21@sha256:bc21487101ae47172509130ee1092cc273a831968d64b617776d1f69c81e42ab. Steps: go mod download 1.4s, go build -trimpath -ldflags="-s -w" 17.2s, image exported and named docker.io/library/axe:go126 (manifest list sha256:08d5b16f699722621ba72d4d7d242a4919a0b7a3ea81a0c0ba5730b2b0a77523). Worktree at build time: HEAD f7cf66a, clean (only the checkpoint changed since ddc27a6; no Go, Dockerfile, or go.mod change).
+- HEAD commit SHA: `f7cf66ac116d8d0af6365c3e16c9f0e7e30a220d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Wait for Jaron to merge PR #104; then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1; re-snapshot PR #103 checks for T15
+
 ## Limitations & blockers
 
 - Limitations: `Spec and checklist files do not exist yet (spec phase). Govulncheck baseline has not been re-run after the pin; acceptance is unverified until implementation.`
 - Blockers: `none`
-- Next action: Wait for Jaron to merge PR #104 and run docker build (T9); then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1
+- Next action: Wait for Jaron to merge PR #104; then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1; re-snapshot PR #103 checks for T15
