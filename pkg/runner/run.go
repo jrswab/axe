@@ -37,6 +37,7 @@ const maxToolOutputBytes = 1024
 type toolExecResult struct {
 	Result   provider.ToolResult
 	Duration time.Duration
+	Action   ToolAction
 }
 
 // Run executes an agent with the given options and returns the result.
@@ -667,6 +668,25 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 				return nil, err
 			}
 
+			if opts.ToolObserver != nil {
+				for i, tc := range resp.ToolCalls {
+					args := make(map[string]string, len(tc.Arguments))
+					for key, value := range tc.Arguments {
+						args[key] = value
+					}
+					ev := ToolEvent{
+						Call:          ToolCall{ID: tc.ID, Name: tc.Name, Arguments: args},
+						Action:        results[i].Action,
+						CallID:        tc.ID,
+						IsError:       results[i].Result.IsError,
+						ContentLength: len(results[i].Result.Content),
+						Duration:      results[i].Duration,
+						Turn:          turn,
+					}
+					callToolObserver(ctx, opts.ToolObserver, ev, stderr)
+				}
+			}
+
 			if opts.JSON {
 				for i, tc := range resp.ToolCalls {
 					input := tc.Arguments
@@ -797,6 +817,15 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	}
 
 	return result, nil
+}
+
+func callToolObserver(ctx context.Context, observer ToolObserver, ev ToolEvent, stderr io.Writer) {
+	defer func() {
+		if recover() != nil {
+			_, _ = fmt.Fprintln(stderr, "Warning: tool observer panicked")
+		}
+	}()
+	observer(ctx, ev)
 }
 
 // drainEventStream consumes all events from a stream and constructs a Response.
@@ -952,9 +981,11 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 			case ToolStub:
 				r.Content = decision.Content
 				r.IsError = false
+			default:
+				decision.Action = ToolDeny
 			}
 			handled[i] = true
-			results[i] = toolExecResult{Result: r}
+			results[i] = toolExecResult{Result: r, Action: decision.Action}
 		}
 		if err := ctx.Err(); err != nil {
 			return nil, &RuntimeError{Msg: "tool hook: run canceled", Err: err}
@@ -980,7 +1011,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 					r = result
 				}
 			}
-			results[i] = toolExecResult{Result: r, Duration: time.Since(start)}
+			results[i] = toolExecResult{Result: r, Duration: time.Since(start), Action: ToolAllow}
 		}
 	} else {
 		type indexedResult struct {
@@ -1008,7 +1039,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 						res = result
 					}
 				}
-				ch <- indexedResult{index: idx, result: toolExecResult{Result: res, Duration: time.Since(start)}}
+				ch <- indexedResult{index: idx, result: toolExecResult{Result: res, Duration: time.Since(start), Action: ToolAllow}}
 			}(i, tc)
 		}
 		for range toolCalls {
