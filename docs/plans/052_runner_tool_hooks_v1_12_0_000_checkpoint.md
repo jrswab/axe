@@ -21,7 +21,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — changes `go.mod` toolchain and a dependency version (build configuration, dependency change), so the fast-lane conditions fail.
-- Current phase: `execute`
+- Current phase: `complete`
 - Current task: T15
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
@@ -39,11 +39,11 @@ Absolute paths inside the Repository root (the feature worktree).
 - T13: `checked`
 - T14: `checked`
 - T15: `checked`
-- Milestone checkbox: `unchecked`
+- Milestone checkbox: `checked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: Spec/records code review round 3 on be94237..HEAD, then the completion gate
-- Last completed phase/task/gate and timestamp: Spec/records review round 2 fixes (F4, F5); factory-gate test PASS at 6ebb5e5, 2026-11-09T15:19:39.374916+00:00
+- Next safe action: Commit checkpoint/checklist/milestone tick, push, then milestone 001 (full lane)
+- Last completed phase/task/gate and timestamp: Milestone 000 review gate and completion gate PASS at c1d1121, 2026-11-09T15:25:17.994905+00:00
 
 ## Gate evidence
 
@@ -308,8 +308,37 @@ T15 CI evidence (F5): PR #103 head cbfe42b; CI checked out merge commit a480d1c 
 
 - Next action: Spec/records code review round 3 on be94237..HEAD, then completion gate
 
+### Milestone 000 review gate and completion gate PASS at c1d1121
+
+- Gate: Milestone 000 review gate and completion gate PASS at c1d1121
+- Commands/results:
+Review gate (range be94237..c1d1121): backend subset round 1 APPROVED (no nits); UI subset empty; spec/records subset round 3 APPROVED (F4, F5 resolved, no new findings). Round 3 test evidence: /tmp/factory-gate-1001/gate-test-c1d1121691c6-20261109T152126Z.log.
+Records: records-stale-check be94237 exit 0 (no TAGS.md, .mem/, changelog.d/). docs-lint 1 --since origin/master at c1d1121: exit 0, 176 files, 0 findings.
+Push: factory-gh push --require-open-pr: cbfe42b..c1d1121 to origin/runner-tool-hooks (PR #103).
+Completion gate:
+1. factory-sync at c1d1121: exit 0, ahead 16, behind 0, shared_files [], conflicts [], synced true (HEAD unchanged).
+1. factory-gate test (go test -race ./...) at c1d1121: poll exit 0, log /tmp/factory-gate-1001/gate-test-c1d1121691c6-20261109T152126Z.log. factory-gate lint (golangci-lint run) at c1d1121: poll exit 0, log /tmp/factory-gate-1001/gate-lint-c1d1121691c6-20261109T152409Z.log.
+2. Spec comparison (explore, read-only): R1-R8 and milestone acceptance ALL SATISFIED. Remaining 1.25 hits: internal/hostcheck/hostcheck_test.go:119 (IP literal, expected), CHANGELOG.md:93 (historical, excluded by spec).
+3. git status --porcelain at c1d1121: empty.
+4. Milestone 000 rendered checked.
+- HEAD commit SHA: `c1d1121691c6760f59a9750644dd7eb4a8f4f86e`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit checkpoint/checklist/milestone tick, push, then milestone 001 (full lane)
+
 ## Limitations & blockers
 
 - Limitations: remaining work: (a) spec/records code review round 3 on be94237..HEAD, after round 2 fixes F4 and F5 at 6ebb5e5 (round 1 at HEAD ecdab5e: backend APPROVED; spec/records CHANGES REQUESTED, three checkpoint findings fixed in f710854). (b) Completion gate not yet run. T15 is done: PR #103 CI passed all GitHub Actions jobs; CodeRabbit reported skipping.
 - Blockers: `none` — the factory-gates.json blocker cleared when PR #104 merged to master (538632e) and factory-sync merged it into the branch (ecdab5e).
-- Next action: Spec/records code review round 3 on be94237..HEAD, then the completion gate.
+- Next action: Commit checkpoint/checklist/milestone tick, push, then milestone 001 (full lane)
