@@ -23,16 +23,16 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone enforces the `pkg/runner` external contract (the apidiff gate) and edits shared CI (`.github/workflows/go.yml`, `Makefile`). The fast-lane condition "external contracts untouched" fails, and the milestone adds a pinned third-party tool to the build path.
 - Current phase: `execute`
-- Current task: T0
+- Current task: T6
 - Task states — checklist checkboxes render from this list:
-- T0: `unchecked`
-- T1.1: `unchecked`
-- T1.2: `unchecked`
-- T1.3: `unchecked`
+- T0: `checked`
+- T1.1: `checked`
+- T1.2: `checked`
+- T1.3: `checked`
 - T2: `unchecked`
-- T3: `unchecked`
-- T4: `unchecked`
-- T5: `unchecked`
+- T3: `checked`
+- T4: `checked`
+- T5: `checked`
 - T6: `unchecked`
 - T7: `unchecked`
 - T8: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T11: `unchecked`
 - T12: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T0
-- Last completed phase/task/gate and timestamp: Post-cap mechanical fix of stale T0 precondition (58eceb6) PASS, 2026-11-09T16:26:02.655244+00:00
+- Next safe action: Implement T6-T11 behavior probes
+- Last completed phase/task/gate and timestamp: T0-T5 verification PASS at 9f1782f (T2 local only; host CI pending), 2026-11-09T16:33:48.209233+00:00
 
 ## Gate evidence
 
@@ -145,6 +145,27 @@ factory-sync (args []) exit 0: ahead 27, behind 0, shared_files [], conflicts []
 
 - Next action: Implement T0
 
+### T0-T5 verification PASS at 9f1782f (T2 local only; host CI pending)
+
+- Gate: T0-T5 verification PASS at 9f1782f (T2 local only; host CI pending)
+- Commands/results:
+code agent at 049d5d8 then committed 9f1782f (Makefile, .github/workflows/go.yml, COMPATIBILITY.md, CHANGELOG.md; 38+/8-). T0 checks exit 0 (v1.11.0 = 20e6ada; pin resolves, GoVersion 1.26.0). make -n apidiff / make -n check exit 0, show -incompatible and (cd "$tmp/base"; make -n apidiff | sh -n exit 0. rg @latest / git worktree / set -e|pipefail in Makefile: no hits. One pin Makefile:3, identical in COMPATIBILITY.md. go.yml: one fetch-depth (:57), one make apidiff (:65); yaml.safe_load and actionlint exit 0; existing jobs unchanged. COMPATIBILITY.md: no planned/not active text; citation CHANGELOG.md:24 -> :25; go.mod:3/:5 correct. make apidiff exit 0, stdout 0 bytes, stderr 204 bytes (toolchain switch notices). git diff 423a399 -- go.mod go.sum empty; git worktree list unchanged; no axe-apidiff.* temp dirs left. Per-task Go gate: no Go package changed, exit 0. T4 literal regex defect fixed post-cap in c597dce (added ^\+([^+]|$) -> 1; removed ^-([^-]|$) -> none); spec-lint exit 0. T2 stays unchecked until host CI runs the apidiff job.
+- HEAD commit SHA: `c597dce6b68b23f02b4d7c1f53ca3f87cd8703e2`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T6-T11 behavior probes
+
 ## Limitations & blockers
 
 - Limitations:
@@ -152,4 +173,4 @@ factory-sync (args []) exit 0: ahead 27, behind 0, shared_files [], conflicts []
   - `gh` is not authenticated in this sandbox; action defaults were read from raw GitHub URLs at tags `v4` and `v5`.
   - `AGENTS.md:207` describes `go.yml` as "tests and linting"; this milestone does not edit it (outside milestone 002 scope). Flagged for the orchestrator, not changed.
 - Blockers: `none`
-- Next action: Implement T0
+- Next action: Implement T6-T11 behavior probes

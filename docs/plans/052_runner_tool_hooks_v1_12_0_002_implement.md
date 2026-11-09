@@ -24,7 +24,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
 
 ### Phase 0: Pre-flight (serial, read-only)
 
-- [ ] **T0: Pre-flight: HEAD, clean tree, pin resolution, temp dirs, worktree snapshot**
+- [x] **T0: Pre-flight: HEAD, clean tree, pin resolution, temp dirs, worktree snapshot**
   - Budget: 30 min
   - Files: none (read-only).
   - Commands and expected results:
@@ -39,7 +39,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
 
 ### Phase 1: Edits (parallel groups; T1.1 → T1.2 → T1.3 serial, all edit `Makefile`; T2, T3, T4 are independent of each other)
 
-- [ ] **T1.1: `Makefile` — pinned apidiff module variable, `APIDIFF_PKG`, `.PHONY`, `check` wiring (R1, R2)**
+- [x] **T1.1: `Makefile` — pinned apidiff module variable, `APIDIFF_PKG`, `.PHONY`, `check` wiring (R1, R2)**
   - Budget: 30 min
   - File: `Makefile`.
   - Changes:
@@ -55,7 +55,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `make -n check` → lists the `apidiff` recipe once T1.2-T1.3 exist. Before T1.2 it may report no rule for `apidiff`; re-run after T1.3.
   - Gate: `git diff --name-only -- '*.go' go.mod go.sum` prints nothing.
 
-- [ ] **T1.2: `Makefile` — `apidiff` target: tag check, temp dir, trap, base tree from `git archive` (R3, R7)**
+- [x] **T1.2: `Makefile` — `apidiff` target: tag check, temp dir, trap, base tree from `git archive` (R3, R7)**
   - Depends on: T1.1.
   - Budget: 30 min
   - File: `Makefile`, new target `apidiff`.
@@ -75,7 +75,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Verification (runtime, after T1.3): covered by T5 (pass) and T6-T9 (failures and temp-dir count). Worktree registry unchanged: `git worktree list | diff - /tmp/axe-m002-worktrees-before.txt` → no output (T10).
   - Gate: `git diff --name-only -- '*.go' go.mod go.sum` prints nothing.
 
-- [ ] **T1.3: `Makefile` — compare with `-incompatible`; stdout gate (R4)**
+- [x] **T1.3: `Makefile` — compare with `-incompatible`; stdout gate (R4)**
   - Depends on: T1.2.
   - Budget: 30 min
   - File: `Makefile`, `apidiff` target (continues after step 7 of T1.2).
@@ -121,7 +121,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - Parse check (addendum requirement, not an acceptance check): `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/go.yml'))"` → exit 0.
   - Host step (orchestrator, not the writer): a CI run of the `apidiff` job on the pushed branch passes on the unmodified tree. Needs push approval per AGENTS.md; not done here.
 
-- [ ] **T3: `COMPATIBILITY.md` — activate the enforcement section (R8)**
+- [x] **T3: `COMPATIBILITY.md` — activate the enforcement section (R8)**
   - Budget: 30 min
   - Depends on: T1.1 (for the pin cross-check).
   - File: `COMPATIBILITY.md`, section `## Enforcement (planned)` (`COMPATIBILITY.md:37`) and its bullets (`COMPATIBILITY.md:39-42`).
@@ -139,7 +139,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `rg -n "v0\.0\.0-" COMPATIBILITY.md Makefile` → the same pin in both files (needs T1.1).
   - Gate: `git diff --name-only -- '*.go' go.mod go.sum` prints nothing.
 
-- [ ] **T4: `CHANGELOG.md` — one entry under `[Unreleased]` / `### Added` (R9)**
+- [x] **T4: `CHANGELOG.md` — one entry under `[Unreleased]` / `### Added` (R9)**
   - Budget: 30 min
   - File: `CHANGELOG.md`. Insert one bullet after the existing `provider-key-check` bullet at `CHANGELOG.md:11`, before the blank line and `## [1.11.0]` at `CHANGELOG.md:13`. Anchors: `## [Unreleased]` at `:8`, `### Added` at `:10`.
   - Bullet text: states that `make check` and CI now run a pinned apidiff check of `pkg/runner` against `v1.11.0`, and that an incompatible change fails the check.
@@ -151,7 +151,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
 
 ### Phase 2: Repository verification (serial, after T1.3, T2, T3, T4)
 
-- [ ] **T5: Run `make apidiff` in the repository; wiring and tree checks (R1, R2, R3, R4 pass case, R6, R7; R10 case 1 for apidiff)**
+- [x] **T5: Run `make apidiff` in the repository; wiring and tree checks (R1, R2, R3, R4 pass case, R6, R7; R10 case 1 for apidiff)**
   - Budget: 30 min
   - Depends on: T1.3, T2, T3, T4.
   - Files: none (verification only). This task makes no edits.
