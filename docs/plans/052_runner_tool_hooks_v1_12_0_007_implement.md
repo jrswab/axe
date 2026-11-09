@@ -149,7 +149,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - File: `pkg/runner/run.go` only.
   - Behavior:
     - Add `"github.com/jrswab/axe/internal/toolname"` to the internal import group (`pkg/runner/run.go:18-24`); gofmt sorts it.
-    - Insert after the cross-source duplicate loop, before the line that builds `effectiveMCP` (insert after line 104 of `pkg/runner/run.go`; that build is on line 105):
+    - Insert after the cross-source duplicate loop, before the line that builds `effectiveMCP` (insert after line 105 of `pkg/runner/run.go`; that build is on line 116):
       ```go
       validToolNames := toolname.ValidNames()
       for i, name := range opts.Tools {
@@ -181,9 +181,9 @@ Expected FAIL set after each green task (the race run in each task must show onl
       }
       ```
       The copy is the OS9 "separate slice" rule. A nil `opts.Tools` keeps `cfg.Tools` (R7). An empty non-nil value gives an empty slice (R5).
-    - Change the TOML tool resolution at `pkg/runner/run.go:445-446`: `if len(cfg.Tools) > 0 {` becomes `if len(effectiveTools) > 0 {`, and `registry.Resolve(cfg.Tools)` becomes `registry.Resolve(effectiveTools)`.
-    - `builtinNames` (`pkg/runner/run.go:464-467`) is built from `req.Tools`, so MCP shadowing follows the effective list with no edit (OS6, R9). Verified in T3.4.
-    - MCP and `call_agent` injection (`pkg/runner/run.go:455-456`) are unchanged (OS7).
+    - Change the TOML tool resolution at `pkg/runner/run.go:456-457`: `if len(cfg.Tools) > 0 {` becomes `if len(effectiveTools) > 0 {`, and `registry.Resolve(cfg.Tools)` becomes `registry.Resolve(effectiveTools)`.
+    - `builtinNames` (`pkg/runner/run.go:475-478`) is built from `req.Tools`, so MCP shadowing follows the effective list with no edit (OS6, R9). Verified in T3.4.
+    - MCP and `call_agent` injection (`pkg/runner/run.go:466-467`) are unchanged (OS7).
     - The `agent.Load` function and the sub-agent resolution at `internal/tool/tool.go:266-275` are unchanged (OS5, OS8).
   - Green targets: `TestTools_OptionReplacesTOMLList` request assertions and mutation assertion; `TestTools_EmptyListNoToolsKey` (test 3, no `tools` key); `TestTools_MCPShadowingFollowsEffectiveList/b_builtin_removed` (MCP `read_file` registered and reachable); `TestTools_SubAgentNotInherited` (parent body contains `write_file`; child unaffected).
   - Expected FAIL after this task: `TestTools_OptionReplacesTOMLList` dry-run assertion only (fixed in T3.3).
@@ -200,7 +200,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - Depends on: T3.2.
   - File: `pkg/runner/run.go` only.
   - Behavior:
-    - Change `pkg/runner/run.go:352` `Tools:           cfg.Tools,` to `Tools:           effectiveTools,` inside the `DryRunInfo` literal (OS1). The dry-run block opens at `pkg/runner/run.go:311`, and the return is at `:336`. `effectiveTools` is defined before both (T3.2), so the dry run reports the same list the live run resolves.
+    - Change `pkg/runner/run.go:363` `Tools:           cfg.Tools,` to `Tools:           effectiveTools,` inside the `DryRunInfo` literal (OS1). The dry-run block opens at `pkg/runner/run.go:322`, and the return is at `:347`. `effectiveTools` is defined before both (T3.2), so the dry run reports the same list the live run resolves.
     - For a nil option, `effectiveTools` is `cfg.Tools` (same slice), so the dry-run output is byte-identical to HEAD (R7). The CLI prints `DryRunInfo.Tools` (`cmd/run.go:188-190`) and cannot set the option, so CLI output is unchanged (R8).
   - Green targets: `TestTools_OptionReplacesTOMLList` dry-run assertion (`DryRunInfo.Tools` equals `[]string{"write_file"}`); `TestTools_NilUsesTOMLList` (guard) stays PASS.
   - Verification:
@@ -216,8 +216,8 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - Depends on: T3.3.
   - Files: none expected. If a test fails here, fix `pkg/runner/run.go` only in the effective-list wiring from T3.2; do not change the test.
   - Behavior to confirm by reading:
-    - `builtinNames` is built from `req.Tools` (`pkg/runner/run.go:464-467`), so the effective list drives shadowing (OS6, R9). The router skip is `internal/mcpclient/router.go:26-28`, unchanged.
-    - Sub-agent loading reads only the child's own TOML (`internal/tool/tool.go:152`) and resolves its own `cfg.Tools` (`internal/tool/tool.go:266-275`). `Options.Tools` is not passed to `executeToolCalls` (signature at `pkg/runner/run.go:953`, unchanged) (OS8, R11).
+    - `builtinNames` is built from `req.Tools` (`pkg/runner/run.go:475-478`), so the effective list drives shadowing (OS6, R9). The router skip is `internal/mcpclient/router.go:26-28`, unchanged.
+    - Sub-agent loading reads only the child's own TOML (`internal/tool/tool.go:152`) and resolves its own `cfg.Tools` (`internal/tool/tool.go:266-275`). `Options.Tools` is not passed to `executeToolCalls` (signature at `pkg/runner/run.go:964`, unchanged) (OS8, R11).
     - `Run` writes nothing to `opts.Tools`; the only use is the copy at T3.2 (OS9).
   - Verification:
     - `go test -race -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestTools_'` → every line `PASS` (including guards `NilUsesTOMLList` and `MCPShadowingFollowsEffectiveList/a_builtin_kept`).
@@ -355,10 +355,10 @@ The spec's focused run is `TestTools_` in `pkg/runner` (T4, T5). `make apidiff` 
 - Changed signatures: none. The change is one added field on `Options`.
   - `runner.Options` (`pkg/runner/options.go:16`): gains `Tools`. The keyed literal at `cmd/run.go:80` compiles unchanged, and the CLI does not set the field (R8).
   - `toolname.ValidNames()` (`internal/toolname/toolname.go:20`): signature unchanged. Callers: `internal/agent/agent.go:176` (unchanged), `pkg/runner/run.go` (new, T3.1).
-  - `registry.Resolve` (`internal/tool/registry.go:60`): signature unchanged. Callers: `pkg/runner/run.go:446` (edited in T3.2 to `effectiveTools`); `internal/tool/tool.go:267` (sub-agent resolution from the child's own TOML, unchanged; OS8).
+  - `registry.Resolve` (`internal/tool/registry.go:60`): signature unchanged. Callers: `pkg/runner/run.go:457` (edited in T3.2 to `effectiveTools`); `internal/tool/tool.go:267` (sub-agent resolution from the child's own TOML, unchanged; OS8).
   - `agent.Load` and `agent.Validate` (`internal/agent/agent.go:148`): unchanged (OS5).
-  - The exported entry point (`func Run`, line 47 of `pkg/runner/run.go`) and the internal entry point (`func run`, line 64 of `pkg/runner/run.go`): signatures unchanged.
-  - `executeToolCalls` (`pkg/runner/run.go:953`): signature unchanged; the option list is not passed to it (OS8).
+  - The exported entry point (`func Run`, line 48 of `pkg/runner/run.go`) and the internal entry point (`func run`, line 65 of `pkg/runner/run.go`): signatures unchanged.
+  - `executeToolCalls` (`pkg/runner/run.go:964`): signature unchanged; the option list is not passed to it (OS8).
 - Extreme acceptance inputs and probe evidence (read-only, at writing time):
   - Empty string `""`: `rg -n '""' internal/toolname/toolname.go` → no output (`exit=1`), so `""` is not a key in `ValidNames`. Expected: `ConfigError` (T2.1 subtest `empty`, T3.1). Verified at writing time.
   - `call_agent`: `internal/toolname/toolname.go:7` defines the constant, and `:19` documents that it is excluded; the `ValidNames` map (`:20-30`) does not list it. Expected: `ConfigError` (OS2; T2.1 subtest `call_agent`). Verified at writing time.
@@ -385,8 +385,8 @@ None. The spec was reviewed and approved at `ba1feb7` (checkpoint). The one cita
 
 1. The validation wording (A1) and the effective-list copy (A2) are as stated in Section 1. Neither changes behavior that the spec fixes.
 2. Acceptance test 5's agent TOML is `tools = ["read_file"]` (A3). The spec gives the MCP server and the two option values but not the TOML list. Without the TOML built-in, sub-case (b) would not be red at HEAD and would not test shadowing. The spec's R9 ("a built-in that is in the effective list shadows a same-named MCP tool"; "a built-in that is not in the effective list does not") presupposes the TOML built-in. This checklist adopts that reading. If the orchestrator decides otherwise, record it before T2.2.
-3. The spec's OS7 and its Section 1 cite line 454 of `pkg/runner/run.go` for the call_agent gate. At HEAD `ba1feb7`, line 454 holds `depth := 0`. The gate is on line 455 and the injection on line 456 (range `pkg/runner/run.go:453-457`). This checklist cites line 455. The spec is not edited (orchestrator record). The drift does not change behavior, so it is reported and not a blocker.
-4. The milestone entry (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:217-226`) still cites the stale lines `pkg/runner/run.go:413-419`, `pkg/runner/run.go:423`, and `internal/agent/agent.go:176-180`. The spec's corrected ranges (`pkg/runner/run.go:441-451`, `pkg/runner/run.go:453-457`, `internal/agent/agent.go:176-181`) are used here. The milestone refresh belongs to T9.
+3. The spec's OS7 and its Section 1 cite line 454 of `pkg/runner/run.go` for the call_agent gate. At HEAD `ba1feb7`, line 454 holds `depth := 0`. The gate is on line 466 and the injection on line 467 (range `pkg/runner/run.go:464-468`). This checklist cites line 466. The spec is not edited (orchestrator record). The drift does not change behavior, so it is reported and not a blocker.
+4. The milestone entry (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:217-226`) still cites the stale lines `pkg/runner/run.go:413-419`, `pkg/runner/run.go:423`, and `internal/agent/agent.go:176-180`. The spec's corrected ranges (`pkg/runner/run.go:452-462`, `pkg/runner/run.go:464-468`, `internal/agent/agent.go:176-181`) are used here. The milestone refresh belongs to T9.
 5. Red tasks run `go test -race -v ./pkg/runner` and treat the recorded FAIL set as the gate. The race run is required green from T3.3, as in 006.
 6. The derived race package list is `./pkg/runner` only. Milestone 007 changes no file in `internal/agent` or `internal/envinterp`.
 7. Test fixtures follow `runHookTestMCP` (`Workdir: t.TempDir()`, `Stdin: strings.NewReader("")`). Tests that need tool calls use `testutil.NewMockLLMServer`.

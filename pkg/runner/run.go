@@ -26,6 +26,7 @@ import (
 	"github.com/jrswab/axe/internal/refusal"
 	"github.com/jrswab/axe/internal/resolve"
 	"github.com/jrswab/axe/internal/tool"
+	"github.com/jrswab/axe/internal/toolname"
 	"github.com/jrswab/axe/internal/xdg"
 )
 
@@ -101,6 +102,16 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 				return nil, &ConfigError{Msg: fmt.Sprintf("MCP server name %q is in both mcp_servers and Options.MCPServers", optionServer.Name)}
 			}
 		}
+	}
+	validToolNames := toolname.ValidNames()
+	for i, name := range opts.Tools {
+		if !validToolNames[name] {
+			return nil, &ConfigError{Msg: fmt.Sprintf("unknown tool %q in Options.Tools[%d]", name, i)}
+		}
+	}
+	effectiveTools := cfg.Tools
+	if opts.Tools != nil {
+		effectiveTools = append([]string{}, opts.Tools...)
 	}
 	effectiveMCP := append(append([]agent.MCPServerConfig{}, cfg.MCPServers...), mcpServerConfigs(opts.MCPServers)...)
 
@@ -349,7 +360,7 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 				UserMessage:     dryRunUserMessage,
 				Memory:          memoryEntries,
 				MemoryEnabled:   cfg.Memory.Enabled,
-				Tools:           cfg.Tools,
+				Tools:           effectiveTools,
 				MCPServers:      mcpServers,
 				SubAgents:       cfg.SubAgents,
 				MaxDepth:        effectiveMaxDepth,
@@ -442,8 +453,8 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	registry := tool.NewRegistry()
 	tool.RegisterAll(registry)
 
-	if len(cfg.Tools) > 0 {
-		resolvedTools, resolveErr := registry.Resolve(cfg.Tools)
+	if len(effectiveTools) > 0 {
+		resolvedTools, resolveErr := registry.Resolve(effectiveTools)
 		if resolveErr != nil {
 			return nil, &ConfigError{Msg: "failed to resolve tools", Err: resolveErr}
 		}

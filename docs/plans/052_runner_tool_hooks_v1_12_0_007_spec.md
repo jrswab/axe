@@ -13,21 +13,21 @@
 
 The milestone entry cites two lines that do not match current code. This spec uses the verified lines. The milestone document is not edited by this spec.
 
-- The TOML tool consumption the milestone places at `pkg/runner/run.go:413-419` is at `pkg/runner/run.go:441-451`. The gate `if len(cfg.Tools) > 0` is at `:445`, and `registry.Resolve(cfg.Tools)` is at `:446`. Lines `:413-419` are unrelated code in the same function.
-- The call_agent reference the milestone places at run.go line 423 is at `pkg/runner/run.go:453-457`. The sub-agent gate is `:455`, and the injection is `:456`.
+- The TOML tool consumption the milestone places at `pkg/runner/run.go:413-419` is at `pkg/runner/run.go:452-462`. The gate `if len(cfg.Tools) > 0` is at `:456`, and `registry.Resolve(cfg.Tools)` is at `:457`. Lines `:413-419` are unrelated code in the same function.
+- The call_agent reference the milestone places at run.go line 423 is at `pkg/runner/run.go:464-468`. The sub-agent gate is `:466`, and the injection is `:467`.
 - The validation rule the milestone places at `internal/agent/agent.go:176-180` is at `internal/agent/agent.go:176-181` (the loop ends at `:181`).
-- The dry-run return the milestone does not cite is at `pkg/runner/run.go:336` (`return &Result{`). The dry-run block opens at `pkg/runner/run.go:311`. `DryRunInfo.Tools` is set at `pkg/runner/run.go:352`.
-- The MCP shadowing set is built at `pkg/runner/run.go:464-467` from `req.Tools`. The router skip is `internal/mcpclient/router.go:26-28`.
+- The dry-run return the milestone does not cite is at `pkg/runner/run.go:347` (`return &Result{`). The dry-run block opens at `pkg/runner/run.go:322`. `DryRunInfo.Tools` is set at `pkg/runner/run.go:363`.
+- The MCP shadowing set is built at `pkg/runner/run.go:475-478` from `req.Tools`. The router skip is `internal/mcpclient/router.go:26-28`.
 
 ### Decisions settled (record as settled, never re-evaluate)
 
-- **OS1 (this spec). Effective list is computed before the dry-run return.** The effective built-in list is `Options.Tools` when non-nil, else `cfg.Tools`. It is computed and validated before the dry-run return (`pkg/runner/run.go:311`). `DryRunInfo.Tools` reports the effective list (`pkg/runner/run.go:352`), the same pattern as 006 `DryRunInfo.MCPServers` (`pkg/runner/run.go:353`). The CLI cannot set `Options.Tools`, so CLI output and golden files are unchanged (R8).
+- **OS1 (this spec). Effective list is computed before the dry-run return.** The effective built-in list is `Options.Tools` when non-nil, else `cfg.Tools`. It is computed and validated before the dry-run return (`pkg/runner/run.go:322`). `DryRunInfo.Tools` reports the effective list (`pkg/runner/run.go:363`), the same pattern as 006 `DryRunInfo.MCPServers` (`pkg/runner/run.go:364`). The CLI cannot set `Options.Tools`, so CLI output and golden files are unchanged (R8).
 - **OS2 (this spec). Validation uses the TOML rule.** Each `Options.Tools` name is checked with `toolname.ValidNames()` (`internal/toolname/toolname.go:20-30`), the same rule as `internal/agent/agent.go:176-181`. An unknown or empty name is a `ConfigError` that names `Options.Tools[i]` and the bad name. Wording is not a stable contract (Limitations). `call_agent` is not in `ValidNames` (`internal/toolname/toolname.go:17-19`), so `call_agent` in `Options.Tools` is an unknown name. This is parity with TOML, where `call_agent` is controlled by `sub_agents`.
 - **OS3 (this spec). nil is the TOML list.** A nil `Options.Tools` uses `cfg.Tools` with byte-identical behavior (R7).
 - **OS4 (this spec). Empty non-nil means no built-in tools.** `Options.Tools` set to an empty non-nil slice gives no built-in tools. When the agent has no `sub_agents` and no MCP tools, the request carries no `tools` key. This is the same shape as TOML `tools = []` (`cmd/run_test.go:1007`, `TestRun_NoSubAgents_NoTools`). The omission is produced by `omitempty` on the Anthropic request field (`internal/provider/anthropic.go:71`), set from `req.Tools` at `internal/provider/anthropic.go:257`.
-- **OS5 (this spec). TOML tools are still validated at load.** `agent.Load` validates `cfg.Tools` (`internal/agent/agent.go:176-181`, called from `pkg/runner/run.go:87`) even when `Options.Tools` overrides them. This spec does not change `agent.Load`. A TOML file with an unknown tool still fails, even when a host overrides the list (Limitations).
-- **OS6 (this spec). MCP shadowing follows the effective built-in list.** The `builtinNames` set is built from `req.Tools` (`pkg/runner/run.go:464-467`), and the router skips an MCP tool whose name is in that set (`internal/mcpclient/router.go:26-28`). Today a TOML-listed built-in shadows a same-named MCP tool. Under this milestone, a built-in removed by `Options.Tools` no longer shadows the MCP tool, and the MCP tool is registered and reachable. This is documented in the field doc comment and the CHANGELOG bullet (R9, R10).
-- **OS7 (this spec). `Options.Tools` does not limit MCP tools or `call_agent`.** MCP tools are registered from the MCP servers, not from the built-in list (`pkg/runner/run.go:481-502`). `call_agent` is injected when `cfg.SubAgents` is non-empty (`pkg/runner/run.go:455`, injection at `:456`). Neither is filtered by `Options.Tools`.
+- **OS5 (this spec). TOML tools are still validated at load.** `agent.Load` validates `cfg.Tools` (`internal/agent/agent.go:176-181`, called from `pkg/runner/run.go:88`) even when `Options.Tools` overrides them. This spec does not change `agent.Load`. A TOML file with an unknown tool still fails, even when a host overrides the list (Limitations).
+- **OS6 (this spec). MCP shadowing follows the effective built-in list.** The `builtinNames` set is built from `req.Tools` (`pkg/runner/run.go:475-478`), and the router skips an MCP tool whose name is in that set (`internal/mcpclient/router.go:26-28`). Today a TOML-listed built-in shadows a same-named MCP tool. Under this milestone, a built-in removed by `Options.Tools` no longer shadows the MCP tool, and the MCP tool is registered and reachable. This is documented in the field doc comment and the CHANGELOG bullet (R9, R10).
+- **OS7 (this spec). `Options.Tools` does not limit MCP tools or `call_agent`.** MCP tools are registered from the MCP servers, not from the built-in list (`pkg/runner/run.go:492-513`). `call_agent` is injected when `cfg.SubAgents` is non-empty (`pkg/runner/run.go:466`, injection at `:467`). Neither is filtered by `Options.Tools`.
 - **OS8 (this spec). Sub-agents do not inherit `Options.Tools`.** A child agent loads its own TOML (`internal/tool/tool.go:152`) and resolves its own `cfg.Tools` (`internal/tool/tool.go:266-275`). The parent's option list is not passed to the child. This matches `AGENTS.md:187` ("Independent context - Sub-agent loads its own TOML ... No context inheritance except the task string"), as 006 OS4 settled for `Options.MCPServers`.
 - **OS9 (this spec). The caller's slice is copied and not mutated.** `Run` does not modify `Options.Tools` or retain a reference to it. The effective list is a separate slice.
 - **OS10 (this spec). Duplicate names are not rejected.** A name that appears twice in `Options.Tools` is accepted, as TOML `tools = ["read_file", "read_file"]` is accepted today (`internal/tool/registry.go:60`, `Resolve` appends one definition per entry). Parity with TOML. Recorded as a limitation.
@@ -65,7 +65,7 @@ Requirements R1-R3 are the field and validation. R4-R7 are the effective list, d
 
 ### R2: Validation before the dry-run return
 
-- The names in a non-nil `Options.Tools` are checked against `toolname.ValidNames()` (OS2) after the agent is loaded (`pkg/runner/run.go:87-90`) and before the dry-run return (`pkg/runner/run.go:311`).
+- The names in a non-nil `Options.Tools` are checked against `toolname.ValidNames()` (OS2) after the agent is loaded (`pkg/runner/run.go:88-91`) and before the dry-run return (`pkg/runner/run.go:322`).
 - A failure is `ConfigError` (`pkg/runner/errors.go:11`). It names `Options.Tools[i]` and the bad name. The name `""` is reported as unknown.
 - Verification: acceptance test 2 (R12) covers live and dry runs.
 
@@ -76,13 +76,13 @@ Requirements R1-R3 are the field and validation. R4-R7 are the effective list, d
 
 ### R4: Effective list replaces the TOML list
 
-- When `Options.Tools` is non-nil, the request's built-in tools are exactly the resolved entries of `Options.Tools`, in slice order. The TOML list is not resolved (`pkg/runner/run.go:445-450` runs on the effective list only).
+- When `Options.Tools` is non-nil, the request's built-in tools are exactly the resolved entries of `Options.Tools`, in slice order. The TOML list is not resolved (`pkg/runner/run.go:456-461` runs on the effective list only).
 - MCP tools and `call_agent` are added as before (OS7).
 - Verification: acceptance test 1 (R12).
 
 ### R5: Empty non-nil list
 
-- An empty non-nil `Options.Tools` gives no built-in tools. With no `sub_agents` and no MCP tools, the request body has no `tools` key (OS4). The request is sent without a tool loop, as TOML `tools = []` is today (`pkg/runner/run.go:583`).
+- An empty non-nil `Options.Tools` gives no built-in tools. With no `sub_agents` and no MCP tools, the request body has no `tools` key (OS4). The request is sent without a tool loop, as TOML `tools = []` is today (`pkg/runner/run.go:594`).
 - Verification: acceptance test 3 (R12).
 
 ### R6: Dry run reports the effective list
