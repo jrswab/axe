@@ -320,10 +320,10 @@ Every acceptance test 1-13 maps to exactly one task of each kind above. The spec
   - `run` (`pkg/runner/run.go:47`) and `Run` (`pkg/runner/run.go:43`): unchanged signatures.
   - `Options` (`pkg/runner/options.go:6`): gains one field. Existing `Options{...}` literals in `cmd/run.go:80` and `pkg/runner/*_test.go` are keyed. Compile check in T1 (`go build ./...`, `go vet ./pkg/runner/`) covers them.
 - Extreme acceptance inputs and recorded evidence:
-  - Empty action `""` and unknown action `"bogus"` with non-empty `Content`: covered by T2.2 (test 13). Expected: fixed text, `IsError: true`, host content absent. Evidence: spec OD9; not run yet (red).
-  - Empty `Content` on deny: covered by T2.1 (default case). Expected: fixed text. Not run yet.
-  - Hook error text and panic value, each with a distinctive string (`secret-hook-detail-123`, `secret-panic-456`): covered by T2.3. Expected: absent from results and messages. Not run yet.
-  - Empty argument map: not a separate acceptance input; `call.Arguments` for a no-argument call is copied as an empty map by T3.1. Expected: no panic, hook receives an empty map. Not run yet; the copy loop over a nil map is a no-op.
+  - Empty action `""` and unknown action `"bogus"` with non-empty `Content`: covered by T2.2 (test 13). Expected: fixed text, `IsError: true`, host content absent. Evidence: spec OD9; red run at f983772 failed for the missing behavior; green run at 6a9d741 passed.
+  - Empty `Content` on deny: covered by T2.1 (default case). Expected: fixed text. Red run at f983772 failed for the missing behavior; green run at 6a9d741 passed.
+  - Hook error text and panic value, each with a distinctive string (`secret-hook-detail-123`, `secret-panic-456`): covered by T2.3. Expected: absent from results and messages. Red run at f983772 failed for the missing behavior; green run at 6a9d741 passed.
+  - Empty argument map: not a separate acceptance input; `call.Arguments` for a no-argument call is copied as an empty map by T3.1. Expected: no panic, hook receives an empty map. Red run at f983772 failed for the missing behavior; green run at 6a9d741 passed; full suite `go test -race ./...` passed at 7703ebe. Design note: the copy loop over a nil map is a no-op.
   - Long strings: the deny text is a fixed constant, so the length of the hook error or content does not change the result (test 8 and test 13 cover the content path). No separate probe.
   - Read-only evidence at HEAD: `go test ./pkg/runner` passes (T0); the declared test names do not exist (T0 `go test -v` filter).
 - `go install` or `GOPROXY=` commands: none in this checklist. `go-toolchain-check` pre-flight not triggered.

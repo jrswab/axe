@@ -159,5 +159,5 @@ Review: round 1 (edaec20..2ed1282) CHANGES REQUESTED, 2 blocking stale-text find
   - The entry's line list for `go.yml` (19, 32, 47) predates milestone 002's apidiff job at `go.yml:60-62`; it is a point-in-time record, not a defect.
   - Known follow-up outside 003: `AGENTS.md:207` describes `go.yml` as "tests and linting". Verified with `rg -n 'tests and linting' AGENTS.md` (exit 0); not edited.
   - No Go package or workflow changed, so Go build/tests/race/lint and mutation checks are not applicable. No spec or implementation checklist was created (fast lane).
-- Blockers: `none`; review pending with the orchestrator.
+- Blockers: `none`; review approved in round 2.
 - Next action: Milestone 003 complete; restart-validate, sync, then select milestone 004

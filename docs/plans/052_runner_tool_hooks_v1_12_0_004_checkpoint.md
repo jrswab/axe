@@ -16,7 +16,7 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_004_spec.md`
-- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_004_implement.md` (not yet written)
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_004_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_004_checkpoint.md`
 
 ## State
@@ -49,7 +49,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - Milestone checkbox: `unchecked`
 - Review: `pending`
 - Blockers: none
-- Relevant work: `uncommitted` — spec and checkpoint are new untracked files; the 003 checkpoint Review line is modified (uncommitted). No implementation change.
+- Relevant work: `committed` — implementation, tests, and CHANGELOG committed through 7703ebe; the worktree has no uncommitted changes.
 - Next safe action: Run review gates (factory-gate test + lint) and code review round 1
 - Last completed phase/task/gate and timestamp: T8 scope checks PASS at 6b1d592, 2026-11-09T18:43:14.215714+00:00
 
@@ -207,7 +207,7 @@ T8 at 848f262/6b1d592: git diff --name-only 09d100d excluding plan docs = exactl
 ## Limitations & blockers
 
 - Limitations:
-  - The spec's focused race command (`go test -race -run TestToolHookParallelTurn ./pkg/runner`, milestone test 11) is not in the spec's fenced acceptance block. The test does not exist yet, so `spec-lint` reports "selects no test in current files" for it. It is stated in prose as R13 test 11 and must be added to the implementation checklist.
-  - No code is written in this phase. Tests 1-13 in the spec are unimplemented.
+  - The spec's focused race command (`go test -race -run TestToolHookParallelTurn ./pkg/runner`, milestone test 11) is not in the spec's fenced acceptance block. Planning-phase observation (historical, superseded by f983772 red tests and 6a9d741 implementation): the test did not exist yet, so `spec-lint` reports "selects no test in current files" for it. It is stated in prose as R13 test 11 and must be added to the implementation checklist.
+  - Planning-phase observation (historical, superseded by f983772 red tests and 6a9d741 implementation): no code was written in this phase, and tests 1-13 in the spec were unimplemented.
 - Blockers: `none`
 - Next action: Run review gates (factory-gate test + lint) and code review round 1
