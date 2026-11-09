@@ -108,7 +108,7 @@ A4. The CI run on PR 103 resolves Go 1.26.x with `toolchain go1.26.10` from go.m
 ### A4: reserved for the orchestrator
 
 - Gate: PR 103 CI toolchain evidence
-- Command(s) and actual result(s): not run by this task; the orchestrator records the CI resolution of Go 1.26.x and use of `toolchain go1.26.10`. No `gh`, commit, or push was run. A4 evidence remains pending in this checkpoint.
+- Command(s) and actual result(s): not run by this task; the orchestrator records the CI resolution of Go 1.26.x and use of `toolchain go1.26.10`. No `gh`, commit, or push was run. The orchestrator subsequently recorded A4 in the `003 A1-A4 PASS` entry.
 
 ### 003 A1-A4 PASS
 
@@ -138,5 +138,5 @@ e409eba09e47f722c644a68d5eb1effb850b60fa  "docs/plans/052_runner_tool_hooks_v1_1
   - The entry's line list for `go.yml` (19, 32, 47) predates milestone 002's apidiff job at `go.yml:60-62`; it is a point-in-time record, not a defect.
   - Known follow-up outside 003: `AGENTS.md:207` describes `go.yml` as "tests and linting". Verified with `rg -n 'tests and linting' AGENTS.md` (exit 0); not edited.
   - No Go package or workflow changed, so Go build/tests/race/lint and mutation checks are not applicable. No spec or implementation checklist was created (fast lane).
-- Blockers: `none` for local A1-A3; A4 and review pending with the orchestrator.
+- Blockers: `none`; review pending with the orchestrator.
 - Next action: Review 003
