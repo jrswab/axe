@@ -80,7 +80,7 @@ Requirements are verified by the checks listed in "Acceptance commands". Slices 
 
 - The file has a section for enforcement that states D3: an apidiff check of `pkg/runner` against `v1.11.0`, run in `make check` and CI, invoked as `go run golang.org/x/exp/cmd/apidiff@<pinned version>`, and not added to `go.mod`.
 - The section states the gate lands in a later milestone (002). It does not claim the gate is active today. It states that the pin is recorded when the gate lands and is a concrete version, not `latest`.
-- Verification: `rg -n "apidiff" COMPATIBILITY.md` finds the section; `rg -n "^require|golang.org/x/exp" go.mod` returns no lines (unchanged).
+- Verification: `rg -n "apidiff" COMPATIBILITY.md` finds the section; `rg -n "golang.org/x/exp" go.mod` returns no lines (unchanged; the pattern is not anchored to `require`, because `go.mod` has two `require (` blocks at lines 7 and 14).
 
 ### R5: Deprecation rule and pre-policy exceptions
 
@@ -94,7 +94,7 @@ Requirements are verified by the checks listed in "Acceptance commands". Slices 
 ### R6: Links from the three documents resolve to COMPATIBILITY.md
 
 - `README.md` contains a Markdown link to `COMPATIBILITY.md` in prose outside fenced code blocks.
-- `AGENTS.md` contains a Markdown link to `COMPATIBILITY.md` in a section other than `## Custom Instructions`. The link line is at or above `AGENTS.md:222` in the current layout; no line at or below the `## Custom Instructions` heading (`AGENTS.md:224`) holds the link.
+- `AGENTS.md` contains a Markdown link to `COMPATIBILITY.md` in a section other than `## Custom Instructions`. The link line must be before the `## Custom Instructions` heading (currently `AGENTS.md:224`), i.e. outside that section. The boundary is the heading's line number found at runtime (`rg -n "^## Custom Instructions" AGENTS.md`), not a fixed number.
 - `CHANGELOG.md` contains the link within its header, lines 1–6 (`CHANGELOG.md:1-6`).
 - Each link destination is `COMPATIBILITY.md` relative to its file's directory (the root files all sit at the root, so the destination is `COMPATIBILITY.md`).
 - Verification: `rg -n "COMPATIBILITY\.md" README.md AGENTS.md CHANGELOG.md` lists one hit per file in the stated location; `test -f COMPATIBILITY.md` resolves each.
@@ -105,7 +105,7 @@ Requirements are verified by the checks listed in "Acceptance commands". Slices 
 - `docs/plans/runner-tool-hooks-and-options.md` is unchanged.
 - No code, `go.mod`, `go.sum`, `Makefile`, workflow, `pkg/`, `internal/`, or `cmd/` file changes.
 - No other line in README.md, AGENTS.md, or CHANGELOG.md changes beyond the link.
-- Verification: `git diff --name-only defd01d` lists only the four files above (plus untracked `COMPATIBILITY.md`, which `git status --porcelain` shows); `git diff --quiet defd01d -- docs/plans/runner-tool-hooks-and-options.md` exits 0; `git diff defd01d -- README.md AGENTS.md CHANGELOG.md` shows only added link text.
+- Verification: the deliverable diff from `defd01d`, excluding the Factory plan records, lists only the four deliverable files. The Factory records are `docs/plans/052_runner_tool_hooks_v1_12_0_001_*` (this spec, checklist, checkpoint) and `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md` (checkbox render). Run after commit: `git diff --name-only defd01d -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_001_*' ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md'` must list only `COMPATIBILITY.md`, `README.md`, `AGENTS.md`, `CHANGELOG.md`. If checked before commit, also include untracked files from `git status --porcelain` (new `COMPATIBILITY.md`). `git diff --quiet defd01d -- docs/plans/runner-tool-hooks-and-options.md` exits 0 (frozen draft); `git diff defd01d -- README.md AGENTS.md CHANGELOG.md` shows only added link text.
 
 ### R8: Documentation lint passes
 
@@ -130,10 +130,12 @@ Run in the repository root after the change. Each command is listed with its exp
 
 ```sh
 test -f COMPATIBILITY.md                                              # expect: exit 0
-rg -n "COMPATIBILITY\.md" README.md AGENTS.md CHANGELOG.md            # expect: one hit per file, README in prose, AGENTS above line 224, CHANGELOG in lines 1-6
+rg -n "COMPATIBILITY\.md" README.md AGENTS.md CHANGELOG.md            # expect: one hit per file, README in prose, CHANGELOG in lines 1-6
 rg -n "CHANGELOG.md:24|go.mod:3" COMPATIBILITY.md                     # expect: hits for both pre-policy exceptions
 rg -n "apidiff" COMPATIBILITY.md                                      # expect: the D3 enforcement section
 git diff --quiet defd01d -- docs/plans/runner-tool-hooks-and-options.md   # expect: exit 0
+test "$(rg -n "COMPATIBILITY\.md" AGENTS.md | head -1 | cut -d: -f1)" -lt "$(rg -n "^## Custom Instructions" AGENTS.md | cut -d: -f1)"   # expect: exit 0 (AGENTS link line before the Custom Instructions heading, both found at runtime)
+rg -n "golang.org/x/exp" go.mod                                       # expect: no lines
 git diff --quiet defd01d -- go.mod go.sum Makefile .github pkg internal cmd   # expect: exit 0
 ~/.agents/scripts/spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_001_spec.md   # expect: exit 0
 ~/.agents/scripts/docs-lint --since origin/master .                    # expect: exit 0
