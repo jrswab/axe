@@ -95,7 +95,7 @@ Red-run rule: a red test is "red" only if it compiles and fails on an assertion 
 
 Shared test conventions (file `pkg/runner/max_turns_option_test.go`, new, created in T2.1): package `runner`; mirror `TestRun_MaxTurnsConfigured` (`pkg/runner/run_test.go:1336`): `setupTestEnv(t, configTOML, agentName, agentTOML)` (`pkg/runner/run_test.go:24`), `newMockStdoutStderr()` (`pkg/runner/run_test.go:44`), `testutil.NewMockLLMServer` (`internal/testutil/mockserver.go:50`), `t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())` (`pkg/runner/run_test.go:1357`). TOML config uses `[providers.anthropic] api_key = "fake-key"`. Mock responses use `testutil.AnthropicResponse` (`internal/testutil/mockserver.go:141`) and `testutil.AnthropicToolUseResponse` (`internal/testutil/mockserver.go:154`). Requests are read as `mock.Requests[i].Body` (`internal/testutil/mockserver.go:27`, `:34`). No test uses `t.Parallel`. Imports are added as each test needs them (for example `context`, `fmt`, `os`, `path/filepath`, `strings`, `testing`, and `github.com/jrswab/axe/internal/testutil`).
 
-- [ ] **T2.1: Red: acceptance test 1 (R3, R4, R11)**
+- [x] **T2.1: Red: acceptance test 1 (R3, R4, R11)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T1.
@@ -105,7 +105,7 @@ Shared test conventions (file `pkg/runner/max_turns_option_test.go`, new, create
   - Filter: `rg -- '--- (PASS|FAIL): TestMaxTurnsOption_[^ ]*( |$)'`.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above; the race run must be green from T3.2.
 
-- [ ] **T2.2: Red: acceptance test 3 (R2, R11)**
+- [x] **T2.2: Red: acceptance test 3 (R2, R11)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.1.
@@ -114,7 +114,7 @@ Shared test conventions (file `pkg/runner/max_turns_option_test.go`, new, create
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestMaxTurnsOption_NegativeConfigError` for each subtest. Expected reason at HEAD: no validation exists, so the live subtests reach the empty-queue mock (fatal) or return a non-ConfigError, and the dry-run subtests return success with no error. Record the actual failing assertion for each subtest kind.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above.
 
-- [ ] **T2.3: Guards: acceptance tests 2 and 4 (R3, R5, R9, R11)**
+- [x] **T2.3: Guards: acceptance tests 2 and 4 (R3, R5, R9, R11)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.2.
@@ -125,7 +125,7 @@ Shared test conventions (file `pkg/runner/max_turns_option_test.go`, new, create
   - Expected at HEAD: both PASS (guards). Record the PASS lines.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: only the T2.1 and T2.2 tests.
 
-- [ ] **T2.4: Red-run check (all acceptance tests)**
+- [x] **T2.4: Red-run check (all acceptance tests)**
   - Budget: 15 min
   - Owner: code (verification)
   - Depends on: T2.3.

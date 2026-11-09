@@ -24,14 +24,14 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T2.1
+- Current task: T3.1
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
-- T2.1: `unchecked`
-- T2.2: `unchecked`
-- T2.3: `unchecked`
-- T2.4: `unchecked`
+- T2.1: `checked`
+- T2.2: `checked`
+- T2.3: `checked`
+- T2.4: `checked`
 - T3.1: `unchecked`
 - T3.2: `unchecked`
 - T3.3: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T2.1
-- Last completed phase/task/gate and timestamp: T0-T1 verification PASS (commit 07c4cbf), 2026-11-09T23:51:08.733126+00:00
+- Next safe action: Implement T3.1
+- Last completed phase/task/gate and timestamp: T2.1-T2.4 red/guard verification PASS (commit cf6ae1b), 2026-11-09T23:57:28.200265+00:00
 
 ## Gate evidence
 
@@ -187,8 +187,29 @@ T0 steps 1-19 PASS at 12e995d (ancestry 7f56dae exit 0; no non-plan diff; baseli
 
 - Next action: Implement T2.1
 
+### T2.1-T2.4 red/guard verification PASS (commit cf6ae1b)
+
+- Gate: T2.1-T2.4 red/guard verification PASS (commit cf6ae1b)
+- Commands/results:
+go test -race -v ./pkg/runner exit 1 as expected: FAIL TestMaxTurnsOption_OverridesTOML (request #3, RequestCount 3 want 2); FAIL TestMaxTurnsOption_NegativeConfigError 4 subtests (live: RuntimeError + 1 request; dry: nil error); PASS TestMaxTurnsOption_ZeroKeepsTOMLAndDefault (toml_2, unset); PASS TestMaxTurnsOption_SubAgentNotInherited; all other pkg/runner tests pass; no DATA RACE. go vet 0; gofmt clean; golangci-lint 0 issues.
+- HEAD commit SHA: `cf6ae1bf5b1fbd73eba3608efbfcf41dc7133f47`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T3.1
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: Implement T2.1
+- Next action: Implement T3.1
