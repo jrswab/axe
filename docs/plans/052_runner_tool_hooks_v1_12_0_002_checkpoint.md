@@ -22,13 +22,27 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone enforces the `pkg/runner` external contract (the apidiff gate) and edits shared CI (`.github/workflows/go.yml`, `Makefile`). The fast-lane condition "external contracts untouched" fails, and the milestone adds a pinned third-party tool to the build path.
-- Current phase: `checklist-pending`
+- Current phase: `execute`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T0: `unchecked`
+- T1.1: `unchecked`
+- T1.2: `unchecked`
+- T1.3: `unchecked`
+- T2: `unchecked`
+- T3: `unchecked`
+- T4: `unchecked`
+- T5: `unchecked`
+- T6: `unchecked`
+- T7: `unchecked`
+- T8: `unchecked`
+- T9: `unchecked`
+- T10: `unchecked`
+- T11: `unchecked`
+- T12: `unchecked`
 - Milestone checkbox: `unchecked`
-- Last completed phase/task/gate and timestamp: Spec planning review: round 1 CHANGES REQUESTED (F1 blocking, F2/F3 nits); round 2 first attempt returned no Verdict line (not counted; findings F4/F5 applied); round 2 CHANGES REQUESTED (F6); round 3 APPROVED. Failing planning rounds: 2 of 3. spec-lint exit 0 before each round., 2026-11-09T16:11:17.498696+00:00
-- Next safe action: Write the 002 implementation checklist (docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md) and run its planning review
+- Next safe action: Implement T0
+- Last completed phase/task/gate and timestamp: Checklist planning review round 1 CHANGES REQUESTED (F1 blocking: recipe shape/false self-compare; F2 blocking: corrupted-export probe line not joined; F3 nit: shared temp-dir count). Third failing planning round for milestone 002 (spec r1, spec r2, checklist r1): failing-round cap reached. Fixes applied; post-cap explore check CHECK: PASS (F1, F2, F3 FIXED; dynamic make -n parse blocked by read-only guard, to be confirmed in T1.3). Phase 3 proceeds with per-task gates., 2026-11-09T16:21:48.450472+00:00
 
 ## Gate evidence
 
@@ -89,6 +103,27 @@ b13593ab78e091210f982858aa2c1cb50120f443  "docs/plans/052_runner_tool_hooks_v1_1
 
 - Next action: Write the 002 implementation checklist (docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md) and run its planning review
 
+### Checklist planning review round 1 CHANGES REQUESTED (F1 blocking: recipe shape/false self-compare; F2 blocking: corrupted-export probe line not joined; F3 nit: shared temp-dir count). Third failing planning round for milestone 002 (spec r1, spec r2, checklist r1): failing-round cap reached. Fixes applied; post-cap explore check CHECK: PASS (F1, F2, F3 FIXED; dynamic make -n parse blocked by read-only guard, to be confirmed in T1.3). Phase 3 proceeds with per-task gates.
+
+- Gate: Checklist planning review round 1 CHANGES REQUESTED (F1 blocking: recipe shape/false self-compare; F2 blocking: corrupted-export probe line not joined; F3 nit: shared temp-dir count). Third failing planning round for milestone 002 (spec r1, spec r2, checklist r1): failing-round cap reached. Fixes applied; post-cap explore check CHECK: PASS (F1, F2, F3 FIXED; dynamic make -n parse blocked by read-only guard, to be confirmed in T1.3). Phase 3 proceeds with per-task gates.
+- Commands/results:
+spec-lint --root <repo> 002_implement.md and 002_spec.md: both PASS, 0 findings (exit 0). Explore non-blocking notes: mktemp has no explicit status check (spec-conformant); per-probe TMPDIR count is stricter than R7 glob.
+- HEAD commit SHA: `3920c71817929a1face2bd1a3672c7b1ab684689`
+- Relevant work: `uncommitted` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+?? docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+4c7d23a9786556fa5fa52176cb2a386e7be707ed  "docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md"
+```
+
+- Next action: Implement T0
+
 ## Limitations & blockers
 
 - Limitations:
@@ -96,4 +131,4 @@ b13593ab78e091210f982858aa2c1cb50120f443  "docs/plans/052_runner_tool_hooks_v1_1
   - `gh` is not authenticated in this sandbox; action defaults were read from raw GitHub URLs at tags `v4` and `v5`.
   - `AGENTS.md:207` describes `go.yml` as "tests and linting"; this milestone does not edit it (outside milestone 002 scope). Flagged for the orchestrator, not changed.
 - Blockers: `none`
-- Next action: Write the 002 implementation checklist (docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md) and run its planning review
+- Next action: Implement T0
