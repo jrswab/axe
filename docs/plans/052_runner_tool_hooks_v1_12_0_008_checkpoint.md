@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `implement`
+- Current phase: `execute`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Run checklist planning review round 2
-- Last completed phase/task/gate and timestamp: Checklist review round 1 CHANGES REQUESTED (failing planning round 2 of 3); fixes applied; spec-lint PASS, 2026-11-09T23:44:48.404152+00:00
+- Next safe action: Implement T0
+- Last completed phase/task/gate and timestamp: Checklist review round 2 APPROVED, 2026-11-09T23:45:54.959923+00:00
 
 ## Gate evidence
 
@@ -145,8 +145,29 @@ Round 1 findings: F1 blocking implement.md:191 post-edit check pinned dry-run at
 
 - Next action: Run checklist planning review round 2
 
+### Checklist review round 2 APPROVED
+
+- Gate: Checklist review round 2 APPROVED
+- Commands/results:
+Planning review round 2 of implement.md at 17cd5bd: Verdict APPROVED; prior F1-F3 resolved; no new findings. Failing planning rounds for 008: 2 of 3 (spec r1, checklist r1).
+- HEAD commit SHA: `17cd5bd0e82fd96288a199f25a28a6b4d9b8315d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T0
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: Run checklist planning review round 2
+- Next action: Implement T0
