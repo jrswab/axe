@@ -38,7 +38,7 @@ if [ -n "$pkgs" ]; then go test -race $pkgs; fi
 
 ### Phase 0: Pre-flight (serial, read-only)
 
-- [ ] **T0: Pre-flight: HEAD ancestry, tree state, baseline package tests, declared names absent**
+- [x] **T0: Pre-flight: HEAD ancestry, tree state, baseline package tests, declared names absent**
   - Budget: 30 min
   - Owner: code (verification)
   - Files: none (read-only).
@@ -58,7 +58,7 @@ if [ -n "$pkgs" ]; then go test -race $pkgs; fi
 
 ### Phase 1: Enabling surface (serial)
 
-- [ ] **T1: Public API surface, sentinel and validator declarations, doc contract (R1, R14)**
+- [x] **T1: Public API surface, sentinel and validator declarations, doc contract (R1, R14)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T0.
@@ -86,7 +86,7 @@ Red-run rule: a red test is "red" only if it compiles and fails on an assertion.
 
 Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServersTestServer(t *testing.T, toolName string) (*httptest.Server, *mcpServersRecorder)` builds an `mcp.NewServer` with one tool `toolName` whose handler returns text `hello`, wraps it with `mcp.NewStreamableHTTPHandler` (`pkg/runner/hook_mcp_test.go:44`), and wraps the handler in an `http.HandlerFunc` that records each request's `Authorization` header and counts requests. `mcpServersRecorder` holds a mutex-protected `auth []string` and an `atomic.Int64` request count. The tool-call count is the same counter, so a test can distinguish "no request" from "tool not called". The helper is the one new helper; `newHookTestMCPServer` (`pkg/runner/hook_mcp_test.go:17`) does not record headers and is not changed. Live scenarios use `setupTestEnv` (`pkg/runner/run_test.go:24`), `newMockStdoutStderr` (`pkg/runner/run_test.go:44`), `testutil.NewMockLLMServer` (`internal/testutil/mockserver.go:50`), `AnthropicToolUseResponse` (`:154`), `AnthropicResponse` (`:141`), and `hookTestToolResult` (`pkg/runner/run_test.go:1465`) as in `runHookTestMCP` (`pkg/runner/hook_mcp_test.go:50-88`). Agent TOML in these tests sets `tools = []` where no built-in tool is needed.
 
-- [ ] **T2.1: Red: acceptance tests 1, 2a, 2b (R2, R4, R5)**
+- [x] **T2.1: Red: acceptance tests 1, 2a, 2b (R2, R4, R5)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T1.
@@ -98,7 +98,7 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestMCPServers_OptionsOnlyToolsInRequest`, `--- FAIL: TestMCPServers_MergedDistinctNames`, `--- FAIL: TestMCPServers_DuplicateNameConfigError` (each subtest). Filter with `rg -- '--- (PASS|FAIL): TestMCPServers_'`. Record the failing assertions.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above; the race run is required once T3.5 is green.
 
-- [ ] **T2.2: Red: acceptance tests 3 and 4 (R3, R6, R8, R10)**
+- [x] **T2.2: Red: acceptance tests 3 and 4 (R3, R6, R8, R10)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.1.
@@ -109,7 +109,7 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestMCPServers_InvalidServerNoConnect` (each subtest) and `--- FAIL: TestMCPServers_UnsetHeaderEnvConfigError` (subtests `unset` and `empty`; `toml_source` may pass at HEAD, since the TOML path already maps the text match at `pkg/runner/run.go:447`; the `errors.Is` assertion still fails). Record the failing assertions.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
-- [ ] **T2.3: Red: acceptance tests 5 and 6 (R2, R7, R8, R10)**
+- [x] **T2.3: Red: acceptance tests 5 and 6 (R2, R7, R8, R10)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.2.
@@ -120,7 +120,7 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestMCPServers_HeaderExpandedOnWire` (no request recorded) and `--- FAIL: TestMCPServers_DryRunMergedNoHeaders` (the list has one entry). Record the failing assertions.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
-- [ ] **T2.4: Red: acceptance test 8 (red) and guard test 7 (R11, R13)**
+- [x] **T2.4: Red: acceptance test 8 (red) and guard test 7 (R11, R13)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.3.
@@ -131,7 +131,7 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./pkg/runner` shows `--- PASS: TestMCPServers_EmptySliceUnchanged` (guard; passes at HEAD) and `--- FAIL: TestMCPServers_RunDoesNotMutateOptions` (no `mcp_echo` in the request). Filter with `rg -- '--- (PASS|FAIL): TestMCPServers_(EmptySliceUnchanged|RunDoesNotMutateOptions)'`. Record the run.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
-- [ ] **T2.5: Red: acceptance tests 9 and 10 (R10, R12)**
+- [x] **T2.5: Red: acceptance tests 9 and 10 (R10, R12)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.4.
@@ -142,7 +142,7 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestMCPServers_SubAgentNotInherited` (`mock.Requests[0].Body` lacks `mcp_parent_only` because the option server is not connected at HEAD) and `--- FAIL: TestMCPServers_VerboseNoHeaders` (no verbose line for the option server). Filter with `rg -- '--- (PASS|FAIL): TestMCPServers_(SubAgentNotInherited|VerboseNoHeaders)'`. Record the run.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
-- [ ] **T2.6: Red: acceptance test 11 `TestExpandHeaders_UnsetEnvSentinel` (R8, OS5)**
+- [x] **T2.6: Red: acceptance test 11 `TestExpandHeaders_UnsetEnvSentinel` (R8, OS5)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.5.
@@ -151,7 +151,7 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./internal/envinterp` shows `--- FAIL: TestExpandHeaders_UnsetEnvSentinel` (each subtest; `errors.Is` is false). internal/envinterp/envinterp_test.go:78 (TestExpandHeaders_MissingVar) and internal/envinterp/envinterp_test.go:90 (TestExpandHeaders_EmptyVar) pass. Filter with `rg -- '--- (PASS|FAIL): TestExpandHeaders_'`. Record the run.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
-- [ ] **T2.7: Red: acceptance test 12 `TestValidateMCPServers_SharedRules` (R3, R6, R13)**
+- [x] **T2.7: Red: acceptance test 12 `TestValidateMCPServers_SharedRules` (R3, R6, R13)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.6.

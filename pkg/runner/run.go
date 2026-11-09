@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"github.com/jrswab/axe/internal/artifact"
 	"github.com/jrswab/axe/internal/budget"
 	"github.com/jrswab/axe/internal/config"
+	"github.com/jrswab/axe/internal/envinterp"
 	"github.com/jrswab/axe/internal/mcpclient"
 	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
@@ -43,6 +46,19 @@ type toolExecResult struct {
 // Run executes an agent with the given options and returns the result.
 func Run(ctx context.Context, opts Options) (*Result, error) {
 	return run(ctx, opts, provider.New)
+}
+
+func mcpServerConfigs(in []MCPServer) []agent.MCPServerConfig {
+	servers := make([]agent.MCPServerConfig, len(in))
+	for i, server := range in {
+		servers[i] = agent.MCPServerConfig{
+			Name:      server.Name,
+			URL:       server.URL,
+			Transport: server.Transport,
+			Headers:   maps.Clone(server.Headers),
+		}
+	}
+	return servers
 }
 
 func run(ctx context.Context, opts Options, newProvider func(string, string, string) (provider.Provider, error)) (*Result, error) {
@@ -75,6 +91,18 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	if opts.ToolHook != nil && len(cfg.SubAgents) > 0 {
 		return nil, &ConfigError{Msg: "tool hook is not supported with sub_agents"}
 	}
+
+	if err := agent.ValidateMCPServers(mcpServerConfigs(opts.MCPServers), "Options.MCPServers"); err != nil {
+		return nil, &ConfigError{Msg: "invalid MCP server configuration", Err: err}
+	}
+	for _, optionServer := range opts.MCPServers {
+		for _, tomlServer := range cfg.MCPServers {
+			if optionServer.Name == tomlServer.Name {
+				return nil, &ConfigError{Msg: fmt.Sprintf("MCP server name %q is in both mcp_servers and Options.MCPServers", optionServer.Name)}
+			}
+		}
+	}
+	effectiveMCP := append(append([]agent.MCPServerConfig{}, cfg.MCPServers...), mcpServerConfigs(opts.MCPServers)...)
 
 	// Step 3: Apply overrides
 	if opts.Model != "" {
@@ -297,8 +325,8 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 		if cfg.SubAgentsConf.Parallel != nil {
 			parallel = *cfg.SubAgentsConf.Parallel
 		}
-		mcpServers := make([]string, len(cfg.MCPServers))
-		for i, s := range cfg.MCPServers {
+		mcpServers := make([]string, len(effectiveMCP))
+		for i, s := range effectiveMCP {
 			mcpServers[i] = fmt.Sprintf("%s: %s (%s)", s.Name, s.URL, s.Transport)
 		}
 		dryRunUserMessage := userMessage
@@ -429,7 +457,7 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	}
 
 	var mcpRouter *mcpclient.Router
-	if len(cfg.MCPServers) > 0 {
+	if len(effectiveMCP) > 0 {
 		mcpRouter = mcpclient.NewRouter()
 		defer func() { _ = mcpRouter.Close() }()
 
@@ -438,13 +466,13 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 			builtinNames[t.Name] = true
 		}
 
-		for _, serverCfg := range cfg.MCPServers {
+		for _, serverCfg := range effectiveMCP {
 			if opts.Verbose {
 				_, _ = fmt.Fprintf(stderr, "[mcp] Connecting to %q at %s (%s)\n", serverCfg.Name, serverCfg.URL, serverCfg.Transport)
 			}
 			client, connErr := mcpclient.Connect(ctx, serverCfg)
 			if connErr != nil {
-				if strings.Contains(connErr.Error(), "environment variable") || strings.Contains(connErr.Error(), "unsupported MCP transport") {
+				if errors.Is(connErr, envinterp.ErrUnsetEnv) || strings.Contains(connErr.Error(), "environment variable") || strings.Contains(connErr.Error(), "unsupported MCP transport") {
 					return nil, &ConfigError{Msg: fmt.Sprintf("failed to connect MCP server %q", serverCfg.Name), Err: connErr}
 				}
 				return nil, &RuntimeError{Msg: fmt.Sprintf("failed to connect MCP server %q", serverCfg.Name), Err: connErr}

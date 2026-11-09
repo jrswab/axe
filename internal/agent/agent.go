@@ -180,31 +180,8 @@ func Validate(cfg *AgentConfig) error {
 		}
 	}
 
-	seenMCPNames := make(map[string]struct{}, len(cfg.MCPServers))
-	for i, server := range cfg.MCPServers {
-		if strings.TrimSpace(server.Name) == "" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].name is required", i)}
-		}
-		if strings.TrimSpace(server.URL) == "" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url is required", i)}
-		}
-		parsedURL, err := url.ParseRequestURI(strings.TrimSpace(server.URL))
-		if err != nil {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url is invalid: %v", i, err)}
-		}
-		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url must use http or https scheme, got %q", i, parsedURL.Scheme)}
-		}
-		if parsedURL.Host == "" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url must include a host", i)}
-		}
-		if server.Transport != "sse" && server.Transport != "streamable-http" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].transport must be one of: sse, streamable-http", i)}
-		}
-		if _, exists := seenMCPNames[server.Name]; exists {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers names must be unique: %q", server.Name)}
-		}
-		seenMCPNames[server.Name] = struct{}{}
+	if err := ValidateMCPServers(cfg.MCPServers, "mcp_servers"); err != nil {
+		return err
 	}
 
 	if cfg.Retry.MaxRetries < 0 {
@@ -253,6 +230,32 @@ func Validate(cfg *AgentConfig) error {
 
 // ValidateMCPServers checks MCP server configuration, using prefix to label errors.
 func ValidateMCPServers(servers []MCPServerConfig, prefix string) error {
+	seenMCPNames := make(map[string]struct{}, len(servers))
+	for i, server := range servers {
+		if strings.TrimSpace(server.Name) == "" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].name is required", prefix, i)}
+		}
+		if strings.TrimSpace(server.URL) == "" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url is required", prefix, i)}
+		}
+		parsedURL, err := url.ParseRequestURI(strings.TrimSpace(server.URL))
+		if err != nil {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url is invalid: %v", prefix, i, err)}
+		}
+		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url must use http or https scheme, got %q", prefix, i, parsedURL.Scheme)}
+		}
+		if parsedURL.Host == "" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url must include a host", prefix, i)}
+		}
+		if server.Transport != "sse" && server.Transport != "streamable-http" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].transport must be one of: sse, streamable-http", prefix, i)}
+		}
+		if _, exists := seenMCPNames[server.Name]; exists {
+			return &ValidationError{msg: fmt.Sprintf("%s names must be unique: %q", prefix, server.Name)}
+		}
+		seenMCPNames[server.Name] = struct{}{}
+	}
 	return nil
 }
 

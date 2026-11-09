@@ -23,17 +23,17 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported type (`MCPServer`) and an exported field (`Options.MCPServers`) to `pkg/runner`, the external API (D1). It changes config validation (a shared validator) and moves credential-bearing headers through a new input path (security-sensitive). The fast-lane conditions "external contracts untouched" and "no security-sensitive path" both fail.
 - Current phase: `execute`
-- Current task: none
+- Current task: T3.0
 - Task states — checklist checkboxes render from this list:
-- T0: `unchecked`
-- T1: `unchecked`
-- T2.1: `unchecked`
-- T2.2: `unchecked`
-- T2.3: `unchecked`
-- T2.4: `unchecked`
-- T2.5: `unchecked`
-- T2.6: `unchecked`
-- T2.7: `unchecked`
+- T0: `checked`
+- T1: `checked`
+- T2.1: `checked`
+- T2.2: `checked`
+- T2.3: `checked`
+- T2.4: `checked`
+- T2.5: `checked`
+- T2.6: `checked`
+- T2.7: `checked`
 - T3.0: `unchecked`
 - T3.1: `unchecked`
 - T3.2: `unchecked`
@@ -48,8 +48,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T0
-- Last completed phase/task/gate and timestamp: Checklist planning review r3 APPROVED, 2026-11-09T21:07:36.053799+00:00
+- Next safe action: Implement T3.0
+- Last completed phase/task/gate and timestamp: T0-T2.7 PASS (red batch committed aa4ad07), 2026-11-09T21:22:02.023136+00:00
 
 ## Gate evidence
 
@@ -115,8 +115,29 @@ Checklist review r1 (b90d95b) CHANGES REQUESTED F1-F4 blocking, fixed 41af024. r
 
 - Next action: Implement T0
 
+### T0-T2.7 PASS (red batch committed aa4ad07)
+
+- Gate: T0-T2.7 PASS (red batch committed aa4ad07)
+- Commands/results:
+T0: tree clean at 90d803c (orchestrator: checklist's expected ' M checkpoint' line was stale; checkpoint committed at 90d803c), baseline tests ok, toolchain ok. T1: go build/vet ok; go test -race ./internal/agent ./internal/envinterp ./pkg/runner ok. T2.1-T2.7: go test -race -v on the 3 packages exit 1 with exactly 12 prescribed top-level FAILs (OptionsOnlyToolsInRequest, MergedDistinctNames, DuplicateNameConfigError, InvalidServerNoConnect, UnsetHeaderEnvConfigError, HeaderExpandedOnWire, DryRunMergedNoHeaders, RunDoesNotMutateOptions, SubAgentNotInherited, VerboseNoHeaders, TestExpandHeaders_UnsetEnvSentinel, TestValidateMCPServers_SharedRules) each on the missing-behavior assertion; guard EmptySliceUnchanged PASS; 248 PASS; no races/panics. gofmt -l empty; golangci-lint 0 issues.
+- HEAD commit SHA: `aa4ad07392547cb448caf3085a21d8f99a3b7a05`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T3.0
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's "no `t.Setenv`" describes the host, not the test harness; the spec's tests use `t.Setenv`. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005). The PR 103 state was not re-verified by this agent: `gh pr view` failed for missing auth (sandbox credential limit; not retried).
 - Blockers: BLOCKED (orchestrator decision needed, not a spec gap): milestone entry 006 cites stale lines. `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203-215` cites the text match at `pkg/runner/run.go:443`, but the match is at `:447` (`:443` is the verbose connect `Fprintf`). It cites the dry-run server list at `pkg/runner/run.go:296-300`, but it is at `:300-303`. The spec uses the verified lines. The milestone document was not edited (out of scope for this phase).
-- Next action: Implement T0
+- Next action: Implement T3.0
