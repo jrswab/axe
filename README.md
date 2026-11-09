@@ -16,6 +16,8 @@ Axe orchestrates LLM-powered agents defined via TOML configuration files. Each a
 
 Axe is the executor, not the scheduler. It is designed to be composed with standard Unix tools — cron, git hooks, pipes, file watchers — rather than reinventing scheduling or workflow orchestration.
 
+The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md).
+
 ## Features
 
 - **Multi-provider support** — Anthropic, OpenAI, Ollama (local models), OpenCode, and AWS Bedrock

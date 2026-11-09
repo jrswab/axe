@@ -221,6 +221,8 @@ region = "us-east-1"
 
 Design docs live in `./docs/` — check milestones, config schema, sub-agent patterns, and CLI structure there before making architectural changes.
 
+The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md).
+
 ## Custom Instructions
 <!-- This section is for human and agent-maintained operational knowledge.
      Add repo-specific conventions, gotchas, and workflow rules here.

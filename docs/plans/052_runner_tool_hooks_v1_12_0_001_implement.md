@@ -18,13 +18,13 @@ Failing-first convention: this milestone has no Go code, so each task's "Before"
 
 - [ ] **T1: `COMPATIBILITY.md` — create the file, opening statement, and five surface rules (R1, R2)**
   - File: create `COMPATIBILITY.md` at the repository root.
-  - Content: a level-1 title, an opening statement that the file is the compatibility promise for axe v1 releases, and one level-2 heading per surface (or one table row per surface): `pkg/runner` exported API, CLI flags and exit codes, agent TOML keys, `--json` output fields, default runtime behavior.
+  - Content: a level-1 title, an opening statement that the file is the compatibility promise for axe v1 releases, and one level-2 heading per surface: `pkg/runner` exported API, CLI flags and exit codes, agent TOML keys, `--json` output fields, default runtime behavior.
   - API rules (D1): no exported identifier removed or changed; additions allowed; callers use keyed struct literals; exported structs are not compared with `==`.
   - CLI, TOML, and `--json` rules: additive only.
   - Runtime rule: unchanged except documented bug fixes.
   - Do not state a concrete apidiff pin or a Go version in this task.
   - Before (must fail): `test -f COMPATIBILITY.md` exits 1.
-  - After (must pass): `test -f COMPATIBILITY.md` exits 0; `rg -n -i "api|cli|toml|json|runtime" COMPATIBILITY.md` shows a rule for each of the five surfaces; `rg -n "^#" COMPATIBILITY.md` shows a heading or row for each surface.
+  - After (must pass): `test -f COMPATIBILITY.md` exits 0; `rg -n -i "api|cli|toml|json|runtime" COMPATIBILITY.md` shows a rule for each of the five surfaces; `rg -n "^#" COMPATIBILITY.md` shows a heading for each surface.
   - Per-task gate: `git diff --name-only -- '*.go'` prints nothing.
 
 - [ ] **T2: `COMPATIBILITY.md` — opt-in rule for behavior changes and the planned enforcement section (R3, R4)**
