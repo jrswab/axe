@@ -42,8 +42,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: Commit checkpoint review fixes, rerun factory-gate test at new HEAD, spec/records review round 2, then completion gate
-- Last completed phase/task/gate and timestamp: T15 PR #103 CI PASS, 2026-11-09T15:11:44.560139+00:00
+- Next safe action: Spec/records code review round 3 on be94237..HEAD, then the completion gate
+- Last completed phase/task/gate and timestamp: Spec/records review round 2 fixes (F4, F5); factory-gate test PASS at 6ebb5e5, 2026-11-09T15:19:39.374916+00:00
 
 ## Gate evidence
 
@@ -261,6 +261,10 @@ factory-sync (origin/master): exit 0, ahead 12, behind 1, shared_files [.gitigno
 - Gate: T15 PR #103 CI PASS
 - Commands/results:
 factory-gh gh pr checks 103: exit 0. build pass 23s, config-sections pass 35s, dry-run pass 28s, lint pass 26s, piped-input pass 1m29s, providers pass 27s, test pass 1m56s, tools pass 55s (runs 42641304854, 42641304692). CodeRabbit: skipping (not a failure).
+- go.yml run (build, lint, test): https://github.com/jrswab/axe/actions/runs/42641304854
+- smoke-test.yml run (config-sections, dry-run, piped-input, providers, tools): https://github.com/jrswab/axe/actions/runs/42641304692
+- CI checked out merge commit a480d1c ("Merge cbfe42b... into d1e8f4b").
+- setup-go (go.yml build job 129242817244 log): input `go-version-file: go.mod`; "Setup go version spec 1.26.0"; "Successfully set up Go version 1.26.0"; then "go: downloading go1.26.10 (linux/amd64)" (go.mod toolchain directive selected go1.26.10); cache key `setup-go-Linux-x64-ubuntu26-go-1.26.10-...`.
 - HEAD commit SHA: `ecdab5e1ecd957eb25ea673f52e05dcaab951fdd`
 - Relevant work: `uncommitted` — stash ref `70ee878808ab2e72df6245288993b88ddda21cc1` (tracked files except intent-to-add; never applied)
 - `git status --porcelain` (before checkpoint/checkbox writes):
@@ -277,8 +281,35 @@ factory-gh gh pr checks 103: exit 0. build pass 23s, config-sections pass 35s, d
 
 - Next action: Commit checkpoint review fixes, rerun factory-gate test at new HEAD, spec/records review round 2, then completion gate
 
+### Spec/records review round 2 fixes (F4, F5); factory-gate test PASS at 6ebb5e5
+
+- Gate: Spec/records review round 2 fixes (F4, F5); factory-gate test PASS at 6ebb5e5
+- Commands/results:
+factory-gate run --gate test at HEAD 6ebb5e5: poll exit 0, PASS, log /tmp/factory-gate-1001/gate-test-6ebb5e57807b-20261109T151412Z.log (go test -race ./...).
+factory-sync at 6ebb5e5: exit 0, ahead 15, behind 0, shared_files [], conflicts [], synced true.
+T15 CI evidence (F5): PR #103 head cbfe42b; CI checked out merge commit a480d1c ("Merge cbfe42b... into d1e8f4b").
+- go.yml run (build, lint, test): https://github.com/jrswab/axe/actions/runs/42641304854 - all jobs passed.
+- smoke-test.yml run (config-sections, dry-run, piped-input, providers, tools): https://github.com/jrswab/axe/actions/runs/42641304692 - all jobs passed.
+- setup-go evidence (go.yml build job 129242817244 log): input go-version-file: go.mod; "Setup go version spec 1.26.0"; "Successfully set up Go version 1.26.0"; then "go: downloading go1.26.10 (linux/amd64)" (go.mod toolchain directive selected go1.26.10); cache key setup-go-Linux-x64-ubuntu26-go-1.26.10-...
+- All 8 jobs passed. CodeRabbit status "skipping" is not a failure.
+- HEAD commit SHA: `6ebb5e57807ba4bc6db3fcc8011a744458030631`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Spec/records code review round 3 on be94237..HEAD, then completion gate
+
 ## Limitations & blockers
 
-- Limitations: remaining work: (a) spec/records code review round 2 on the checkpoint fix (round 1 at HEAD ecdab5e: backend APPROVED; spec/records CHANGES REQUESTED, three checkpoint findings fixed in f710854). (b) Completion gate not yet run. T15 is done: PR #103 CI passed all GitHub Actions jobs; CodeRabbit reported skipping.
+- Limitations: remaining work: (a) spec/records code review round 3 on be94237..HEAD, after round 2 fixes F4 and F5 at 6ebb5e5 (round 1 at HEAD ecdab5e: backend APPROVED; spec/records CHANGES REQUESTED, three checkpoint findings fixed in f710854). (b) Completion gate not yet run. T15 is done: PR #103 CI passed all GitHub Actions jobs; CodeRabbit reported skipping.
 - Blockers: `none` — the factory-gates.json blocker cleared when PR #104 merged to master (538632e) and factory-sync merged it into the branch (ecdab5e).
-- Next action: Commit checkpoint review fixes, rerun factory-gate test at new HEAD, spec/records review round 2, then completion gate
+- Next action: Spec/records code review round 3 on be94237..HEAD, then the completion gate.
