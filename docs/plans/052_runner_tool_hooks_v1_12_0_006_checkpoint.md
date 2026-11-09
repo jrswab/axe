@@ -22,11 +22,13 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported type (`MCPServer`) and an exported field (`Options.MCPServers`) to `pkg/runner`, the external API (D1). It changes config validation (a shared validator) and moves credential-bearing headers through a new input path (security-sensitive). The fast-lane conditions "external contracts untouched" and "no security-sensitive path" both fail.
-- Current phase: `spec`
+- Current phase: `checklist-pending`
 - Current task: none
-- Task states: `none` (checklist not yet written; planning and fast-lane states do not apply)
+- Task states — checklist checkboxes render from this list:
+none
 - Milestone checkbox: `unchecked`
-- Last completed phase/task/gate and timestamp: spec draft written and spec-lint PASS (85 citations, 0 findings); phase `spec`, no timestamp recorded by this agent.
+- Last completed phase/task/gate and timestamp: Spec planning review r1 APPROVED, 2026-11-09T20:39:07.497505+00:00
+- Next safe action: Draft implementation checklist docs/plans/052_runner_tool_hooks_v1_12_0_006_implement.md
 
 ## Gate evidence
 
@@ -50,8 +52,29 @@ One entry per gate or cap decision (review, lint, verification, completion), inc
 
 - Next action: spec planning review round 1 (the orchestrator dispatches it).
 
+### Spec planning review r1 APPROVED
+
+- Gate: Spec planning review r1 APPROVED
+- Commands/results:
+spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_006_spec.md -> exit 0, 85 citations, 0 findings. docs-lint --since a13e3bc -> exit 0. Review r1 (spec vs milestones.md:203-215): APPROVED, no findings. Milestone entry cites stale lines (run.go:443 -> current :447; run.go:296-300 -> current :300-303); spec cites verified current lines; milestone doc left unchanged (citation drift only, no scope change).
+- HEAD commit SHA: `63c85f6cbf177315349ce39ef43d6686cee8bef0`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Draft implementation checklist docs/plans/052_runner_tool_hooks_v1_12_0_006_implement.md
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's "no `t.Setenv`" describes the host, not the test harness; the spec's tests use `t.Setenv`. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005). The PR 103 state was not re-verified by this agent: `gh pr view` failed for missing auth (sandbox credential limit; not retried).
 - Blockers: BLOCKED (orchestrator decision needed, not a spec gap): milestone entry 006 cites stale lines. `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:203-215` cites the text match at `pkg/runner/run.go:443`, but the match is at `:447` (`:443` is the verbose connect `Fprintf`). It cites the dry-run server list at `pkg/runner/run.go:296-300`, but it is at `:300-303`. The spec uses the verified lines. The milestone document was not edited (out of scope for this phase).
-- Next action: spec planning review round 1 of `052_runner_tool_hooks_v1_12_0_006_spec.md`. The orchestrator also decides whether to correct the two milestone citations.
+- Next action: Draft implementation checklist docs/plans/052_runner_tool_hooks_v1_12_0_006_implement.md
