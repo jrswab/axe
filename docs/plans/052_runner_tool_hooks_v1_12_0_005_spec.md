@@ -130,7 +130,7 @@ Requirements R1-R3 are the public API. R4-R8 are the event contents. R9-R12 are 
 
 - `CallID` equals `Call.ID`.
 - `IsError` equals the `IsError` of the result that the model receives for that call, after the decision is applied. A deny is `true`. A stub is `false`. A dispatch error result is `true` (`pkg/runner/run.go:978`, `:1006`).
-- Verification: acceptance test 3 (R14).
+- Verification: acceptance tests 3 and 11 (R14).
 
 ### R5: Content length is the full byte length
 
@@ -153,7 +153,7 @@ Requirements R1-R3 are the public API. R4-R8 are the event contents. R9-R12 are 
 ### R8: Nil observer is byte-identical
 
 - With `ToolObserver` nil, no event is built and no new code runs in the turn loop beyond a nil check. Output, tool results, `Result`, and JSON are unchanged (D2).
-- Verification: acceptance test 5 (R14) and the existing golden test (acceptance test 6).
+- Verification: acceptance test 5 (R14) and the existing golden test (acceptance test 9).
 
 ### R9: Observer panic is recovered and reported with one fixed line
 
@@ -166,15 +166,15 @@ Requirements R1-R3 are the public API. R4-R8 are the event contents. R9-R12 are 
 
 - A non-empty `sub_agents` list with a non-nil observer is not a `ConfigError` (OD11). Only `ToolHook` keeps the sub-agent `ConfigError` (`pkg/runner/run.go:74-76`).
 - `call_agent` calls produce events like any other call (OD11).
-- Verification: acceptance test 3 covers a hook deny with an observer set; the sub-agent case is covered by the existing hook test `TestToolHookSubAgentConfigError` (`pkg/runner/run_test.go:1856`), which runs with `ToolObserver` unset. No new sub-agent test is added (OD11).
+- Verification: acceptance test 3 covers a hook deny with an observer set. Acceptance test 12 covers `sub_agents` with a nil hook and a non-nil observer, and asserts the run proceeds and the `call_agent` event is delivered. The existing `TestToolHookSubAgentConfigError` (`pkg/runner/run_test.go:1856`) runs with `ToolObserver` unset, so it does not verify this rule (OD11).
 
 ### R11: Cancellation, dry run, and budget emit no events
 
 - A cancellation error from the decision pass (`pkg/runner/run.go:959-961`), returned by `executeToolCalls` (`pkg/runner/run.go:896`), emits no event for that turn (OD9). The error is returned from the run (`pkg/runner/run.go:666-667`).
-- Cancellation during dispatch emits one event per call of that turn (OD9).
+- Cancellation during dispatch emits one event per call of that turn (OD9), with `IsError` `true` for each dispatch that ended with an error result (test 10).
 - A dry run emits no event (OD10, `pkg/runner/run.go:282-333`).
 - A budget break before dispatch emits no event (OD10, `pkg/runner/run.go:651-653`).
-- Verification: acceptance tests 7 and 8 (R14).
+- Verification: acceptance tests 7, 8, and 10 (R14).
 
 ### R12: Nil hook gives `ToolAllow` for every event
 
@@ -192,15 +192,22 @@ Requirements R1-R3 are the public API. R4-R8 are the event contents. R9-R12 are 
 
 All tests are in `pkg/runner/run_test.go` (OD13). Test names use the prefix `TestToolObserver`. Each test is a table or subtest where the cases differ only by input. Tests that use `setupTestEnv` (`pkg/runner/run_test.go:22`) cannot use `t.Parallel`.
 
-1. **Order and fields, sequential and parallel.** Table cases: `parallel = false` and `parallel = true`. The model returns three `write_file` calls in one turn (`a.txt`, `b.txt`, `c.txt`), as in `TestRun_ParallelToolExecution` (`pkg/runner/run_test.go:433`). The observer records each event's `CallID`, `Turn`, `IsError`, `Duration`, and `Call.Arguments`. Assert the events are in model order, every `Turn` is `0`, and every `Action` is `ToolAllow`. In the parallel case, the observer also asserts that all three target files exist when it is called, which shows it runs after the join (R2). Assert `Call.Arguments` equals the parsed arguments and that a mutation in the observer does not change the next request's messages (R7). Include a fourth case with an observer that mutates `Call.Arguments` and check the next request's assistant tool call arguments are unchanged.
+1. **Order, fields, and arguments.** Four subtests, run in this order. Each uses one turn with three `write_file` calls (`a.txt`, `b.txt`, `c.txt`), as in `TestRun_ParallelToolExecution` (`pkg/runner/run_test.go:433`).
+   - 1a, sequential order: `parallel = false`. The observer records each event's `CallID`, `Turn`, `IsError`, `Duration`, and `Call.Arguments`. Assert the events are in model order, every `Turn` is `0`, and every `Action` is `ToolAllow`.
+   - 1b, parallel order and post-join: `parallel = true`. Assert the same as 1a. The observer also asserts that all three target files exist when it is called, which shows it runs after the join (R2).
+   - 1c, argument equality: the observer records `Call.Arguments`. Assert each equals the parsed arguments of the model's call, with the same key-value pairs.
+   - 1d, argument mutation: the observer sets an extra key in each event's `Call.Arguments`. Assert the next request's assistant tool call arguments equal the original parsed arguments, so the mutation changes no history (R7, OD7).
 2. **Full content length.** The workdir holds a file of 4096 bytes, and the model calls `read_file` on it. The observer event's `ContentLength` is greater than 1024 and equals the byte length of the `tool` message content in the next request (`capturingProvider.requests`, `pkg/runner/run_test.go:46-48`). `Result.ToolCallDetails` is not inspected here (JSON is off). The event has no content field (R7).
-3. **Deny, stub, and hook error.** Table cases, each with a `write_file` call and a hook: (a) hook `ToolDeny` with empty content, (b) hook `ToolStub` with `Content: "stub text"`, (c) hook returns an error, (d) hook returns `ToolAction("bogus")`. Assert the event `Action` is `ToolDeny`, `ToolStub`, `ToolDeny`, and `ToolDeny` respectively; `IsError` is `true`, `false`, `true`, and `true`; `Duration` is zero; `ContentLength` equals the length of the content the model receives. The file is not created in cases (a), (c), and (d). Also assert the hook's error text is absent from the observer event fields (`Call`, `Action`, `CallID`, `IsError`, `ContentLength`, `Duration`, `Turn`).
+3. **Deny, stub, hook error, hook panic, and bogus action.** Table cases, each with a `write_file` call and a hook: (a) hook `ToolDeny` with empty content, (b) hook `ToolStub` with `Content: "stub text"`, (c) hook returns an error, (d) hook returns `ToolAction("bogus")`, (e) hook panics. Assert the event `Action` is `ToolDeny`, `ToolStub`, `ToolDeny`, `ToolDeny`, and `ToolDeny` respectively; `IsError` is `true`, `false`, `true`, `true`, and `true`; `Duration` is zero; `ContentLength` equals the length of the content the model receives. The file is not created in cases (a), (c), (d), and (e). Also assert the hook's error text and panic text are absent from the observer event fields (`Call`, `Action`, `CallID`, `IsError`, `ContentLength`, `Duration`, `Turn`).
 4. **Observer panic.** The observer panics on its first event. `Options.Stderr` is a buffer from `newMockStdoutStderr` (`pkg/runner/run_test.go:42-44`). Assert `err` is `nil`, the `Result` is non-nil, the stderr buffer contains exactly one line equal to `Warning: tool observer panicked`, and the stderr buffer contains no argument or panic text. Use a turn with two calls, and assert the observer is called twice (delivery continues, R9).
 5. **Nil observer is unchanged.** A run with no observer and no hook produces the same `Result.Content`, `ToolCalls`, and tool result content as before the change. `Result.ToolCallDetails` is `nil` when `JSON` is false (`pkg/runner/run.go:762-764`).
 6. **Nil hook gives `ToolAllow`.** An observer is set, `ToolHook` is nil, and the model calls `read_file`. The event `Action` is `ToolAllow` (R12).
 7. **Cancellation during decision.** Reuse the scenario of `TestToolHookCancelDuringDecision` (`pkg/runner/run_test.go:1887`) with an observer set. Assert the observer was not called and the run returns the cancellation error (R11, OD9).
 8. **Dry run and budget.** Table cases: a dry run with the observer set (no calls, no events, `Run` returns a dry-run result) and a budget that is exceeded before dispatch (no events for that turn). Assert zero events.
 9. **Golden JSON unchanged.** Run `go test ./cmd -run TestGolden -count=1` (`cmd/golden_test.go:205`). The golden files are unchanged: `git diff --name-only c2620fb -- cmd/testdata` is empty. The CLI cannot set an observer, so this is a regression check, not a new seam (milestone test 6).
+10. **Cancellation during dispatch** (`TestToolObserverDispatchCancel`). Set `Options.Timeout` to `1`, which sets the request context deadline (`pkg/runner/run.go:267-268`, `:335`). The agent has `tools = ["run_command"]` and there is no hook. The model returns two `run_command` calls in one turn, each with command `sleep 2` (parallel by default). The deadline expires while both dispatches run, so `executeToolCalls` returns without error (`pkg/runner/run.go:1014-1020`). Assert the observer is called exactly twice, in model order. Each event has `Action` `ToolAllow`, `Turn` `0`, `IsError` `true`, and `CallID` equal to `Call.ID` and to the model's call ID. Do not assert `Duration` or the run's final error, because the next request runs on the expired context. Determinism: `sleep 2` cannot finish before the 1-second deadline, so each dispatch ends with an error result whatever the timing. The test relies on the first provider request completing within that deadline, which the immediate mock response does. The test takes about one second.
+11. **Dispatch error, no hook** (`TestToolObserverDispatchError`). Set the observer, no hook. The model calls an unregistered tool `no_such_tool` (ID `tool_1`). The registry returns `unknown tool "no_such_tool"` (`internal/tool/registry.go:85`), which the runner converts to an error result (`pkg/runner/run.go:977-978`). Assert one event with `Action` `ToolAllow`, `IsError` `true`, `CallID` and `Call.ID` both `tool_1`, `Call.Name` `no_such_tool`, and `ContentLength` equal to the length of that error content.
+12. **Sub-agent with no hook** (`TestToolObserverSubAgentNoHook`). Set `sub_agents = ["child-agent"]`, no `ToolHook`, and the observer. The parent model calls `call_agent` (ID `tool_1`), and the child agent returns text, as in `TestRun_SubAgent` (`pkg/runner/run_test.go:764`). Assert `err` is `nil`, the `Result` is non-nil, and exactly one event is delivered with `Call.Name` `call_agent`, `CallID` `tool_1`, `Action` `ToolAllow`, and `IsError` `false` (OD11, R10).
 
 ### R15: Concurrency and cross-run ordering
 
@@ -217,7 +224,7 @@ All tests are in `pkg/runner/run_test.go` (OD13). Test names use the prefix `Tes
 - The `ToolEvent` and `ToolObserver` types and the `Options` field (R1) must exist before the event wiring compiles.
 - The doc comments (R13) are written with R1.
 - The CHANGELOG bullet (R16) is independent of the code.
-- Tests 1-8 (R14) share one file and are written after the wiring (R2-R12).
+- Tests 1-12 (R14) share one file and are written after the wiring (R2-R12).
 
 ## Serial dependencies
 
@@ -247,13 +254,13 @@ Focused race check (after R14 tests exist): the race-enabled run of the `TestToo
 
 ## Failure modes
 
-1. **Observer called from a goroutine in the parallel branch.** Events would race and lose model order. Mitigation: the caller loop in the turn loop calls the observer after the join (OD1, R2, test 1 parallel case).
+1. **Observer called from a goroutine in the parallel branch.** Events would race and lose model order. Mitigation: the caller loop in the turn loop calls the observer after the join (OD1, R2, test 1b).
 2. **Result text reaches the observer.** Mitigation: `ToolEvent` has no content field (R7, R13); test 2 asserts only `ContentLength`.
 3. **Truncated length reported.** `ContentLength` would be capped at 1024. Mitigation: length is taken before `truncateOutput` (OD5, R5, test 2).
 4. **Raw hook output recorded as `Action`.** A hook returning `bogus` would record `bogus`. Mitigation: OD2 and R3, test 3 case (d).
-5. **Observer mutates history.** Mitigation: OD7 copy (R7, test 1 mutation case).
+5. **Observer mutates history.** Mitigation: OD7 copy (R7, test 1d).
 6. **Panic value leaks to stderr.** Mitigation: fixed line with no interpolation (OD8, R9, test 4).
-7. **Cancelled turn reports events for calls that did not run.** Mitigation: OD9 and R11, test 7.
+7. **Cancelled turn reports events for calls that did not run.** Mitigation: OD9 and R11, tests 7 and 10.
 8. **Dry run reports events.** Mitigation: the dry-run return (`pkg/runner/run.go:282-333`) precedes all dispatch (OD10, test 8).
 9. **Nil observer changes JSON.** Mitigation: no change to `ToolCallDetail` (R8, test 5, test 9).
 
@@ -261,5 +268,5 @@ Focused race check (after R14 tests exist): the race-enabled run of the `TestToo
 
 - The observer is verified in-process through `run()` with `capturingProvider` or `testutil.NewMockLLMServer`. The CLI cannot set an observer, so no CLI test of the observer exists.
 - Concurrency across `Run` calls that share one observer is documented (R13), not tested.
-- The `Duration` value for dispatched calls excludes hook time (OD6); this is verified by test 1 asserting zero only for the hook-decided case, not by a timing bound.
+- The `Duration` value for dispatched calls excludes hook time (OD6); this is verified by test 3 asserting zero only for the hook-decided cases, not by a timing bound.
 - The fixed panic line is verified by exact match in test 4; the wording itself is a decision (OD8), not a stable public contract.

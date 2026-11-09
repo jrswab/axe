@@ -24,13 +24,14 @@ Absolute paths inside the Repository root (the feature worktree).
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, the external Go API contract (D1), and runs on the parallel tool dispatch path in `executeToolCalls` (`pkg/runner/run.go:896`, parallel branch `:985-1018`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `spec`
 - Current task: none
-- Task states: `none` (no checklist yet)
+- Task states — checklist checkboxes render from this list:
+none
 - Milestone checkbox: `unchecked`
 - Review: not started
 - Blockers: none
 - Relevant work: `uncommitted` — the two new spec and checkpoint files are untracked; no code, milestone doc, or 004 artifact is changed; nothing committed.
-- Last completed phase/task/gate and timestamp: spec drafted (`005_spec.md`) at HEAD `c2620fb`; checkpoint written; lint pending.
-- Next safe action: Planning review of 005 spec
+- Next safe action: Planning review of 005 spec, round 1
+- Last completed phase/task/gate and timestamp: 005 spec planning review round 1 pre-lint PASS, 2026-11-09T19:07:30.245950+00:00
 
 ## Gate evidence
 
@@ -44,8 +45,29 @@ One entry per gate or cap decision (review, lint, verification, completion), inc
 - `git status --porcelain` (after both lints): `?? docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md` and `?? docs/plans/052_runner_tool_hooks_v1_12_0_005_spec.md`. Nothing else.
 - Relevant work: `uncommitted` — stash ref `none`
 
+### 005 spec planning review round 1 pre-lint PASS
+
+- Gate: 005 spec planning review round 1 pre-lint PASS
+- Commands/results:
+milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0 (13 entries). factory-sync: exit 0 ahead 60 behind 0 synced. spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_005_spec.md: exit 0, 160 citations, 2 -run patterns, 0 findings.
+- HEAD commit SHA: `2a40fb7030978a9e282ca20ee2d32af0d3474328`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Planning review of 005 spec, round 1
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's test 6 (`--json` golden unchanged) is a regression check through `cmd/golden_test.go`, which may need a writable `~/.cache/axe` in this sandbox (environmental, as recorded for 004).
 - Blockers: `none`
-- Next action: Planning review of 005 spec
+- Next action: Planning review of 005 spec, round 1
