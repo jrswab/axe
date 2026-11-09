@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, which is the external Go API contract (D1), and edits the parallel dispatch path in `executeToolCalls` (`pkg/runner/run.go:890`, parallel branch `:945-974`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T8
+- Current task: T9
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -44,14 +44,14 @@ Absolute paths inside the Repository root (the feature worktree).
 - T6: `checked`
 - T7: `checked`
 - T7.1: `checked`
-- T8: `unchecked`
+- T8: `checked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
 - Review: `pending`
 - Blockers: none
 - Relevant work: `uncommitted` — spec and checkpoint are new untracked files; the 003 checkpoint Review line is modified (uncommitted). No implementation change.
-- Next safe action: Run T8 scope checks
-- Last completed phase/task/gate and timestamp: T4-T7.1 gates PASS at 848f262, 2026-11-09T18:37:43.574931+00:00
+- Next safe action: Run review gates (factory-gate test + lint) and code review round 1
+- Last completed phase/task/gate and timestamp: T8 scope checks PASS at 6b1d592, 2026-11-09T18:43:14.215714+00:00
 
 ## Gate evidence
 
@@ -183,10 +183,31 @@ T4-T7 verification-only at 74affae: go test -v ./pkg/runner exit 0 (12 TestToolH
 
 - Next action: Run T8 scope checks
 
+### T8 scope checks PASS at 6b1d592
+
+- Gate: T8 scope checks PASS at 6b1d592
+- Commands/results:
+T8 at 848f262/6b1d592: git diff --name-only 09d100d excluding plan docs = exactly CHANGELOG.md + pkg/runner/{hook.go,hook_mcp_test.go,options.go,run.go,run_test.go}; go.mod/go.sum/cmd/internal/cmd/testdata unchanged (name-only empty; --exit-code form blocked by read-only guard); rg ToolHook/fixed text/run goroutine/sub_agents present; one toolDenyText constant at hook.go:8. run.go removed lines = call site, signature, return results, plus two superseded executeToolCalls doc-comment lines (replaced by new comment run.go:894-895; harmless deviation from T8 wording). git status wording assumed uncommitted tree; substance holds. spec-lint initially exit 1 (5 stale run.go citations from line shifts), fixed in 6b1d592, rerun exit 0 (49 and 93 citations, 0 findings). docs-lint 1 --since 09d100d exit 0, 0 findings. records-stale-check 09d100d exit 0, no removed names. R1-R14 each mapped to code/test at HEAD, no gaps.
+- HEAD commit SHA: `6b1d592b3e4d174e7bbbd2ea26d916d3070d7ff1`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run review gates (factory-gate test + lint) and code review round 1
+
 ## Limitations & blockers
 
 - Limitations:
   - The spec's focused race command (`go test -race -run TestToolHookParallelTurn ./pkg/runner`, milestone test 11) is not in the spec's fenced acceptance block. The test does not exist yet, so `spec-lint` reports "selects no test in current files" for it. It is stated in prose as R13 test 11 and must be added to the implementation checklist.
   - No code is written in this phase. Tests 1-13 in the spec are unimplemented.
 - Blockers: `none`
-- Next action: Run T8 scope checks
+- Next action: Run review gates (factory-gate test + lint) and code review round 1

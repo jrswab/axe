@@ -250,7 +250,7 @@ Phase 2 red-run check: after T2.1-T2.7, run `go test -v ./pkg/runner` and filter
   - Verification: `git diff --numstat -- CHANGELOG.md` → `1	0	CHANGELOG.md`; `git diff -- CHANGELOG.md` shows one added line inside `[Unreleased]` `### Added`.
   - Per-task gate: no Go file changes; `git diff --name-only -- '*.go'` is unchanged by this task, so no race run is needed.
 
-- [ ] **T8: Scope, module, and API checks (R14, D1, R12)**
+- [x] **T8: Scope, module, and API checks (R14, D1, R12)**
   - Budget: 30 min
   - Depends on: T7.1.
   - Files: none (verification only).
