@@ -21,8 +21,8 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — changes `go.mod` toolchain and a dependency version (build configuration, dependency change), so the fast-lane conditions fail.
-- Current phase: `execute`
-- Current task: T9
+- Current phase: `blocked`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
@@ -42,8 +42,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: T9: Jaron runs docker build on host; then review gate
-- Last completed phase/task/gate and timestamp: T4-T8, T10-T14 verification PASS (commit 4674a4f), 2026-11-09T14:26:53.225971+00:00
+- Next safe action: User decision: how to obtain review gate evidence (factory-gates.json on master); Jaron runs docker build for T9
+- Last completed phase/task/gate and timestamp: Pre-review full test run PASS; review gate BLOCKED (no factory-gates.json), 2026-11-09T14:35:53.131461+00:00
 
 ## Gate evidence
 
@@ -172,8 +172,29 @@ Workflows go.yml:19,32,47, smoke-test.yml:19,70,105,164,212, release.yml:24 -> g
 
 - Next action: T9: Jaron runs docker build on host; then review gate
 
+### Pre-review full test run PASS; review gate BLOCKED (no factory-gates.json)
+
+- Gate: Pre-review full test run PASS; review gate BLOCKED (no factory-gates.json)
+- Commands/results:
+factory-sync: exit 0, ahead 9 behind 0, no conflicts. XDG_CACHE_HOME=$(mktemp -d) GOTOOLCHAIN=go1.26.10 go test -race: all 18 packages ok (full ./... run cut by 110s subagent tool timeout after 13 ok packages; toolname, xdg, pkg/runner, internal/tool rerun per package, all exit 0). go vet ./...: exit 0. golangci-lint run: 0 issues. factory-gate run --gate test: exit 1, '.agents/factory-gates.json is not committed at d1e8f4b' (origin/master), so no review test evidence log can exist. T9 host docker build pending Jaron. T15 CI pending push.
+- HEAD commit SHA: `b28c3e9533e507f087649e3a0f946b0385c4a847`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: User decision: how to obtain review gate evidence (factory-gates.json on master); Jaron runs docker build for T9
+
 ## Limitations & blockers
 
 - Limitations: `Spec and checklist files do not exist yet (spec phase). Govulncheck baseline has not been re-run after the pin; acceptance is unverified until implementation.`
 - Blockers: `none`
-- Next action: T9: Jaron runs docker build on host; then review gate
+- Next action: User decision: how to obtain review gate evidence (factory-gates.json on master); Jaron runs docker build for T9
