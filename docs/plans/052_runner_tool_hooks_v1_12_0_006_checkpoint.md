@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported type (`MCPServer`) and an exported field (`Options.MCPServers`) to `pkg/runner`, the external API (D1). It changes config validation (a shared validator) and moves credential-bearing headers through a new input path (security-sensitive). The fast-lane conditions "external contracts untouched" and "no security-sensitive path" both fail.
-- Current phase: `execute`
+- Current phase: `complete`
 - Current task: T9
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
@@ -47,9 +47,9 @@ Absolute paths inside the Repository root (the feature worktree).
 - T7.1: `checked`
 - T8: `checked`
 - T9: `checked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Review gate: records-stale-check a13e3bc, docs-lint --since a13e3bc, factory-gate test+lint at HEAD, split review (backend, spec/records) round 1 range a13e3bc..HEAD
-- Last completed phase/task/gate and timestamp: T4-T9 verification PASS at b567390, 2026-11-09T21:58:32.835835+00:00
+- Milestone checkbox: `checked`
+- Next safe action: Restart validation, factory-sync, factory-gh push --require-open-pr, CI snapshot PR 103, then milestone 007
+- Last completed phase/task/gate and timestamp: Review gate PASS + Completion gate PASS at 7cc7ccf, 2026-11-09T22:07:45.401565+00:00
 
 ## Gate evidence
 
@@ -178,8 +178,29 @@ Session sync: factory-sync (origin/master) exit 0, ahead 79, behind 0, shared_fi
 
 - Next action: Review gate: records-stale-check a13e3bc, docs-lint --since a13e3bc, factory-gate test+lint at HEAD, split review (backend, spec/records) round 1 range a13e3bc..HEAD
 
+### Review gate PASS + Completion gate PASS at 7cc7ccf
+
+- Gate: Review gate PASS + Completion gate PASS at 7cc7ccf
+- Commands/results:
+Records review: records-stale-check a13e3bc 'No removed or renamed names'; docs-lint 1 --since a13e3bc exit 0 (193 files, 0 findings) at e3f1ce8 and 7cc7ccf. Review round 1 at e3f1ce8 (range a13e3bc..HEAD, split): backend APPROVED (test evidence gate-test-e3f1ce8c8198-20261109T215840Z exit 0, lint gate-lint-e3f1ce8c8198-20261109T215840Z exit 0); spec/records CHANGES REQUESTED F1-F4 blocking (checkpoint '(not yet written)', milestone-checkbox timing, stale Blockers entry, T9 wording) + F5 nit (spec predecessors); fixed in 7cc7ccf (F2 needed no change: checkbox renders at completion gate). Spec/records round 2 at 7cc7ccf APPROVED (test evidence gate-test-7cc7ccfbc8a4-20261109T220236Z exit 0). Gate verdict: APPROVED. Completion gate: factory-sync origin/master exit 0 (ahead 83, behind 0, shared_files [], conflicts []); go test -race ./... via factory-gate test gate-test-7cc7ccfbc8a4-20261109T220236Z exit 0 at 7cc7ccf; golangci-lint via factory-gate lint gate-lint-7cc7ccfbc8a4-20261109T220613Z exit 0 at 7cc7ccf; explore requirement check R1-R15 and spec tests 1-12 all MET (go test -list confirmed), git status clean, all 12 changed paths classified (implementation/test/CHANGELOG/planning record). Non-blocking note: R3 validation runs ValidateMCPServers on the option list plus a cross-source duplicate loop (run.go:95,98-103) and TOML at load (agent.go:183), behaviorally equivalent to one merged-set call; backend review approved. Build/vet/cmd/apidiff evidence from T4/T7 at d33282c still applies: later commits changed only CHANGELOG.md and docs/plans.
+- HEAD commit SHA: `7cc7ccfbc8a408a8ececb740467ac1782680b4c7`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Restart validation, factory-sync, factory-gh push --require-open-pr, CI snapshot PR 103, then milestone 007
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's "no `t.Setenv`" describes the host, not the test harness; the spec's tests use `t.Setenv`. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005). The PR 103 state was not re-verified by this agent: `gh pr view` failed for missing auth (sandbox credential limit; not retried).
 - Blockers: none. (Earlier blocker, resolved at b567390: milestone entry 006 cited stale `pkg/runner/run.go` lines; corrected to `:475` and `:328-331`. See the T4-T9 gate evidence.)
-- Next action: Review gate: records-stale-check a13e3bc, docs-lint --since a13e3bc, factory-gate test+lint at HEAD, split review (backend, spec/records) round 1 range a13e3bc..HEAD
+- Next action: Restart validation, factory-sync, factory-gh push --require-open-pr, CI snapshot PR 103, then milestone 007

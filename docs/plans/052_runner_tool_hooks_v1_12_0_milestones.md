@@ -200,7 +200,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
     6. The `--json` golden output is unchanged.
     7. Observer set, no hook: every event has `Action` `ToolAllow`.
 
-- [ ] 006: Pass MCP servers from code with `Options.MCPServers`
+- [x] 006: Pass MCP servers from code with `Options.MCPServers`
   - Slice enabled: a host connects to MCP servers, including a Bearer header from an env var, with no TOML file and no `t.Setenv`.
   - Depends on: 002.
   - Scope: new exported `type MCPServer struct{Name, URL, Transport string; Headers map[string]string}` in `pkg/runner`, with the same fields as `agent.MCPServerConfig` (`internal/agent/agent.go:114`). Add `MCPServers []MCPServer` to `Options`. Merge with `cfg.MCPServers` (`agent.go:135`). Validate both sources with one shared validator using the rules at `internal/agent/agent.go:183-206`, before `DryRun` returns. Add sentinel `ErrUnsetEnv` in `internal/envinterp/envinterp.go` (the error at `:47`), wrapped with `%w`. The runner maps it with `errors.Is`. Keep the text match at `pkg/runner/run.go:475` for one release. Dry run shows merged names and URLs, never headers (`run.go:328-331`).
