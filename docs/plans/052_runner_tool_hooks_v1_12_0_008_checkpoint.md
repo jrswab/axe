@@ -24,10 +24,10 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: none
+- Current task: T2.1
 - Task states — checklist checkboxes render from this list:
-- T0: `unchecked`
-- T1: `unchecked`
+- T0: `checked`
+- T1: `checked`
 - T2.1: `unchecked`
 - T2.2: `unchecked`
 - T2.3: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T0
-- Last completed phase/task/gate and timestamp: Checklist review round 2 APPROVED, 2026-11-09T23:45:54.959923+00:00
+- Next safe action: Implement T2.1
+- Last completed phase/task/gate and timestamp: T0-T1 verification PASS (commit 07c4cbf), 2026-11-09T23:51:08.733126+00:00
 
 ## Gate evidence
 
@@ -166,8 +166,29 @@ Planning review round 2 of implement.md at 17cd5bd: Verdict APPROVED; prior F1-F
 
 - Next action: Implement T0
 
+### T0-T1 verification PASS (commit 07c4cbf)
+
+- Gate: T0-T1 verification PASS (commit 07c4cbf)
+- Commands/results:
+T0 steps 1-19 PASS at 12e995d (ancestry 7f56dae exit 0; no non-plan diff; baseline go test pkg/runner internal/agent ok; go-toolchain-check PASS go1.26.10, govulncheck clean). T1: pkg/runner/options.go:63-67 MaxTurns field + doc; go build ./... 0; go vet ./pkg/runner 0; gofmt -l options.go clean; golangci-lint run ./pkg/runner/... 0 issues; per-task gate go test -race ./pkg/runner ok.
+- HEAD commit SHA: `07c4cbfbe79e9dbbfb2232553ffbd575262f99e5`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T2.1
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: Implement T0
+- Next action: Implement T2.1
