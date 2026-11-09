@@ -23,17 +23,17 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, which is the external Go API contract (D1), and edits the parallel dispatch path in `executeToolCalls` (`pkg/runner/run.go:890`, parallel branch `:945-974`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T2.1
+- Current task: T3.1
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
-- T2.1: `unchecked`
-- T2.2: `unchecked`
-- T2.3: `unchecked`
-- T2.4: `unchecked`
-- T2.5: `unchecked`
-- T2.6: `unchecked`
-- T2.7: `unchecked`
+- T2.1: `checked`
+- T2.2: `checked`
+- T2.3: `checked`
+- T2.4: `checked`
+- T2.5: `checked`
+- T2.6: `checked`
+- T2.7: `checked`
 - T3.1: `unchecked`
 - T3.2: `unchecked`
 - T3.3: `unchecked`
@@ -50,8 +50,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - Review: `pending`
 - Blockers: none
 - Relevant work: `uncommitted` — spec and checkpoint are new untracked files; the 003 checkpoint Review line is modified (uncommitted). No implementation change.
-- Next safe action: Implement T2.1
-- Last completed phase/task/gate and timestamp: T0 pre-flight PASS; T1 verification PASS, 2026-11-09T18:07:11.533242+00:00
+- Next safe action: Implement T3.1
+- Last completed phase/task/gate and timestamp: T2.1-T2.7 red gate PASS (new tests fail for missing behavior) at f983772, 2026-11-09T18:23:43.614528+00:00
 
 ## Gate evidence
 
@@ -120,10 +120,31 @@ T0 at 21ec6e5: merge-base ancestor exit 0; non-docs diff since 09d100d empty; cl
 
 - Next action: Implement T2.1
 
+### T2.1-T2.7 red gate PASS (new tests fail for missing behavior) at f983772
+
+- Gate: T2.1-T2.7 red gate PASS (new tests fail for missing behavior) at f983772
+- Commands/results:
+Go pre-flight: go-toolchain-check exit 0 (go1.26.0/go1.26.10, govulncheck no vulns). Red runs: go test ./pkg/runner -v | rg exit 1/0; 10 new tests FAIL on assertions (TestToolHookDenyWriteFile, ArgumentsAsParsed, UnknownAction, ErrorDenies, PanicDenies, ParallelTurn, MCPDeny, MCPStub, SubAgentConfigError, CancelDuringDecision); guards TestToolHookNilHookUnchanged and TestToolHookMCPAllow PASS; 89 pre-existing tests PASS; race gate ./pkg/runner no DATA RACE. go build ./... 0, go vet ./pkg/runner 0, gofmt -l empty, golangci-lint 0 issues. factory-sync at 75e7b4b: behind 0, synced.
+- HEAD commit SHA: `f983772ba67dcc909b9009a0e4648a41812e9fb1`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T3.1
+
 ## Limitations & blockers
 
 - Limitations:
   - The spec's focused race command (`go test -race -run TestToolHookParallelTurn ./pkg/runner`, milestone test 11) is not in the spec's fenced acceptance block. The test does not exist yet, so `spec-lint` reports "selects no test in current files" for it. It is stated in prose as R13 test 11 and must be added to the implementation checklist.
   - No code is written in this phase. Tests 1-13 in the spec are unimplemented.
 - Blockers: `none`
-- Next action: Implement T2.1
+- Next action: Implement T3.1

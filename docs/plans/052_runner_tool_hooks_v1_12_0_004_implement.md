@@ -60,7 +60,7 @@ Test-selection convention: no command in this checklist selects tests by name. D
 
 Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the tests use the existing `setupTestEnv` (`pkg/runner/run_test.go:20-38`) and `testutil.NewMockLLMServer` (`internal/testutil/mockserver.go:50`), with `t.Setenv` in `setupTestEnv`, so they are not `t.Parallel`. Each test sets `Options.Workdir` to a `t.TempDir()` when it writes files, and sets the agent `tools` list explicitly. The mock server's `Requests` slice is inspected for the tool result sent back to the model. The MCP tests go in the new file `pkg/runner/hook_mcp_test.go` (OD4).
 
-- [ ] **T2.1: Red: acceptance tests 1 (guard) and 2 (deny builtin `write_file`) (R4, R11, R13)**
+- [x] **T2.1: Red: acceptance tests 1 (guard) and 2 (deny builtin `write_file`) (R4, R11, R13)**
   - Budget: 30 min
   - Depends on: T1.
   - File: `pkg/runner/run_test.go`. Add two functions at the end of the file:
@@ -70,7 +70,7 @@ Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the
   - Guard: the guard test `TestToolHookNilHookUnchanged` passes in the same run now and must still pass after T3.x.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above; the race run is required once T3.1 is green.
 
-- [ ] **T2.2: Red: acceptance tests 6 (arguments as parsed, copy) and 13 (unknown action) (R5, R8, R13)**
+- [x] **T2.2: Red: acceptance tests 6 (arguments as parsed, copy) and 13 (unknown action) (R5, R8, R13)**
   - Budget: 30 min
   - Depends on: T2.1.
   - File: `pkg/runner/run_test.go`.
@@ -79,7 +79,7 @@ Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the
   - Red step: run `go test ./pkg/runner`; the new tests `TestToolHookArgumentsAsParsed` and `TestToolHookUnknownAction` fail (the hook is never called, so there are no recorded arguments and the file is created). Record the failing assertions.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T2.3: Red: acceptance tests 8 (hook error) and 9 (hook panic) (R7, R13)**
+- [x] **T2.3: Red: acceptance tests 8 (hook error) and 9 (hook panic) (R7, R13)**
   - Budget: 30 min
   - Depends on: T2.2.
   - File: `pkg/runner/run_test.go`.
@@ -88,7 +88,7 @@ Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the
   - Red step: run `go test ./pkg/runner`; the new tests `TestToolHookErrorDenies` and `TestToolHookPanicDenies` fail (the hook is never called, so the list directory runs and returns normal content). Record the failing assertions.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T2.4: Red: acceptance test 7, `TestToolHookParallelTurn` (R2, R13)**
+- [x] **T2.4: Red: acceptance test 7, `TestToolHookParallelTurn` (R2, R13)**
   - Budget: 30 min
   - Depends on: T2.3.
   - File: `pkg/runner/run_test.go`. Model on `TestRun_ParallelToolExecution` (`pkg/runner/run_test.go:431-476`), with `Options.Workdir` = `t.TempDir()`.
@@ -100,7 +100,7 @@ Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the
   - Red step: run `go test -race ./pkg/runner`; the new test `TestToolHookParallelTurn` fails (the hook is never called, so the hook log is empty and the in-hook file checks never run). Record the failing assertion.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T2.5: Red: acceptance tests 3 (deny MCP), 4 (stub MCP), and 5 (allow MCP, guard) with the MCP helper (R3, R4, R5, R6, R13)**
+- [x] **T2.5: Red: acceptance tests 3 (deny MCP), 4 (stub MCP), and 5 (allow MCP, guard) with the MCP helper (R3, R4, R5, R6, R13)**
   - Budget: 30 min
   - Depends on: T2.4 is not required (independent file); run after T2.3.
   - Files: new `pkg/runner/hook_mcp_test.go` (package `runner`). It defines a local helper `newHookTestMCPServer(t *testing.T) (*httptest.Server, *atomic.Int64)` modeled on `cmd/run_mcp_integration_test.go:17-46`: `mcp.NewServer(&mcp.Implementation{Name: "hook-test", Version: "1.0.0"}, nil)`, one tool named `mcp_echo` with the same input schema, a handler that increments the atomic counter and returns `hello <name>`, `mcp.NewStreamableHTTPHandler(...)` served by `httptest.NewServer`, closed by `t.Cleanup`. The helper is local to this file; do not import from `cmd`.
@@ -111,7 +111,7 @@ Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the
   - Red step: run `go test ./pkg/runner`; the new tests `TestToolHookMCPDeny` and `TestToolHookMCPStub` fail (counter is 1; no stub text). Guard: `TestToolHookMCPAllow` passes in the same run.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T2.6: Red: acceptance test 10, sub-agents with a hook (R10, R13)**
+- [x] **T2.6: Red: acceptance test 10, sub-agents with a hook (R10, R13)**
   - Budget: 30 min
   - Depends on: T2.5.
   - File: `pkg/runner/run_test.go`. `TestToolHookSubAgentConfigError`. Agent TOML: `name = "parent-agent"`, `model = "anthropic/claude-sonnet-4-20250514"`, `sub_agents = ["child-agent"]`. Write `config.toml` with `[providers.anthropic] api_key = "fake-key"` so that, without the fix, the run would reach the provider (otherwise the API-key `ConfigError` at `pkg/runner/run.go:350` would pass for the wrong reason). Set `AXE_ANTHROPIC_BASE_URL` to a mock with one text response. `ToolHook` is a closure that returns `ToolDecision{Action: ToolAllow}`.
@@ -119,7 +119,7 @@ Test file rules: the non-MCP tests go in `pkg/runner/run_test.go` (OD4), and the
   - Red step: run `go test ./pkg/runner`; the new test `TestToolHookSubAgentConfigError` fails (no ConfigError with the field present; the request reaches the mock, so `RequestCount` is 1). Record the failing assertion.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T2.7: Red: acceptance test 12, cancel during decision (R9, R13)**
+- [x] **T2.7: Red: acceptance test 12, cancel during decision (R9, R13)**
   - Budget: 30 min
   - Depends on: T2.6.
   - File: `pkg/runner/run_test.go`. `TestToolHookCancelDuringDecision`. Model: one response with two `write_file` calls (`tool_1` writes `a.txt`, `tool_2` writes `b.txt`), then text. Create `ctx, cancel := context.WithCancel(context.Background())` in the test and pass `ctx` to `Run`. The hook records each call ID in a local slice; on the first call (`tool_1`) it calls `cancel()` and returns `ToolDecision{Action: ToolAllow}`; on the second call it records and fails the test if reached.
