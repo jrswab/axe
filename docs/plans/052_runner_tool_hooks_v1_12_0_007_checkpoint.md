@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T8
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -41,11 +41,11 @@ Absolute paths inside the Repository root (the feature worktree).
 - T6: `checked`
 - T7: `checked`
 - T7.1: `checked`
-- T8: `unchecked`
-- T9: `unchecked`
+- T8: `checked`
+- T9: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T8
-- Last completed phase/task/gate and timestamp: T4-T7.1 verification PASS at 1c2ffd1, 2026-11-09T23:09:57.162849+00:00
+- Next safe action: Review gate: records-stale-check de43f3c, docs-lint --since de43f3c, factory-gate test and lint at HEAD, split review de43f3c..HEAD
+- Last completed phase/task/gate and timestamp: T8 scope verification PASS at f8bb97d; T9 records written, 2026-11-09T23:11:48.212296+00:00
 
 ## Gate evidence
 
@@ -229,8 +229,29 @@ T4: filter anchor at implement.md:250 fixed from `)$` to `)( |$)` (Go appends du
 
 - Next action: Implement T8
 
+### T8 scope verification PASS at f8bb97d; T9 records written
+
+- Gate: T8 scope verification PASS at f8bb97d; T9 records written
+- Commands/results:
+T8 (range de43f3c..HEAD, clean tree): non-plan files = CHANGELOG.md, pkg/runner/options.go, pkg/runner/run.go, pkg/runner/tools_option_test.go; internal/*, cmd, go.mod, go.sum unchanged; Options.Tools field options.go:61 with doc lines 52-60; CHANGELOG.md:16 one bullet; run.go removed exactly 3 cfg.Tools lines; options.go additions only; effectiveTools resolve, dry-run field, and error format present; spec-lint 007 exit 0; docs-lint --since de43f3c exit 0 (196 files, 0 findings). T9: orchestrator records in this checkpoint; milestone checkbox renders only at the completion gate.
+- HEAD commit SHA: `f8bb97d301f671c8a9d1c62588dcb55efeb93493`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Review gate: records-stale-check de43f3c, docs-lint --since de43f3c, factory-gate test and lint at HEAD, split review de43f3c..HEAD
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Implement T8
+- Next action: Review gate: records-stale-check de43f3c, docs-lint --since de43f3c, factory-gate test and lint at HEAD, split review de43f3c..HEAD

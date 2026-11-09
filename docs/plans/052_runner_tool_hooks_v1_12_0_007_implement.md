@@ -289,7 +289,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - Verification: `git diff --numstat -- CHANGELOG.md` → `1	0	CHANGELOG.md`; `git diff -- CHANGELOG.md` shows one added line inside `[Unreleased]` `### Added`; `rg -n "Options.Tools" CHANGELOG.md` → one match; `rg -n "shadow" CHANGELOG.md` → the shadowing sentence in that bullet (R10).
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. No Go file changes; the derived package list is empty.
 
-- [ ] **T8: Scope, API, removed-line, and spec-lint checks against the committed range (R8, R10, R11)**
+- [x] **T8: Scope, API, removed-line, and spec-lint checks against the committed range (R8, R10, R11)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T7.1.
@@ -310,7 +310,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
   - No file changes unless step 1 applies.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files (unless step 1 applies); the derived package list is empty.
 
-- [ ] **T9: Records (orchestrator, not the writer)**
+- [x] **T9: Records (orchestrator, not the writer)**
   - Budget: 30 min
   - Owner: orchestrator, after T8.
   - Files: `docs/plans/052_runner_tool_hooks_v1_12_0_007_checkpoint.md` (phase, task states, gate evidence). The milestone entry `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:217-226` may receive a line-number-only citation refresh. The milestone checkbox `- [ ] 007` is rendered by factory-checkpoint at the Factory completion gate, after review, not in T9.
