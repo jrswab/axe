@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.Tools`) to `pkg/runner`, the external API (D1). It adds a second validation path for a caller-supplied list. It changes which MCP tool names are shadowed (a security-relevant change to MCP shadowing). No new dependency is added. The fast-lane condition "external contracts untouched" fails.
-- Current phase: `implement`
+- Current phase: `execute`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Checklist planning review r2 (prior finding verbatim), then --phase execute
-- Last completed phase/task/gate and timestamp: Checklist planning review r1 CHANGES REQUESTED; fix applied, 2026-11-09T22:34:48.966968+00:00
+- Next safe action: Implement T0
+- Last completed phase/task/gate and timestamp: Checklist planning review round 2 APPROVED (no findings); prior round-1 blocker verified resolved, 2026-11-09T22:36:54.853057+00:00
 
 ## Gate evidence
 
@@ -124,8 +124,29 @@ Checklist drafted ef4c584 (spec-lint exit 0: spec 65, checklist 79 citations; do
 
 - Next action: Checklist planning review r2 (prior finding verbatim), then --phase execute
 
+### Checklist planning review round 2 APPROVED (no findings); prior round-1 blocker verified resolved
+
+- Gate: Checklist planning review round 2 APPROVED (no findings); prior round-1 blocker verified resolved
+- Commands/results:
+factory-sync args [] exit 0: base origin/master, ahead 88, behind 0, shared_files [], conflicts [], head 19158c4 (no merge). spec-lint 007 spec+implement exit 0 (65 and 79 citations, 0 findings). milestone-entries exit 0 (13 entries). Review round 2: Verdict APPROVED. Failing planning rounds: 1 of 3.
+- HEAD commit SHA: `19158c4b00f35f4d5ceb171d02ca7885f255b524`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T0
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox (environmental, as recorded for 005 and 006). The sub-agent in test 6 uses `Requests[1]` as the child request, which the spec states; the implementer must confirm the ordering against the mock.
 - Blockers: none.
-- Next action: Checklist planning review r2 (prior finding verbatim), then --phase execute
+- Next action: Implement T0
