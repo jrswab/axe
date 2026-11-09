@@ -131,15 +131,15 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./pkg/runner` shows `--- PASS: TestMCPServers_EmptySliceUnchanged` (guard; passes at HEAD) and `--- FAIL: TestMCPServers_RunDoesNotMutateOptions` (no `mcp_echo` in the request). Filter with `rg -- '--- (PASS|FAIL): TestMCPServers_(EmptySliceUnchanged|RunDoesNotMutateOptions)'`. Record the run.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
-- [ ] **T2.5: Red: acceptance test 10 (red) and guard test 9 (R10, R12)**
+- [ ] **T2.5: Red: acceptance tests 9 and 10 (R10, R12)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.4.
   - File: `pkg/runner/mcp_servers_test.go`.
   - Tests:
-    - `TestMCPServers_SubAgentNotInherited` (test 9, guard). Parent TOML has `tools = []`, `sub_agents = ["child-agent"]`, and no servers. The parent has `Options.MCPServers` with one option server exposing `mcp_parent_only`. The model is `AnthropicToolUseResponse` with `call_agent` (ID `tool_1`, input `{"agent": "child-agent", "task": "say hello"}`), then `AnthropicResponse("hello from child")` for the child, then `AnthropicResponse` for the parent. Child TOML is written at `tmpDir/axe/agents/child-agent.toml` as in pkg/runner/run_test.go:793-800 (the TestRun_SubAgent setup). Assert `Run` returns no error and `mock.Requests[1].Body` does not contain `mcp_parent_only`. Assert the child request's tool list (also `mock.Requests[1].Body`) has no `mcp_parent_only`.
+    - `TestMCPServers_SubAgentNotInherited` (test 9, red). Parent TOML has `tools = []`, `sub_agents = ["child-agent"]`, and no servers. The parent has `Options.MCPServers` with one option server exposing `mcp_parent_only`. The model is `AnthropicToolUseResponse` with `call_agent` (ID `tool_1`, input `{"agent": "child-agent", "task": "say hello"}`), then `AnthropicResponse("hello from child")` for the child, then `AnthropicResponse` for the parent. Child TOML is written at `tmpDir/axe/agents/child-agent.toml` as in pkg/runner/run_test.go:793-800 (the TestRun_SubAgent setup). Assert `Run` returns no error. Assert `mock.Requests[0].Body` contains `mcp_parent_only` (the parent connected and registered the option server; this is the assertion that makes the test red before T3.3). Assert `mock.Requests[1].Body` does not contain `mcp_parent_only`. Assert the child request's tool list (also `mock.Requests[1].Body`) has no `mcp_parent_only`.
     - `TestMCPServers_VerboseNoHeaders` (test 10, red). `Verbose` true, `Stderr` the buffer from `newMockStdoutStderr`. Option server `code-mcp` with header `Authorization: Bearer secret-literal-value` (static value). Assert the stderr buffer contains the server URL and does not contain `secret-literal-value`. Assert the request contains `mcp_echo` (so the server was connected and the verbose line was printed).
-  - Red step: `go test -race -v ./pkg/runner` shows `--- PASS: TestMCPServers_SubAgentNotInherited` (guard; passes at HEAD because the option server is never connected) and `--- FAIL: TestMCPServers_VerboseNoHeaders` (no verbose line for the option server). Filter with `rg -- '--- (PASS|FAIL): TestMCPServers_(SubAgentNotInherited|VerboseNoHeaders)'`. Record the run.
+  - Red step: `go test -race -v ./pkg/runner` shows `--- FAIL: TestMCPServers_SubAgentNotInherited` (`mock.Requests[0].Body` lacks `mcp_parent_only` because the option server is not connected at HEAD) and `--- FAIL: TestMCPServers_VerboseNoHeaders` (no verbose line for the option server). Filter with `rg -- '--- (PASS|FAIL): TestMCPServers_(SubAgentNotInherited|VerboseNoHeaders)'`. Record the run.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
 - [ ] **T2.6: Red: acceptance test 11 `TestExpandHeaders_UnsetEnvSentinel` (R8, OS5)**
@@ -160,7 +160,7 @@ Shared helper (T2.1, file `pkg/runner/mcp_servers_test.go`, new). `newMCPServers
   - Red step: `go test -race -v ./internal/agent` shows `--- FAIL: TestValidateMCPServers_SharedRules` (the T1 stub returns nil, so no error). Existing `TestValidate_MCPServers_*` (`internal/agent/agent_test.go:1055-1258`) pass. Filter with `rg -- '--- (PASS|FAIL): TestValidate'`. Record the run.
   - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. For this red task the gate is the red run recorded above.
 
-Phase 2 red-run check: after T2.1-T2.7, run `go test -race -v ./pkg/runner ./internal/agent ./internal/envinterp` and filter with `rg -- '--- (PASS|FAIL): (TestMCPServers_|TestExpandHeaders_UnsetEnvSentinel|TestValidateMCPServers_SharedRules)'`. Must show `--- FAIL` for tests 1, 2a, 2b, 3, 4, 5, 6, 8, 10, 11, 12. Must show `--- PASS` for guards 7 and 9. Record the output.
+Phase 2 red-run check: after T2.1-T2.7, run `go test -race -v ./pkg/runner ./internal/agent ./internal/envinterp` and filter with `rg -- '--- (PASS|FAIL): (TestMCPServers_|TestExpandHeaders_UnsetEnvSentinel|TestValidateMCPServers_SharedRules)'`. Must show `--- FAIL` for tests 1, 2a, 2b, 3, 4, 5, 6, 8, 9, 10, 11, 12. Must show `--- PASS` for guard 7. Record the output.
 
 ### Phase 3: Green implementation (serial)
 
@@ -218,7 +218,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - `go test -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestMCPServers_(OptionsOnlyToolsInRequest|MergedDistinctNames)'` → recorded; both may still FAIL on the request assertion until T3.3.
     - `rg -n "ValidateMCPServers|both mcp_servers and Options.MCPServers|effectiveMCP" pkg/runner/run.go` → the calls and the merged list.
     - `go vet ./pkg/runner/` → exit 0.
-  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Until T3.3 is green, the only expected failures are these named tests: `TestMCPServers_OptionsOnlyToolsInRequest` and `TestMCPServers_MergedDistinctNames` (request part, noted above), `TestMCPServers_UnsetHeaderEnvConfigError` (`unset` and `empty` subtests), `TestMCPServers_HeaderExpandedOnWire`, `TestMCPServers_VerboseNoHeaders`, and `TestMCPServers_RunDoesNotMutateOptions`. Record which tests fail and stop if any other test fails.
+  - Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Until T3.3 is green, the only expected failures are these named tests: `TestMCPServers_OptionsOnlyToolsInRequest` and `TestMCPServers_MergedDistinctNames` (request part, noted above), `TestMCPServers_UnsetHeaderEnvConfigError` (`unset` and `empty` subtests), `TestMCPServers_HeaderExpandedOnWire`, `TestMCPServers_VerboseNoHeaders`, `TestMCPServers_RunDoesNotMutateOptions`, and `TestMCPServers_SubAgentNotInherited` (test 9 red until T3.3 connects the option server; its request assertion is `mock.Requests[0].Body` containing `mcp_parent_only`). Record which tests fail and stop if any other test fails.
 
 - [ ] **T3.3: Green: connect loop over the effective set, sentinel mapping, verbose line, header wiring (R5, R7, R8, R9, R10)**
   - Budget: 30 min
@@ -232,9 +232,9 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
     - Other connect failures stay `RuntimeError` with the existing message (pkg/runner/run.go:450, R9).
     - The verbose line (pkg/runner/run.go:443) is unchanged; it prints name, URL, and transport from `serverCfg` (OS8, R10).
     - Header expansion runs in `mcpclient.Connect` (`internal/mcpclient/mcpclient.go:25-29`), unchanged, so one path expands both sources (OS9, R7).
-  - Green targets: T2.1 `TestMCPServers_OptionsOnlyToolsInRequest` and `TestMCPServers_MergedDistinctNames` (request part); T2.2 `TestMCPServers_UnsetHeaderEnvConfigError` (`unset`, `empty`, `toml_source`); T2.3 `TestMCPServers_HeaderExpandedOnWire`; T2.5 `TestMCPServers_VerboseNoHeaders`.
+  - Green targets: T2.1 `TestMCPServers_OptionsOnlyToolsInRequest` and `TestMCPServers_MergedDistinctNames` (request part); T2.2 `TestMCPServers_UnsetHeaderEnvConfigError` (`unset`, `empty`, `toml_source`); T2.3 `TestMCPServers_HeaderExpandedOnWire`; T2.5 `TestMCPServers_SubAgentNotInherited` (test 9, red-to-green transition is here) and `TestMCPServers_VerboseNoHeaders`.
   - Verification:
-    - `go test -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestMCPServers_(OptionsOnlyToolsInRequest|MergedDistinctNames|UnsetHeaderEnvConfigError|HeaderExpandedOnWire|VerboseNoHeaders)'` → every line `PASS`.
+    - `go test -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestMCPServers_(OptionsOnlyToolsInRequest|MergedDistinctNames|UnsetHeaderEnvConfigError|HeaderExpandedOnWire|VerboseNoHeaders|SubAgentNotInherited)'` → every line `PASS`.
     - `go test ./pkg/runner` → `ok`.
     - `rg -n "errors.Is\(connErr, envinterp.ErrUnsetEnv\)|environment variable\"\)|range effectiveMCP" pkg/runner/run.go` → the sentinel branch, the kept text match, and the connect loop over the effective set.
     - `go vet ./pkg/runner/` → exit 0.
@@ -245,7 +245,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
   - Owner: code
   - Depends on: T3.3.
   - File: `pkg/runner/run.go` only if a change is needed. No change is expected: `mcpServerConfigs` (T3.2) copies each `Headers` map, `ExpandHeaders` builds a new map (`internal/envinterp/envinterp.go:17`), and `Run` never writes to `opts.MCPServers`. Sub-agent loading (`internal/tool/tool.go:152`, `:291-292`) reads only the child's own TOML and receives no option list (`pkg/runner/run.go:666` passes no MCP data; `executeToolCalls` signature at `pkg/runner/run.go:925` is unchanged). Confirm by reading. If a change is needed, record why and stop.
-  - Green targets: T2.4 `TestMCPServers_RunDoesNotMutateOptions` (red until now) and the guard `TestMCPServers_EmptySliceUnchanged`; T2.5 guard `TestMCPServers_SubAgentNotInherited`.
+  - Green targets: T2.4 `TestMCPServers_RunDoesNotMutateOptions` (red until now) and the guard `TestMCPServers_EmptySliceUnchanged`. T2.5 `TestMCPServers_SubAgentNotInherited` is already green from T3.3; re-checked here.
   - Verification:
     - `go test -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestMCPServers_(RunDoesNotMutateOptions|EmptySliceUnchanged|SubAgentNotInherited)'` → all `PASS`.
     - `rg -n "MCPServers|mcp" internal/tool/tool.go` → unchanged from HEAD (`git diff --exit-code a13e3bc -- internal/tool` exits 0).
@@ -257,7 +257,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
   - Owner: code
   - Depends on: T3.0, T3.1, T3.2, T3.3, T3.4.
   - Files: none expected. Fix any failure in the file that introduced it, not in the test.
-  - Green targets: tests 1-12 all `PASS` (guards 7 and 9 `PASS` throughout).
+  - Green targets: tests 1-12 all `PASS` (guard 7 `PASS` throughout; test 9 `PASS` from T3.3).
   - Verification:
     - `go test -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestMCPServers_'` → every line `PASS`.
     - `go test -v ./internal/envinterp | rg -- '--- (PASS|FAIL): TestExpandHeaders_UnsetEnvSentinel'` → `PASS`.
@@ -358,7 +358,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
 | R9 other connect failures unchanged | T3.3 (`RuntimeError` at `pkg/runner/run.go:450`), T4 (`TestConnect_UnreachableServer`, `internal/mcpclient/mcpclient_test.go:47`) |
 | R10 no header text in any output | T2.2 (4), T2.3 (6), T2.5 (10), T2.7 (12), T3.3 |
 | R11 caller data not modified | T2.4 (8), T3.2 (copy), T3.4 |
-| R12 sub-agents do not receive the option list | T2.5 (9), T3.4 |
+| R12 sub-agents do not receive the option list | T2.5 (9, red), T3.3 (green), T3.4 (confirm) |
 | R13 TOML and CLI behavior unchanged | T2.4 (7 guard), T3.0, T3.5, T4 (`./cmd`), T8 |
 | R14 doc comments and CHANGELOG | T1 (doc comments), T7.1 (CHANGELOG), T8 |
 | R15 acceptance tests 1-12 | Acceptance Test Mapping below |
@@ -376,7 +376,7 @@ Order: T3.0 (validator, `internal/agent`) and T3.1 (sentinel, `internal/envinter
 | 6 dry run merged, no headers, no reads | `TestMCPServers_DryRunMergedNoHeaders` | T2.3 | T3.2 | |
 | 7 TOML-only and empty list unchanged | `TestMCPServers_EmptySliceUnchanged` | T2.4 | none (guard) | PASS at HEAD and after; plus `TestValidate_MCPServers_*`, `TestConnect_HeaderEnvVarMissing`, `TestToolHookMCPDeny`, `TestRunCmd_DryRun_WithMCPServers`. |
 | 8 caller slice and maps not mutated | `TestMCPServers_RunDoesNotMutateOptions` | T2.4 | T3.2, T3.4 | |
-| 9 sub-agent does not inherit the list | `TestMCPServers_SubAgentNotInherited` | T2.5 | none (guard) | PASS at HEAD and after; T3.4 confirms no `internal/tool` change. |
+| 9 sub-agent does not inherit the list | `TestMCPServers_SubAgentNotInherited` | T2.5 | T3.3 | FAIL at T2.5 on `mcp_parent_only` in `mock.Requests[0].Body` (option server not connected); green at T3.3; T3.4 confirms no `internal/tool` change. |
 | 10 verbose output has no header value | `TestMCPServers_VerboseNoHeaders` | T2.5 | T3.3 | |
 | 11 sentinel matchable, text unchanged | `TestExpandHeaders_UnsetEnvSentinel` | T2.6 | T3.1 | `TestExpandHeaders_MissingVar` and `TestExpandHeaders_EmptyVar` run unchanged. |
 | 12 shared validator rules, TOML text unchanged, option label | `TestValidateMCPServers_SharedRules` | T2.7 | T3.0 | |
