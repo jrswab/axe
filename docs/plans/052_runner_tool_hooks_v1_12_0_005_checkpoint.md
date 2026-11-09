@@ -22,38 +22,38 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, the external Go API contract (D1), and runs on the parallel tool dispatch path in `executeToolCalls` (`pkg/runner/run.go:896`, parallel branch `:985-1018`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `implement`
-- Current task: none
+- Current phase: `execute`
+- Current task: T9
 - Task states — checklist checkboxes render from this list:
-- T0: `unchecked`
-- T1: `unchecked`
-- T2.1: `unchecked`
-- T2.2: `unchecked`
-- T2.3: `unchecked`
-- T2.4: `unchecked`
-- T2.5: `unchecked`
-- T2.6: `unchecked`
-- T2.7: `unchecked`
-- T2.8: `unchecked`
-- T3.0: `unchecked`
-- T3.1: `unchecked`
-- T3.2: `unchecked`
-- T3.3: `unchecked`
-- T3.4: `unchecked`
-- T3.5: `unchecked`
-- T4: `unchecked`
-- T5: `unchecked`
-- T6: `unchecked`
-- T7: `unchecked`
-- T7.1: `unchecked`
-- T8: `unchecked`
+- T0: `checked`
+- T1: `checked`
+- T2.1: `checked`
+- T2.2: `checked`
+- T2.3: `checked`
+- T2.4: `checked`
+- T2.5: `checked`
+- T2.6: `checked`
+- T2.7: `checked`
+- T2.8: `checked`
+- T3.0: `checked`
+- T3.1: `checked`
+- T3.2: `checked`
+- T3.3: `checked`
+- T3.4: `checked`
+- T3.5: `checked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T7.1: `checked`
+- T8: `checked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
 - Review: not started
 - Blockers: none
 - Relevant work: `uncommitted` — the two new spec and checkpoint files are untracked; no code, milestone doc, or 004 artifact is changed; nothing committed.
-- Next safe action: Apply post-cap F1 fix to 005 checklist and spec, then explore check
-- Last completed phase/task/gate and timestamp: 005 checklist planning review round 1 CHANGES REQUESTED; FAILING-ROUND CAP REACHED (3/3: spec r1, spec r2, checklist r1), 2026-11-09T19:39:50.612283+00:00
+- Next safe action: T9 records: commit records, then review gates (records-stale-check c2620fb, factory-gate test+lint, review split per scope)
+- Last completed phase/task/gate and timestamp: T4-T8 PASS (CHANGELOG a85cf51; citation refresh uncommitted at this write), 2026-11-09T20:20:41.593819+00:00
 
 ## Gate evidence
 
@@ -193,8 +193,95 @@ Unresolved at cap: F1 (blocking) implement.md:86 and :100 (and spec test 2 / 3(f
 
 - Next action: Apply post-cap F1 fix to 005 checklist and spec, then explore check
 
+### 005 post-cap F1 fix committed 716e580; explore check PASS; spec-lint PASS both
+
+- Gate: 005 post-cap F1 fix committed 716e580; explore check PASS; spec-lint PASS both
+- Commands/results:
+Post-cap fix: T2.2/T2.3(f) and spec tests 2/3(f) use NewMockLLMServer + hookTestToolResult (run_test.go:1463). explore post-cap check: PASS (checks 1-5), notes: implement.md:86 still mentions ToolResults[0].Content wording (non-defect); copy Stdin strings.NewReader("") from template run_test.go:1521. spec-lint implement exit 0 (91 citations), spec exit 0 (172). Phase 3 runs with per-task TDD gates per planning-review cap.
+- HEAD commit SHA: `716e5800f4db6938516c451bac88930c0614b40b`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T0
+
+### T0-T2.8 PASS (red tests committed a27cdf6)
+
+- Gate: T0-T2.8 PASS (red tests committed a27cdf6)
+- Commands/results:
+T0: literal rg prerequisite matched unrelated pendingToolEvents (internal/provider/openrouter.go:361-456, unchanged since c2620fb); orchestrator authorized exact-identifier rg '\b(ToolObserver|ToolEvent)\b' -> exit 1 no output. T1: hook.go:53 ToolEvent, :69 ToolObserver, options.go:37 Options.ToolObserver. T2.1-T2.8: 11 tests run_test.go:1889-2620; red: 1a/1b/1c, FullContentLength, ActionDecisions a-f, PanicLine, NilHookAllow, DispatchCancel (0.03s), DispatchError, SubAgentNoHook fail 'observer events = 0'; expected-green: 1d, NilUnchanged, CancelDuringDecision, DryRunAndBudget. go test -race -skip TestToolObserver ./pkg/runner exit 0; go vet, go build ./..., golangci-lint ./pkg/runner 0 issues; gofmt touched files clean (pre-existing result.go drift).
+- HEAD commit SHA: `a27cdf67af8332ec29e64005f2a29917aad85cf2`
+- Relevant work: `committed` — stash ref `1a60b15e84699e43d620a49e4fd0f0ce35a6efd0` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T3.0-T3.5 (green)
+
+### T3.0-T3.5 PASS (green committed 883402a)
+
+- Gate: T3.0-T3.5 PASS (green committed 883402a)
+- Commands/results:
+run.go only (+34/-3): toolExecResult.Action :37; decision actions :985-988; dispatch ToolAllow :1014, :1042; event delivery :671-688; callToolObserver :822-830. Mutations (drop seq/par Action, remove recover, alias args, truncated length, unknown-action normalization) each red then green. All TestToolObserver* PASS. go test -race ./pkg/runner exit 0; -count=3 DispatchCancel exit 0; vet, build, golangci-lint 0 issues; gofmt clean.
+- HEAD commit SHA: `883402acb8a48c77d69a386b06c21787fa99c2cc`
+- Relevant work: `committed` — stash ref `dc2b93a18560ba8859338b3cc2c3afc3bc924ead` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T4-T8
+
+### T4-T8 PASS (CHANGELOG a85cf51; citation refresh uncommitted at this write)
+
+- Gate: T4-T8 PASS (CHANGELOG a85cf51; citation refresh uncommitted at this write)
+- Commands/results:
+T4: go test -v ./pkg/runner all 23 observer lines PASS; go build, go vet clean; XDG_CACHE_HOME=$(mktemp -d) go test ./cmd -count=1 ok 11.391s; cmd/testdata unchanged. T5: go test -race -v ./pkg/runner ok, no DATA RACE. T6: golangci-lint run 0 issues. T7: make apidiff exit 0, empty output. T7.1: CHANGELOG.md:14 Options.ToolObserver bullet (a85cf51). T8: five-file diff vs c2620fb exact; go.mod/go.sum/cmd/internal unchanged; run.go removed lines = 3 (expected 3); initial spec-lint FAIL (stale citations from line shifts) fixed by line-number-only refresh (187 tokens); after refresh spec-lint spec exit 0 (172 citations), implement exit 0 (91); docs-lint --since c2620fb exit 0, 190 files, 0 findings. Checklist T0 rg changed to \b form; T8 note on per-task commits.
+- HEAD commit SHA: `a85cf51c2351ba393022e9c0d5c27bbb138b0e23`
+- Relevant work: `uncommitted` — stash ref `d8a7cd436463556855cd7da527b23395d7a01b08` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_implement.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_005_spec.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: T9 records: commit records, then review gates (records-stale-check c2620fb, factory-gate test+lint, review split per scope)
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's test 6 (`--json` golden unchanged) is a regression check through `cmd/golden_test.go`, which may need a writable `~/.cache/axe` in this sandbox (environmental, as recorded for 004).
 - Blockers: `none`
-- Next action: Apply post-cap F1 fix to 005 checklist and spec, then explore check
+- Next action: T9 records: commit records, then review gates (records-stale-check c2620fb, factory-gate test+lint, review split per scope)
