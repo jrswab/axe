@@ -165,7 +165,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
   - Compatibility impact: none on users. CI only.
   - Acceptance: `rg -n "go-version:" .github/workflows/` shows no `'1.24'` literal and no setup-go step without `go-version-file: go.mod`. Every workflow YAML parses. The CI run resolves Go 1.26.x and runs with `toolchain go1.26.10` from `go.mod`.
 
-- [ ] 004: Let a host deny or stub any tool call before dispatch with `Options.ToolHook`
+- [x] 004: Let a host deny or stub any tool call before dispatch with `Options.ToolHook`
   - Slice enabled: nightshift's 003 policy can reject a write tool or stub it in dry run, for builtin, MCP, and `call_agent` calls, through one closure.
   - Depends on: 002 (the gate runs on this change).
   - Scope: new file `pkg/runner/hook.go`: `type ToolAction string` with `ToolAllow`, `ToolDeny`, `ToolStub`; `type ToolDecision struct{Action ToolAction; Content string}`; `type ToolHook func(ctx context.Context, call ToolCall) (ToolDecision, error)`. Add `ToolHook ToolHook` to `Options` (`pkg/runner/options.go:6-33`). Wire the decision pass into `executeToolCalls` (`pkg/runner/run.go:890`), before the sequential branch (`:927`) and the parallel branch (`:952`). Reject `ToolHook != nil` with a non-empty `sub_agents` list with `ConfigError` right after agent load, before the `DryRun` return (`run.go:279`).

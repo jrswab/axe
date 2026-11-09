@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, which is the external Go API contract (D1), and edits the parallel dispatch path in `executeToolCalls` (`pkg/runner/run.go:890`, parallel branch `:945-974`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `execute`
+- Current phase: `complete`
 - Current task: T9
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
@@ -45,13 +45,13 @@ Absolute paths inside the Repository root (the feature worktree).
 - T7: `checked`
 - T7.1: `checked`
 - T8: `checked`
-- T9: `unchecked`
-- Milestone checkbox: `unchecked`
+- T9: `checked`
+- Milestone checkbox: `checked`
 - Review: `pending`
 - Blockers: none
 - Relevant work: `committed` — implementation, tests, and CHANGELOG committed through 7703ebe; the worktree has no uncommitted changes.
-- Next safe action: Run review gates (factory-gate test + lint) and code review round 1
-- Last completed phase/task/gate and timestamp: T8 scope checks PASS at 6b1d592, 2026-11-09T18:43:14.215714+00:00
+- Next safe action: Restart-validate 004, push PR #103, then start milestone 005
+- Last completed phase/task/gate and timestamp: Milestone 004 review + completion gate PASS at 7bf6d87, 2026-11-09T18:50:49.949118+00:00
 
 ## Gate evidence
 
@@ -204,10 +204,31 @@ T8 at 848f262/6b1d592: git diff --name-only 09d100d excluding plan docs = exactl
 
 - Next action: Run review gates (factory-gate test + lint) and code review round 1
 
+### Milestone 004 review + completion gate PASS at 7bf6d87
+
+- Gate: Milestone 004 review + completion gate PASS at 7bf6d87
+- Commands/results:
+Code review round 1 (range 09d100d..7703ebe, split): backend APPROVED (no findings); spec/records CHANGES REQUESTED (3 blocking stale-status findings in 003/004 checkpoints and 004 checklist). Fix 7bf6d87; grep -F of offending strings 0 hits; docs-lint 1 --since 09d100d exit 0. Round 2 spec/records (09d100d..7bf6d87) APPROVED, no nits. Completion gate: factory-sync at 7bf6d87 exit 0 (behind 0, HEAD unchanged); factory-gate test (go test -race ./...) /tmp/factory-gate-1001/gate-test-7bf6d87c9bd0-20261109T184806Z.log exit 0; factory-gate lint /tmp/factory-gate-1001/gate-lint-7bf6d87c9bd0-20261109T185034Z.log exit 0; R1-R14 mapped to code/tests with no gaps (T8 explore audit, code unchanged since 848f262); git status clean, no pre-existing changes. Review: approved.
+- HEAD commit SHA: `7bf6d87c9bd0a2d33695d5c086c90b8e91f265ce`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Restart-validate 004, push PR #103, then start milestone 005
+
 ## Limitations & blockers
 
 - Limitations:
   - The spec's focused race command (`go test -race -run TestToolHookParallelTurn ./pkg/runner`, milestone test 11) is not in the spec's fenced acceptance block. Planning-phase observation (historical, superseded by f983772 red tests and 6a9d741 implementation): the test did not exist yet, so `spec-lint` reports "selects no test in current files" for it. It is stated in prose as R13 test 11 and must be added to the implementation checklist.
   - Planning-phase observation (historical, superseded by f983772 red tests and 6a9d741 implementation): no code was written in this phase, and tests 1-13 in the spec were unimplemented.
 - Blockers: `none`
-- Next action: Run review gates (factory-gate test + lint) and code review round 1
+- Next action: Restart-validate 004, push PR #103, then start milestone 005
