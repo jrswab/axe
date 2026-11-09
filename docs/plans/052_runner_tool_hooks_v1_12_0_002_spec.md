@@ -171,7 +171,7 @@ The empty-stdout checks (cases 1 and 3) test stdout only. stderr may carry `go` 
 1. **Unmodified tree.** `make apidiff` exits 0 and prints nothing to stdout. `make check` exits 0 (lint and test as before, plus apidiff).
 2. **Removed identifier.** In a scratch copy, delete `func IsRuntimeError` (`pkg/runner/errors.go:63`, the function body and its doc comment at `:62`). `make apidiff` in the scratch copy exits non-zero. Its stdout contains the line `- IsRuntimeError: removed`, and the failure message is printed. The temp directory count is `0` afterward (R7).
 3. **Added identifier.** In a scratch copy, add `func ProbeNew() {}` in a new file under `pkg/runner`. `make apidiff` exits 0 and prints nothing to stdout (additions are compatible and not reported by `-incompatible`).
-4. **Tool error.** In a scratch clone made as above, delete the tag inside the clone only (`git tag -d v1.11.0`). `make apidiff` then exits non-zero with the R3 message. The shared repository's tags are not touched.
+4. **Tool error.** In a scratch clone made as above but with `git clone --no-tags`, the tag `v1.11.0` is absent. `make apidiff` then exits non-zero with the R3 message. The shared repository's tags are not touched.
 
 ### R11: Scope boundary
 

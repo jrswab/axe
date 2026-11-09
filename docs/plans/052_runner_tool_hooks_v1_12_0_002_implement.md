@@ -34,7 +34,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `git rev-parse --verify 'v1.11.0^{commit}'` → `20e6ada179b08cef050c4b436a2497182efcf2ee`.
     - `go list -m -json golang.org/x/exp@v0.0.0-20261106192419-47ce03d25ef0` → JSON whose `Version` is `v0.0.0-20261106192419-47ce03d25ef0`. (Re-verifies the probe pin, spec "Probe evidence": "the implementation must re-verify the pin". Needs network on a cold cache.)
     - `ls -d "${TMPDIR:-/tmp}"/axe-apidiff.* 2>/dev/null | wc -l` → `0`.
-    - `git worktree list > /tmp/axe-m002-worktrees-before.txt` (snapshot for R3 verification in T10).
+    - `git worktree list > /tmp/axe-m002-worktrees-before.txt` (snapshot for R3 verification in T10). The snapshot is taken at the start of the same probe run, before T6; T10 compares against that run's snapshot, not one from a previous session.
   - Go toolchain pre-flight: not triggered. No checklist command runs `go install` or sets `GOPROXY=`; the apidiff commands use `go run` with the default proxy. Recorded as "skipped, not triggered".
 
 ### Phase 1: Edits (parallel groups; T1.1 → T1.2 → T1.3 serial, all edit `Makefile`; T2, T3, T4 are independent of each other)
@@ -172,7 +172,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Scratch: a fresh clone per the setup block.
   - Edit (scratch only): remove `pkg/runner/errors.go:62-66` (doc comment `:62`, `func IsRuntimeError` `:63`, body `:64-65`, closing brace `:66`). Read `"$S/pkg/runner/errors.go"` lines 60-68 first and confirm the range before deleting. Command: `sed -i '62,66d' "$S/pkg/runner/errors.go"`.
   - Commands and expected results:
-    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit. (F3: each probe has its own `TMPDIR`, so parallel probes do not share a temp-dir count.)
+    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make --no-print-directory -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit. (F3: each probe has its own `TMPDIR`, so parallel probes do not share a temp-dir count.)
     - `rg -n "^- IsRuntimeError: removed$" "$S/../out.txt"` → one line.
     - The failure message from R4 step 3 is printed (stdout or stderr; check `"$S/../out.txt"` and `"$S/../err.txt"`).
     - `ls -A "$PT" | wc -l` → `0` (R7 on fail; the probe's own `probe-tmp` is empty).
@@ -185,7 +185,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Scratch: a fresh clone per the setup block.
   - Edit (scratch only): create `"$S/pkg/runner/probe_new.go"` with `package runner` and `func ProbeNew() {}`.
   - Commands and expected results:
-    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → `exit=0`.
+    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make --no-print-directory -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → `exit=0`.
     - `wc -c <"$S/../out.txt"` → `0`.
     - `ls -A "$PT" | wc -l` → `0`.
   - Cleanup: `rm -rf "$(dirname "$S")"`.
@@ -193,10 +193,9 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
 - [ ] **T8: R10 case 4 (tool error on missing tag) and R3 tag message**
   - Budget: 30 min
   - Depends on: T5.
-  - Scratch: a fresh clone per the setup block.
-  - Edit (scratch clone only): `git -C "$S" tag -d v1.11.0`.
+  - Scratch: a clone made without tags, then the same checkout and copy steps as the setup block: `S="$(mktemp -d)/clone" && git clone --quiet --no-tags /home/jaron/dev/axe/runner-tool-hooks "$S" && git -C "$S" checkout --detach 423a3994c56c9e8ee055e03072b80f6741589f68 && mkdir -p "$S/.github/workflows" && cp Makefile "$S/" && cp .github/workflows/go.yml "$S/.github/workflows/" && cp COMPATIBILITY.md CHANGELOG.md "$S/"`. The clone lacks `v1.11.0`; there is no tag-delete step.
   - Commands and expected results:
-    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit.
+    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make --no-print-directory -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit.
     - The R3 step 1 message names `v1.11.0` and says to fetch tags. Check: `rg -n "v1\.11\.0" "$S/../out.txt" "$S/../err.txt"` → at least one line, and `rg -n -i "fetch" "$S/../out.txt" "$S/../err.txt"` → at least one line.
     - `git tag -l v1.11.0` run in the repository root → prints `v1.11.0` (the shared repository's tags are not touched).
     - `ls -A "$PT" | wc -l` → `0`.
@@ -207,11 +206,11 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
   - Depends on: T5.
   - Scratch: two fresh clones, one per case. Both via the setup block.
   - Case A, unloadable package (scratch clone A):
-    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make -C "$S" apidiff APIDIFF_PKG=github.com/jrswab/doesnotexist >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit.
+    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make --no-print-directory -C "$S" apidiff APIDIFF_PKG=github.com/jrswab/doesnotexist >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit.
   - Case B, corrupted export (scratch clone B):
     - Edit the scratch `Makefile` only. Insert one new physical line between the T1.2 step 7 export line and the T1.3 step 1 `report=` line. The line's first character is a TAB, followed by `printf 'garbage' > "$$tmp/old.export"; \`. This keeps the single logical `apidiff` command joined (F2). The line uses the variable `tmp` from T1.2 step 2 and ends with `; \` like its neighbours.
     - `make -C "$S" -n apidiff` → must parse without error and print the `printf 'garbage'` command. Only after that, run the probe.
-    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit.
+    - `PT="$(dirname "$S")/probe-tmp"; mkdir -p "$PT" && TMPDIR="$PT" make --no-print-directory -C "$S" apidiff >"$S/../out.txt" 2>"$S/../err.txt"; echo "exit=$?"` → non-zero exit.
   - For both cases: `ls -A "$PT" | wc -l` → `0`, using each case's own `probe-tmp`.
   - Cleanup: `rm -rf "$(dirname "$S")"` for each clone.
 
@@ -225,7 +224,7 @@ Expect: the last `rev-parse` prints `20e6ada179b08cef050c4b436a2497182efcf2ee`. 
     - `git diff --name-only 423a399 -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_002_*' ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md'` → exactly `.github/workflows/go.yml`, `CHANGELOG.md`, `COMPATIBILITY.md`, `Makefile`.
     - `git diff --name-only 423a399 -- '*.go'` → no lines.
     - `git diff --exit-code 423a399 -- go.mod go.sum; echo "exit=$?"` → `exit=0`.
-    - `git worktree list | diff - /tmp/axe-m002-worktrees-before.txt` → no output.
+    - `git worktree list | diff - /tmp/axe-m002-worktrees-before.txt` → no output (compares against the snapshot taken at the start of this same probe run, before T6; see T0).
     - `git diff -U0 423a399 -- CHANGELOG.md | rg -c '^\+([^+]|$)'` → `1`.
     - `git status --porcelain` → only the four files above (tracked), the checklist and checkpoint and spec (untracked or Factory records), and nothing else.
 
