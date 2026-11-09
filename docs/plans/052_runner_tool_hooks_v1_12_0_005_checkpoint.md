@@ -30,8 +30,8 @@ none
 - Review: not started
 - Blockers: none
 - Relevant work: `uncommitted` — the two new spec and checkpoint files are untracked; no code, milestone doc, or 004 artifact is changed; nothing committed.
-- Next safe action: Planning review of 005 spec, round 1
-- Last completed phase/task/gate and timestamp: 005 spec planning review round 1 pre-lint PASS, 2026-11-09T19:07:30.245950+00:00
+- Next safe action: Planning review of 005 spec, round 2
+- Last completed phase/task/gate and timestamp: 005 spec planning review round 1 CHANGES REQUESTED (failing round 1/3); fixes committed cefc765; spec-lint PASS, 2026-11-09T19:17:27.613011+00:00
 
 ## Gate evidence
 
@@ -66,8 +66,29 @@ milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0
 
 - Next action: Planning review of 005 spec, round 1
 
+### 005 spec planning review round 1 CHANGES REQUESTED (failing round 1/3); fixes committed cefc765; spec-lint PASS
+
+- Gate: 005 spec planning review round 1 CHANGES REQUESTED (failing round 1/3); fixes committed cefc765; spec-lint PASS
+- Commands/results:
+Round 1 review: CHANGES REQUESTED, 5 blocking: F1 no dispatch-cancel test; F2 sub-agent observer test missing; F3 hook-panic and dispatch-error cases missing; F4 test 1 cases inconsistent ('fourth case'); F5 wrong cross-refs (test 6 vs 9, test 1 vs 3). Fixed in cefc765 (tests 10, 11, 12 added; 3(e); 1a-1d). spec-lint exit 0, 166 citations, 0 findings.
+- HEAD commit SHA: `cefc765961e0dabb878a3c5e4d630c6e3d7f4f77`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Planning review of 005 spec, round 2
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's test 6 (`--json` golden unchanged) is a regression check through `cmd/golden_test.go`, which may need a writable `~/.cache/axe` in this sandbox (environmental, as recorded for 004).
 - Blockers: `none`
-- Next action: Planning review of 005 spec, round 1
+- Next action: Planning review of 005 spec, round 2
