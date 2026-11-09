@@ -31,6 +31,11 @@ type Options struct {
 	// with a non-nil hook is a ConfigError.
 	ToolHook ToolHook
 
+	// ToolObserver receives metadata after each turn's tool calls finish.
+	// It is ignored when nil, is not called for dry runs (DryRun), and does
+	// not change the result.
+	ToolObserver ToolObserver
+
 	// I/O (nil defaults to os.Stdout / os.Stderr / os.Stdin)
 	Stdout io.Writer
 	Stderr io.Writer

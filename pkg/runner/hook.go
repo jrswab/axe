@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 const toolDenyText = "tool call denied by host policy"
@@ -43,6 +44,29 @@ type ToolDecision struct {
 // A hook error or panic denies the call with the fixed text
 // "tool call denied by host policy"; raw error or panic text is not returned.
 type ToolHook func(ctx context.Context, call ToolCall) (ToolDecision, error)
+
+// ToolEvent contains metadata about a completed tool call, never result text.
+// Action is the effective action the runner applied, not the raw hook output.
+// ContentLength is the untruncated byte length of the result before truncation.
+// Duration measures dispatch only and is zero for calls that were not dispatched.
+// Turn is zero-based. Call.Arguments is a fresh copy; mutations do not change history.
+type ToolEvent struct {
+	Call          ToolCall
+	Action        ToolAction
+	CallID        string
+	IsError       bool
+	ContentLength int
+	Duration      time.Duration
+	Turn          int
+}
+
+// ToolObserver receives metadata only, never result text, and returns nothing.
+// Calls are sequential on the run goroutine, in model order, after the turn's
+// tool calls finish. Concurrent Run calls sharing one observer may call it
+// concurrently; the host must make the observer safe for concurrent use.
+// No cross-run ordering is guaranteed. A panic is recovered and reported to
+// stderr as the fixed line "Warning: tool observer panicked"; delivery continues.
+type ToolObserver func(ctx context.Context, ev ToolEvent)
 
 func callToolHook(ctx context.Context, hook ToolHook, call ToolCall) (decision ToolDecision, err error) {
 	args := make(map[string]string, len(call.Arguments))
