@@ -186,7 +186,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
     12. Hook cancels `ctx` while deciding call 1 of 2: no call executes (neither call is dispatched); the run returns an error whose `Unwrap` chain reaches the context error (`errors.Is(err, context.Canceled)`).
   - Doc comments state the decide-first order, the fixed-text deny, and the difference from existing tool-error behavior.
 
-- [ ] 005: Give hosts a metadata-only `ToolObserver` for each tool call
+- [x] 005: Give hosts a metadata-only `ToolObserver` for each tool call
   - Slice enabled: a host records what happened per call (decision, outcome, duration, turn) without receiving result text, for nightshift milestone 004.
   - Depends on: 004 (the decision value is the hook's action).
   - Scope: new public types in `pkg/runner/hook.go`: `ToolEvent` with `Call ToolCall`, `Action ToolAction`, `CallID`, `IsError`, `ContentLength`, `Duration`, `Turn`. `type ToolObserver func(ctx context.Context, ev ToolEvent)`. Add `ToolObserver ToolObserver` to `Options`. Call it on the run goroutine after a turn's tool calls finish, in model order, for every call including denied and stubbed ones. When `ToolHook` is nil, `Action` is `ToolAllow` for every event. Recover a panic from the observer and write one credential-free line to stderr.

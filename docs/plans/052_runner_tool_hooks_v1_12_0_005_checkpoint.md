@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported identifiers to `pkg/runner`, the external Go API contract (D1), and runs on the parallel tool dispatch path in `executeToolCalls` (`pkg/runner/run.go:925`, parallel branch `:1016-1049`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `execute`
+- Current phase: `complete`
 - Current task: T9
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
@@ -48,12 +48,12 @@ Absolute paths inside the Repository root (the feature worktree).
 - T7.1: `checked`
 - T8: `checked`
 - T9: `checked`
-- Milestone checkbox: `unchecked`
+- Milestone checkbox: `checked`
 - Review: not started
 - Blockers: none
 - Relevant work: `committed` — through commit `aaa97a1` (records) on branch `runner-tool-hooks`.
-- Next safe action: Review gate: records-stale-check c2620fb, docs-lint --since c2620fb, factory-gate test+lint at HEAD, split review (backend pkg/runner + CHANGELOG; spec/records docs/plans) round 1 range c2620fb..HEAD
-- Last completed phase/task/gate and timestamp: T9 records PASS (checkpoint/checkbox agreement verified at 250533a; milestone checkbox deferred to Factory completion gate), 2026-11-09T20:22:43.496895+00:00
+- Next safe action: Restart validation, factory-sync, factory-gh push --require-open-pr, CI snapshot PR 103, then milestone 006
+- Last completed phase/task/gate and timestamp: Review gate PASS + Completion gate PASS at 906af5f, 2026-11-09T20:29:59.590675+00:00
 
 ## Gate evidence
 
@@ -301,8 +301,29 @@ explore: 23 task IDs match checklist; 22 [x] + T9 agree with checkpoint states; 
 
 - Next action: Review gate: records-stale-check c2620fb, docs-lint --since c2620fb, factory-gate test+lint at HEAD, split review (backend pkg/runner + CHANGELOG; spec/records docs/plans) round 1 range c2620fb..HEAD
 
+### Review gate PASS + Completion gate PASS at 906af5f
+
+- Gate: Review gate PASS + Completion gate PASS at 906af5f
+- Commands/results:
+Review r1 (range c2620fb..aaa97a1, test log /tmp/factory-gate-1001/gate-test-aaa97a1081e3-20261109T202250Z.log): backend APPROVED (no findings); spec/records CHANGES REQUESTED F1 (blocking, checkpoint stale state), F2 (blocking, stale executeToolCalls citations), F3 nit, F4 nit (spec baseline toolExecResult quotes). Fix 906af5f; explore grep -F verified zero hits. Review r2 spec/records (range c2620fb..906af5f, test log /tmp/factory-gate-1001/gate-test-906af5feea6d-20261109T202718Z.log): APPROVED, F1-F4 resolved, no new findings. Pre-review: records-stale-check c2620fb -> no removed/renamed names; docs-lint 1 --since c2620fb -> PASS 190 files 0 findings. Completion: factory-sync origin/master behind 0, no merge; factory-gate test (go test -race ./...) exit 0 at 906af5f; factory-gate lint (golangci-lint run) exit 0 at 906af5f, log /tmp/factory-gate-1001/gate-lint-906af5feea6d-20261109T202943Z.log; spec R1-R16 conformance confirmed by backend review; git status clean, changes = CHANGELOG.md, pkg/runner/{hook,options,run,run_test}.go, docs/plans 005 spec/implement/checkpoint.
+- HEAD commit SHA: `906af5feea6de5499daee22529cb2bdef5f41151`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Restart validation, factory-sync, factory-gh push --require-open-pr, CI snapshot PR 103, then milestone 006
+
 ## Limitations & blockers
 
 - Limitations: planning review and the checklist are not run in this phase. The milestone's test 6 (`--json` golden unchanged) is a regression check through `cmd/golden_test.go`, which may need a writable `~/.cache/axe` in this sandbox (environmental, as recorded for 004).
 - Blockers: `none`
-- Next action: Review gate: records-stale-check c2620fb, docs-lint --since c2620fb, factory-gate test+lint at HEAD, split review (backend pkg/runner + CHANGELOG; spec/records docs/plans) round 1 range c2620fb..HEAD
+- Next action: Restart validation, factory-sync, factory-gh push --require-open-pr, CI snapshot PR 103, then milestone 006
