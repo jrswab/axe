@@ -42,8 +42,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - Milestone checkbox: `unchecked`
 
 Task states use the checklist's complete IDs: `T<digits>` optionally followed by letters (`[a-z]+`, such as `T6a`, `T6b`) or dotted numeric segments (`(.<digits>)+`, such as `T9.1`, `T9.1.2`). Case and prefix whitespace are ignored; `Task 6a` aliases `T6a`. Legacy integer labels remain supported. Use one ``- T6a title: `checked` `` or `unchecked` bullet per ID, or `none` before planning/in fast lanes. Execution follows checklist order, not numeric ID order.
-- Next safe action: User decision: how to obtain review gate evidence (factory-gates.json on master); Jaron runs docker build for T9
-- Last completed phase/task/gate and timestamp: Pre-review full test run PASS; review gate BLOCKED (no factory-gates.json), 2026-11-09T14:35:53.131461+00:00
+- Next safe action: Wait for Jaron to merge PR #104 and run docker build (T9); then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1
+- Last completed phase/task/gate and timestamp: Session resume: milestone sync PASS; gate-config PR #104 opened; PR #103 CI snapshot (CodeRabbit pending), 2026-11-09T15:03:20.360142+00:00
 
 ## Gate evidence
 
@@ -193,8 +193,29 @@ factory-sync: exit 0, ahead 9 behind 0, no conflicts. XDG_CACHE_HOME=$(mktemp -d
 
 - Next action: User decision: how to obtain review gate evidence (factory-gates.json on master); Jaron runs docker build for T9
 
+### Session resume: milestone sync PASS; gate-config PR #104 opened; PR #103 CI snapshot (CodeRabbit pending)
+
+- Gate: Session resume: milestone sync PASS; gate-config PR #104 opened; PR #103 CI snapshot (CodeRabbit pending)
+- Commands/results:
+milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0, 13 entries. factory-sync (base origin/master): exit 0, ahead 10, behind 0, shared_files [], conflicts [], synced true, HEAD unchanged ddc27a6. factory-gates-config worktree: factory-commit 5ee05b7 (.gitignore, .agents/factory-gates.json); factory-gh push exit 0; factory-gh pr-create -> https://github.com/jrswab/axe/pull/104 (awaiting Jaron merge). factory-gh gh pr checks 103 (exit 8, one pending): build pass, config-sections pass, dry-run pass, lint pass, piped-input pass, providers pass, test pass (2m7s), tools pass; CodeRabbit pending. T15 stays unchecked until CodeRabbit finishes.
+- HEAD commit SHA: `ddc27a6c543d1d7b3562179f40492d5b8a5a0040`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Wait for Jaron to merge PR #104 and run docker build (T9); then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1
+
 ## Limitations & blockers
 
 - Limitations: `Spec and checklist files do not exist yet (spec phase). Govulncheck baseline has not been re-run after the pin; acceptance is unverified until implementation.`
 - Blockers: `none`
-- Next action: User decision: how to obtain review gate evidence (factory-gates.json on master); Jaron runs docker build for T9
+- Next action: Wait for Jaron to merge PR #104 and run docker build (T9); then factory-sync, factory-gate run --gate test, records-stale-check be94237, docs-lint --since origin/master, split code review be94237..HEAD round 1
