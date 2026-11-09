@@ -247,7 +247,7 @@ Expected FAIL set after each green task (the race run in each task must show onl
     - `XDG_CACHE_HOME=$(mktemp -d) go test -count=1 ./pkg/runner ./internal/agent ./internal/toolname ./internal/mcpclient ./internal/envinterp` → `ok` for all five.
     - `go test -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestTools_'` → every line `PASS`. Record the list.
     - `XDG_CACHE_HOME=$(mktemp -d) go test -count=1 ./cmd` → `ok` (includes `TestRun_NoSubAgents_NoTools`, `cmd/run_test.go:1007`, and `TestRunCmd_DryRun_WithMCPServers`, `cmd/run_test.go:289`).
-    - `go test -count=1 -v ./pkg/runner | rg -- '--- (PASS|FAIL): (TestRun_SingleShot_NoTools|TestToolHookMCPAllow|TestRun_SubAgent)$'` → every line `PASS` (existing tests, verified in T0).
+    - `go test -count=1 -v ./pkg/runner | rg -- '--- (PASS|FAIL): (TestRun_SingleShot_NoTools|TestToolHookMCPAllow|TestRun_SubAgent)( |$)'` → every line `PASS` (existing tests, verified in T0).
     - `go build ./...` → `exit=0`.
     - `go vet ./pkg/runner/` → `exit=0`.
     - `gofmt -l pkg/runner/options.go pkg/runner/run.go pkg/runner/tools_option_test.go` → no output. The drift in `result.go` and `result_test.go` is out of scope and is not listed.
