@@ -46,8 +46,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T9: `checked`
 - T10: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Push branch (factory-gh push --require-open-pr), CI snapshot, then select milestone 010
-- Last completed phase/task/gate and timestamp: Review and completion gate PASS (HEAD 70c21a6), 2026-11-10T02:43:49.893292+00:00
+- Next safe action: Resume milestone 010 specification with approved integral decimal/exponent coverage
+- Last completed phase/task/gate and timestamp: 009 restart replacement evidence PASS at dcba6db, 2026-11-10T14:00:06.166705+00:00
 
 ## Gate evidence
 
@@ -283,6 +283,27 @@ Pre-review: records-stale-check 08d0f26 exit 0 (no TAGS.md/.mem/changelog.d). do
 
 - Next action: Push branch (factory-gh push --require-open-pr), CI snapshot, then select milestone 010
 
+### 009 restart replacement evidence PASS at dcba6db
+
+- Gate: 009 restart replacement evidence PASS at dcba6db
+- Commands/results:
+Historical missing drafting inventories cannot be reconstructed and historical /tmp test logs are absent; these are historical limitations, not claimed validated snapshots. Current replacement checks: go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks exit 0, go1.26.0/toolchain go1.26.10 available, module loads read-only, govulncheck ./... clean. PATH starts /home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin; GOTOOLCHAIN unset. Host factory-sync at dcba6db exit 0, origin/master, ahead137 behind0 shared_files[] conflicts[]. spec-lint --root /home/jaron/dev/axe/runner-tool-hooks _009_spec.md _009_implement.md exit0, 100/101 citations,0 findings. Fresh factory-gate test (go test -race ./...) at dcba6db0d0d19cf9e5902a54683ba267cfe608e9 poll exit0: /tmp/factory-gate-1001/gate-test-dcba6db0d0d1-20261110T135744Z.log. All 20 task states match checked checklist; milestone009 checked, phasecomplete, paths/root/branch match. git diff 70c21a6..dcba6db only 009 completion bookkeeping and 010 planning; no source changes. run.go blob4e540b4b7489f60db8197be2179f397c5ed92274, options.go blob eedf7c6344c8a8ef93f56e09466ff0b657e26be1, credentials_option_test.go blob338d178fdffc5a1b2a6f8f47c58c7478b73a0be6, 009spec blob705be2d171f4a73149cd4ec8f8fdfdced454828f, checklist blob21a77066e4f55a27bf2579e623f9454e9931bf85. 010 recorded inventory blobs exist; current spec matches latest502c4d8f554219eab15b0558fc06ba8e59e4927e, checkpoint self-write accounted separately; all stash refsnone. Lint/API/task evidence remains applicable to unchanged source, with fresh full race evidence replacing absent gate logs.
+- HEAD commit SHA: `dcba6db0d0d19cf9e5902a54683ba267cfe608e9`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume milestone 010 specification with approved integral decimal/exponent coverage
+
 ## Limitations & blockers
 
 - Limitations:
@@ -293,4 +314,4 @@ Pre-review: records-stale-check 08d0f26 exit 0 (no TAGS.md/.mem/changelog.d). do
   - Milestone entry 009's relevant citations were refreshed in `6299af3` (line numbers only). The design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) is unchanged by this milestone and still cites stale lines. The spec's "Citation corrections" section records the verified lines.
   - Implementation and the seven credential-option tests are complete, with the full-suite gate passing at `1995c84829fcbf6f58814f1115b5fb3ff9b80418`. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Push branch (factory-gh push --require-open-pr), CI snapshot, then select milestone 010
+- Next action: Resume milestone 010 specification with approved integral decimal/exponent coverage
