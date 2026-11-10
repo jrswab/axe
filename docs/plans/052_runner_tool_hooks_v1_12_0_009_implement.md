@@ -175,7 +175,7 @@ Order: T3.1 (apply point) → T3.2 (boundary verification; no code expected) →
 Expected FAIL set after each task (any other FAIL is a stop):
 - After T3.1: none (all four red tests turn green).
 
-- [ ] **T3.1: Green: apply `Options.APIKey` and `Options.BaseURL` after the lookup, before the bedrock block (R4, R6)**
+- [x] **T3.1: Green: apply `Options.APIKey` and `Options.BaseURL` after the lookup, before the bedrock block (R4, R6)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.6.
@@ -199,7 +199,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `gofmt -l pkg/runner/run.go` → no output for the touched file (drift in `result.go` and `result_test.go` is out of scope).
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: none.
 
-- [ ] **T3.2: Verify the bedrock block, the boundary, and the output paths are unchanged (R5, R6, R7); no code expected**
+- [x] **T3.2: Verify the bedrock block, the boundary, and the output paths are unchanged (R5, R6, R7); no code expected**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T3.1.
@@ -213,7 +213,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `git diff --exit-code -- internal cmd` → `exit=0` (working tree; no edits outside `pkg/runner`).
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files unless a fix was needed; if none, the derived package list is empty. If a fix to `pkg/runner/run.go` was needed, the package is `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.3: Green: all acceptance tests 1-7 pass (R3, R4, R5, R6, R8)**
+- [x] **T3.3: Green: all acceptance tests 1-7 pass (R3, R4, R5, R6, R8)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.2.

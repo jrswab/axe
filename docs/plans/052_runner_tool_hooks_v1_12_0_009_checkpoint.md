@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T3.1
+- Current task: T4
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -33,9 +33,9 @@ Absolute paths inside the Repository root (the feature worktree).
 - T2.4: `checked`
 - T2.5: `checked`
 - T2.6: `checked`
-- T3.1: `unchecked`
-- T3.2: `unchecked`
-- T3.3: `unchecked`
+- T3.1: `checked`
+- T3.2: `checked`
+- T3.3: `checked`
 - T4: `unchecked`
 - T5: `unchecked`
 - T6: `unchecked`
@@ -46,8 +46,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T9: `unchecked`
 - T10: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T3.1
-- Last completed phase/task/gate and timestamp: T2.1-T2.6 red verification PASS (commit a9e90f1), 2026-11-10T02:02:47.242116+00:00
+- Next safe action: Implement T4
+- Last completed phase/task/gate and timestamp: T3.1-T3.3 green verification PASS (commit 3c6df3d), 2026-11-10T02:10:47.768374+00:00
 
 ## Gate evidence
 
@@ -199,6 +199,27 @@ ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race -v ./pkg/runner: exit 1
 
 - Next action: Implement T3.1
 
+### T3.1-T3.3 green verification PASS (commit 3c6df3d)
+
+- Gate: T3.1-T3.3 green verification PASS (commit 3c6df3d)
+- Commands/results:
+Commit 3c6df3d: pkg/runner/run.go +6/-0. APIKey override run.go:387-389, BaseURL override run.go:390-392, bedrock block run.go:395-401 unchanged (awk extraction diff vs 08d0f26 empty, exit 0), newProvider call run.go:413. No `if apiKey == ""` guard (rg exit 1). ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race -v ./pkg/runner: exit 0, all 7 TestCredentialsOption_ tests and NotPrinted/{live,live-fail,dry} PASS, no FAIL lines. Env-independence run (ANTHROPIC_API_KEY=sk-dummy-not-a-key AXE_ANTHROPIC_BASE_URL=http://localhost:1 AWS_DEFAULT_REGION=us-east-1 AWS_REGION= AXE_BEDROCK_REGION= go test -race -count=1 -v ./pkg/runner): exit 0, all PASS. go test -count=1 ./pkg/runner ./internal/agent ./internal/config: ok x3. git diff --exit-code -- internal cmd: exit 0. go vet ./pkg/runner/: 0. gofmt -l run.go: empty. golangci-lint run ./pkg/runner/...: 0 issues. Per-task gate pkgs=./pkg/runner, go test -race: ok. Verified on HEAD 329b05d with only run.go modified, then committed as 3c6df3d.
+- HEAD commit SHA: `3c6df3de11c9c25b6839370252aa2c6ddbb36386`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T4
+
 ## Limitations & blockers
 
 - Limitations:
@@ -209,4 +230,4 @@ ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race -v ./pkg/runner: exit 1
   - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
   - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Implement T3.1
+- Next action: Implement T4
