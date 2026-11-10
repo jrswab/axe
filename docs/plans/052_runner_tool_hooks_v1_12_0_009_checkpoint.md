@@ -22,8 +22,8 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `execute`
-- Current task: T10
+- Current phase: `complete`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -45,9 +45,9 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8.1: `checked`
 - T9: `checked`
 - T10: `checked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Pre-review gates: records-stale-check, docs-lint, factory-gate run on HEAD, then split code review of 08d0f26..HEAD
-- Last completed phase/task/gate and timestamp: T8-T10 verification PASS (commit 6299af3), 2026-11-10T02:31:58.879865+00:00
+- Milestone checkbox: `checked`
+- Next safe action: Push branch (factory-gh push --require-open-pr), CI snapshot, then select milestone 010
+- Last completed phase/task/gate and timestamp: Review and completion gate PASS (HEAD 70c21a6), 2026-11-10T02:43:49.893292+00:00
 
 ## Gate evidence
 
@@ -262,6 +262,27 @@ T8 (on a9c2740): non-plan diff 08d0f26..HEAD = exactly CHANGELOG.md, pkg/runner/
 
 - Next action: Pre-review gates: records-stale-check, docs-lint, factory-gate run on HEAD, then split code review of 08d0f26..HEAD
 
+### Review and completion gate PASS (HEAD 70c21a6)
+
+- Gate: Review and completion gate PASS (HEAD 70c21a6)
+- Commands/results:
+Pre-review: records-stale-check 08d0f26 exit 0 (no TAGS.md/.mem/changelog.d). docs-lint --since 08d0f26 exit 0 (docs-lint 1, 202 files, 0 findings). factory-gate test at 1995c84: exit 0, log /tmp/factory-gate-1001/gate-test-1995c84829fc-20261110T023208Z.log. Code review round 1 (range 08d0f26..1995c84, split): backend (options.go, run.go, credentials_option_test.go) APPROVED, no findings. Spec/records CHANGES REQUESTED: F1 checkpoint.md:19,273 stale 'not yet created' and 'No implementation or test has been run yet'. F2 checkpoint.md:272 stale claim that the milestone entry was not edited. Fixed in 70c21a6 (grep -F 0 hits). docs-lint --since 08d0f26 exit 0. Round 2 (range 1995c84..70c21a6, Markdown only) APPROVED. Milestone sync: factory-sync origin/master exit 0, behind 0, shared_files [], HEAD 70c21a6. Completion gate: factory-gate test (go test -race ./...) at 70c21a6 exit 0, log /tmp/factory-gate-1001/gate-test-70c21a652f03-20261110T024155Z.log. Lint: golangci-lint run exit 0, 0 issues at 8f8b10a (T6); no Go file changed since (non-plan diff 8f8b10a..70c21a6 is CHANGELOG.md only). make apidiff exit 0 (T7). Spec comparison: backend review confirmed R1-R8 (precedence, empty=unset, not printed, bedrock ignored, additive API). Git status clean, no pre-existing changes. checklist-test-gate-audit absent, not run.
+- HEAD commit SHA: `70c21a652f03e9825a15b2d9b3301be64df0d173`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Push branch (factory-gh push --require-open-pr), CI snapshot, then select milestone 010
+
 ## Limitations & blockers
 
 - Limitations:
@@ -272,4 +293,4 @@ T8 (on a9c2740): non-plan diff 08d0f26..HEAD = exactly CHANGELOG.md, pkg/runner/
   - Milestone entry 009's relevant citations were refreshed in `6299af3` (line numbers only). The design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) is unchanged by this milestone and still cites stale lines. The spec's "Citation corrections" section records the verified lines.
   - Implementation and the seven credential-option tests are complete, with the full-suite gate passing at `1995c84829fcbf6f58814f1115b5fb3ff9b80418`. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Pre-review gates: records-stale-check, docs-lint, factory-gate run on HEAD, then split code review of 08d0f26..HEAD
+- Next action: Push branch (factory-gh push --require-open-pr), CI snapshot, then select milestone 010
