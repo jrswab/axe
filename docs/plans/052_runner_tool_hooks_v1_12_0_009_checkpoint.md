@@ -22,13 +22,32 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `checklist-pending`
+- Current phase: `execute`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T0: `unchecked`
+- T1: `unchecked`
+- T2.1: `unchecked`
+- T2.2: `unchecked`
+- T2.3: `unchecked`
+- T2.4: `unchecked`
+- T2.5: `unchecked`
+- T2.6: `unchecked`
+- T3.1: `unchecked`
+- T3.2: `unchecked`
+- T3.3: `unchecked`
+- T4: `unchecked`
+- T5: `unchecked`
+- T6: `unchecked`
+- T7: `unchecked`
+- T7.1: `unchecked`
+- T8: `unchecked`
+- T8.1: `unchecked`
+- T9: `unchecked`
+- T10: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_009_implement.md
-- Last completed phase/task/gate and timestamp: Spec planning review r1 APPROVED WITH NITS; nits fixed in c2e20a2, 2026-11-10T01:27:34.069757+00:00
+- Next safe action: Implement T0
+- Last completed phase/task/gate and timestamp: Checklist planning review r2 APPROVED, 2026-11-10T01:39:08.305874+00:00
 
 ## Gate evidence
 
@@ -96,6 +115,27 @@ spec-lint 009 spec: exit 0, 100 citations, 0 findings. Review r1 APPROVED WITH N
 
 - Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_009_implement.md
 
+### Checklist planning review r2 APPROVED
+
+- Gate: Checklist planning review r2 APPROVED
+- Commands/results:
+spec-lint 009 implement: exit 0, 101 citations, 0 findings. Checklist r1 CHANGES REQUESTED (unset-lookup guard must clear ANTHROPIC_API_KEY), fixed 0de5d02; r2 APPROVED. Failing planning rounds: 1 of 3.
+- HEAD commit SHA: `0de5d024599be93fda540578efc4d45017019591`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T0
+
 ## Limitations & blockers
 
 - Limitations:
@@ -106,4 +146,4 @@ spec-lint 009 spec: exit 0, 100 citations, 0 findings. Review r1 APPROVED WITH N
   - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
   - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_009_implement.md
+- Next action: Implement T0
