@@ -876,6 +876,72 @@ func TestOpenAI_Send_ToolCallResponse(t *testing.T) {
 	}
 }
 
+// Spec 010 R1/R7/R8: eligible top-level integers keep exact digits;
+// strings and nested collections retain their legacy text.
+func TestLargeIntegerArgs_OpenAI_Buffered(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "threshold integer", raw: `1000000`, want: "1000000"},
+		{name: "integer beyond float64 precision", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "integral exponent", raw: `1e6`, want: "1000000"},
+		{name: "integral decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative integral exponent", raw: `-1e6`, want: "-1000000"},
+		{name: "exact exponent beyond float64 precision", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "exact decimal beyond float64 precision", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "integral decimal beyond int64", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "integral exponent beyond int64", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "below threshold", raw: `999999`, want: "999999"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "boolean", raw: `true`, want: "true"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "quoted exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "quoted decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "quoted large integer", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "nested exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "nested integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "nested array", raw: `[1.50]`, want: "[1.5]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Encode only the outer arguments string, never decode the raw value
+			// into float64 or quote numeric tokens inside the argument object.
+			arguments, err := json.Marshal(`{"n":` + tt.raw + `}`)
+			if err != nil {
+				t.Fatalf("failed to encode arguments string: %v", err)
+			}
+			body := `{"model":"gpt-4o","choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":` + string(arguments) + `}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":10,"completion_tokens":5}}`
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(body))
+			}))
+			defer server.Close()
+
+			o, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected NewOpenAI error: %v", err)
+			}
+
+			resp, err := o.Send(context.Background(), &Request{Model: "gpt-4o"})
+			if err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+			}
+			if got, ok := resp.ToolCalls[0].Arguments["n"]; !ok || got != tt.want {
+				t.Errorf("Arguments[n] for raw %s = %q (present=%t), want %q", tt.raw, got, ok, tt.want)
+			}
+		})
+	}
+}
+
 func TestOpenAI_Send_ToolCallNullContent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := `{

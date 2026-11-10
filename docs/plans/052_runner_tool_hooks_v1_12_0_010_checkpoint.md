@@ -22,8 +22,8 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `execute`
-- Current task: T01a
+- Current phase: `blocked`
+- Current task: T01a/T01b implementation verified; committed host review evidence pending
 - Task states — checklist checkboxes render from this list:
 - T01a: `unchecked`
 - T01b: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T01a
-- Last completed phase/task/gate and timestamp: Single independent post-cap F1/F2 fix check COMPLETE PASS; Phase3 authorized, 2026-11-10T16:27:51.207499+00:00
+- Next safe action: Run the isolated host test gate from /tmp/052-runner-tool-hooks-safe-gate.sh at the committed T01a+b HEAD, then resume required per-task reviews using its passing factory-gate log
+- Last completed phase/task/gate and timestamp: T01a+b behavioral RED/GREEN and local package gates PASS; required per-task host review gate BLOCKED by environment interface, 2026-11-10T16:46:15.218228+00:00
 
 ## Gate evidence
 
@@ -467,6 +467,33 @@ Single explore post-cap check completed at HEAD a16598a3b7746911af3bdf79357ded5a
 
 - Next action: Implement T01a
 
+### T01a+b behavioral RED/GREEN and local package gates PASS; required per-task host review gate BLOCKED by environment interface
+
+- Gate: T01a+b behavioral RED/GREEN and local package gates PASS; required per-task host review gate BLOCKED by environment interface
+- Commands/results:
+T01a+b implemented within approved scope at HEAD ecd8b6d4d5509b2aed7af4601801d42e8820df55 with uncommitted implementation. Existing TestLargeIntegerArgs_OpenAI_Buffered added to openai_test.go:881 by test agent: focused env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider -run '^TestLargeIntegerArgs_OpenAI_Buffered$' compiled/exit1 with9eligible expected-digit/scientific-notation failures and11unchangedcontrolpasses. Code added tool_arguments.go DecodeJSON:14, FormatToolArgument:36, toolIntegerDigits:51, legacyToolValue:94 and wired OpenAI outerdecode:314,innerdecode:340,format:342. New tool_arguments_test.go:74formattercases,24mapdecodecases,9typeddestinationcases plusreuse/pointercontrols,34realOpenAI Sendcompatibilitycases. OriginalRED file SHA256 ef1946cf279c5e415740f6514e231cbd40a3900a22114a742b36a3f1823e728f unchanged bycode and independentlyrechecked before/after VERIFY. Focused GREEN exit0 all20cases. Independent test agent original focusedcommand exit0,full touchedpackage env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race ./internal/provider exit0 cached;changed-file gofmt-l andgit diff--check exit0empty. Code exactFactorypackage derivation foundonly ./internal/provider; go test -race $pkgs exit0 (18.113s). Combinedoriginal/helper/compatibilityselectors exit0. All Go/make commands withspecified blankAnthropic/baseURL,unsetGOTOOLCHAIN andunchangedcheckpointPATH: go list-m exit0 github.com/jrswab/axe; go build./... exit0empty; go vet./... exit0empty; make lint exit0 0issues; make apidiff exit0 no incompatibilities (two toolchainselection notices); git diff--exit-code-- go.mod go.sum exit0. Formatter/validator mutations separately causedcorrecttestfailures thenwere restoredandGREENconfirmed. Logs /tmp/010-t01-restored-green.log,/tmp/010-t01-mutation-validation.log,/tmp/010-t01-mutation-formatter.log,/tmp/run-detached-1001/code-010-t01-race-lucb/output.log,/tmp/run-detached-1001/code-010-t01-gates-lucb/output.log. Slice tier design-bearing: exactargumentdataandexternalcontract changes, exec per-task standards/spec anddesign reviews remain REQUIRED andUNRUN. No otherimplementationtaskdone. Citationrepair spec:100/checklist:39 changedInvalidToolCallArgumentstest926->992; fixed-string oldpassagegreps exit1zero. Pre-review spec-lint --root /home/jaron/dev/axe/runner-tool-hooks both010 artifacts exit0 111/16citations0findings; docs-lint --since8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0 headerdocs-lint1,205Markdown0findings0outside; records-stale-check ecd8b6d exit0 noTAGS/.mem/changelog.d. No fullracegate, reviews orcompletionrun. BLOCKER: run_script tool exposesonlyscript/repo/args and run-script.ts:100-105 inheritsprocess.env;factory-gate:327-332,248-255 andrun-detached:94 inheritit. NoflagclearstestcredentialsorisolatesXDGcache. Safetypreconditions requireGOTOOLCHAINunset,ANTHROPIC_API_KEY=,AXE_ANTHROPIC_BASE_URL=,temporaryXDG_CACHE_HOME forcmd. ResolvedGo wrapperdoesnot sanitize. No safehostreviewgateauthorizedwithambientenvironment. No actualsecretvaluesinspectedorprinted. Do notbypasswithwrapper/shadowPATH,changeharness/defaultgatecommands,orsubstitutelocalnonHEADlogs. Preparetest-onlyhostscript /tmp/052-runner-tool-hooks-safe-gate.sh aftercommit;Jaronrunsitwithsafeenvironmentandreturnsfactory-gatelog. Resumeper-taskreviewonlyafterpassingHEADmatchedlog. All15tasksandmilestone010remainunchecked. Milestones011/012notselected. No newpublication/deploy/merge.
+- HEAD commit SHA: `ecd8b6d4d5509b2aed7af4601801d42e8820df55`
+- Relevant work: `uncommitted` — stash ref `fc26b333be390ed0eb27ca08ea3f5b55d8e8f228` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M internal/provider/openai.go
+ M internal/provider/openai_test.go
+?? internal/provider/tool_arguments.go
+?? internal/provider/tool_arguments_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+cae94039bb1f704fc2af647666c3f21ce53f02b3  "internal/provider/tool_arguments.go"
+977a28da2824d07c26301d14f9b1335658be2847  "internal/provider/tool_arguments_test.go"
+```
+
+- Next action: Run the isolated host test gate from /tmp/052-runner-tool-hooks-safe-gate.sh at the committed T01a+b HEAD, then resume required per-task reviews using its passing factory-gate log
+
 ## Limitations & blockers
 
 - Limitations:
@@ -480,7 +507,7 @@ Single explore post-cap check completed at HEAD a16598a3b7746911af3bdf79357ded5a
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T01a
+- Next action: Run the isolated host test gate from /tmp/052-runner-tool-hooks-safe-gate.sh at the committed T01a+b HEAD, then resume required per-task reviews using its passing factory-gate log
 
 ## Approval / decision note — 2026-11-10
 
