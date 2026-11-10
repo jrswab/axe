@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Options.ToolObserver` in `pkg/runner` receives one metadata-only `ToolEvent` per tool call after each turn's calls finish: the call, the effective action, the call ID, whether it failed, the result length, the dispatch duration, and the turn. It never includes result text. A nil observer changes nothing.
 - `Options.MCPServers` in `pkg/runner` adds MCP servers from code, merged after the agent's TOML servers. A duplicate name is a `ConfigError`. Header values are never printed, and a header variable that is unset is a `ConfigError`. A nil or empty list changes nothing.
 - `Options.Tools` in `pkg/runner` replaces the agent's TOML built-in tool list for one run when non-nil. Names are checked like TOML tools, and an unknown or empty name is a `ConfigError`. A nil list keeps the TOML list, and an empty list gives no built-in tools. The list does not limit MCP tools or `call_agent`. A built-in removed by the list no longer shadows a same-named MCP tool, which is now registered.
+- `Options.MaxTurns` in `pkg/runner` overrides the agent's TOML `max_turns` for one run when greater than 0. Zero keeps the TOML value, and a TOML value of 0 or unset means 50. A negative value is a `ConfigError`. Sub-agents do not inherit the value.
 
 ## [1.11.0] - 2026-10-21
 
