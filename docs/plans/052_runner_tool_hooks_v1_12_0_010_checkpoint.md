@@ -22,12 +22,12 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `blocked`
-- Current task: T01a/T01b nit fixes verified before commit; post-commit package checks pending
+- Current phase: `execute`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
-- T01a: `unchecked`
-- T01b: `unchecked`
-- T01c: `unchecked`
+- T01a: `checked`
+- T01b: `checked`
+- T01c: `checked`
 - T02: `unchecked`
 - T03: `unchecked`
 - T04: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit the listed nit batch, then run configured lint and full provider package race tests at the committed nit HEAD
-- Last completed phase/task/gate and timestamp: Listed T01a+b nit batch local verification PASS; post-commit lint/provider tests pending, no nit re-review, 2026-11-10T19:37:04.577882+00:00
+- Next safe action: Review T02 commit 4c9bb51c (design-bearing per-task review round 1)
+- Last completed phase/task/gate and timestamp: T02 RED complete and GREEN verification PASS, 2026-11-10T20:18:47.676320+00:00
 
 ## Gate evidence
 
@@ -562,6 +562,139 @@ Code applied only listed standardsN1-N4/designnits1-3 at HEAD fad68564ec0e1a7ba6
 
 - Next action: Commit the listed nit batch, then run configured lint and full provider package race tests at the committed nit HEAD
 
+### T01a+b complete: blocking reviews PASS and post-commit nit lint/provider race PASS
+
+- Gate: T01a+b complete: blocking reviews PASS and post-commit nit lint/provider race PASS
+- Commands/results:
+Nit batch committed through factory-commit462c8725b89d50dfb26db464e2006c9a1ee0c4d0, initiallyandfinallycleangitstatus--porcelain. qa-repro attemptedpostcommitverificationbutranNOCHECKS:requiredQA skillmissingat/home/jaron/.agents/skills/qa/SKILL.mdand/home/jaron/.factory/skills/qa/SKILL.md;noedits. General deterministiccommandagentperformedALLchecksONcommitwithcheckpointPATH,GOTOOLCHAINunset,ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL=. Focused go test -v ./internal/provider -run '^TestLargeIntegerArgs_(OpenAI_Buffered|OpenAI_DecodeErrors|Formatter|DecodeJSON|DecodeJSON_TypedDestination)$' exit0 cached with5testsPASS,20buffered/74formatter/34OpenAIdecodeerrors/24helpermap/9typeddestinationcasecounts; fullgo test -race ./internal/provider exit0cached; changed-filegofmt-l openai_test.gotool_arguments.gotestemptyexit0;gitdiff--checkexit0;go list-mexit0 github.com/jrswab/axe;go build./...exit0;go vet./...exit0;make lint exit0 0issues;make apidiffexit0noincompatibilities(twoautomaticgo1.26.11selectionnoticesforpinnedx/exp);gitdiff--exit-code--go.modgo.sumexit0. Logs /tmp/run-detached-1001/general-focused-MzlalQ/output.log,/tmp/run-detached-1001/general-race-MzlalQ/output.log,/tmp/run-detached-1001/general-build-MzlalQ/output.log,/tmp/run-detached-1001/general-vet-MzlalQ/output.log,/tmp/run-detached-1001/general-lint-MzlalQ/output.log,/tmp/run-detached-1001/general-apidiff-MzlalQ/output.log. Cacheuseisvalidandnotclaimedasfreshphysicalexecution. Noenvironment/toolingchangesnecessary. AllT01a+bdeclaredbehavioralRED/GREENandlegacycompatibilitygatespassed; standardsround1citationblockerfixedandround2fix-onlyAPPROVED;specround1APPROVED;designround1APPROVEDWITHNITS;listednitsfixedandpostcommitlint/touchedtestsreplacefurtherreview. Hostfullracee57a224reviewedSHA logremainsvalidforreviewed-source andwasnotreusedasnewnitHEADreviewevidence. T01a andT01bcheckedonlynow. Milestone010unchecked;allother13tasksunchecked. NextT01c is explicitly test-only passingconfirmationafterreviewedOpenAISend slice; classifyMechanical(no runtimebehaviorchange,no newdata/API),lint/touchedpackagerace/build/vet/apidiff gatesrequired,per-taskLLMreviews skippedunderexecMechanicaltier. AppendnewOpenAIreplaytestatEOFpreservepriorcitations;addrealrunnerhistoryobservabilitytestswithoutproductionchanges. LaterT02behavioralchangeswillbedesign-bearingwithdeclaredREDandreviews.
+- HEAD commit SHA: `462c8725b89d50dfb26db464e2006c9a1ee0c4d0`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T01c
+
+### External interruption for requested handoff; T01c implemented but unverified and unchecked
+
+- Gate: External interruption for requested handoff; T01c implemented but unverified and unchecked
+- Commands/results:
+Jaron requested handoff publication, so Factory implementation/test execution stops here. Current repository /home/jaron/dev/axe/runner-tool-hooks, branch runner-tool-hooks, HEAD462c8725b89d50dfb26db464e2006c9a1ee0c4d0. repo-state exit0 before interruption bookkeeping: upstream origin/runner-tool-hooks ahead9 behind0; base origin/master ahead145 behind0 asoflastfetch; nooperation; status M010checkpoint,M010implement,M internal/provider/openai_test.go,??pkg/runner/large_integer_args_test.go. T01a/T01b are checked only after their prior complete reviews and post-commit nit gates; uncommitted checklist/checkpoint writes carry those completed states. T01c is test-only confirmation, mechanical tier with per-taskLLMreview skipped; no invented RED/mutation requirement. Pending test changes: openai_test.go appends95lines TestLargeIntegerArgs_OpenAI_Replay:2089-2182; new pkg/runner/large_integer_args_test.go208lines contains TestLargeIntegerArgs_OpenAI_BufferedHistory:16-189 andprivatewiretype:193-208. No production source dirty. Agent reports realOpenAISend rawnumericdecode thenfollowup replaymapstrings, realRunbuffered withprebuiltMessages,builtinread_file,hook/observer/details/JSONhistory/followupwireexpectedliteralargs andfinaltoolresult/text. ToolObserver is onecompleted-call event,notStart/End. Agent reports focusednewtwotestsPASS,fulltouchedprovider/runner race17.015s/1.740s,format/diff/build/vet/lint/apidiff/moduleunchangedPASS; these reports haveNOTyetbeenindependentlyacceptedorusedtotickT01c. Read-onlyhandoffinventory gitdiff--check exit0,trackedshortstat3files125insertions9deletions excludingnew208linefile. Actual /tmp/t01c-race.log contains only2okpackageoutputs (17.015s,1.740s), no commandprefix/exit; /tmp/t01c-lint.log containsgolangci-lintrunand0issues,noexit/provenance; /tmp/t01c-apidiff.log contains2automaticgo1.26.11notices,noexplicitexit. No namedT01coutputfoundinsearched/tmp orrun-detached-1001/resumefiles;notclaimedabsentelsewhere. Missing accepted proof: exact namedtestPASS/exitforchecklistdeclaredUNFOCUSEDverboseprovider/runnerconfirmation andcommand/environment/exit provenance forreportedgates,attributablebuild/vetchecks. Freshagent mustinspect/accountpendingT01cchanges andindependentlyverifytheseapplicablechecks,usingclearAnthropic/baseURL,unsetGOTOOLCHAIN,checkpointPATH,touchedpackagesprovider+runneronly. No tests reran forhandoff. T01cNOTcommittedorchecked. T02throughT13notimplemented;010unchecked,011/012notselected. Existinghostfullracegate-test-e57a224a5dd3-20261110T183703Z.log exit0forOLD e57a224 reviewed-source only,notcurrent462c872/T01cevidence. Safehostscript/tmp/052-runner-tool-hooks-safe-gate.sh pinsOLD e57a224andcannotrunatdirtycurrentstate; refreshthroughcodewhenfutureclean-HEADreviewneedsnewhostlog. Hosttoolstilllackssafeenvinterface,noharnesschangesauthorized. QA-reproskillprerequisitefailedandranNOCHECKSat462c872; generalcommandagentreplacementpassedpriornitgates(aspreviousgate). Planningfailedcap3/3andcompletedpostcapfixcheckremainclosed,nofurtherplanningreview. Publicationauthorizedonlyforhandofftopic052-runner-tool-hooks; nocommits/push/merge/deploy/newFactoryworkduringhandoff. Preserveallcurrentchangesandresumecheckpointnotanassumptionofcompletion.
+- HEAD commit SHA: `462c8725b89d50dfb26db464e2006c9a1ee0c4d0`
+- Relevant work: `uncommitted` — stash ref `0f92050a88daf3950d1feae2996688b3a77ea180` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M internal/provider/openai_test.go
+?? pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+f0d66f949aa83f479d4d7acb90b545329925e8de  "pkg/runner/large_integer_args_test.go"
+```
+
+- Next action: Restart-validate the checkpoint, inspect pending T01c tests, and independently run the declared verbose provider/runner confirmation and required touched-package gates before committing T01c
+
+### Milestone sync refusal (tracked changes)
+
+- Gate: Milestone sync refusal (tracked changes)
+- Commands/results:
+factory-sync --base origin/master exit 1: "tracked changes present: commit or stash them before syncing". Expected refusal per handoff: pending uncommitted T01c test work must be preserved, not stashed away. No fetch performed. Last successful host sync e57a224 (ahead 143, behind 0, shared_files/conflicts empty) is recorded at checkpoint :501 and is not current.
+- HEAD commit SHA: `dbcc4fed9e3bf7232631f41aedd0fd3c8083c275`
+- Relevant work: `uncommitted` — stash ref `b1d1cac80007d4daa18f8ef70f4e55fed78d2707` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Restart-validate then accept pending T01c tests
+
+### Restart validation after handoff
+
+- Gate: Restart validation after handoff
+- Commands/results:
+Independent general read-only validation at HEAD 462c872: identity/branch/toplevel PASS; git status matches the four dirty paths; milestone 010 unchecked and task boxes T01a/T01b checked, T01c..T13 unchecked agree with checkpoint and rendered checkboxes; stash 0f92050a type commit (+95 openai_test.go) present and never applied; untracked blob f0d66f94 matches pkg/runner/large_integer_args_test.go; index hash 3ec8189 for openai_test.go matches; every recorded gate SHA resolves. Apparent worktree-hash mismatch was brief error: handoff porcelain-v2 rows record HEAD/index hashes only (d53952b is the implement.md blob), and the current worktree hash 67062c4 is exactly the T01c +95-line append. PASS.
+- HEAD commit SHA: `dbcc4fed9e3bf7232631f41aedd0fd3c8083c275`
+- Relevant work: `uncommitted` — stash ref `a3729c7a2229799a46f506a214402d45e6bda01a` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Accept pending T01c tests via independent verification
+
+### T01c independent verification PASS
+
+- Gate: T01c independent verification PASS
+- Commands/results:
+Checklist :57 confirmation verbatim (env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider ./pkg/runner) exit 0: TestLargeIntegerArgs_OpenAI_Replay PASS, TestLargeIntegerArgs_OpenAI_BufferedHistory PASS, ok provider 15.770s, ok runner 0.316s, log /tmp/t01c-independent-confirm.log. go test -race ./internal/provider ./pkg/runner exit 0, cache-valid (byte-identical inputs to pre-interruption physical 17s/1.7s run; gofmt and status confirm no change). gofmt -l on both files empty; git diff --check exit 0; go mod download, go build ./..., go vet ./... exit 0; make lint 0 issues (/tmp/run-detached-1001/t01c-lint/output.log); make apidiff no incompatibilities, two inert go1.26.11 toolchain notices (/tmp/run-detached-1001/t01c-apidiff/output.log); go.mod/go.sum unchanged; status limited to the two dirty docs. Committed dbcc4fed9e3bf7232631f41aedd0fd3c8083c275 (internal/provider/openai_test.go, pkg/runner/large_integer_args_test.go). Mechanical test-only tier: no per-task LLM review required.
+- HEAD commit SHA: `dbcc4fed9e3bf7232631f41aedd0fd3c8083c275`
+- Relevant work: `committed` — stash ref `70a13d4c7489ba3c45fe6ca88ce865f8a830b277` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T02
+
+### T02 RED complete and GREEN verification PASS
+
+- Gate: T02 RED complete and GREEN verification PASS
+- Commands/results:
+RED (test agent): TestLargeIntegerArgs_OpenAI_StreamHistory appended at pkg/runner/large_integer_args_test.go:212 and TestLargeIntegerArgs_DrainErrors at pkg/runner/stream_test.go:275; env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./pkg/runner exit 1 with StreamHistory failing on drained exact integer text (1e+06 / 9.007199254740992e+15 instead of digits) across all three subtests, DrainErrors failing only the two successful-duplicate cases; log /tmp/t02-red.log. GREEN (code agent): minimal 2-line switch in pkg/runner/run.go drainEventStream (provider.DecodeJSON, provider.FormatToolArgument; empty-args fallback kept); same focused command exit 0 with both tests PASS, ok pkg/runner 0.353s (/tmp/t02-green.log); fresh go test -race ./pkg/runner exit 0 (1.759s, derived package ./pkg/runner); gofmt -l empty; git diff --check exit 0; go build ./... and go vet ./... exit 0; make lint 0 issues (/tmp/t02-lint.log). Committed 4c9bb51cbb44559d9b180ef199e40c3a88bd916e (run.go + two test files). T02 design-bearing: per-task review pending before checkbox.
+- HEAD commit SHA: `4c9bb51cbb44559d9b180ef199e40c3a88bd916e`
+- Relevant work: `committed` — stash ref `807845f6a6c19c5614d9e4d7141323ec86a3ba81` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Review T02 commit 4c9bb51c (design-bearing per-task review round 1)
+
 ## Limitations & blockers
 
 - Limitations:
@@ -575,7 +708,7 @@ Code applied only listed standardsN1-N4/designnits1-3 at HEAD fad68564ec0e1a7ba6
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit the listed nit batch, then run configured lint and full provider package race tests at the committed nit HEAD
+- Next action: Review T02 commit 4c9bb51c (design-bearing per-task review round 1)
 
 ## Approval / decision note — 2026-11-10
 

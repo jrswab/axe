@@ -32,7 +32,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
 
 ### OpenAI tracer slice and bounded shared machinery
 
-- [ ] T01a — Prove OpenAI raw numeric failure and preserve decoding semantics.
+- [x] T01a — Prove OpenAI raw numeric failure and preserve decoding semantics.
   Budget: 30 min
   Primary R-IDs: R2. Dependency: none. Enables T01b’s first real `Send` slice.
   Source: new `internal/provider/tool_arguments.go: DecodeJSON[T any](data []byte, dst *T) error`; `internal/provider/openai.go: OpenAI.Send` response decode at line 314 and argument-map decode at line 340.
@@ -41,7 +41,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   Implement DecodeJSON: first `json.Unmarshal` into fresh zero T of EXACT legacy destination type; return its error. Then number-preserving UseNumber decode with single-value/EOF semantics. Keep all response maps as current map types; no RawMessage schema rewrite, final-graph-only validation, duplicate rejection, or blanket unknown-field validation. Wire OpenAI’s two calls, retaining outer server ProviderError and inner empty-args fallback. Do not commit a failing slice: T01a’s digit RED is the enabling handoff to T01b; its decode semantics controls pass, then complete T01b before the first slice commit/full gates.
   Depends on reads: none (no write removal).
 
-- [ ] T01b — Complete OpenAI exact top-level formatting and bounded arithmetic.
+- [x] T01b — Complete OpenAI exact top-level formatting and bounded arithmetic.
   Budget: 30 min
   Primary R-IDs: R1. Dependency: T01a; completes first buffered tracer slice.
   Source: `internal/provider/tool_arguments.go: FormatToolArgument(value any) string`; `internal/provider/openai.go: OpenAI.Send` flatten line 342.
@@ -49,7 +49,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after extending NEW `TestLargeIntegerArgs_OpenAI_Buffered`, repeat T01a’s exact RED command, still asserting through Send. Verify verbose output shows exact name `TestLargeIntegerArgs_OpenAI_Buffered` and that it failed on missing intended behavior, not compilation or unrelated test failure; add formatter table cycles after the helper exists. Keep input-length-plus-309-digit work/memory bounds. Exact coefficient/exponent analysis, not Float64, decides mathematical integrality/threshold/output digit count. Never allocate exponent-sized values, reject a long valid token, or use rounded Float64 to classify fractional traps. Require legacy parse success and normalized parse equality before choosing exact digits; preserve legacy sign-zero/fallback. Recursively restore ALL nested json.Number values to float64 before entire collection formatting. Table includes every numeric/collection row in Section 4 below, both signs, max finite 309 digits, cap overflow, A/B, and signed/unsigned zero huge exponents. Assign raw `{"n":"text"}` → stored `"text"` to NEW `TestLargeIntegerArgs_Formatter`; assign numeric `99999999999999999999999.0` and `999999999999999999999990e-1` to that formatter table and NEW `TestLargeIntegerArgs_OpenAI_Buffered`, each asserting the independent expected normalized Arguments digit string `"99999999999999999999999"`. Observe GREEN through OpenAI Send; run common full gates before committing T01a+b together.
   Depends on reads: none (stored map shape retained).
 
-- [ ] T01c — OpenAI buffered history and real-decode replay.
+- [x] T01c — OpenAI buffered history and real-decode replay.
   Budget: 30 min
   Primary R-IDs: R6, R7, R8. Dependency: T01b.
   Source read-only: `internal/provider/openai.go: convertToOpenAIMessages` lines 149-201, replay lines 165-177; `pkg/runner/run.go: Run/run` history append/return lines 693-698 and 816-817.
