@@ -22,13 +22,13 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `spec`
-- Current task: none
+- Current phase: `blocked`
+- Current task: 010 extreme-number normalization scope decision
 - Task states — checklist checkboxes render from this list:
 none
 - Milestone checkbox: `unchecked`
-- Next safe action: Restart validation, then clean-brief planning review round 2 of the approved 010 specification; create the checklist only after its criterion passes
-- Last completed phase/task/gate and timestamp: 010 approved scope reconciliation and lint PASS; handoff interruption, 2026-11-10T14:06:07.848572+00:00
+- Next safe action: Await Jaron decision on bounded compatibility fallback for exceptional numeric tokens
+- Last completed phase/task/gate and timestamp: 010 specification round 2 complete CHANGES REQUESTED; numeric blockers confirmed, 2026-11-10T15:13:53.152199+00:00
 
 ## Gate evidence
 
@@ -169,6 +169,103 @@ Jaron requested handoff before planning review round2. User decision "q1 = yes" 
 
 - Next action: Restart validation, then clean-brief planning review round 2 of the approved 010 specification; create the checklist only after its criterion passes
 
+### 010 restart validation, sync, Go preflight and planning lint PASS
+
+- Gate: 010 restart validation, sync, Go preflight and planning lint PASS
+- Commands/results:
+Current invocation resumes interrupted Factory run. Repository /home/jaron/dev/axe/runner-tool-hooks; branch runner-tool-hooks; baseline HEAD c307b92ebdd7d5f4e221396dc48cadc83249e347; baseline git status --porcelain empty. milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md exit 0: 13 entries, 010 first unchecked; no checklist exists. Host factory-sync --base origin/master exit 0: branch runner-tool-hooks, base origin/master, head_before c307b92ebdd7d5f4e221396dc48cadc83249e347, ahead 139, behind 0, shared_files [], conflicts [], synced true; HEAD unchanged. env -u ANTHROPIC_API_KEY -u AXE_ANTHROPIC_BASE_URL /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks exit 0: go1.26.0 and toolchain go1.26.10 available; repository Go go1.26.10; module loads read-only github.com/jrswab/axe; govulncheck ./... No vulnerabilities found; PASS Go pre-flight. GOTOOLCHAIN unset. PATH=/home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin:/home/jaron/.local/share/../bin:/home/jaron/bin:/home/jaron/.local/bin:/home/jaron/.npm-global/bin:/home/jaron/.opencode/bin:/home/jaron/.local/share/pi-node/current/bin:/home/jaron/android-sdk/cmdline-tools/bin:/home/jaron/go/bin:/usr/local/go/bin:/home/jaron/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin. Historical stash b74cda2ab48d0a6b61e2300ef679e67323aee506 inspected with git show/stash show, never applied. Its spec and milestones match c307b92; only checkpoint changed afterward (27 additions/4 deletions), accounted by final gate/state append and c307b92. Four recorded 010 inventory blobs exist. Current git hash-object without -w matches HEAD artifact blobs: checkpoint 839f15230e9fbb5b4c8c3ca755fccd88a353f3ce, spec 56b81d4351390f7416254572897568188acd9460. Earlier omitted inventories and original 009 gate logs remain unavailable historical evidence, not reconstructed. Existing replacement 009 log at dcba6db exists but is not a gate at current HEAD. git diff --check and git diff --exit-code -- go.mod go.sum exit 0, no output. No source changes. spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md exit 0: 109 citations, 0 findings. docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit 0; header docs-lint 1; 204 Markdown files, 0 findings, 0 outside scope. Planning failed rounds remain 1/3. Jaron-approved scope is recorded in milestone/spec/checkpoint and needs no new decision. Verbatim prior round-1 findings are available in the user-supplied /tmp handoff and will accompany the clean planning-review brief. No one-way door authorized.
+- HEAD commit SHA: `c307b92ebdd7d5f4e221396dc48cadc83249e347`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run clean-brief 010 specification planning review round 2
+
+### 010 specification planning review round 2 partial CHANGES REQUESTED
+
+- Gate: 010 specification planning review round 2 partial CHANGES REQUESTED
+- Commands/results:
+Review returned Verdict: CHANGES REQUESTED and Review incomplete: docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md — R1 extreme-number boundary analysis and final acceptance reconciliation remain unfinished. This partial result contains a blocker, so planning failing rounds are now 2/3 total (round 1 and round 2; same-round completion retry must not count another round). Incomplete results for the original spec round-2 scope: 1 consecutive. Completed read: full spec/milestone/relevant guidance, seven provider source files, inherited provider paths, runner and MCP seams. Prior F1/F2/F3/F4/F6 verified corrected. Established blocker verbatim: Gemini/Ollama raw-emitter tests are not explicitly required. Spec :104 delegates to R7 stream cases; :120 says provider ToolInput checks remain useful only for Gemini/Ollama emitter regressions; neither makes them mandatory, but milestone :263 requires them. Reviewer fix: require provider-level Gemini and Ollama tests asserting unquoted numeric ToolInput tokens, including 9007199254740993, and native boolean/null/collection shapes. Retain separate real-provider runner drain/history tests. Nit: spec :121 use Run for every buffered path cannot mock Bedrock via public Run; permit run(..., newProvider) injecting real provider.NewBedrock with WithBedrockBaseURL(httptestURL) and fake credentials, not a capturing-provider substitute. Nit: spec :135 Only the files in the Parallelizable work list points to work units; replace with Only the following paths may be edited. Unfinished checks: R1 long-coefficient/exponent-cancellation against bounded Float64 parser; R2/R3 earlier overflow overwritten by duplicate keys; final complete acceptance reconciliation. No tests, lint, builds, network operations or writes ran in review. No checklist or implementation authorized until specification criterion passes. Next review is a same-round retry of unreviewed portions, keeping all established findings.
+- HEAD commit SHA: `c307b92ebdd7d5f4e221396dc48cadc83249e347`
+- Relevant work: `committed` — stash ref `be25f07336669cd72b572897cc409b355dc3fb29` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Rerun planning lint and complete unreviewed 010 specification analysis at round 2
+
+### 010 planning lint before round 2 remaining review PASS
+
+- Gate: 010 planning lint before round 2 remaining review PASS
+- Commands/results:
+spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md exit 0: 109 citations, 0 findings. docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit 0: docs-lint 1; 204 Markdown files, 0 findings, 0 outside scope. Only checkpoint bookkeeping changed since restart. Same round-2 retry covers unfinished extreme-number analysis and acceptance reconciliation, keeps all partial findings; failing rounds remain 2/3.
+- HEAD commit SHA: `c307b92ebdd7d5f4e221396dc48cadc83249e347`
+- Relevant work: `committed` — stash ref `82d95a0d4239164fbc8b41b95a33f6a43492e19b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Complete unreviewed 010 specification boundary/acceptance analysis at round 2
+
+### 010 specification round 2 complete CHANGES REQUESTED; numeric blockers confirmed
+
+- Gate: 010 specification round 2 complete CHANGES REQUESTED; numeric blockers confirmed
+- Commands/results:
+Complete same-round-2 remaining-scope review returned Verdict: CHANGES REQUESTED with no Review incomplete line. Combined round-2 verdict CHANGES REQUESTED, all original scope complete. Planning failing rounds remain 2/3 (rounds 1 and 2, no new round for completion retry). No checklist or implementation exists. Current BLOCKER is a user scope/observable-behavior decision: exact normalization for all approved top-level mathematical JSON integers, legacy Float64 numerical behavior, and bounded output cannot all hold for extreme valid numeric tokens.
+
+Complete review findings (verbatim offending text and fixes):
+1. Exact normalization, legacy numeric behavior and the output bound cannot all hold. Locations spec :85-87,93,125,170. Offending text: “normalize decimal/exponent forms to exact plain integer digits”; “the finite Float64 range permits approximately 309 output digits”; “MCP `number`-typed parameters preserve the resulting Float64 numerical value”. Token A = "1" + 100006 zero digits + "e-100000", exact mathematical value 1000000 but legacy Go1.26.10 ParseFloat returns 0 without error. Token B = "0." + 9999 zero digits + "1e100000", exact mathematical value 10^90000 and 90001 output digits, but legacy ParseFloat returns 1 without error. internal/mcpclient/mcpclient.go:131-133 parses the stored text, so normalized A changes a number-typed MCP value. Required resolution verbatim: Obtain an explicit decision from Jaron resolving these incompatible boundary promises, then reconcile R1–R3/R8, milestone 010 and the approval record before creating the checklist. No implementation-only fix satisfies the current wording. This review does not authorize a new token limit, changed acceptance, schema-dependent formatting or public state.
+2. Final decoded-graph validation misses overflow overwritten by duplicate keys. Locations spec :93-94,99,166. Offending text: “Validate ALL decoded numbers recursively, including nested values, against the old float64 range.”; “Validate recursively before formatting or emitting”. {"n":1e400,"n":1000000} and {"n":{"bad":1e400},"n":1000000} fail legacy decoding but succeed UseNumber and final-graph validation. Fix verbatim: Require preservation of errors from every value the legacy destination decoder would convert, including values later overwritten. Explicitly allow a same-destination legacy validation pass into a fresh instance before UseNumber, or equivalent validation that retains those errors. Add top-level and replaced-subtree duplicate-overflow cases to every affected R2/R3 boundary, plus successful duplicate-key controls. Do not reject all duplicate keys or blindly validate unknown response fields: legacy decoding skips unmatched fields.
+3. Required Gemini/Ollama raw-emitter tests remain optional. Locations spec :104,120 versus milestone :263. Offending text: “Verification: R7 stream cases for Gemini and Ollama.”; “Provider `ToolInput` checks remain useful only for Gemini/Ollama emitter regressions”. Fix verbatim: Explicitly require provider-level Gemini/Ollama tests asserting unquoted numeric ToolInput tokens, including 9007199254740993, and native boolean/null/collection shapes. Retain the separate real-provider runner drain/history tests.
+Nit: spec :121 “use `Run`” cannot mock Bedrock's endpoint. Fix verbatim: permit the existing private run(..., newProvider) seam to inject a real provider.NewBedrock with WithBedrockBaseURL(httptestURL) and isolated fake credentials—not a capturing-provider substitute.
+Nit: spec :135 “Only the files in the Parallelizable work list” points to work units. Fix verbatim: replace it with “Only the following paths may be edited.”
+
+Independent deterministic probe: /tmp/052-numeric-boundaries/main.go, Go stdlib only, no repository writes. env -u ANTHROPIC_API_KEY -u AXE_ANTHROPIC_BASE_URL go run /tmp/052-numeric-boundaries/main.go exit 0, empty stderr. Actual stdout: A len=100015, ParseFloat/legacy JSON =0 nil error, UseNumber preserves token, Number.Float64=0 nil; ParseFloat("1000000",64)=1000000, equality false. B len=10009, ParseFloat/legacy JSON=1 nil, UseNumber preserves token, Number.Float64=1 nil; exact result length 90001 from exponent arithmetic only, no expansion. Controls 1e6/1000000.0 yield Float64 1000000 and legacy formatting 1e+06; 9007199254740993 yields rounded Float64 9007199254740992 while token remains exact; 1e400 legacy JSON UnmarshalTypeError and Number.Float64 range error. Both duplicate-overflow examples return legacy UnmarshalTypeError for map and actual-equivalent Gemini/Ollama response map destinations, but UseNumber/final-graph validation succeed. RawMessage outer destinations retain bytes but need legacy subtree validation. Successful duplicate controls and ignored unknown-response-field overflow controls pass legacy decoding. Confirmed all three numeric/error candidates. gofmt -l /tmp/052-numeric-boundaries/main.go and go vet /tmp/052-numeric-boundaries/main.go exit 0, empty output. GOTOOLCHAIN unset, existing PATH retained; vet/run GOPROXY=off. go version: go1.26.10 linux/amd64. git diff --check and git diff --exit-code -- go.mod go.sum exit 0 before/after; HEAD c307b92ebdd7d5f4e221396dc48cadc83249e347; only preexisting orchestrator checkpoint bookkeeping dirty. No repository package tests or paid/network provider calls ran. Probe is not implementation/test-suite evidence.
+
+qa-repro dispatch could not execute due to its suite-policy conflict and missing QA skill; no evidence from that call. The code-agent stdlib probe supplied independent hard evidence instead.
+
+Proposed safe decision, NOT yet approved or applied: normalize an otherwise eligible exact integer only if exact output remains bounded and ParseFloat of normalized digits equals the legacy Float64 value; otherwise retain legacy formatting/error. This narrows prior unconditional exact scope for A/B while retaining ordinary approved examples, integer digits beyond int64, and unchanged external APIs/dependencies. Await Jaron's choice before any spec/milestone reconciliation. No active sync/auth blocker. No push, merge or deploy authorized. 010 and 011/012 remain unchecked.
+- HEAD commit SHA: `c307b92ebdd7d5f4e221396dc48cadc83249e347`
+- Relevant work: `committed` — stash ref `a40b35dc2183e00089171088ddbd57b7ff877916` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await Jaron decision on bounded compatibility fallback for exceptional numeric tokens
+
 ## Limitations & blockers
 
 - Limitations:
@@ -182,7 +279,7 @@ Jaron requested handoff before planning review round2. User decision "q1 = yes" 
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Restart validation, then clean-brief planning review round 2 of the approved 010 specification; create the checklist only after its criterion passes
+- Next action: Await Jaron decision on bounded compatibility fallback for exceptional numeric tokens
 
 ## Approval / decision note — 2026-11-10
 
