@@ -16,14 +16,14 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md`
-- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md` (not yet created)
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md`
 
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `implement`
-- Current task: 010 interrupted before post-cap checklist fixes
+- Current phase: `execute`
+- Current task: T01a
 - Task states — checklist checkboxes render from this list:
 - T01a: `unchecked`
 - T01b: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Restart validation, then exact post-cap F1/F2 checklist fixes and one explore check before execution
-- Last completed phase/task/gate and timestamp: 010 user-requested interruption; durable planning lint PASS, post-cap fixes pending, 2026-11-10T16:12:20.731899+00:00
+- Next safe action: Implement T01a
+- Last completed phase/task/gate and timestamp: Single independent post-cap F1/F2 fix check COMPLETE PASS; Phase3 authorized, 2026-11-10T16:27:51.207499+00:00
 
 ## Gate evidence
 
@@ -423,6 +423,50 @@ Pre-handoff current artifact checks via host run_script: spec-lint --root /home/
 
 - Next action: Restart validation, then exact post-cap F1/F2 checklist fixes and one explore check before execution
 
+### Resume setup, snapshot validation, exact F1/F2 edits and planning lint PASS; independent check pending
+
+- Gate: Resume setup, snapshot validation, exact F1/F2 edits and planning lint PASS; independent check pending
+- Commands/results:
+Resume at HEAD a16598a3b7746911af3bdf79357ded5a6ad655c4, initial git status --porcelain empty. milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md exit0:13 entries. Host factory-sync exit0: branch runner-tool-hooks, base origin/master, head_before a16598a3b7746911af3bdf79357ded5a6ad655c4, ahead141 behind0 shared_files[] conflicts[] synced true; HEAD unchanged. /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks exit0 via detached general-gopre-4cenuh: go1.26.0 and toolchain go1.26.10 installed/downloadable, repository go1.26.10, module read-only PASS, govulncheck ./... No vulnerabilities found. GOTOOLCHAIN unset/effective auto; PATH=/home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin:/home/jaron/.local/share/../bin:/home/jaron/bin:/home/jaron/.local/bin:/home/jaron/.npm-global/bin:/home/jaron/.opencode/bin:/home/jaron/.local/share/pi-node/current/bin:/home/jaron/android-sdk/cmdline-tools/bin:/home/jaron/go/bin:/usr/local/go/bin:/home/jaron/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin. General read-only Git operations completed missing guard-blocked restart checks: independently decoded every inventory JSON path, git hash-object (no -w) exit0, git cat-file blob for all5 unique objects exit0, git show/stash show all9 recorded stashes exit0. All repeated checklist hashes41fbeb51955f8914885245180fd17f88887ead6c match HEAD; older spec/checkpoint mismatches accounted for by dcba6db/c307b92/b65d89d/a16598a commits and checkpoint self-writes. Final stash91f625d..a16598a differs only checkpoint29add4delete; spec/milestones match, checklist independently hashed. ID/root/branch/artifacts and all15 task/milestone unchecked states agree. No stash applied; historical missing009 evidence not reconstructed. General exact fixes: checklist:148 adds explicit AWS_REGION us-east-1 and nonparallel Bedrock history; :19,:49,:228 adds literal text pack/table; :49,:160,:226-227 assigns both beyond-int64 integral .0/e-1 spellings to T01b/T13 with normalized expected digits and quoted raw MCP result. Fixed-string grep exact old F1 paragraph exit1/zero; pointer-scoped stale-marker grep exit1/zero. Checkpoint artifact pointer:19 removes only '(not yet created)'. No source edits. git diff --check exit0. After edits, run_script spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md exit0:111 citations,0 findings; same checklist exit0:16 citations,0 findings. docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0, header docs-lint 1: checks task-id, stale-milestone, broken-mem-link, stale-citation;205 Markdown,0 findings,0 outside. Planning failed cap3/3 remains; no new planning review permitted. Single independent post-cap check has not yet run. Relevant planning work uncommitted, source/module unchanged.
+- HEAD commit SHA: `a16598a3b7746911af3bdf79357ded5a6ad655c4`
+- Relevant work: `uncommitted` — stash ref `22e1c32ac2a3a1b00d2b16fc5840c867e364e909` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run one independent read-only explore verification of both F1/F2 fixes against current code/spec; stop High stakes if incomplete or failing
+
+### Single independent post-cap F1/F2 fix check COMPLETE PASS; Phase3 authorized
+
+- Gate: Single independent post-cap F1/F2 fix check COMPLETE PASS; Phase3 authorized
+- Commands/results:
+Single explore post-cap check completed at HEAD a16598a3b7746911af3bdf79357ded5a6ad655c4, git status only010 checklist/checkpoint modified, git diff --check exit0. Final result: Post-cap fix check: COMPLETE PASS. F1 checklist:148 explicit AWS_REGION us-east-1/nonparallel verified against pkg/runner/run.go:393-413, provider bedrock fixture:97-116, run_test.go:21-27. grep -nF exact old paragraph exit1/zero, valid setup preserved. F2 checklist:19,49,160,226-228 assigns text unaffected/formatter and both beyond-int64 .0/e-1 forms to T01b/T13 with independent normalized quoted digits; valid string cases/table instruction preserved. Verified against specR1/R7/acceptance and MCP coercion:124-140. Pointer:19 corrected, pointer grep stale marker exit1/zero, historical evidence remains. All15 task boxes/checkpoint states and010 milestone remain unchecked. No additional scope/behavior changes. This was the single permitted post-cap independent check; no further planning-review loop. Prior spec/checklist lints and docs-lint1 passed; snapshot validation and Go preflight passed. Phase3 now starts with per-task declared failing tests first; T01a andT01b form one passing commit slice. No source changes/tests yet.
+- HEAD commit SHA: `a16598a3b7746911af3bdf79357ded5a6ad655c4`
+- Relevant work: `uncommitted` — stash ref `bfea86d4229db3ac986b2f633387b82b1709f8f3` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T01a
+
 ## Limitations & blockers
 
 - Limitations:
@@ -436,7 +480,7 @@ Pre-handoff current artifact checks via host run_script: spec-lint --root /home/
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Restart validation, then exact post-cap F1/F2 checklist fixes and one explore check before execution
+- Next action: Implement T01a
 
 ## Approval / decision note — 2026-11-10
 
