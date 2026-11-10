@@ -1,0 +1,208 @@
+package runner
+
+import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+)
+
+func TestLargeIntegerArgs_OpenAI_BufferedHistory(t *testing.T) {
+	t.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", "")
+	t.Setenv("OPENAI_API_KEY", "test-key")
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	setupTestEnv(t, "", "test-agent", `name = "test-agent"
+model = "openai/gpt-4o"
+tools = ["read_file"]
+`)
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "fixture.txt"), []byte("controlled result"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Only the outer arguments string is encoded; all numeric tokens stay raw.
+	const raw = `{"path":"fixture.txt","million":1000000,"precise":9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"beyond":99999999999999999999999,"beyond_decimal":99999999999999999999999.0,"beyond_exponent":999999999999999999999990e-1,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"zero":0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"rounded_threshold":999999.99999999999,"text":"text","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50],"recursive":{"a":[1000000,1.50]}}`
+	want := map[string]string{
+		"path": "fixture.txt", "million": "1000000", "precise": "9007199254740993",
+		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000",
+		"precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
+		"beyond": "99999999999999999999999", "beyond_decimal": "99999999999999999999999", "beyond_exponent": "99999999999999999999999",
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999",
+		"zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "rounded_fraction": "1e+06", "rounded_threshold": "1e+06",
+		"text": "text", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]",
+		"array": "[1.5]", "recursive": "map[a:[1e+06 1.5]]",
+	}
+	quoted, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := `{"model":"gpt-4o","choices":[{"message":{"content":"Read values","tool_calls":[{"id":"call_1","type":"function","function":{"name":"read_file","arguments":` + string(quoted) + `}}]},"finish_reason":"tool_calls"}]}`
+	first := make(chan struct{}, 1)
+	first <- struct{}{}
+	requests := make(chan []byte, 3)
+	replayed := make(chan map[string]string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		request, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- request
+		w.Header().Set("Content-Type", "application/json")
+		select {
+		case <-first:
+			_, _ = io.WriteString(w, body)
+		default:
+			var req largeIntegerOpenAIHistoryRequest
+			if err := json.Unmarshal(request, &req); err != nil {
+				t.Errorf("decode follow-up: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if len(req.Messages) != 3 || len(req.Messages[1].ToolCalls) != 1 {
+				t.Errorf("follow-up messages = %+v, want user, assistant call, tool result", req.Messages)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			var args map[string]string
+			if err := json.Unmarshal([]byte(req.Messages[1].ToolCalls[0].Function.Arguments), &args); err != nil {
+				t.Errorf("decode replay arguments as strings: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			replayed <- args
+			_, _ = io.WriteString(w, `{"model":"gpt-4o","choices":[{"message":{"content":"All done"},"finish_reason":"stop"}]}`)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("AXE_OPENAI_BASE_URL", server.URL)
+	var hooks []ToolCall
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	seed := Message{Role: "user", Content: "Keep this history"}
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent", Workdir: workdir,
+		Messages: []Message{seed}, JSON: true,
+		Stdout: stdout, Stderr: stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			hooks = append(hooks, call)
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+		ToolObserver: func(_ context.Context, ev ToolEvent) {
+			events = append(events, ev)
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Content != "All done" || result.StopReason != "stop" || result.ToolCalls != 1 {
+		t.Errorf("result content/stop/calls = %q/%q/%d, want All done/stop/1", result.Content, result.StopReason, result.ToolCalls)
+	}
+	if len(result.Messages) != 4 || len(result.Messages[1].ToolCalls) != 1 || len(result.Messages[2].ToolResults) != 1 {
+		t.Fatalf("history = %+v, want user, assistant call, tool result, final assistant", result.Messages)
+	}
+	if !reflect.DeepEqual(result.Messages[0], seed) || result.Messages[1].Role != "assistant" || result.Messages[1].Content != "Read values" || result.Messages[2].Role != "tool" || result.Messages[3].Role != "assistant" || result.Messages[3].Content != "All done" {
+		t.Errorf("history messages = %+v", result.Messages)
+	}
+	wantResult := ToolResult{CallID: "call_1", Content: "1: controlled result"}
+	if got := result.Messages[2].ToolResults[0]; !reflect.DeepEqual(got, wantResult) {
+		t.Errorf("tool result = %+v, want %+v", got, wantResult)
+	}
+	if len(hooks) != 1 || len(events) != 1 || len(result.ToolCallDetails) != 1 {
+		t.Fatalf("hook/observer/detail counts = %d/%d/%d, want 1/1/1", len(hooks), len(events), len(result.ToolCallDetails))
+	}
+	call := result.Messages[1].ToolCalls[0]
+	if call.ID != "call_1" || call.Name != "read_file" || hooks[0].ID != call.ID || hooks[0].Name != call.Name || events[0].Call.ID != call.ID || events[0].Call.Name != call.Name {
+		t.Errorf("history/hook/observer calls = %+v/%+v/%+v", call, hooks[0], events[0].Call)
+	}
+	// ToolObserver has one completed-call event, not separate Start/End events.
+	if ev := events[0]; ev.CallID != "call_1" || ev.Action != ToolAllow || ev.IsError || ev.Turn != 0 || ev.ContentLength != len(wantResult.Content) {
+		t.Errorf("observer metadata = %+v", ev)
+	}
+	detail := result.ToolCallDetails[0]
+	if detail.Name != "read_file" || detail.Output != wantResult.Content || detail.IsError || detail.Turn != 0 {
+		t.Errorf("tool detail = %+v", detail)
+	}
+	// Message has no JSON tags for tool calls; decode the wire names directly.
+	var output struct {
+		Messages []struct {
+			ToolCalls []struct {
+				Arguments map[string]string `json:"arguments"`
+			} `json:"tool_calls"`
+		} `json:"messages"`
+		ToolCallDetails []ToolCallDetail `json:"tool_call_details"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+		t.Fatal(err)
+	}
+	if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 || len(output.ToolCallDetails) != 1 {
+		t.Fatalf("JSON history/details = %+v", output)
+	}
+	if len(requests) != 2 || len(replayed) != 1 {
+		t.Fatalf("requests = %d, replay captures = %d, want 2 and 1", len(requests), len(replayed))
+	}
+	for name, got := range map[string]map[string]string{
+		"history": call.Arguments, "hook": hooks[0].Arguments,
+		"observer": events[0].Call.Arguments, "detail": detail.Input,
+		"JSON history": output.Messages[1].ToolCalls[0].Arguments,
+		"JSON detail":  output.ToolCallDetails[0].Input, "replay": <-replayed,
+	} {
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%s arguments = %v, want %v", name, got, want)
+		}
+	}
+	var initial, followup largeIntegerOpenAIHistoryRequest
+	if err := json.Unmarshal(<-requests, &initial); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(<-requests, &followup); err != nil {
+		t.Fatal(err)
+	}
+	if initial.Stream || len(initial.Messages) != 1 || initial.Messages[0].Role != seed.Role || initial.Messages[0].Content != seed.Content {
+		t.Errorf("initial request = %+v, want buffered pre-built history", initial)
+	}
+	if followup.Stream || followup.Messages[0].Role != seed.Role || followup.Messages[0].Content != seed.Content || followup.Messages[1].Role != "assistant" || followup.Messages[1].Content != "Read values" {
+		t.Errorf("follow-up history = %+v", followup)
+	}
+	wireCall := followup.Messages[1].ToolCalls[0]
+	if wireCall.ID != call.ID || wireCall.Type != "function" || wireCall.Function.Name != call.Name {
+		t.Errorf("replayed call = %+v", wireCall)
+	}
+	toolResult := followup.Messages[2]
+	if toolResult.Role != "tool" || toolResult.ToolCallID != wantResult.CallID || toolResult.Content != wantResult.Content {
+		t.Errorf("replayed tool result = %+v", toolResult)
+	}
+	for _, key := range []string{"million", "precise", "exponent", "decimal", "negative", "precise_decimal", "precise_exponent", "beyond", "beyond_decimal", "beyond_exponent"} {
+		if strings.ContainsAny(want[key], "eE") || !strings.Contains(wireCall.Function.Arguments, `"`+key+`":"`+want[key]+`"`) {
+			t.Errorf("replay lacks quoted exact digits for %s: %s", key, wireCall.Function.Arguments)
+		}
+	}
+}
+
+// largeIntegerOpenAIHistoryRequest decodes only the history wire surface;
+// function.arguments remains a JSON string until explicitly checked as strings.
+type largeIntegerOpenAIHistoryRequest struct {
+	Stream   bool `json:"stream"`
+	Messages []struct {
+		Role       string `json:"role"`
+		Content    string `json:"content"`
+		ToolCallID string `json:"tool_call_id"`
+		ToolCalls  []struct {
+			ID       string `json:"id"`
+			Type     string `json:"type"`
+			Function struct {
+				Name      string `json:"name"`
+				Arguments string `json:"arguments"`
+			} `json:"function"`
+		} `json:"tool_calls"`
+	} `json:"messages"`
+}

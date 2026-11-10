@@ -2085,3 +2085,98 @@ func openAIRawArgumentBody(t *testing.T, envelope, raw string) string {
 	}
 	return strings.Replace(envelope, "%s", string(quoted), 1)
 }
+
+func TestLargeIntegerArgs_OpenAI_Replay(t *testing.T) {
+	const raw = `{"million":1000000,"precise":9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"beyond":99999999999999999999999,"beyond_decimal":99999999999999999999999.0,"beyond_exponent":999999999999999999999990e-1,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"zero":0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"rounded_threshold":999999.99999999999,"text":"text","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50],"recursive":{"a":[1000000,1.50]}}`
+	want := map[string]string{
+		"million": "1000000", "precise": "9007199254740993",
+		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000",
+		"precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
+		"beyond": "99999999999999999999999", "beyond_decimal": "99999999999999999999999", "beyond_exponent": "99999999999999999999999",
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999",
+		"zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "rounded_fraction": "1e+06", "rounded_threshold": "1e+06",
+		"text": "text", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]",
+		"array": "[1.5]", "recursive": "map[a:[1e+06 1.5]]",
+	}
+	body := openAIRawArgumentBody(t, `{"model":"gpt-4o","choices":[{"message":{"content":"Read values","tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":%s}}]},"finish_reason":"tool_calls"}]}`, raw)
+	first := make(chan struct{}, 1)
+	first <- struct{}{}
+	requests := make(chan openaiRequest, 3)
+	replayed := make(chan map[string]string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req openaiRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- req
+		w.Header().Set("Content-Type", "application/json")
+		select {
+		case <-first:
+			_, _ = io.WriteString(w, body)
+		default:
+			if len(req.Messages) != 3 || len(req.Messages[1].ToolCalls) != 1 {
+				t.Errorf("follow-up messages = %+v, want user, assistant call, tool result", req.Messages)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			// Decoding into strings rejects replayed JSON numbers, proving OS5.
+			var args map[string]string
+			if err := json.Unmarshal([]byte(req.Messages[1].ToolCalls[0].Function.Arguments), &args); err != nil {
+				t.Errorf("decode replay arguments as strings: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			replayed <- args
+			_, _ = io.WriteString(w, `{"model":"gpt-4o","choices":[{"message":{"content":"All done"},"finish_reason":"stop"}]}`)
+		}
+	}))
+	defer server.Close()
+	o, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+	seed := Message{Role: "user", Content: "Keep this history"}
+	resp, err := o.Send(context.Background(), &Request{Model: "gpt-4o", Messages: []Message{seed}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.ToolCalls) != 1 || !reflect.DeepEqual(resp.ToolCalls[0].Arguments, want) {
+		t.Fatalf("decoded ToolCalls = %+v, want literal arguments %v", resp.ToolCalls, want)
+	}
+	final, err := o.Send(context.Background(), &Request{Model: "gpt-4o", Messages: []Message{
+		seed,
+		{Role: "assistant", Content: resp.Content, ToolCalls: resp.ToolCalls},
+		{Role: "tool", ToolResults: []ToolResult{{CallID: resp.ToolCalls[0].ID, Content: "controlled result"}}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if final.Content != "All done" {
+		t.Errorf("final content = %q, want All done", final.Content)
+	}
+	if len(requests) != 2 || len(replayed) != 1 {
+		t.Fatalf("requests = %d, replay captures = %d, want 2 and 1", len(requests), len(replayed))
+	}
+	if got := <-replayed; !reflect.DeepEqual(got, want) {
+		t.Errorf("replayed arguments = %v, want %v", got, want)
+	}
+	<-requests
+	followup := <-requests
+	call := followup.Messages[1].ToolCalls[0]
+	if call.ID != "call_1" || call.Type != "function" || call.Function.Name != "example" {
+		t.Errorf("replayed call = %+v", call)
+	}
+	toolResult := followup.Messages[2]
+	if toolResult.Role != "tool" || toolResult.ToolCallID != "call_1" || toolResult.Content == nil || *toolResult.Content != "controlled result" {
+		t.Errorf("replayed tool result = %+v", toolResult)
+	}
+	for _, key := range []string{"million", "precise", "exponent", "decimal", "negative", "precise_decimal", "precise_exponent", "beyond", "beyond_decimal", "beyond_exponent"} {
+		if strings.ContainsAny(want[key], "eE") || !strings.Contains(call.Function.Arguments, `"`+key+`":"`+want[key]+`"`) {
+			t.Errorf("replay lacks quoted exact digits for %s: %s", key, call.Function.Arguments)
+		}
+	}
+}
