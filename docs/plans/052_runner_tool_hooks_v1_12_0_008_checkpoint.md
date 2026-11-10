@@ -17,7 +17,7 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_008_spec.md`
-- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_008_implement.md` (not yet written)
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_008_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_008_checkpoint.md`
 
 ## State
@@ -45,7 +45,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T9: `checked`
 - Milestone checkbox: `unchecked`
 - Next safe action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD
-- Last completed phase/task/gate and timestamp: T4-T9 verification PASS (CHANGELOG commit 256158b; T8 citation refresh uncommitted in implement.md), 2026-11-10T00:15:15.159017+00:00
+- Last completed phase/task/gate and timestamp: T4-T9 verification PASS (CHANGELOG commit 256158b; T8 citation refresh uncommitted in implement.md), 2026-11-10T00:15:15.159017+00:00. Note: the T8 citation refresh was later committed in 436cdd9.
 
 ## Gate evidence
 
@@ -252,6 +252,6 @@ T4: go test -count=1 ./pkg/runner ./internal/agent ok; XDG_CACHE_HOME go test -c
 
 ## Limitations & blockers
 
-- Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
+- Limitations: none on implementation. Implementation is committed (07c4cbf, cf6ae1b, 5a59b25, 256158b); all tasks T0–T9 are checked; the milestone review gate is in progress. The milestone stays unchecked until the completion gate.
 - Blockers: none.
 - Next action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD
