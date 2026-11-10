@@ -3,14 +3,22 @@ package provider
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 )
 
+const (
+	minIntegerDigits      = 7
+	maxPlainIntegerDigits = 309
+)
+
 // DecodeJSON preserves json.Unmarshal validation for the exact destination type,
 // including overwritten values, while retaining interface numbers as json.Number.
+// T must not contain json.Unmarshaler types: they would run twice, and UseNumber
+// would not reach them.
 func DecodeJSON[T any](data []byte, dst *T) error {
 	var legacy T
 	if err := json.Unmarshal(data, &legacy); err != nil {
@@ -26,13 +34,14 @@ func DecodeJSON[T any](data []byte, dst *T) error {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("unexpected JSON value after first value")
+		return errors.New("unexpected JSON value after first value")
 	}
 	return nil
 }
 
 // FormatToolArgument keeps eligible exact top-level integers in plain digits.
 // All other values retain the legacy float64-derived formatting.
+// Input must have been validated by DecodeJSON before formatting.
 func FormatToolArgument(value any) string {
 	if number, ok := value.(json.Number); ok {
 		legacy, _ := number.Float64() // DecodeJSON already preserves range errors.
@@ -73,13 +82,13 @@ func toolIntegerDigits(token string) (string, bool) {
 		return "", false
 	}
 	// Check bounds before subtraction so even extreme int exponents are safe.
-	if exp < fractionDigits-len(coefficient) || exp > fractionDigits+309 {
+	if exp < fractionDigits-len(coefficient) || exp > fractionDigits+maxPlainIntegerDigits {
 		return "", false
 	}
 	shift := exp - fractionDigits
 	digits := len(coefficient) + shift
 	// deliberate: 309 result digits; larger results retain legacy formatting.
-	if digits < 7 || digits > 309 {
+	if digits < minIntegerDigits || digits > maxPlainIntegerDigits {
 		return "", false
 	}
 	if shift < 0 {

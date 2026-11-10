@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `blocked`
-- Current task: T01a/T01b implementation verified; committed host review evidence pending
+- Current task: T01a/T01b nit fixes verified before commit; post-commit package checks pending
 - Task states — checklist checkboxes render from this list:
 - T01a: `unchecked`
 - T01b: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Run the isolated host test gate from /tmp/052-runner-tool-hooks-safe-gate.sh at the committed T01a+b HEAD, then resume required per-task reviews using its passing factory-gate log
-- Last completed phase/task/gate and timestamp: T01a+b behavioral RED/GREEN and local package gates PASS; required per-task host review gate BLOCKED by environment interface, 2026-11-10T16:46:15.218228+00:00
+- Next safe action: Commit the listed nit batch, then run configured lint and full provider package race tests at the committed nit HEAD
+- Last completed phase/task/gate and timestamp: Listed T01a+b nit batch local verification PASS; post-commit lint/provider tests pending, no nit re-review, 2026-11-10T19:37:04.577882+00:00
 
 ## Gate evidence
 
@@ -494,6 +494,74 @@ cae94039bb1f704fc2af647666c3f21ce53f02b3  "internal/provider/tool_arguments.go"
 
 - Next action: Run the isolated host test gate from /tmp/052-runner-tool-hooks-safe-gate.sh at the committed T01a+b HEAD, then resume required per-task reviews using its passing factory-gate log
 
+### Host gate PASS at e57a224; T01a+b round1 standards CHANGES REQUESTED, spec APPROVED, design APPROVED WITH NITS
+
+- Gate: Host gate PASS at e57a224; T01a+b round1 standards CHANGES REQUESTED, spec APPROVED, design APPROVED WITH NITS
+- Commands/results:
+Jaron ran bash /tmp/052-runner-tool-hooks-safe-gate.sh. Host factory-gate poll gate-test-e57a224a5dd3-20261110T183703Z exit0 state exited0; log /tmp/factory-gate-1001/gate-test-e57a224a5dd3-20261110T183703Z.log validated at clean HEAD e57a224a5dd3c578e4c26b0b1a3656399584ca33: command go test -race ./..., base origin/master SHA538632ea56da1c71f8f319076f221e4298148d3e, exit0; cmd/pkg/runner/all15internalpackages ok, root no tests. This supersedes the prior environment-interface blocker only for this tested HEAD. factory-sync exit0 e57a224 ahead143 behind0 shared[]conflicts[]HEAD unchanged. records-stale-check ecd8b6d4d5509b2aed7af4601801d42e8820df55 exit0 noTAGS/.mem/changelog.d; docs-lint --since8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0 docs-lint1 205Markdown0findings0outside. Clean review range ecd8b6d..e57a224:7files536insertions10deletions. Three complete per-task reviews round1, no tests run by reviewers. Standards Verdict: CHANGES REQUESTED; all7files covered. Sole blocking finding B1 verbatim: docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md:200 cites internal/provider/openai_test.go:1342,1354 as the ToolInput assertions. This commit inserted66lines above them, so they are now at:1408 and:1420. Reviewer fix verbatim: in implement.md:200, change openai_test.go:1342,1354 to openai_test.go:1408,1420. Commit the fix, then run round2 re-review on that fix range only. Standards nits verbatim: N1, tool_arguments.go:34-38: the exported FormatToolArgument only relies on DecodeJSON for range checks through an inline comment. Passing it a raw out-of-range number would store '+Inf'. N2, tool_arguments.go:77,83: the limits7and309 are written inline instead of as named constants. N3, tool_arguments_test.go:221: the OpenAI Send test belongs in openai_test.go; it also duplicates a request-body builder and repeats an anonymous struct type. N4, tool_arguments.go:29: fmt.Errorf has no format arguments, so it should be errors.New. Spec Verdict: APPROVED, no blocking issues/nits; T01a+b requirements verified, later tasks intentionally unfinished. Design Verdict: APPROVED WITH NITS, allfivequestions answered and changedcode/docdiff covered, no blockers. Design nits verbatim: 1.tool_arguments.go:34-38: add a doc comment saying FormatToolArgument needs input that DecodeJSON has already checked. Unchecked json.Number('1e400') comes out as '+Inf'. 2.tool_arguments.go:12-14: add a doc comment saying T must not contain json.Unmarshaler types. Those would run twice, and UseNumber would not reach them. 3.tool_arguments_test.go:75('fallback A equality boundary') and:78('long cancelling coefficient fallback'): add a comment that expected'0'and'1e-201' come from how go1.26.10 parses floats. If a later Go version changes that, these tests fail with no change to production code. Design scope excludes unfinished later tasks and historical checkpoint entries as intended. Nits will be batched into one scoped code fix after the one-line records blocker passes its fix-only review; lint and touchedpackage tests on that fix commit replace re-review of nits. All15tasks/010remainunchecked, no new planning reviews.
+- HEAD commit SHA: `e57a224a5dd3c578e4c26b0b1a3656399584ca33`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Fix only B1 stale ToolInput citation, commit its Markdown-only fix, and run standards round2 limited to that fix range
+
+### B1 standards round2 fix-only review APPROVED; all T01a+b blocking reviews pass, listed nits pending
+
+- Gate: B1 standards round2 fix-only review APPROVED; all T01a+b blocking reviews pass, listed nits pending
+- Commands/results:
+B1 one-line citation fix committed by document agent as fad68564ec0e1a7ba62b61baee7dc82c729a6655 (parent e57a224a5dd3c578e4c26b0b1a3656399584ca33). Agent committed contrary to its no-commit contract; orchestrator verified actual scope instead of rewriting history. Independent explore: only010 checklist Markdown,1insertion1deletion, old ToolInputcitation1342,1354->1408,1420 atchecklist:200;grep-Foldquotedtextzero andrealassertions verified. Checkpoint reviewbookkeeping remains soleuncommittedpath. Both spec-lint --root /home/jaron/dev/axe/runner-tool-hooks 010spec/checklist exit0:111/16citations0findings; docs-lint --since8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0headerdocs-lint1 205Markdown0findings0outside;records-stale-check e57a224exit0no removed/renamednames. Standards round2 complete Verdict: APPROVED, range e57a224..fad6856 limited to oneMarkdowncitation;test evidence:not applicable accepted forMarkdown-onlyrange. Reviewer verified oldcitationsabsent,currentactualToolInputassertions1408/1420,symbolhistory matches66lineinsertion, nofindings. Round1 specAPPROVED anddesignAPPROVEDWITHNITS remain passed fornumericimplementation; no rereview required forlistednits. Carry standardsN1-N4 anddesignnits1-3 exactly as recordedpreviousgate. Apply one minimalnitbatch: doccommentsformattervalidatedinput andDecodeJSONnocustomUnmarshalers, internalnamedthreshold/digitconstants, moveOpenAI SendcompatibilitytesttotheENDofopenai_test.go withoutchangingassertions, removeitsduplicatedbuilder/anonymousstructshape, errors.New forunformattederror,toolchain-sensitivefloatfallbackcomments. Original behavioralRED testunchanged. Runconfiguredlintandtouchedpackage tests onnitcommit; these replace nitre-review underReviewverdictsrule. All15tasks and010remainuncheckeduntilthisbatchpasses. SourceHEADfad6856diffisMarkdown-onlyfromtested/reviewed e57a224; donotreuseoldlogasnewHEADreviewevidence.
+- HEAD commit SHA: `fad68564ec0e1a7ba62b61baee7dc82c729a6655`
+- Relevant work: `committed` — stash ref `8306a4779b154eaf88820da0815ece6cfafc1e6d` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Apply only the listed T01a+b nit batch, commit it, then run lint and full provider package race tests on that commit
+
+### Listed T01a+b nit batch local verification PASS; post-commit lint/provider tests pending, no nit re-review
+
+- Gate: Listed T01a+b nit batch local verification PASS; post-commit lint/provider tests pending, no nit re-review
+- Commands/results:
+Code applied only listed standardsN1-N4/designnits1-3 at HEAD fad68564ec0e1a7ba62b61baee7dc82c729a6655 withuncommittednitimplementation; changedtool_arguments.go comments/prerequisites/privateconstants/errors.New;tool_arguments_test.gotoolchainfloatfallbackcomments andmovedOpenAISendtest;openai_test.go20casebufferedtestbodybuilderplumbingonly,34caseDecodeErrorsappendedatEOFwithnamedcasetype/sharedprivatebuilder. Allnumericlogic74formattervalues20bufferedcase/assertions34decodeerrorcase/assertions unchanged. Mechanical010citationrepairs InvalidToolCallArguments992->989 andToolInput1408/1420->1405/1417; nootherbehavior/rules/dependencies. CodefocusedLargeIntegerArgs helper/Send testsallPASS andlegacyInvalidToolCallArgumentsPASS;exactFactorytouchedpackage derivation./internal/provider raceexit0 17.345s; changed-filegofmt-lempty,gitdiff--checkexit0,go list-m exit0,go build./...exit0,go vet./...exit0,make lint exit0 0issues,make apidiffexit0 noincompatibilities(automatictoolchainnoticego1.26.11forpinnedtool). AllGo/makeusedsamecheckpointPATH,unsetGOTOOLCHAIN,blankAnthropicandbaseURL. Independentexplorefixevidence: grep-n-Foldunformattedfmt.Errorfzero,oldDecodeErrorstestdefinitioninhelperfilezero,exactoldtwoinlinebuilderassignment/returnliteralszero(each exit1); additivecomments attool_arguments.go:17-20,41-43;privateconstants:12-15,errors.New:37;fallbackcommentshelpertests:71-78;newDecodeErrorstest/namedtypeopenai_test.go:1990-2000/sharedbuilder:2080-2087. Verifiedrow/assertionpreservation andactual989/1405/1417citations;gitdiff--checkexit0. Orchestrator spec-lint both010artifacts exit0 111/16citations0findings;docs-lint --since8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0docs-lint1 205Markdown0findings0outside. Completeblockingreviewsarepassed(aspreviousgates);listednitsnowfixedwithnoadditionalreviewroundallowed/neededunderReviewverdicts. Commitnitbatchnext;runlint andfullproviderpackageracetests ONthatcommitbeforecheckingT01a/T01b. Existinghostloge57a224isreviewed-source evidence,notfreshnitHEADfullraceevidence. All15tasks/010stillunchecked.
+- HEAD commit SHA: `fad68564ec0e1a7ba62b61baee7dc82c729a6655`
+- Relevant work: `uncommitted` — stash ref `326c07fc5515b2b5dc1c4f81fe2223d5654f58fa` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M internal/provider/openai_test.go
+ M internal/provider/tool_arguments.go
+ M internal/provider/tool_arguments_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit the listed nit batch, then run configured lint and full provider package race tests at the committed nit HEAD
+
 ## Limitations & blockers
 
 - Limitations:
@@ -507,7 +575,7 @@ cae94039bb1f704fc2af647666c3f21ce53f02b3  "internal/provider/tool_arguments.go"
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Run the isolated host test gate from /tmp/052-runner-tool-hooks-safe-gate.sh at the committed T01a+b HEAD, then resume required per-task reviews using its passing factory-gate log
+- Next action: Commit the listed nit batch, then run configured lint and full provider package race tests at the committed nit HEAD
 
 ## Approval / decision note — 2026-11-10
 

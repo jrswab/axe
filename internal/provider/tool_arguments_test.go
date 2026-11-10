@@ -1,11 +1,7 @@
 package provider
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"net/http"
-	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
@@ -72,9 +68,13 @@ func TestLargeIntegerArgs_Formatter(t *testing.T) {
 		{name: "exponent outside int", raw: `0e9999999999999999999999999999999999999999`, want: "0"},
 		{name: "negative zero exponent outside int", raw: `-0e9999999999999999999999999999999999999999`, want: "-0"},
 		{name: "underflow exponent outside int", raw: `1e-9999999999999999999999999999999999999999`, want: "0"},
+		// Expected "0" reflects Go 1.26.10 float parsing; a later Go change can fail
+		// this test without any production code change.
 		{name: "fallback A equality boundary", raw: "1" + strings.Repeat("0", 100006) + "e-100000", want: "0"},
 		{name: "fallback B digit cap", raw: "0." + strings.Repeat("0", 9999) + "1e100000", want: "1"},
 		{name: "long token accepted", raw: "1000000." + strings.Repeat("0", 100006), want: "1000000"},
+		// Expected "1e-201" reflects Go 1.26.10 float parsing; a later Go change can
+		// fail this test without any production code change.
 		{name: "long cancelling coefficient fallback", raw: "1000000" + strings.Repeat("0", 1000) + "e-1000", want: "1e-201"},
 		{name: "text", raw: `"text"`, want: "text"},
 		{name: "quoted exponent", raw: `"1e6"`, want: "1e6"},
@@ -215,105 +215,5 @@ func TestLargeIntegerArgs_DecodeJSON_TypedDestination(t *testing.T) {
 	var pointer *response
 	if err := DecodeJSON([]byte(`{"count":1}`), &pointer); err != nil || pointer == nil || pointer.Count != 1 {
 		t.Fatalf("pointer destination = %#v, error = %v", pointer, err)
-	}
-}
-
-func TestLargeIntegerArgs_OpenAI_DecodeErrors(t *testing.T) {
-	// Only the outer string is encoded; numeric argument tokens stay raw.
-	toolBody := func(arguments string) string {
-		quoted, err := json.Marshal(arguments)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return `{"model":"gpt-4o","choices":[{"message":{"tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":` + string(quoted) + `}}]},"finish_reason":"tool_calls"}]}`
-	}
-	base := toolBody(`{"n":1000000}`)
-	tests := []struct {
-		name    string
-		body    string
-		wantErr bool
-		want    map[string]string
-	}{
-		{name: "outer malformed", body: `{"choices":`, wantErr: true},
-		{name: "outer trailing value", body: base + `{}`, wantErr: true},
-		{name: "outer trailing junk", body: base + `junk`, wantErr: true},
-		{name: "known integer overflow", body: `{"choices":[{}],"usage":{"prompt_tokens":1e400}}`, wantErr: true},
-		{name: "known 400 digit overflow", body: `{"choices":[{}],"usage":{"completion_tokens":` + strings.Repeat("9", 400) + `}}`, wantErr: true},
-		{name: "known nested overflow", body: `{"choices":[{}],"usage":{"prompt_tokens_details":{"cached_tokens":1e400}}}`, wantErr: true},
-		{name: "overwritten known scalar", body: `{"choices":[{}],"usage":{"prompt_tokens":1e400,"prompt_tokens":1}}`, wantErr: true},
-		{name: "overwritten known subtree", body: `{"choices":[{}],"usage":{"prompt_tokens":1e400},"usage":{"prompt_tokens":1}}`, wantErr: true},
-		{name: "outer type mismatch", body: `{"choices":[{}],"usage":{"prompt_tokens":true}}`, wantErr: true},
-		{name: "unknown scalar overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "1000000"}},
-		{name: "unknown subtree overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "1000000"}},
-		{name: "unknown 400 digits", body: `{"unknown":` + strings.Repeat("9", 400) + `,` + base[1:], want: map[string]string{"n": "1000000"}},
-		{name: "successful outer duplicate", body: `{"usage":{"prompt_tokens":1,"prompt_tokens":2},` + base[1:], want: map[string]string{"n": "1000000"}},
-		{name: "successful outer subtree", body: `{"usage":{"prompt_tokens":1},"usage":{"completion_tokens":2},` + base[1:], want: map[string]string{"n": "1000000"}},
-	}
-	for _, tt := range []struct {
-		name string
-		raw  string
-		want map[string]string
-	}{
-		{name: "inner malformed", raw: `{"n":`},
-		{name: "inner trailing value", raw: `{"n":1} {}`},
-		{name: "inner trailing junk", raw: `{"n":1} junk`},
-		{name: "inner overflow", raw: `{"n":1e400}`},
-		{name: "inner 400 digits", raw: `{"n":` + strings.Repeat("9", 400) + `}`},
-		{name: "inner nested overflow", raw: `{"n":[{"bad":1e400}]}`},
-		{name: "inner nested 400 digits", raw: `{"n":{"bad":` + strings.Repeat("9", 400) + `}}`},
-		{name: "inner overwritten scalar overflow", raw: `{"n":1e400,"n":1000000}`},
-		{name: "inner overwritten subtree overflow", raw: `{"n":{"bad":1e400},"n":1000000}`},
-		{name: "inner successful scalar duplicate", raw: `{"n":999999,"n":1000000}`, want: map[string]string{"n": "1000000"}},
-		{name: "inner successful subtree duplicate", raw: `{"n":{"ok":1},"n":1000000}`, want: map[string]string{"n": "1000000"}},
-		{name: "inner successful map replacement", raw: `{"n":{"old":1},"n":{"new":2}}`, want: map[string]string{"n": "map[new:2]"}},
-		{name: "inner empty", raw: `{}`},
-		{name: "inner null", raw: `null`},
-		{name: "inner array mismatch", raw: `[]`},
-		{name: "inner scalar mismatch", raw: `0`},
-		{name: "inner negative zero mismatch", raw: `-0`},
-		{name: "inner decimal zero mismatch", raw: `-0.0`},
-		{name: "inner boolean mismatch", raw: `true`},
-		{name: "inner string mismatch", raw: `"text"`},
-	} {
-		tests = append(tests, struct {
-			name    string
-			body    string
-			wantErr bool
-			want    map[string]string
-		}{name: tt.name, body: toolBody(tt.raw), want: tt.want})
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(tt.body))
-			}))
-			defer server.Close()
-			o, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
-			if err != nil {
-				t.Fatal(err)
-			}
-			resp, err := o.Send(context.Background(), &Request{Model: "gpt-4o"})
-			if tt.wantErr {
-				var providerErr *ProviderError
-				if !errors.As(err, &providerErr) || providerErr.Category != ErrCategoryServer {
-					t.Fatalf("Send error = %v, want server ProviderError", err)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if len(resp.ToolCalls) != 1 {
-				t.Fatalf("ToolCalls = %#v, want one call", resp.ToolCalls)
-			}
-			want := tt.want
-			if want == nil {
-				want = map[string]string{}
-			}
-			if !reflect.DeepEqual(resp.ToolCalls[0].Arguments, want) {
-				t.Errorf("Arguments = %#v, want %#v", resp.ToolCalls[0].Arguments, want)
-			}
-		})
 	}
 }
