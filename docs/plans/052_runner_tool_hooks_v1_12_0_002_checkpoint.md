@@ -1,0 +1,218 @@
+# Milestone Checkpoint
+
+The durable recovery record and sole home of run state for the current milestone. Another agent must be able to restart or take over from this file alone.
+
+## Identity
+
+- Milestone ID: `002`
+- Milestone source: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md` (entry 002 at `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:154-159`)
+- Repository root: `/home/jaron/dev/axe/runner-tool-hooks`
+- Branch: `runner-tool-hooks`
+- Review base: `423a3994c56c9e8ee055e03072b80f6741589f68`
+- Baseline / pre-existing changes: `git status --porcelain` at setup was empty (clean tree at `423a399`).
+
+## Artifacts
+
+Absolute paths inside the Repository root (the feature worktree).
+
+- Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md`
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md`
+- Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_002_checkpoint.md`
+
+## State
+
+- Lane: `full` — the milestone enforces the `pkg/runner` external contract (the apidiff gate) and edits shared CI (`.github/workflows/go.yml`, `Makefile`). The fast-lane condition "external contracts untouched" fails, and the milestone adds a pinned third-party tool to the build path.
+- Current phase: `complete`
+- Current task: none
+- Task states — checklist checkboxes render from this list:
+- T0: `checked`
+- T1.1: `checked`
+- T1.2: `checked`
+- T1.3: `checked`
+- T2: `checked`
+- T3: `checked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T8: `checked`
+- T9: `checked`
+- T10: `checked`
+- T11: `checked`
+- T12: `checked`
+- Milestone checkbox: `checked`
+- Next safe action: Milestone 002 complete; select milestone 003
+- Last completed phase/task/gate and timestamp: Milestone 002 review round 1 PASS and completion gate PASS at 15067a7, 2026-11-09T17:04:55.126914+00:00
+
+## Gate evidence
+
+One entry per gate or cap decision (review, lint, verification, completion), including failures:
+
+### Pre-flight and sync
+
+- Gate: Go pre-flight
+  - Command(s) and actual result(s): `go version` → `go version go1.26.10 linux/amd64`
+  - `HEAD` commit SHA: `423a3994c56c9e8ee055e03072b80f6741589f68`
+  - `git status --porcelain`: empty
+  - Relevant work: `committed` — stash ref `none`
+  - Untracked file Git objects: none
+
+- Gate: factory-sync (reported by the orchestrator; not re-run by this phase)
+  - Command(s) and actual result(s): `factory-sync` exit 0, ahead 25, behind 0, no conflicts, at `423a399`
+  - `HEAD` commit SHA: `423a3994c56c9e8ee055e03072b80f6741589f68`
+  - Relevant work: `committed` — stash ref `none`
+
+### apidiff probe (subagent, this session; all writes under `/tmp/apidiff-probe.Cdxk`; repository untouched)
+
+- Gate: apidiff probe (evidence for the spec's D-pin and D-fail decisions)
+  - Pin resolution: `go list -m -json golang.org/x/exp@latest` → `v0.0.0-20261106192419-47ce03d25ef0` (Time `2026-11-06T19:24:19Z`), cross-checked against `proxy.golang.org` `@latest`.
+  - Base export: `git archive v1.11.0` extracted to `/tmp/apidiff-probe.Cdxk/base`; `go run golang.org/x/exp/cmd/apidiff@v0.0.0-20261106192419-47ce03d25ef0 -w /tmp/apidiff-probe.Cdxk/old.export github.com/jrswab/axe/pkg/runner` → exit 0. The base `go.mod` declares `go 1.25.0`; the toolchain switched to go1.26.10; base `go.mod`/`go.sum` unchanged.
+  - Compare from current tree (`go run ... /tmp/apidiff-probe.Cdxk/old.export github.com/jrswab/axe/pkg/runner`): exit 0, empty output. Repo `go.mod`/`go.sum` unchanged.
+  - Scratch copy, `func IsRuntimeError` removed: stdout `Incompatible changes:` / `- IsRuntimeError: removed`, exit 0.
+  - Same removal with `-incompatible`: stdout `- IsRuntimeError: removed`, exit 0.
+  - Scratch copy, `func ProbeNew() {}` added: listed under `Compatible changes:`, exit 0.
+  - Source reading (verified by the phase author at the pin; module cache file `golang.org/x/exp@v0.0.0-20261106192419-47ce03d25ef0/cmd/apidiff/main.go`): flags `-w`, `-incompatible`, `-allow-internal`, `-m` are declared at lines 27-30. The `-w` export path exits 0 at line 69. The compare path prints the report at lines 96-103. Only write and load errors call `die`, which exits 1 (lines 333-335). The incompatible-only text writer is `TextIncompatible` in module file `apidiff/report.go` (line 45). apidiff therefore never exits non-zero for an incompatible change.
+  - Conclusion: the gate must test stdout, not the exit status (decision D-fail in the spec).
+
+### Citation and action-defaults verification (this phase)
+
+- Gate: spec citation check and action defaults
+  - Command(s) and actual result(s): `curl` of `actions/checkout@v4/action.yml` and `actions/setup-go@v5/action.yml` from `raw.githubusercontent.com` (HTTP 200); defaults read with PyYAML. `gh api` could not run (no `gh` credentials in this sandbox), so the raw-file route was used.
+  - Spec-lint: not run by this phase (the orchestrator runs it).
+
+### Spec planning review: round 1 CHANGES REQUESTED (F1 blocking, F2/F3 nits); round 2 first attempt returned no Verdict line (not counted; findings F4/F5 applied); round 2 CHANGES REQUESTED (F6); round 3 APPROVED. Failing planning rounds: 2 of 3. spec-lint exit 0 before each round.
+
+- Gate: Spec planning review: round 1 CHANGES REQUESTED (F1 blocking, F2/F3 nits); round 2 first attempt returned no Verdict line (not counted; findings F4/F5 applied); round 2 CHANGES REQUESTED (F6); round 3 APPROVED. Failing planning rounds: 2 of 3. spec-lint exit 0 before each round.
+- Commands/results:
+spec-lint --root <repo> docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md: PASS, 57 citations, 0 findings (exit 0). docs-lint --since 423a399: exit 0, 182 files, 0 findings.
+- HEAD commit SHA: `423a3994c56c9e8ee055e03072b80f6741589f68`
+- Relevant work: `uncommitted` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+?? docs/plans/052_runner_tool_hooks_v1_12_0_002_checkpoint.md
+?? docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+b13593ab78e091210f982858aa2c1cb50120f443  "docs/plans/052_runner_tool_hooks_v1_12_0_002_checkpoint.md"
+8571faf686227f67271c59e943c637742ee870db  "docs/plans/052_runner_tool_hooks_v1_12_0_002_spec.md"
+```
+
+- Next action: Write the 002 implementation checklist (docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md) and run its planning review
+
+### Checklist planning review round 1 CHANGES REQUESTED (F1 blocking: recipe shape/false self-compare; F2 blocking: corrupted-export probe line not joined; F3 nit: shared temp-dir count). Third failing planning round for milestone 002 (spec r1, spec r2, checklist r1): failing-round cap reached. Fixes applied; post-cap explore check CHECK: PASS (F1, F2, F3 FIXED; dynamic make -n parse blocked by read-only guard, to be confirmed in T1.3). Phase 3 proceeds with per-task gates.
+
+- Gate: Checklist planning review round 1 CHANGES REQUESTED (F1 blocking: recipe shape/false self-compare; F2 blocking: corrupted-export probe line not joined; F3 nit: shared temp-dir count). Third failing planning round for milestone 002 (spec r1, spec r2, checklist r1): failing-round cap reached. Fixes applied; post-cap explore check CHECK: PASS (F1, F2, F3 FIXED; dynamic make -n parse blocked by read-only guard, to be confirmed in T1.3). Phase 3 proceeds with per-task gates.
+- Commands/results:
+spec-lint --root <repo> 002_implement.md and 002_spec.md: both PASS, 0 findings (exit 0). Explore non-blocking notes: mktemp has no explicit status check (spec-conformant); per-probe TMPDIR count is stricter than R7 glob.
+- HEAD commit SHA: `3920c71817929a1face2bd1a3672c7b1ab684689`
+- Relevant work: `uncommitted` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+?? docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+4c7d23a9786556fa5fa52176cb2a386e7be707ed  "docs/plans/052_runner_tool_hooks_v1_12_0_002_implement.md"
+```
+
+- Next action: Implement T0
+
+### Post-cap mechanical fix of stale T0 precondition (58eceb6) PASS
+
+- Gate: Post-cap mechanical fix of stale T0 precondition (58eceb6) PASS
+- Commands/results:
+factory-sync (args []) exit 0: ahead 27, behind 0, shared_files [], conflicts [], synced true at b0eff05. go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks exit 0 (go1.26.10; govulncheck: No vulnerabilities found). Post-cap mechanical fix (planning review cap reached; no new planning review): 002_implement.md T0 precondition now requires HEAD descending from b0eff05 (git merge-base --is-ancestor b0eff05 HEAD), git diff --name-only b0eff05 HEAD -- . ':(exclude)docs/plans/052_runner_tool_hooks_v1_12_0_002_*' empty, git status --porcelain --untracked-files=no empty; Section 1 baseline :7 now b0eff05. Remaining 3920c71 hits at :317 and :340 are historical citation records. spec-lint --root <repo> 002_implement.md exit 0 (36 citations, 0 findings). Committed 58eceb6.
+- HEAD commit SHA: `58eceb6e907c33442d4cd83700ea7c971ee4495a`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T0
+
+### T0-T5 verification PASS at 9f1782f (T2 local only; host CI pending)
+
+- Gate: T0-T5 verification PASS at 9f1782f (T2 local only; host CI pending)
+- Commands/results:
+code agent at 049d5d8 then committed 9f1782f (Makefile, .github/workflows/go.yml, COMPATIBILITY.md, CHANGELOG.md; 38+/8-). T0 checks exit 0 (v1.11.0 = 20e6ada; pin resolves, GoVersion 1.26.0). make -n apidiff / make -n check exit 0, show -incompatible and (cd "$tmp/base"; make -n apidiff | sh -n exit 0. rg @latest / git worktree / set -e|pipefail in Makefile: no hits. One pin Makefile:3, identical in COMPATIBILITY.md. go.yml: one fetch-depth (:57), one make apidiff (:65); yaml.safe_load and actionlint exit 0; existing jobs unchanged. COMPATIBILITY.md: no planned/not active text; citation CHANGELOG.md:24 -> :25; go.mod:3/:5 correct. make apidiff exit 0, stdout 0 bytes, stderr 204 bytes (toolchain switch notices). git diff 423a399 -- go.mod go.sum empty; git worktree list unchanged; no axe-apidiff.* temp dirs left. Per-task Go gate: no Go package changed, exit 0. T4 literal regex defect fixed post-cap in c597dce (added ^\+([^+]|$) -> 1; removed ^-([^-]|$) -> none); spec-lint exit 0. T2 stays unchecked until host CI runs the apidiff job.
+- HEAD commit SHA: `c597dce6b68b23f02b4d7c1f53ca3f87cd8703e2`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T6-T11 behavior probes
+
+### T6-T10 behavior probes PASS (T6/T9 at 181d857, T7/T8/T10 rerun at 61932d2)
+
+- Gate: T6-T10 behavior probes PASS (T6/T9 at 181d857, T7/T8/T10 rerun at 61932d2)
+- Commands/results:
+Probe run 1 at 181d857 (report /tmp/axe-m002-t6-t11.MzPGW6/report.md): T6 PASS (make exit 2, stdout '- IsRuntimeError: removed'); T9 PASS (unloadable package and corrupted export both exit 2); T11 writer portion PASS (make apidiff, static checks, spec-lint, docs-lint). T7/T8/T10 failed on checklist commands, not gate behavior: make -C banners in stdout; guard refused tag -d; stale worktree snapshot. Post-cap mechanical fix 61932d2 (--no-print-directory; T8 uses git clone --no-tags; per-run worktree snapshot; spec :174 sentence matched); spec-lint exit 0. Rerun at 61932d2 (report /tmp/axe-m002-rerun.v4Yh4O/report.md): T7 make exit 0, stdout 0 bytes, TMPDIR 0; T8 make exit 2, R3 message names v1.11.0 and fetch, repo-root tag intact, TMPDIR 0; T10 all six checks PASS, worktree diff empty. Scratch clones removed by literal-path rm. No Go package changed. T11 waits for full make check equivalent (factory-gate test + lint) and T2 waits for host CI.
+- HEAD commit SHA: `61932d2ca1d5a7ebc64bab07f272255715dae278`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run factory-gate test and lint at HEAD, then records review and code review round 1 (range 423a399..HEAD)
+
+### Milestone 002 review round 1 PASS and completion gate PASS at 15067a7
+
+- Gate: Milestone 002 review round 1 PASS and completion gate PASS at 15067a7
+- Commands/results:
+Records review: docs-lint --since 423a399 (docs-lint 1) PASS 183 files 0 findings at 7b2d2f8 and again at 15067a7 worktree. records-stale-check 423a399: no removed or renamed names. Code review round 1, range 423a399..7b2d2f8, test evidence /tmp/factory-gate-1001/gate-test-7b2d2f8e0efa-20261109T165906Z.log (exit 0), lint /tmp/factory-gate-1001/gate-lint-7b2d2f8e0efa-20261109T165906Z.log (exit 0): backend (Makefile, go.yml, COMPATIBILITY.md) Verdict: APPROVED, no findings; spec/records (CHANGELOG.md, docs/plans 002 files) Verdict: APPROVED WITH NITS. Nit 1 verbatim: 'checkpoint.md:20 (nit) - The Artifacts entry still says the implement checklist is "not yet written; planned path," but it exists'. Nit 2 verbatim: 'checkpoint.md:193 (nit) - Stale limitation: "the gate itself is not yet implemented, so make apidiff and the CI job have not run."' Both fixed in 15067a7; grep -F of both offending strings: 0 hits; docs-lint PASS. Completion gate: factory-sync exit 0 (ahead 35, behind 0, no conflicts) at 15067a7; factory-gate test (go test -race ./...) exited 0 /tmp/factory-gate-1001/gate-test-15067a7bbdb1-20261109T170249Z.log; factory-gate lint (golangci-lint run) exited 0 /tmp/factory-gate-1001/gate-lint-15067a7bbdb1-20261109T170249Z.log; local make apidiff exit 0 empty stdout (T5/T11). Pushed 423a399..15067a7 to PR 103 (factory-gh push --require-open-pr). CI snapshot: apidiff pass 48s (run 42660801276), lint/build/smoke pass, test pending at snapshot. Spec R1-R11 compared by both reviewers: all met. git status clean; no pre-existing changes. Known follow-up outside 002: AGENTS.md:207 says go.yml covers tests and linting. spec-lint on this checkpoint reports 6 citation-format findings in history lines 131/152/173 (checkpoints are not spec-lint artifacts; not blocking).
+- HEAD commit SHA: `15067a7bbdb1898f9dc790cc859e19bba3b715eb`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Milestone 002 complete; select milestone 003
+
+## Limitations & blockers
+
+- Limitations:
+  - The apidiff pin was verified by probe and by local `make apidiff` runs; the CI `apidiff` job has not run yet (T2 host step pending).
+  - `gh` is not authenticated in this sandbox; action defaults were read from raw GitHub URLs at tags `v4` and `v5`.
+  - `AGENTS.md:207` describes `go.yml` as "tests and linting"; this milestone does not edit it (outside milestone 002 scope). Flagged for the orchestrator, not changed.
+- Blockers: `none`
+- Next action: Milestone 002 complete; select milestone 003

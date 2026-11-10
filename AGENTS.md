@@ -212,7 +212,7 @@ region = "us-east-1"
 
 ## Docker
 
-- **Dockerfile** - Multi-stage build: golang:1.25-alpine → alpine:latest.
+- **Dockerfile** - Multi-stage build: golang:1.26-alpine → alpine:latest.
 - **Security** - Non-root user (UID 10001), read-only rootfs, all caps dropped, no new privileges.
 - **Volumes** - Mount config to `/home/axe/.config/axe`, data to `/home/axe/.local/share/axe`.
 - **Compose** - `docker-compose.yml` includes Ollama sidecar with `--profile ollama`.
@@ -220,6 +220,8 @@ region = "us-east-1"
 ## Project Docs
 
 Design docs live in `./docs/` — check milestones, config schema, sub-agent patterns, and CLI structure there before making architectural changes.
+
+The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md).
 
 ## Custom Instructions
 <!-- This section is for human and agent-maintained operational knowledge.

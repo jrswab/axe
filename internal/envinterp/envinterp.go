@@ -1,12 +1,28 @@
 package envinterp
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 )
 
 var envPattern = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+// ErrUnsetEnv identifies a header variable that is unset or empty.
+var ErrUnsetEnv = errors.New("environment variable is not set or empty")
+
+type unsetEnvError struct {
+	name string
+}
+
+func (e *unsetEnvError) Error() string {
+	return fmt.Sprintf("environment variable %q is not set or empty", e.name)
+}
+
+func (e *unsetEnvError) Unwrap() error {
+	return ErrUnsetEnv
+}
 
 // ExpandHeaders expands ${VAR} references in header values.
 func ExpandHeaders(headers map[string]string) (map[string]string, error) {
@@ -44,7 +60,7 @@ func expandValue(value string) (string, error) {
 		name := parts[1]
 		v := os.Getenv(name)
 		if v == "" {
-			expandErr = fmt.Errorf("environment variable %q is not set or empty", name)
+			expandErr = &unsetEnvError{name: name}
 			return token
 		}
 		return v

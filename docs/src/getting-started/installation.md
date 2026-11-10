@@ -1,6 +1,6 @@
 # Installation
 
-Requires **Go 1.25+**.
+Requires **Go 1.26+**.
 
 ## Pre-built Binaries (No Go Required)
 
@@ -29,7 +29,7 @@ sudo mv axe /usr/local/bin/
 go install github.com/jrswab/axe@latest
 ```
 
-> **Note:** If this fails with `invalid go version`, your Go toolchain is older than 1.25. Either upgrade Go from [go.dev/dl](https://go.dev/dl/) or use a pre-built binary above.
+> **Note:** If this fails with `invalid go version`, your Go toolchain is older than 1.26. Either upgrade Go from [go.dev/dl](https://go.dev/dl/) or use a pre-built binary above.
 
 ## Docker
 

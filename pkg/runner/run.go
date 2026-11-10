@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,12 +19,14 @@ import (
 	"github.com/jrswab/axe/internal/artifact"
 	"github.com/jrswab/axe/internal/budget"
 	"github.com/jrswab/axe/internal/config"
+	"github.com/jrswab/axe/internal/envinterp"
 	"github.com/jrswab/axe/internal/mcpclient"
 	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/refusal"
 	"github.com/jrswab/axe/internal/resolve"
 	"github.com/jrswab/axe/internal/tool"
+	"github.com/jrswab/axe/internal/toolname"
 	"github.com/jrswab/axe/internal/xdg"
 )
 
@@ -37,11 +41,25 @@ const maxToolOutputBytes = 1024
 type toolExecResult struct {
 	Result   provider.ToolResult
 	Duration time.Duration
+	Action   ToolAction
 }
 
 // Run executes an agent with the given options and returns the result.
 func Run(ctx context.Context, opts Options) (*Result, error) {
 	return run(ctx, opts, provider.New)
+}
+
+func mcpServerConfigs(in []MCPServer) []agent.MCPServerConfig {
+	servers := make([]agent.MCPServerConfig, len(in))
+	for i, server := range in {
+		servers[i] = agent.MCPServerConfig{
+			Name:      server.Name,
+			URL:       server.URL,
+			Transport: server.Transport,
+			Headers:   maps.Clone(server.Headers),
+		}
+	}
+	return servers
 }
 
 func run(ctx context.Context, opts Options, newProvider func(string, string, string) (provider.Provider, error)) (*Result, error) {
@@ -71,6 +89,34 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	if err != nil {
 		return nil, &ConfigError{Msg: "failed to load agent", Err: err}
 	}
+	if opts.ToolHook != nil && len(cfg.SubAgents) > 0 {
+		return nil, &ConfigError{Msg: "tool hook is not supported with sub_agents"}
+	}
+
+	if err := agent.ValidateMCPServers(mcpServerConfigs(opts.MCPServers), "Options.MCPServers"); err != nil {
+		return nil, &ConfigError{Msg: "invalid MCP server configuration", Err: err}
+	}
+	for _, optionServer := range opts.MCPServers {
+		for _, tomlServer := range cfg.MCPServers {
+			if optionServer.Name == tomlServer.Name {
+				return nil, &ConfigError{Msg: fmt.Sprintf("MCP server name %q is in both mcp_servers and Options.MCPServers", optionServer.Name)}
+			}
+		}
+	}
+	validToolNames := toolname.ValidNames()
+	for i, name := range opts.Tools {
+		if !validToolNames[name] {
+			return nil, &ConfigError{Msg: fmt.Sprintf("unknown tool %q in Options.Tools[%d]", name, i)}
+		}
+	}
+	if opts.MaxTurns < 0 {
+		return nil, &ConfigError{Msg: fmt.Sprintf("Options.MaxTurns must be non-negative, got %d", opts.MaxTurns)}
+	}
+	effectiveTools := cfg.Tools
+	if opts.Tools != nil {
+		effectiveTools = append([]string{}, opts.Tools...)
+	}
+	effectiveMCP := append(append([]agent.MCPServerConfig{}, cfg.MCPServers...), mcpServerConfigs(opts.MCPServers)...)
 
 	// Step 3: Apply overrides
 	if opts.Model != "" {
@@ -81,6 +127,9 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	}
 
 	maxConversationTurns := cfg.MaxTurns
+	if opts.MaxTurns > 0 {
+		maxConversationTurns = opts.MaxTurns
+	}
 	if maxConversationTurns == 0 {
 		maxConversationTurns = defaultMaxConversationTurns
 	}
@@ -293,8 +342,8 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 		if cfg.SubAgentsConf.Parallel != nil {
 			parallel = *cfg.SubAgentsConf.Parallel
 		}
-		mcpServers := make([]string, len(cfg.MCPServers))
-		for i, s := range cfg.MCPServers {
+		mcpServers := make([]string, len(effectiveMCP))
+		for i, s := range effectiveMCP {
 			mcpServers[i] = fmt.Sprintf("%s: %s (%s)", s.Name, s.URL, s.Transport)
 		}
 		dryRunUserMessage := userMessage
@@ -317,7 +366,7 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 				UserMessage:     dryRunUserMessage,
 				Memory:          memoryEntries,
 				MemoryEnabled:   cfg.Memory.Enabled,
-				Tools:           cfg.Tools,
+				Tools:           effectiveTools,
 				MCPServers:      mcpServers,
 				SubAgents:       cfg.SubAgents,
 				MaxDepth:        effectiveMaxDepth,
@@ -335,6 +384,12 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	// Step 14: Resolve API key and validate
 	apiKey := globalCfg.ResolveAPIKey(provName)
 	baseURL := globalCfg.ResolveBaseURL(provName)
+	if opts.APIKey != "" {
+		apiKey = opts.APIKey
+	}
+	if opts.BaseURL != "" {
+		baseURL = opts.BaseURL
+	}
 	region := globalCfg.ResolveRegion(provName)
 
 	if provName == "bedrock" {
@@ -410,8 +465,8 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	registry := tool.NewRegistry()
 	tool.RegisterAll(registry)
 
-	if len(cfg.Tools) > 0 {
-		resolvedTools, resolveErr := registry.Resolve(cfg.Tools)
+	if len(effectiveTools) > 0 {
+		resolvedTools, resolveErr := registry.Resolve(effectiveTools)
 		if resolveErr != nil {
 			return nil, &ConfigError{Msg: "failed to resolve tools", Err: resolveErr}
 		}
@@ -425,7 +480,7 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	}
 
 	var mcpRouter *mcpclient.Router
-	if len(cfg.MCPServers) > 0 {
+	if len(effectiveMCP) > 0 {
 		mcpRouter = mcpclient.NewRouter()
 		defer func() { _ = mcpRouter.Close() }()
 
@@ -434,13 +489,13 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 			builtinNames[t.Name] = true
 		}
 
-		for _, serverCfg := range cfg.MCPServers {
+		for _, serverCfg := range effectiveMCP {
 			if opts.Verbose {
 				_, _ = fmt.Fprintf(stderr, "[mcp] Connecting to %q at %s (%s)\n", serverCfg.Name, serverCfg.URL, serverCfg.Transport)
 			}
 			client, connErr := mcpclient.Connect(ctx, serverCfg)
 			if connErr != nil {
-				if strings.Contains(connErr.Error(), "environment variable") || strings.Contains(connErr.Error(), "unsupported MCP transport") {
+				if errors.Is(connErr, envinterp.ErrUnsetEnv) || strings.Contains(connErr.Error(), "environment variable") || strings.Contains(connErr.Error(), "unsupported MCP transport") {
 					return nil, &ConfigError{Msg: fmt.Sprintf("failed to connect MCP server %q", serverCfg.Name), Err: connErr}
 				}
 				return nil, &RuntimeError{Msg: fmt.Sprintf("failed to connect MCP server %q", serverCfg.Name), Err: connErr}
@@ -659,7 +714,29 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 			}
 
 			// Execute tool calls
-			results := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, mcpRouter, depth, effectiveMaxDepth, parallel, opts.Verbose, stderr, workdir, tracker, opts.AgentsDirs, workdir, artifactDir, artifactTracker)
+			results, err := executeToolCalls(ctx, resp.ToolCalls, cfg, globalCfg, registry, mcpRouter, depth, effectiveMaxDepth, parallel, opts.Verbose, stderr, workdir, tracker, opts.AgentsDirs, workdir, artifactDir, artifactTracker, opts.ToolHook)
+			if err != nil {
+				return nil, err
+			}
+
+			if opts.ToolObserver != nil {
+				for i, tc := range resp.ToolCalls {
+					args := make(map[string]string, len(tc.Arguments))
+					for key, value := range tc.Arguments {
+						args[key] = value
+					}
+					ev := ToolEvent{
+						Call:          ToolCall{ID: tc.ID, Name: tc.Name, Arguments: args},
+						Action:        results[i].Action,
+						CallID:        tc.ID,
+						IsError:       results[i].Result.IsError,
+						ContentLength: len(results[i].Result.Content),
+						Duration:      results[i].Duration,
+						Turn:          turn,
+					}
+					callToolObserver(ctx, opts.ToolObserver, ev, stderr)
+				}
+			}
 
 			if opts.JSON {
 				for i, tc := range resp.ToolCalls {
@@ -793,6 +870,15 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	return result, nil
 }
 
+func callToolObserver(ctx context.Context, observer ToolObserver, ev ToolEvent, stderr io.Writer) {
+	defer func() {
+		if recover() != nil {
+			_, _ = fmt.Fprintln(stderr, "Warning: tool observer panicked")
+		}
+	}()
+	observer(ctx, ev)
+}
+
 // drainEventStream consumes all events from a stream and constructs a Response.
 // If w is non-nil, text events are written to it incrementally.
 func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Response, error) {
@@ -885,9 +971,9 @@ func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Resp
 	}, nil
 }
 
-// executeToolCalls dispatches tool calls and returns results.
-// When parallel is true and there are multiple calls, they run concurrently.
-func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string, budgetTracker *budget.BudgetTracker, agentsDirs []string, agentsBase string, artifactDir string, artifactTracker *artifact.Tracker) []toolExecResult {
+// executeToolCalls decides all calls before dispatching any and returns results.
+// When parallel is true and there are multiple calls, allowed calls run concurrently.
+func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *agent.AgentConfig, globalCfg *config.GlobalConfig, registry *tool.Registry, mcpRouter *mcpclient.Router, depth, maxDepth int, parallel, verbose bool, stderr io.Writer, workdir string, budgetTracker *budget.BudgetTracker, agentsDirs []string, agentsBase string, artifactDir string, artifactTracker *artifact.Tracker, hook ToolHook) ([]toolExecResult, error) {
 	results := make([]toolExecResult, len(toolCalls))
 
 	agentsDir := ""
@@ -924,8 +1010,44 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		DefaultArtifactWrite: cfg.Artifacts.DefaultWrite,
 	}
 
+	var handled []bool
+	if hook != nil {
+		handled = make([]bool, len(toolCalls))
+		for i, tc := range toolCalls {
+			decision, err := callToolHook(ctx, hook, ToolCall{ID: tc.ID, Name: tc.Name, Arguments: tc.Arguments})
+			if ctx.Err() != nil {
+				break
+			}
+			if err != nil {
+				decision = ToolDecision{Action: ToolDeny}
+			}
+			r := provider.ToolResult{CallID: tc.ID, Content: toolDenyText, IsError: true}
+			switch decision.Action {
+			case ToolAllow:
+				continue
+			case ToolDeny:
+				if decision.Content != "" {
+					r.Content = decision.Content
+				}
+			case ToolStub:
+				r.Content = decision.Content
+				r.IsError = false
+			default:
+				decision.Action = ToolDeny
+			}
+			handled[i] = true
+			results[i] = toolExecResult{Result: r, Action: decision.Action}
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, &RuntimeError{Msg: "tool hook: run canceled", Err: err}
+		}
+	}
+
 	if len(toolCalls) == 1 || !parallel {
 		for i, tc := range toolCalls {
+			if handled != nil && handled[i] {
+				continue
+			}
 			start := time.Now()
 			var r provider.ToolResult
 			if mcpRouter != nil && mcpRouter.Has(tc.Name) {
@@ -940,7 +1062,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 					r = result
 				}
 			}
-			results[i] = toolExecResult{Result: r, Duration: time.Since(start)}
+			results[i] = toolExecResult{Result: r, Duration: time.Since(start), Action: ToolAllow}
 		}
 	} else {
 		type indexedResult struct {
@@ -949,6 +1071,10 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		}
 		ch := make(chan indexedResult, len(toolCalls))
 		for i, tc := range toolCalls {
+			if handled != nil && handled[i] {
+				ch <- indexedResult{index: i, result: results[i]}
+				continue
+			}
 			go func(idx int, call provider.ToolCall) {
 				start := time.Now()
 				var res provider.ToolResult
@@ -964,7 +1090,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 						res = result
 					}
 				}
-				ch <- indexedResult{index: idx, result: toolExecResult{Result: res, Duration: time.Since(start)}}
+				ch <- indexedResult{index: idx, result: toolExecResult{Result: res, Duration: time.Since(start), Action: ToolAllow}}
 			}(i, tc)
 		}
 		for range toolCalls {
@@ -973,7 +1099,7 @@ func executeToolCalls(ctx context.Context, toolCalls []provider.ToolCall, cfg *a
 		}
 	}
 
-	return results
+	return results, nil
 }
 
 func dispatchMCPToolCall(ctx context.Context, tc provider.ToolCall, mcpRouter *mcpclient.Router, verbose bool, stderr io.Writer) provider.ToolResult {
