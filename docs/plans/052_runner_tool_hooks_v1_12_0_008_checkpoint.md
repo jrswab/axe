@@ -24,7 +24,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T3.1
+- Current task: T4
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -32,10 +32,10 @@ Absolute paths inside the Repository root (the feature worktree).
 - T2.2: `checked`
 - T2.3: `checked`
 - T2.4: `checked`
-- T3.1: `unchecked`
-- T3.2: `unchecked`
-- T3.3: `unchecked`
-- T3.4: `unchecked`
+- T3.1: `checked`
+- T3.2: `checked`
+- T3.3: `checked`
+- T3.4: `checked`
 - T4: `unchecked`
 - T5: `unchecked`
 - T6: `unchecked`
@@ -44,8 +44,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T8: `unchecked`
 - T9: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T3.1
-- Last completed phase/task/gate and timestamp: T2.1-T2.4 red/guard verification PASS (commit cf6ae1b), 2026-11-09T23:57:28.200265+00:00
+- Next safe action: Implement T4
+- Last completed phase/task/gate and timestamp: T3.1-T3.4 green verification PASS (commit 5a59b25), 2026-11-10T00:06:21.122541+00:00
 
 ## Gate evidence
 
@@ -208,8 +208,29 @@ go test -race -v ./pkg/runner exit 1 as expected: FAIL TestMaxTurnsOption_Overri
 
 - Next action: Implement T3.1
 
+### T3.1-T3.4 green verification PASS (commit 5a59b25)
+
+- Gate: T3.1-T3.4 green verification PASS (commit 5a59b25)
+- Commands/results:
+pkg/runner/run.go +6 lines: validation run.go:112-114 (before dry run at :328), override :130-132. go test -race -v ./pkg/runner exit 0, all TestMaxTurnsOption_ PASS, no FAIL. go test -count=1 ./pkg/runner ./internal/agent ok. DryRunInfo brace-matched MaxTurns check exit 1 (absent). internal/ and cmd/ diff empty. go build 0; go vet 0; gofmt clean; golangci-lint 0 issues; per-task gate go test -race ./pkg/runner ok.
+- HEAD commit SHA: `5a59b256976cfe318a2f8eed09c7058360d9c110`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T4
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: Implement T3.1
+- Next action: Implement T4

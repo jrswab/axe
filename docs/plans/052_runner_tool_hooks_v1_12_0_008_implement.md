@@ -143,7 +143,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
 - After T3.1: `TestMaxTurnsOption_OverridesTOML` only (the cap is not yet applied).
 - After T3.2: none.
 
-- [ ] **T3.1: Green: validate `Options.MaxTurns` before the dry-run return (R2)**
+- [x] **T3.1: Green: validate `Options.MaxTurns` before the dry-run return (R2)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.4.
@@ -162,7 +162,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `go vet ./pkg/runner/` → `exit=0`.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: `TestMaxTurnsOption_OverridesTOML` only.
 
-- [ ] **T3.2: Green: effective cap for the loop (R3, R4)**
+- [x] **T3.2: Green: effective cap for the loop (R3, R4)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.1.
@@ -182,7 +182,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `go vet ./pkg/runner/` → `exit=0`.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: none.
 
-- [ ] **T3.3: Verify dry run, sub-agents, budget guard, and TOML validation unchanged (R6, R8, R9, R10); no code expected**
+- [x] **T3.3: Verify dry run, sub-agents, budget guard, and TOML validation unchanged (R6, R8, R9, R10); no code expected**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T3.2.
@@ -196,7 +196,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `rg -n "opts.MaxTurns" pkg/runner/run.go` → exactly the validation (T3.1) and the cap (T3.2). Sub-agent calls (`executeToolCalls`, `pkg/runner/run.go:964`) do not receive `opts.MaxTurns` (OS7).
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files unless a fix was needed; if none, the derived package list is empty. If a fix to `pkg/runner/run.go` was needed, the package is `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T3.4: Green: all acceptance tests 1-4 pass (R11)**
+- [x] **T3.4: Green: all acceptance tests 1-4 pass (R11)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T3.3.
