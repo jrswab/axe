@@ -66,6 +66,19 @@ type Options struct {
 	// sub-agents do not inherit the value.
 	MaxTurns int
 
+	// APIKey, when non-empty, is used instead of the ResolveAPIKey lookup.
+	// Precedence is Options > env var > config.toml. An empty value means unset.
+	// The value is never printed; sub-agents do not inherit the value.
+	// Ignored when the provider is bedrock.
+	APIKey string
+
+	// BaseURL, when non-empty, is used instead of the ResolveBaseURL lookup
+	// (AXE_<PROVIDER>_BASE_URL env var, then config.toml).
+	// Precedence is Options > env var > config.toml. An empty value means unset.
+	// The value is never printed; sub-agents do not inherit the value.
+	// Ignored when the provider is bedrock.
+	BaseURL string
+
 	// I/O (nil defaults to os.Stdout / os.Stderr / os.Stdin)
 	Stdout io.Writer
 	Stderr io.Writer
