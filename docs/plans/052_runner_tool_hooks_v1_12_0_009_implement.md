@@ -280,7 +280,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Verification: `git diff --numstat -- CHANGELOG.md` → `1	0	CHANGELOG.md`; `git diff -- CHANGELOG.md` shows one added line inside `[Unreleased]` `### Added`; `rg -n "Options.APIKey" CHANGELOG.md` → one match (R7); `rg -n "bedrock" CHANGELOG.md` → the bedrock clause in that bullet.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. No Go file changes; the derived package list is empty.
 
-- [ ] **T8: Scope, API, removed-line, and lint checks against the committed range `08d0f26..HEAD` (R1, R2, R6, R7)**
+- [x] **T8: Scope, API, removed-line, and lint checks against the committed range `08d0f26..HEAD` (R1, R2, R6, R7)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T7.1.
@@ -298,7 +298,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - No file changes.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T8.1: Line-number refresh of this checklist (checklist citations only)**
+- [x] **T8.1: Line-number refresh of this checklist (checklist citations only)**
   - Budget: 15 min
   - Owner: code
   - Depends on: T8.
@@ -309,7 +309,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Verification: each refreshed citation resolves: `rg -n` for each anchor returns the number written in the checklist. Spec citations are not changed here; if a spec citation is stale, stop and report to the orchestrator (the code agent does not edit the spec).
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no Go files; the derived package list is empty.
 
-- [ ] **T9: Spec and checklist lint, docs lint, and checklist audit (final gate)**
+- [x] **T9: Spec and checklist lint, docs lint, and checklist audit (final gate)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T8.1.
@@ -320,7 +320,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - No file changes unless a lint failure names a line in this checklist; fix only that line and re-run.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no Go files; the derived package list is empty.
 
-- [ ] **T10: Records (orchestrator, not the writer)**
+- [x] **T10: Records (orchestrator, not the writer)**
   - Budget: 30 min
   - Owner: orchestrator, after T9.
   - Files: `docs/plans/052_runner_tool_hooks_v1_12_0_009_checkpoint.md` (phase, task states, gate evidence). The milestone entry `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:238-250` may receive a line-number-only citation refresh. The milestone checkbox `- [ ] 009` is rendered by factory-checkpoint at the Factory completion gate, after review, not in T10.

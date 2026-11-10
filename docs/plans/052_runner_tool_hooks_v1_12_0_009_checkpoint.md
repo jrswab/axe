@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T8
+- Current task: T10
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -41,13 +41,13 @@ Absolute paths inside the Repository root (the feature worktree).
 - T6: `checked`
 - T7: `checked`
 - T7.1: `checked`
-- T8: `unchecked`
-- T8.1: `unchecked`
-- T9: `unchecked`
-- T10: `unchecked`
+- T8: `checked`
+- T8.1: `checked`
+- T9: `checked`
+- T10: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T8
-- Last completed phase/task/gate and timestamp: T4-T7.1 verification PASS (commit e73cc3e), 2026-11-10T02:18:14.643470+00:00
+- Next safe action: Pre-review gates: records-stale-check, docs-lint, factory-gate run on HEAD, then split code review of 08d0f26..HEAD
+- Last completed phase/task/gate and timestamp: T8-T10 verification PASS (commit 6299af3), 2026-11-10T02:31:58.879865+00:00
 
 ## Gate evidence
 
@@ -241,6 +241,27 @@ All go test runs prefixed ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL=. T4 (on 8f8
 
 - Next action: Implement T8
 
+### T8-T10 verification PASS (commit 6299af3)
+
+- Gate: T8-T10 verification PASS (commit 6299af3)
+- Commands/results:
+T8 (on a9c2740): non-plan diff 08d0f26..HEAD = exactly CHANGELOG.md, pkg/runner/credentials_option_test.go, pkg/runner/options.go, pkg/runner/run.go; git diff --exit-code -- internal cmd go.mod go.sum 0; options.go:73 APIKey, :80 BaseURL, bedrock doc lines :72 :79; CHANGELOG.md:18 one bullet; no removed lines in run.go or options.go; one opts.APIKey and one opts.BaseURL condition. T8.1: checklist citations refreshed, line numbers only (commit ac12b3a). Spec and milestone entry 009 citations refreshed, line numbers only (commit 6299af3); historical quoted citations in spec lines 17-19 left unchanged. T9: spec-lint spec+checklist exit 0 (100/101 citations, 0 findings); docs-lint --since 08d0f26 exit 0 (202 files, 0 findings); checklist-test-gate-audit absent (exit 1), audit NOT run, as the checklist T9 and T0 record. T10: this record.
+- HEAD commit SHA: `6299af3789fdf16135bffcf721ccefcad994b161`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Pre-review gates: records-stale-check, docs-lint, factory-gate run on HEAD, then split code review of 08d0f26..HEAD
+
 ## Limitations & blockers
 
 - Limitations:
@@ -251,4 +272,4 @@ All go test runs prefixed ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL=. T4 (on 8f8
   - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
   - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Implement T8
+- Next action: Pre-review gates: records-stale-check, docs-lint, factory-gate run on HEAD, then split code review of 08d0f26..HEAD
