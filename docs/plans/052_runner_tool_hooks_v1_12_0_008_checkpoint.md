@@ -24,7 +24,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T4
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -36,16 +36,16 @@ Absolute paths inside the Repository root (the feature worktree).
 - T3.2: `checked`
 - T3.3: `checked`
 - T3.4: `checked`
-- T4: `unchecked`
-- T5: `unchecked`
-- T6: `unchecked`
-- T7: `unchecked`
-- T7.1: `unchecked`
-- T8: `unchecked`
-- T9: `unchecked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T7.1: `checked`
+- T8: `checked`
+- T9: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T4
-- Last completed phase/task/gate and timestamp: T3.1-T3.4 green verification PASS (commit 5a59b25), 2026-11-10T00:06:21.122541+00:00
+- Next safe action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD
+- Last completed phase/task/gate and timestamp: T4-T9 verification PASS (CHANGELOG commit 256158b; T8 citation refresh uncommitted in implement.md), 2026-11-10T00:15:15.159017+00:00
 
 ## Gate evidence
 
@@ -229,8 +229,29 @@ pkg/runner/run.go +6 lines: validation run.go:112-114 (before dry run at :328), 
 
 - Next action: Implement T4
 
+### T4-T9 verification PASS (CHANGELOG commit 256158b; T8 citation refresh uncommitted in implement.md)
+
+- Gate: T4-T9 verification PASS (CHANGELOG commit 256158b; T8 citation refresh uncommitted in implement.md)
+- Commands/results:
+T4: go test -count=1 ./pkg/runner ./internal/agent ok; XDG_CACHE_HOME go test -count=1 ./cmd ok 11.3s; named regressions PASS; internal/cmd diff empty. T5: go test -race -v ./pkg/runner exit 0, all TestMaxTurnsOption_ PASS, no DATA RACE. T6: golangci-lint run 0 issues. T7: make apidiff exit 0, empty output. T7.1: CHANGELOG.md:17 one Added bullet. T8 first run: spec-lint exit 1 (implement.md:196,:327 stale run.go:964 for executeToolCalls after +6 shift); refreshed to run.go:970 (line number only); rerun spec-lint exit 0 (67/79 citations, 0 findings); scope diff = 4 declared files; internal/cmd/go.mod/go.sum diff empty; no removed lines in run.go/options.go; docs-lint --since 7f56dae 0 findings; per-task gate empty. T9: records written by orchestrator in this checkpoint.
+- HEAD commit SHA: `256158bdaad04c454a7ace78de53338cbba39cf6`
+- Relevant work: `uncommitted` — stash ref `5cd22750d7072f5d9bf74ed952be7196677a731b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_008_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD
+
 ## Limitations & blockers
 
 - Limitations: no tasks, checklist, or code exist yet. The 008 spec and checkpoint are the only files written in this phase.
 - Blockers: none.
-- Next action: Implement T4
+- Next action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD

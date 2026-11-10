@@ -193,7 +193,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `rg -n "if !budgetExceeded && resp != nil" pkg/runner/run.go` → one match, unchanged (OS8).
     - `rg -n "MaxTurns" internal/tool/tool.go` → `internal/tool/tool.go:368` only (the child cap from its own TOML; OS7). No `opts.MaxTurns` use in `internal/tool/`.
     - `git diff --exit-code -- internal cmd` → `exit=0` (working tree; no edits outside `pkg/runner`).
-    - `rg -n "opts.MaxTurns" pkg/runner/run.go` → exactly the validation (T3.1) and the cap (T3.2). Sub-agent calls (`executeToolCalls`, `pkg/runner/run.go:964`) do not receive `opts.MaxTurns` (OS7).
+    - `rg -n "opts.MaxTurns" pkg/runner/run.go` → exactly the validation (T3.1) and the cap (T3.2). Sub-agent calls (`executeToolCalls`, `pkg/runner/run.go:970`) do not receive `opts.MaxTurns` (OS7).
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files unless a fix was needed; if none, the derived package list is empty. If a fix to `pkg/runner/run.go` was needed, the package is `./pkg/runner`; run `go test -race ./pkg/runner`.
 
 - [x] **T3.4: Green: all acceptance tests 1-4 pass (R11)**
@@ -209,7 +209,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
 
 ### Phase 4: Verification (serial, after Phase 3)
 
-- [ ] **T4: Regression verification; TOML, CLI, `--json`, and sub-agent paths unchanged (R5, R7, R8)**
+- [x] **T4: Regression verification; TOML, CLI, `--json`, and sub-agent paths unchanged (R5, R7, R8)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T3.4.
@@ -225,7 +225,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `git diff --exit-code -- internal cmd` → `exit=0` (working tree).
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty. T5 runs the race run.
 
-- [ ] **T5: Race run of the `TestMaxTurnsOption_` family and the package (R2, R3, R9, R11)**
+- [x] **T5: Race run of the `TestMaxTurnsOption_` family and the package (R2, R3, R9, R11)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T4.
@@ -234,7 +234,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Pass condition: step 1 exit 0, every `TestMaxTurnsOption_` line `PASS`, and no `DATA RACE`.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T6: `golangci-lint run` (lint gate)**
+- [x] **T6: `golangci-lint run` (lint gate)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T5.
@@ -242,7 +242,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Any finding in `pkg/runner/options.go`, `pkg/runner/run.go`, or `pkg/runner/max_turns_option_test.go` is a failure of the task that introduced it. Fix it in that task's file, then re-run T4 and T6.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1)**
+- [x] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R1)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T6.
@@ -254,7 +254,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
 
 ### Phase 5: Documentation (CHANGELOG), then final scope
 
-- [ ] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.MaxTurns` (R10, OS9; `CONTRIBUTING.md:185`)**
+- [x] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.MaxTurns` (R10, OS9; `CONTRIBUTING.md:185`)**
   - Budget: 15 min
   - Owner: code
   - Depends on: T7.
@@ -262,7 +262,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Verification: `git diff --numstat -- CHANGELOG.md` → `1	0	CHANGELOG.md`; `git diff -- CHANGELOG.md` shows one added line inside `[Unreleased]` `### Added`; `rg -n "Options.MaxTurns" CHANGELOG.md` → one match (R10); `rg -n "inherit" CHANGELOG.md` → the sub-agent sentence in that bullet.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. No Go file changes; the derived package list is empty.
 
-- [ ] **T8: Scope, API, removed-line, and lint checks against the committed range `7f56dae..HEAD` (R6, R7, R8, R10)**
+- [x] **T8: Scope, API, removed-line, and lint checks against the committed range `7f56dae..HEAD` (R6, R7, R8, R10)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T7.1.
@@ -283,7 +283,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - No file changes unless step 1 applies.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files (unless step 1 applies); the derived package list is empty.
 
-- [ ] **T9: Records (orchestrator, not the writer)**
+- [x] **T9: Records (orchestrator, not the writer)**
   - Budget: 30 min
   - Owner: orchestrator, after T8.
   - Files: `docs/plans/052_runner_tool_hooks_v1_12_0_008_checkpoint.md` (phase, task states, gate evidence). The milestone entry `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:228-236` may receive a line-number-only citation refresh. The milestone checkbox `- [ ] 008` is rendered by factory-checkpoint at the Factory completion gate, after review, not in T9.
@@ -324,7 +324,7 @@ The focused run is the `TestMaxTurnsOption_` family in `pkg/runner` (T4, T5). `m
   - `runner.Options` (`pkg/runner/options.go:16`): gains `MaxTurns`. The keyed literal at `cmd/run.go:80` compiles unchanged, and the CLI does not set the field (R6, OS4). `rg -n "runner.Options\{" --glob '*.go' .` returns only `cmd/run.go:80` outside `pkg/runner` tests; the `pkg/runner` tests use keyed literals.
   - `agent.Load` (`internal/agent/agent.go`): unchanged (OS6). `cmd/agents.go:97-98` prints the TOML cap; unchanged.
   - `Run` (`pkg/runner/run.go:48`) and `run` (`pkg/runner/run.go:65`): signatures unchanged.
-  - `executeToolCalls` (`pkg/runner/run.go:964`): signature unchanged; the option is not passed to it (OS7).
+  - `executeToolCalls` (`pkg/runner/run.go:970`): signature unchanged; the option is not passed to it (OS7).
   - `runConversationLoop` (`internal/tool/tool.go:367`): cap at `internal/tool/tool.go:368`, loop at `:374`, unchanged; the child reads its own `cfg.MaxTurns` (OS7).
 - Extreme acceptance inputs (expected results; evidence comes from the tests named):
   - `-1`: `ConfigError` in live and dry run, zero requests. Covered by T2.2 (`value_-1_dry_run_false`, `value_-1_dry_run_true`) and T3.1.
