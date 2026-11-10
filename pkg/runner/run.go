@@ -933,9 +933,9 @@ func drainEventStream(stream *provider.EventStream, w io.Writer) (*provider.Resp
 				raw := pc.args.String()
 				if raw != "" {
 					var parsed map[string]interface{}
-					if jsonErr := json.Unmarshal([]byte(raw), &parsed); jsonErr == nil {
+					if jsonErr := provider.DecodeJSON([]byte(raw), &parsed); jsonErr == nil {
 						for k, v := range parsed {
-							args[k] = fmt.Sprintf("%v", v)
+							args[k] = provider.FormatToolArgument(v)
 						}
 					}
 				}

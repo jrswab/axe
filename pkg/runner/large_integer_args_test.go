@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/jrswab/axe/internal/provider"
 )
 
 func TestLargeIntegerArgs_OpenAI_BufferedHistory(t *testing.T) {
@@ -205,4 +207,217 @@ type largeIntegerOpenAIHistoryRequest struct {
 			} `json:"function"`
 		} `json:"tool_calls"`
 	} `json:"messages"`
+}
+
+func TestLargeIntegerArgs_OpenAI_StreamHistory(t *testing.T) {
+	// Arguments text carries raw unquoted numeric tokens; only the outer SSE
+	// arguments string is JSON-encoded.
+	const raw = `{"path":"fixture.txt","million":1000000,"precise":9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"small":999999,"negative_zero":-0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"text":"text","string_exponent":"1e6","boolean":true,"null":null,"object_integer":{"a":1000000},"array":[1.50]}`
+	want := map[string]string{
+		"path": "fixture.txt", "million": "1000000", "precise": "9007199254740993",
+		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000",
+		"precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
+		"small": "999999", "negative_zero": "-0", "fraction": "1.5", "rounded_fraction": "1e+06",
+		"text": "text", "string_exponent": "1e6", "boolean": "true", "null": "<nil>",
+		"object_integer": "map[a:1e+06]", "array": "[1.5]",
+	}
+	// Split inside the "precise" token so drain must concatenate deltas.
+	split := strings.Index(raw, "740993,")
+	if split < 0 {
+		t.Fatal("fixture split point missing")
+	}
+	sseToolCall := func(deltas ...string) string {
+		var sb strings.Builder
+		sb.WriteString(`data: {"model":"gpt-4o","choices":[{"delta":{"content":"Read values"},"index":0}]}` + "\n\n")
+		sb.WriteString(`data: {"model":"gpt-4o","choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"read_file","arguments":""}}]},"index":0}]}` + "\n\n")
+		for _, d := range deltas {
+			quoted, err := json.Marshal(d)
+			if err != nil {
+				t.Fatal(err)
+			}
+			sb.WriteString(`data: {"model":"gpt-4o","choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":` + string(quoted) + `}}]},"index":0}]}` + "\n\n")
+		}
+		sb.WriteString(`data: {"model":"gpt-4o","choices":[{"delta":{},"index":0,"finish_reason":"tool_calls"}]}` + "\n\n")
+		sb.WriteString(`data: {"model":"gpt-4o","choices":[],"usage":{"prompt_tokens":10,"completion_tokens":5}}` + "\n\n")
+		sb.WriteString("data: [DONE]\n\n")
+		return sb.String()
+	}
+	toolBody := sseToolCall(raw[:split], raw[split:])
+	const finalBody = `data: {"model":"gpt-4o","choices":[{"delta":{"content":"All done"},"index":0}]}` + "\n\n" +
+		`data: {"model":"gpt-4o","choices":[{"delta":{},"index":0,"finish_reason":"stop"}]}` + "\n\n" +
+		`data: {"model":"gpt-4o","choices":[],"usage":{"prompt_tokens":12,"completion_tokens":2}}` + "\n\n" +
+		"data: [DONE]\n\n"
+
+	t.Run("drain_openai_concatenated_deltas", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = io.WriteString(w, toolBody)
+		}))
+		defer server.Close()
+		o, err := provider.NewOpenAI("test-key", provider.WithOpenAIBaseURL(server.URL))
+		if err != nil {
+			t.Fatal(err)
+		}
+		stream, err := o.SendStream(context.Background(), &provider.Request{
+			Model:    "gpt-4o",
+			Messages: []provider.Message{{Role: "user", Content: "Read values"}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := drainEventStream(stream, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(resp.ToolCalls) != 1 || resp.ToolCalls[0].ID != "call_1" || resp.ToolCalls[0].Name != "read_file" {
+			t.Fatalf("drained tool calls = %+v, want one read_file call_1", resp.ToolCalls)
+		}
+		if got := resp.ToolCalls[0].Arguments; !reflect.DeepEqual(got, want) {
+			t.Errorf("drained delta arguments = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("drain_start_input", func(t *testing.T) {
+		stream := makeStream([]provider.StreamEvent{
+			{Type: provider.StreamEventToolStart, ToolCallID: "call_1", ToolName: "read_file", ToolInput: raw},
+			{Type: provider.StreamEventToolEnd, ToolCallID: "call_1"},
+			{Type: provider.StreamEventDone, StopReason: "tool_calls"},
+		})
+		resp, err := drainEventStream(stream, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(resp.ToolCalls) != 1 {
+			t.Fatalf("drained tool calls = %+v, want 1", resp.ToolCalls)
+		}
+		if got := resp.ToolCalls[0].Arguments; !reflect.DeepEqual(got, want) {
+			t.Errorf("drained start-input arguments = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("run_stream_history", func(t *testing.T) {
+		t.Setenv("ANTHROPIC_API_KEY", "")
+		t.Setenv("AXE_ANTHROPIC_BASE_URL", "")
+		t.Setenv("OPENAI_API_KEY", "test-key")
+		t.Setenv("XDG_DATA_HOME", t.TempDir())
+		setupTestEnv(t, "", "test-agent", `name = "test-agent"
+model = "openai/gpt-4o"
+stream = true
+tools = ["read_file"]
+`)
+		workdir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(workdir, "fixture.txt"), []byte("controlled result"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		bodies := make(chan string, 2)
+		bodies <- toolBody
+		bodies <- finalBody
+		requests := make(chan []byte, 3)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			request, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Errorf("read request: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			requests <- request
+			select {
+			case body := <-bodies:
+				w.Header().Set("Content-Type", "text/event-stream")
+				_, _ = io.WriteString(w, body)
+			default:
+				t.Errorf("unexpected extra request")
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}))
+		defer server.Close()
+		t.Setenv("AXE_OPENAI_BASE_URL", server.URL)
+
+		var hooks []ToolCall
+		var events []ToolEvent
+		stdout, stderr := newMockStdoutStderr()
+		seed := Message{Role: "user", Content: "Keep this history"}
+		result, err := Run(context.Background(), Options{
+			AgentName: "test-agent", Workdir: workdir,
+			Messages: []Message{seed}, JSON: true,
+			Stdout: stdout, Stderr: stderr,
+			ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+				hooks = append(hooks, call)
+				return ToolDecision{Action: ToolAllow}, nil
+			},
+			ToolObserver: func(_ context.Context, ev ToolEvent) {
+				events = append(events, ev)
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(result.Messages) != 4 || len(result.Messages[1].ToolCalls) != 1 {
+			t.Fatalf("history = %+v, want user, assistant call, tool result, final assistant", result.Messages)
+		}
+		call := result.Messages[1].ToolCalls[0]
+		if !reflect.DeepEqual(call.Arguments, want) {
+			t.Errorf("history arguments = %v, want %v", call.Arguments, want)
+		}
+		for _, key := range []string{"million", "precise"} {
+			if call.Arguments[key] != want[key] {
+				t.Errorf("history %s = %q, want exact %q", key, call.Arguments[key], want[key])
+			}
+		}
+		if !reflect.DeepEqual(result.Messages[0], seed) || call.ID != "call_1" || call.Name != "read_file" ||
+			result.Messages[2].Role != "tool" || result.Messages[3].Content != "All done" {
+			t.Errorf("history messages = %+v", result.Messages)
+		}
+		if result.Content != "All done" || result.ToolCalls != 1 {
+			t.Errorf("result content/calls = %q/%d, want All done/1", result.Content, result.ToolCalls)
+		}
+		if len(hooks) != 1 || len(events) != 1 || len(result.ToolCallDetails) != 1 {
+			t.Fatalf("hook/observer/detail counts = %d/%d/%d, want 1/1/1", len(hooks), len(events), len(result.ToolCallDetails))
+		}
+		// Message has no JSON tags for tool calls; decode the wire names directly.
+		var output struct {
+			Messages []struct {
+				ToolCalls []struct {
+					Arguments map[string]string `json:"arguments"`
+				} `json:"tool_calls"`
+			} `json:"messages"`
+		}
+		if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+			t.Fatal(err)
+		}
+		if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 {
+			t.Fatalf("JSON history = %+v", output)
+		}
+		for name, got := range map[string]map[string]string{
+			"hook": hooks[0].Arguments, "observer": events[0].Call.Arguments,
+			"detail": result.ToolCallDetails[0].Input, "JSON history": output.Messages[1].ToolCalls[0].Arguments,
+		} {
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("%s arguments = %v, want %v", name, got, want)
+			}
+		}
+		if len(requests) != 2 {
+			t.Fatalf("requests = %d, want 2", len(requests))
+		}
+		var initial, followup largeIntegerOpenAIHistoryRequest
+		if err := json.Unmarshal(<-requests, &initial); err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(<-requests, &followup); err != nil {
+			t.Fatal(err)
+		}
+		if !initial.Stream || len(initial.Messages) != 1 || initial.Messages[0].Content != seed.Content {
+			t.Errorf("initial request = %+v, want streamed pre-built history", initial)
+		}
+		if !followup.Stream || len(followup.Messages) != 3 || len(followup.Messages[1].ToolCalls) != 1 {
+			t.Fatalf("follow-up request = %+v, want streamed user, assistant call, tool result", followup)
+		}
+		var replayed map[string]string
+		if err := json.Unmarshal([]byte(followup.Messages[1].ToolCalls[0].Function.Arguments), &replayed); err != nil {
+			t.Fatalf("decode replay arguments as strings: %v", err)
+		}
+		if !reflect.DeepEqual(replayed, want) {
+			t.Errorf("replay arguments = %v, want %v", replayed, want)
+		}
+	})
 }

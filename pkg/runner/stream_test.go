@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jrswab/axe/internal/provider"
@@ -267,5 +269,70 @@ func TestDrainEventStream_CacheTokensFromDone(t *testing.T) {
 	}
 	if resp.StopReason != "end_turn" {
 		t.Errorf("StopReason = %q, want end_turn", resp.StopReason)
+	}
+}
+
+func TestLargeIntegerArgs_DrainErrors(t *testing.T) {
+	digits400 := "1" + strings.Repeat("0", 399)
+	tests := []struct {
+		name string
+		raw  string
+		want map[string]string
+	}{
+		// Decode failures preserve the drain's empty-args fallback.
+		{"malformed", `{"n":`, map[string]string{}},
+		{"trailing value", `{"n":1000000}{"m":1}`, map[string]string{}},
+		{"trailing junk", `{"n":1000000}x`, map[string]string{}},
+		{"top-level 1e400", `{"n":1e400}`, map[string]string{}},
+		{"nested 1e400", `{"n":{"a":[1e400]}}`, map[string]string{}},
+		{"top-level 400-digit integer", `{"n":` + digits400 + `}`, map[string]string{}},
+		{"nested 400-digit integer", `{"n":{"a":[` + digits400 + `]}}`, map[string]string{}},
+		{"duplicate overflow", `{"n":1e400,"n":1000000}`, map[string]string{}},
+		{"replaced subtree overflow", `{"n":{"bad":1e400},"n":1000000}`, map[string]string{}},
+		{"array destination", `[]`, map[string]string{}},
+		{"scalar destination", `1000000`, map[string]string{}},
+		{"string destination", `"1000000"`, map[string]string{}},
+		{"bool destination", `true`, map[string]string{}},
+		// Successful legacy map decodes keep succeeding.
+		{"empty object", `{}`, map[string]string{}},
+		{"null", `null`, map[string]string{}},
+		{"successful duplicate scalar", `{"n":999999,"n":1000000}`, map[string]string{"n": "1000000"}},
+		{"successful duplicate subtree", `{"n":{"ok":1},"n":1000000}`, map[string]string{"n": "1000000"}},
+	}
+	for _, tt := range tests {
+		paths := map[string][]provider.StreamEvent{
+			"start input": {
+				{Type: provider.StreamEventToolStart, ToolCallID: "call_1", ToolName: "read_file", ToolInput: tt.raw},
+				{Type: provider.StreamEventToolEnd, ToolCallID: "call_1"},
+				{Type: provider.StreamEventDone, StopReason: "tool_calls"},
+			},
+			"concatenated deltas": {
+				{Type: provider.StreamEventToolStart, ToolCallID: "call_1", ToolName: "read_file"},
+				{Type: provider.StreamEventToolDelta, ToolCallID: "call_1", ToolInput: tt.raw[:len(tt.raw)/2]},
+				{Type: provider.StreamEventToolDelta, ToolCallID: "call_1", ToolInput: tt.raw[len(tt.raw)/2:]},
+				{Type: provider.StreamEventToolEnd, ToolCallID: "call_1"},
+				{Type: provider.StreamEventDone, StopReason: "tool_calls"},
+			},
+		}
+		for path, events := range paths {
+			t.Run(tt.name+"/"+path, func(t *testing.T) {
+				resp, err := drainEventStream(makeStream(events), nil)
+				if err != nil {
+					t.Fatalf("drain error = %v, want nil", err)
+				}
+				if len(resp.ToolCalls) != 1 || resp.ToolCalls[0].ID != "call_1" || resp.ToolCalls[0].Name != "read_file" {
+					t.Fatalf("tool calls = %+v, want one read_file call_1", resp.ToolCalls)
+				}
+				got := resp.ToolCalls[0].Arguments
+				if got == nil || !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Arguments = %#v, want %#v", got, tt.want)
+				}
+				for k, v := range got {
+					if strings.Contains(v, "Inf") {
+						t.Errorf("Arguments[%q] = %q contains Inf", k, v)
+					}
+				}
+			})
+		}
 	}
 }
