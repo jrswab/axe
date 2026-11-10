@@ -16,7 +16,7 @@ The durable recovery record and sole home of run state for the current milestone
 Absolute paths inside the Repository root (the feature worktree).
 
 - Spec: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_009_spec.md`
-- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_009_implement.md` (not yet created)
+- Implementation checklist: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_009_implement.md`
 - Checkpoint: `/home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_009_checkpoint.md`
 
 ## State
@@ -269,7 +269,7 @@ T8 (on a9c2740): non-plan diff 08d0f26..HEAD = exactly CHANGELOG.md, pkg/runner/
   - Sub-agents do not inherit `Options.APIKey` or `Options.BaseURL` (spec OS8). This is by design, not a gap.
   - Bedrock ignores both fields by construction (spec OS1, R5).
   - `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox. Run them with `XDG_CACHE_HOME=$(mktemp -d)`.
-  - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
-  - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
+  - Milestone entry 009's relevant citations were refreshed in `6299af3` (line numbers only). The design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) is unchanged by this milestone and still cites stale lines. The spec's "Citation corrections" section records the verified lines.
+  - Implementation and the seven credential-option tests are complete, with the full-suite gate passing at `1995c84829fcbf6f58814f1115b5fb3ff9b80418`. The spec-lint PASS covers the spec only.
 - Blockers: none.
 - Next action: Pre-review gates: records-stale-check, docs-lint, factory-gate run on HEAD, then split code review of 08d0f26..HEAD
