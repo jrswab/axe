@@ -109,6 +109,9 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 			return nil, &ConfigError{Msg: fmt.Sprintf("unknown tool %q in Options.Tools[%d]", name, i)}
 		}
 	}
+	if opts.MaxTurns < 0 {
+		return nil, &ConfigError{Msg: fmt.Sprintf("Options.MaxTurns must be non-negative, got %d", opts.MaxTurns)}
+	}
 	effectiveTools := cfg.Tools
 	if opts.Tools != nil {
 		effectiveTools = append([]string{}, opts.Tools...)
@@ -124,6 +127,9 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	}
 
 	maxConversationTurns := cfg.MaxTurns
+	if opts.MaxTurns > 0 {
+		maxConversationTurns = opts.MaxTurns
+	}
 	if maxConversationTurns == 0 {
 		maxConversationTurns = defaultMaxConversationTurns
 	}
