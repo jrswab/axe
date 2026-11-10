@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds an exported field (`Options.MaxTurns`) to `pkg/runner`, the external API (public Go API = external contract). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `execute`
+- Current phase: `complete`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
@@ -43,9 +43,9 @@ Absolute paths inside the Repository root (the feature worktree).
 - T7.1: `checked`
 - T8: `checked`
 - T9: `checked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD
-- Last completed phase/task/gate and timestamp: T4-T9 verification PASS (CHANGELOG commit 256158b; T8 citation refresh uncommitted in implement.md), 2026-11-10T00:15:15.159017+00:00. Note: the T8 citation refresh was later committed in 436cdd9.
+- Milestone checkbox: `checked`
+- Next safe action: Milestone 008 complete. Sync, push PR #103, then start milestone 009.
+- Last completed phase/task/gate and timestamp: Review gate PASS and completion gate PASS at 9c77dd7, 2026-11-10T00:22:09.212902+00:00
 
 ## Gate evidence
 
@@ -250,8 +250,29 @@ T4: go test -count=1 ./pkg/runner ./internal/agent ok; XDG_CACHE_HOME go test -c
 
 - Next action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD
 
+### Review gate PASS and completion gate PASS at 9c77dd7
+
+- Gate: Review gate PASS and completion gate PASS at 9c77dd7
+- Commands/results:
+Review round 1 at 436cdd9 (range 7f56dae..436cdd9, split): backend APPROVED (no nits); spec/records CHANGES REQUESTED (1 blocking: stale checkpoint status lines :20, :48, :255). Fixed in 9c77dd7. Round 2 spec/records (436cdd9..9c77dd7) APPROVED, no findings. Review-gate evidence: records-stale-check 7f56dae no removed/renamed names; docs-lint 1 --since 7f56dae 199 files 0 findings (at 436cdd9 and 9c77dd7); gate-test-436cdd96753e-20261110T001523Z exit 0; gate-lint-436cdd96753e-20261110T001523Z exit 0. Completion: factory-sync origin/master behind 0, no conflicts, head 9c77dd7; gate-test-9c77dd70b8c3-20261110T002012Z (go test -race ./...) exit 0; gate-lint-9c77dd70b8c3-20261110T002012Z (golangci-lint run) exit 0; explore audit R1-R11 and OS1-OS12 all MET; 7f56dae..HEAD changes = options.go, run.go, max_turns_option_test.go, CHANGELOG.md, 008 spec/implement/checkpoint; git status clean.
+- HEAD commit SHA: `9c77dd70b8c34ad7563ce7c383adb06c28514cee`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Milestone 008 complete. Sync, push PR #103, then start milestone 009.
+
 ## Limitations & blockers
 
 - Limitations: none on implementation. Implementation is committed (07c4cbf, cf6ae1b, 5a59b25, 256158b); all tasks T0–T9 are checked; the milestone review gate is in progress. The milestone stays unchecked until the completion gate.
 - Blockers: none.
-- Next action: Review gate: records-stale-check 7f56dae, factory-gate test+lint at HEAD, review 7f56dae..HEAD
+- Next action: Milestone 008 complete. Sync, push PR #103, then start milestone 009.

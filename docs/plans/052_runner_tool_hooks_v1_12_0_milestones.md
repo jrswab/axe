@@ -225,7 +225,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
     3. Empty non-nil slice: the request has no built-in tools; this matches TOML `tools = []` today.
     4. `nil` with TOML tools: the request carries the TOML tools (unchanged).
 
-- [ ] 008: Override the turn cap per run with `Options.MaxTurns`
+- [x] 008: Override the turn cap per run with `Options.MaxTurns`
   - Slice enabled: a host sets a per-run turn cap (nightshift triage uses 30) without a generated TOML file.
   - Depends on: none.
   - Scope: add `MaxTurns int` to `Options`. `> 0` overrides the TOML value; `0` keeps it. The loop bound at `pkg/runner/run.go:587` and default at `run.go:83-86` are unchanged. A negative value is `ConfigError`, as at `internal/agent/agent.go:167`.
