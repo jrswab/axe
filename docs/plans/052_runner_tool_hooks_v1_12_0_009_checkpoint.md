@@ -22,13 +22,13 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
-- Current phase: `spec`
+- Current phase: `checklist-pending`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-- none (checklist not yet written)
+none
 - Milestone checkbox: `unchecked`
-- Next safe action: run spec planning review round 1 on the spec (the orchestrator dispatches it). Then write the checklist.
-- Last completed phase/task/gate and timestamp: spec drafted and spec-lint PASS (98 citations, 0 findings) at `08d0f26`, 2026-11-09T20:25:40-05:00.
+- Next safe action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_009_implement.md
+- Last completed phase/task/gate and timestamp: Spec planning review r1 APPROVED WITH NITS; nits fixed in c2e20a2, 2026-11-10T01:27:34.069757+00:00
 
 ## Gate evidence
 
@@ -75,6 +75,27 @@ none at setup
 - Untracked file Git objects: none (not stored; never applied).
 - Next action: spec planning review round 1.
 
+### Spec planning review r1 APPROVED WITH NITS; nits fixed in c2e20a2
+
+- Gate: Spec planning review r1 APPROVED WITH NITS; nits fixed in c2e20a2
+- Commands/results:
+spec-lint 009 spec: exit 0, 100 citations, 0 findings. Review r1 APPROVED WITH NITS: N1 bedrock no-region assertions, N2 apidiff wording, N3 base-URL probe sub-run; all fixed in c2e20a2, grep -F 'only additions' 0 hits. Failing planning rounds: 0 of 3.
+- HEAD commit SHA: `c2e20a24d377e7f9857a1e8e3670e18aaf76e507`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_009_implement.md
+
 ## Limitations & blockers
 
 - Limitations:
@@ -85,4 +106,4 @@ none at setup
   - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
   - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: run spec planning review round 1 on `docs/plans/052_runner_tool_hooks_v1_12_0_009_spec.md`. Then write `docs/plans/052_runner_tool_hooks_v1_12_0_009_implement.md`.
+- Next action: Write implementation checklist 052_runner_tool_hooks_v1_12_0_009_implement.md
