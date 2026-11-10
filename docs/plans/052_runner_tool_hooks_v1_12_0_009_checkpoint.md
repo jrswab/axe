@@ -23,10 +23,10 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: none
+- Current task: T2.1
 - Task states — checklist checkboxes render from this list:
-- T0: `unchecked`
-- T1: `unchecked`
+- T0: `checked`
+- T1: `checked`
 - T2.1: `unchecked`
 - T2.2: `unchecked`
 - T2.3: `unchecked`
@@ -46,8 +46,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T9: `unchecked`
 - T10: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T0
-- Last completed phase/task/gate and timestamp: Post-approval plan fix: host-env independence; spec r2 APPROVED, checklist r3 APPROVED WITH NITS (nit fixed a1fea73), 2026-11-10T01:47:37.105092+00:00
+- Next safe action: Implement T2.1
+- Last completed phase/task/gate and timestamp: T0-T1 verification PASS (commit c4adc1e), 2026-11-10T01:53:47.897399+00:00
 
 ## Gate evidence
 
@@ -157,6 +157,27 @@ T0 first attempt stopped: host ANTHROPIC_API_KEY non-empty, AWS_DEFAULT_REGION=u
 
 - Next action: Implement T0
 
+### T0-T1 verification PASS (commit c4adc1e)
+
+- Gate: T0-T1 verification PASS (commit c4adc1e)
+- Commands/results:
+T0: ancestry from 08d0f26 exit 0; no non-plan diff; all rg anchors matched (run.go:385,386,389; Run :48; run :65; DryRun :328); baseline go test ./pkg/runner ./internal/agent ok; go-toolchain-check PASS; env names: ANTHROPIC_API_KEY set, AWS_DEFAULT_REGION set, others unset. T1: options.go:69-80 APIKey/BaseURL with docs; go build ./... 0; go vet ./pkg/runner 0; gofmt -l options.go clean; go test -race ./pkg/runner ok; golangci-lint ./pkg/runner 0 issues.
+- HEAD commit SHA: `c4adc1e16d7f0c9c72980de73a1dda6029ef7f8c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T2.1
+
 ## Limitations & blockers
 
 - Limitations:
@@ -167,4 +188,4 @@ T0 first attempt stopped: host ANTHROPIC_API_KEY non-empty, AWS_DEFAULT_REGION=u
   - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
   - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Implement T0
+- Next action: Implement T2.1

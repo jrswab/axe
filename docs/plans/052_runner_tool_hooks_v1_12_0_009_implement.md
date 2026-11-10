@@ -40,7 +40,7 @@ if [ -n "$pkgs" ]; then go test -race $pkgs; fi
 
 ### Phase 0: Pre-flight (serial, read-only)
 
-- [ ] **T0: Pre-flight: HEAD ancestry from the base commit, tree state, baseline tests, declared names absent**
+- [x] **T0: Pre-flight: HEAD ancestry from the base commit, tree state, baseline tests, declared names absent**
   - Budget: 30 min
   - Owner: code (verification)
   - Files: none (read-only).
@@ -75,7 +75,7 @@ if [ -n "$pkgs" ]; then go test -race $pkgs; fi
 
 ### Phase 1: Enabling surface (serial)
 
-- [ ] **T1: Public fields and doc contract (R1, R2)**
+- [x] **T1: Public fields and doc contract (R1, R2)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T0.
