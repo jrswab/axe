@@ -22,13 +22,27 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `blocked`
-- Current task: 010 extreme-number normalization scope decision
+- Current phase: `implement`
+- Current task: 010 interrupted before post-cap checklist fixes
 - Task states — checklist checkboxes render from this list:
-none
+- T01a: `unchecked`
+- T01b: `unchecked`
+- T01c: `unchecked`
+- T02: `unchecked`
+- T03: `unchecked`
+- T04: `unchecked`
+- T05: `unchecked`
+- T06: `unchecked`
+- T07: `unchecked`
+- T08: `unchecked`
+- T09: `unchecked`
+- T10: `unchecked`
+- T11: `unchecked`
+- T12: `unchecked`
+- T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Await Jaron decision on bounded compatibility fallback for exceptional numeric tokens
-- Last completed phase/task/gate and timestamp: 010 specification round 2 complete CHANGES REQUESTED; numeric blockers confirmed, 2026-11-10T15:13:53.152199+00:00
+- Next safe action: Restart validation, then exact post-cap F1/F2 checklist fixes and one explore check before execution
+- Last completed phase/task/gate and timestamp: 010 user-requested interruption; durable planning lint PASS, post-cap fixes pending, 2026-11-10T16:12:20.731899+00:00
 
 ## Gate evidence
 
@@ -266,6 +280,149 @@ Proposed safe decision, NOT yet approved or applied: normalize an otherwise elig
 
 - Next action: Await Jaron decision on bounded compatibility fallback for exceptional numeric tokens
 
+### 010 bounded compatibility fallback approved by Jaron
+
+- Gate: 010 bounded compatibility fallback approved by Jaron
+- Commands/results:
+Jaron answered verbatim "Q1 - ye" to the orchestrator's question: "May I retain current formatting for exceptional tokens that violate those compatibility conditions?" Approved recommendation: normalize otherwise eligible exact top-level mathematical JSON integers |value| >= 1000000 only when plain output has at most 309 digits excluding sign and ParseFloat(normalized digits,64) succeeds and equals legacy ParseFloat(original token,64). Otherwise preserve legacy formatting/error behavior. This narrows earlier unconditional approval only for exceptional numeric tokens; ordinary 1e6, 1000000.0, -1e6, 9007199254740993 and int64/beyond-int64 exact digits remain included when eligible. Smaller values, signed zero, fractions, strings, nested formatting, replay strings and MCP numerical values remain unchanged. No new token rejection limit, dependencies, public APIs or RawArguments. User decision resolves the round-2 extreme-number scope blocker; specification/milestone wording must now be reconciled before re-review. Duplicate-key error preservation, mandatory Gemini/Ollama raw-emitter assertions and the two specified nits are technical fixes within scope. Planning failed rounds remain 2/3. No checklist exists. Host milestone-entries exit 0: 13 entries. Host factory-sync --base origin/master exit 0: head_before b65d89d6bb32a5b575ded581496708806586a9ac, ahead 140, behind 0, shared_files [], conflicts [], synced true, HEAD unchanged. Read-only restart check confirms clean status, no source/module changes since c307b92, only prior checkpoint commit b65d89d. Successful Go preflight at c307b92 remains applicable to unchanged module/toolchain/source; PATH unchanged and GOTOOLCHAIN unset. No one-way door authorized by this answer. Preserve historical decisions and review findings as history.
+- HEAD commit SHA: `b65d89d6bb32a5b575ded581496708806586a9ac`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Reconcile 010 specification and canonical milestone with approved fallback and round-2 findings
+
+### 010 approved round-2 document fixes and planning lint PASS
+
+- Gate: 010 approved round-2 document fixes and planning lint PASS
+- Commands/results:
+Approved conditional scope is now reconciled in specification and canonical milestone: at most 309 exact output digits excluding sign, successful normalized ParseFloat equal to legacy ParseFloat, otherwise legacy formatting/error. Same-destination overwritten-error and ignored-field controls, mandatory raw-emitter tests, Bedrock real-provider injection and path wording fixes are added. general changed only 010 spec and canonical milestone; no checkbox/source/API/module changes. Independent explore confirms all nine literal grep -F replacements have zero hits, all additive requirements cite valid current code, and spec/milestone scope agree. git diff --check exit 0, no output. spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md exit 0: 111 citations, 0 findings. docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit 0: docs-lint 1; 204 Markdown files, 0 findings, 0 outside scope. F1-F3 and both round-2 nits are fixed within approved scope; re-review pending. Current failing planning rounds remain 2/3, no checklist exists. The earlier undated Approval note and Limitations & blockers paragraphs describing unconditional approval, 1/3 rounds, round-2 pending and document-reconciliation next action are SUPERSEDED HISTORICAL TEXT. They do not define current run state. This gate and State are current: conditional fallback approved, round-2 complete/failing, fixes independently checked, next action clean specification planning review round 3. Preserve old history rather than falsifying old approvals/gates. Historical preflight remains applicable because no source/toolchain/module files changed. No new user decision or one-way door authorized.
+- HEAD commit SHA: `b65d89d6bb32a5b575ded581496708806586a9ac`
+- Relevant work: `uncommitted` — stash ref `ee6db1766f2b48fee2c014ecbe9bf86ac6efca80` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run clean-brief 010 specification planning review round 3
+
+### 010 specification planning review round 3 APPROVED
+
+- Gate: 010 specification planning review round 3 APPROVED
+- Commands/results:
+Specification planning review round 3 returned Verdict: APPROVED with no Review incomplete line and no nits. All five prior findings/fixes were verified: conditional 309-digit/equal-ParseFloat fallback approved and canonical scope reconciled; same-destination errors include overwritten numeric overflow but skip unknown fields; mandatory separate Gemini/Ollama raw native-value assertions; private real Bedrock injection; permitted-path wording. Review scope complete, no writes/tests/network. Spec-lint exit 0 at current artifact (111 citations, 0 findings) and docs-lint 1 exit 0 (204 Markdown files, 0 findings) were supplied. Independent fixed-string greps all zero hits. Planning failing rounds remain 2/3 across spec/checklist; passing round 3 does not increment this count. Approved spec exists and checklist path remains absent; phase checklist-pending with no task states. No source or API implementation yet. Historical limitations/old approval notes are superseded as stated by the previous gate. Next action load implement skill and create only the resolved 010 checklist. No one-way door authorized.
+- HEAD commit SHA: `b65d89d6bb32a5b575ded581496708806586a9ac`
+- Relevant work: `uncommitted` — stash ref `bbf1019834ba14785c9136168b2be5eabcc4c4a2` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Load implement skill and create 010 implementation checklist from approved specification
+
+### 010 checklist created and planning lint PASS
+
+- Gate: 010 checklist created and planning lint PASS
+- Commands/results:
+Resolved checklist created at absolute path /home/jaron/dev/axe/runner-tool-hooks/docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md. 15 unique ordered IDs T01a T01b T01c T02 T03 T04 T05 T06 T07 T08 T09 T10 T11 T12 T13; all unchecked. Spec amended only mechanical acceptance command: changed/new-file formatting instead of measured unrelated baseline drift, deterministic -count=1 removed. Requirements unchanged. Phase2 extreme evidence from /tmp/052-numeric-boundaries/main.go expanded stdlib run: gofmt/vet/go run all exit0 with Go1.26.10, GOTOOLCHAIN unset, unchanged PATH, safety env keys cleared; baseline numeric, 309/310-digit, zero/fractions/A/B/trailing/duplicate/unknown-field controls recorded in checklist Section4. Existing API signatures unchanged; all new helper callsites and ToolInput readers inventoried and assigned, no implementation code yet. Initial spec-lint exit1 (unsupported env -u command prefix and ambiguous citation), fixed mechanically. Second spec-lint exit1 (future -run tests select no current tests), no marker exemption supported, now literal verbose package commands require exact new test names and intended RED assertion once tests exist. This is not a test pass. Final spec-lint --root /home/jaron/dev/axe/runner-tool-hooks 010_spec.md 010_implement.md exit0: spec111 citations, checklist16 citations, 0 findings. docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0, docs-lint1, 205 Markdown files, 0 findings,0 outside. git diff --check exit0. Checklist planning review pending; existing planning failing rounds remain2/3. Historical approval/limitations paragraphs are superseded by current State/gates. No blockers or one-way doors authorized. No task checkbox may check before its gate.
+- HEAD commit SHA: `b65d89d6bb32a5b575ded581496708806586a9ac`
+- Relevant work: `uncommitted` — stash ref `214df2bf2ebcfb68ae23f4352579132a8fcd90ae` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md
+?? docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+41fbeb51955f8914885245180fd17f88887ead6c  "docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md"
+```
+
+- Next action: Run clean-brief 010 checklist planning review round 1 against complete approved specification
+
+### 010 checklist review round 1 CHANGES REQUESTED; planning failing-round cap reached
+
+- Gate: 010 checklist review round 1 CHANGES REQUESTED; planning failing-round cap reached
+- Commands/results:
+Complete checklist planning review round1 returned Verdict: CHANGES REQUESTED, no Review incomplete. Third failed planning round total for milestone010: spec round1, spec round2 (partial+complete same round counted once), checklist round1. Spec round3 APPROVED did not increment. Planning review cap reached at3/3; dispatch no further planning reviews. Preserve complete findings below, apply exactly specified fixes, spec-lint both artifacts must exit0, then one read-only explore check of every fix against cited code/spec before execution. If that check fails/incomplete, stop High stakes. Execution requires per-task behavioral RED first, intended missing-behavior failure, GREEN/full touched-package gate recorded before checkboxes; already-correct acceptance-only tasks are honest unchanged green confirmations as checklist states.
+F1 blocking verbatim: Bedrock history setup omits a prerequisite before the injection seam. Location checklist :148. Quoted offending text: “History uses existing private … `run` … with newProvider callback returning REAL `provider.NewBedrock("us-east-1", provider.WithBedrockBaseURL(server.URL))`, fake isolated AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY and cleared session token”. pkg/runner/run.go:393-397 requires region before callback at413. Fix verbatim: Explicitly set t.Setenv("AWS_REGION", "us-east-1") in TestLargeIntegerArgs_Bedrock_BufferedHistory, alongside the already-required isolated credentials/session token. Keep this environment-mutating test nonparallel. No production change is needed.
+F2 blocking verbatim: Required acceptance inputs are not assigned to concrete test packs. Locations checklist :19,49,224; source spec :150,168,176. Quoted offending text: “strings (`\"1e6\"`, `\"1000000.0\"`, `\"9007199254740993\"`)”; “Table includes every numeric/collection row in Section 4 below”. Fix verbatim: Add raw {"n":"text"} → stored "text" to the unaffected pack and formatter table. Assign beyond-int64 integral forms such as 99999999999999999999999.0 and 999999999999999999999990e-1 to T01b and T13. Assert the independent expected normalized digit string in Arguments and the same quoted digit string at the raw MCP handler, because ParseInt fails beyond int64.
+Reviewer checked15 task IDs,16 decode sites,12 flatten/removal sites,ToolInput reader ordering and existing signatures; no other findings/nits. No tests/lints/builds/network ran in review, git diff --check exit0. No checklist/source implementation done. No new user decision needed; fixes are within already approved scope. Current superseding scope remains bounded<=309/equal legacy Float64 fallback; historical active-looking note is superseded. Next: exact post-cap fixes then lint and single explore check. No one-way door authorized.
+- HEAD commit SHA: `b65d89d6bb32a5b575ded581496708806586a9ac`
+- Relevant work: `uncommitted` — stash ref `6ae8137e92dcedac15037be3bbd6b6f7ff386f75` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md
+?? docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+41fbeb51955f8914885245180fd17f88887ead6c  "docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md"
+```
+
+- Next action: Apply F1/F2 checklist fixes, lint both artifacts, then single post-cap explore verification
+
+### 010 user-requested interruption; durable planning lint PASS, post-cap fixes pending
+
+- Gate: 010 user-requested interruption; durable planning lint PASS, post-cap fixes pending
+- Commands/results:
+Terminal condition: Jaron invoked handoff, an external interruption. Stop Factory work now; do not dispatch pending F1/F2 fixes or implementation during this handoff. Milestone010 remains full lane unchecked phase implement. Spec review round3 APPROVED. Checklist review round1 complete CHANGES REQUESTED. Planning failing-round cap3/3 reached; no further planning review loop. F1/F2 from previous gate remain unapplied: Bedrock history explicit t.Setenv AWS_REGION us-east-1 and nonparallel; literal text string in unaffected/formatter packs and beyond-int64 integral .0/e-1 forms in T01b/T13 with exact Arguments/quoted raw MCP digit assertions. No code or implementation tests exist. All15 checklist IDs unchecked. Next session restart validation then exact F1/F2 document fixes, lint both artifacts, one independent read-only explore verification against code/spec, then exec skill and per-task TDD if every fix verified. Failed/incomplete post-cap check stops High stakes. Approved Q1 - ye bounded compatibility fallback is recorded/canonical: <=309 digits excluding sign and equal successful ParseFloat, else legacy. No open user scope question. Existing old approval/limitations paragraphs are superseded historical text, not current state.
+Pre-handoff current artifact checks via host run_script: spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md exit0: spec111 citations, checklist16 citations,0 findings. docs-lint --since8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0: docs-lint1,205 Markdown files,0 findings,0 outside. Lint pass is not checklist review approval. HEAD b65d89d6bb32a5b575ded581496708806586a9ac; status before bookkeeping: M010_checkpoint, M010_spec, Mmilestones, ??010_implement. Only four planning artifacts changed; source/module/public API unchanged. Local preapproved commit will preserve this interrupted planning snapshot; next session accounts separately for checkpoint self-write and commit. No push, PR merge, deploy, paid-provider calls or other one-way door authorized by handoff. Full completion tests were not run for010. Historical Go preflight/probes remain observations, not completion evidence.
+- HEAD commit SHA: `b65d89d6bb32a5b575ded581496708806586a9ac`
+- Relevant work: `uncommitted` — stash ref `91f625d927396eb3e05e76af60f709c2e0c32e98` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md
+?? docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+41fbeb51955f8914885245180fd17f88887ead6c  "docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md"
+```
+
+- Next action: Restart validation, then exact post-cap F1/F2 checklist fixes and one explore check before execution
+
 ## Limitations & blockers
 
 - Limitations:
@@ -279,7 +436,7 @@ Proposed safe decision, NOT yet approved or applied: normalize an otherwise elig
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Await Jaron decision on bounded compatibility fallback for exceptional numeric tokens
+- Next action: Restart validation, then exact post-cap F1/F2 checklist fixes and one explore check before execution
 
 ## Approval / decision note — 2026-11-10
 
