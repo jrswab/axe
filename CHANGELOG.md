@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Options.MCPServers` in `pkg/runner` adds MCP servers from code, merged after the agent's TOML servers. A duplicate name is a `ConfigError`. Header values are never printed, and a header variable that is unset is a `ConfigError`. A nil or empty list changes nothing.
 - `Options.Tools` in `pkg/runner` replaces the agent's TOML built-in tool list for one run when non-nil. Names are checked like TOML tools, and an unknown or empty name is a `ConfigError`. A nil list keeps the TOML list, and an empty list gives no built-in tools. The list does not limit MCP tools or `call_agent`. A built-in removed by the list no longer shadows a same-named MCP tool, which is now registered.
 - `Options.MaxTurns` in `pkg/runner` overrides the agent's TOML `max_turns` for one run when greater than 0. Zero keeps the TOML value, and a TOML value of 0 or unset means 50. A negative value is a `ConfigError`. Sub-agents do not inherit the value.
+- `Options.APIKey` and `Options.BaseURL` in `pkg/runner` override the provider key and base URL for one run; precedence is Options, then env var, then `config.toml`; an empty value means unset; neither value is printed; both are ignored for `bedrock`.
 
 ## [1.11.0] - 2026-10-21
 
