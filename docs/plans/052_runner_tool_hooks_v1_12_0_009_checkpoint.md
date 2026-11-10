@@ -23,16 +23,16 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T2.1
+- Current task: T3.1
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
-- T2.1: `unchecked`
-- T2.2: `unchecked`
-- T2.3: `unchecked`
-- T2.4: `unchecked`
-- T2.5: `unchecked`
-- T2.6: `unchecked`
+- T2.1: `checked`
+- T2.2: `checked`
+- T2.3: `checked`
+- T2.4: `checked`
+- T2.5: `checked`
+- T2.6: `checked`
 - T3.1: `unchecked`
 - T3.2: `unchecked`
 - T3.3: `unchecked`
@@ -46,8 +46,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T9: `unchecked`
 - T10: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T2.1
-- Last completed phase/task/gate and timestamp: T0-T1 verification PASS (commit c4adc1e), 2026-11-10T01:53:47.897399+00:00
+- Next safe action: Implement T3.1
+- Last completed phase/task/gate and timestamp: T2.1-T2.6 red verification PASS (commit a9e90f1), 2026-11-10T02:02:47.242116+00:00
 
 ## Gate evidence
 
@@ -178,6 +178,27 @@ T0: ancestry from 08d0f26 exit 0; no non-plan diff; all rg anchors matched (run.
 
 - Next action: Implement T2.1
 
+### T2.1-T2.6 red verification PASS (commit a9e90f1)
+
+- Gate: T2.1-T2.6 red verification PASS (commit a9e90f1)
+- Commands/results:
+ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race -v ./pkg/runner: exit 1 as expected. FAIL: LiveRunUsesOptions (:34 API key not configured), OptionsWinOverEnv (:65 dial localhost:1), ParallelRun (:93), NotPrinted/live (:143). PASS: NotPrinted/live-fail, NotPrinted/dry, UnsetUsesLookup, BedrockIgnoresOptions, BedrockNoRegionIsConfigError. No other test failed; no compile errors, panics, or races. go vet 0; gofmt clean; golangci-lint ./pkg/runner 0 issues.
+- HEAD commit SHA: `a9e90f13584cb6302fc617f2fc601029e2be7436`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T3.1
+
 ## Limitations & blockers
 
 - Limitations:
@@ -188,4 +209,4 @@ T0: ancestry from 08d0f26 exit 0; no non-plan diff; all rg anchors matched (run.
   - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
   - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Implement T2.1
+- Next action: Implement T3.1

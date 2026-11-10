@@ -106,7 +106,7 @@ Red-run rule: a red test is "red" only if it compiles and fails on an assertion 
 
 Shared test conventions (file `pkg/runner/credentials_option_test.go`, new, created in T2.1): package `runner`; mirror `TestRun_MaxTurnsConfigured` (`pkg/runner/run_test.go:1336`): `setupTestEnv(t, configTOML, agentName, agentTOML)` (`pkg/runner/run_test.go:24`), `newMockStdoutStderr()` (`pkg/runner/run_test.go:44`), `testutil.NewMockLLMServer` (`internal/testutil/mockserver.go:50`), and `t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())` where the spec calls for an env base URL. The agent model is `anthropic/claude-sonnet-4-20250514`, and responses are `testutil.AnthropicResponse` (`internal/testutil/mockserver.go:141`) and `testutil.AnthropicToolUseResponse` (`internal/testutil/mockserver.go:154`). Recorded requests are `mock.Requests[i].Headers` (`internal/testutil/mockserver.go:26`, `:34`) and `.Body` (`:27`). Imports are added as each test needs them (for example `bytes`, `context`, `errors`, `os`, `path/filepath`, `strings`, `testing`, `github.com/jrswab/axe/internal/provider`, `github.com/jrswab/axe/internal/testutil`). Test 4 is the only `t.Parallel` test in the file, and it calls no `t.Setenv`.
 
-- [ ] **T2.1: Red: acceptance test 1, live run uses Options (R4, R8.1)**
+- [x] **T2.1: Red: acceptance test 1, live run uses Options (R4, R8.1)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T1.
@@ -116,7 +116,7 @@ Shared test conventions (file `pkg/runner/credentials_option_test.go`, new, crea
   - Filter: `rg -- '--- (PASS|FAIL): TestCredentialsOption_[^ ]*( |$)'`.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above; the race run must be green from T3.3.
 
-- [ ] **T2.2: Red: acceptance test 2, Options win over env and config (R4, R8.2)**
+- [x] **T2.2: Red: acceptance test 2, Options win over env and config (R4, R8.2)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.1.
@@ -125,7 +125,7 @@ Shared test conventions (file `pkg/runner/credentials_option_test.go`, new, crea
   - Red step: `ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race -v ./pkg/runner` shows `--- FAIL: TestCredentialsOption_OptionsWinOverEnv`. Expected reason at HEAD: `apiKey` resolves to `env-key` and `baseURL` to `http://localhost:1`. The request goes to port 1 and fails at transport, so `err == nil` fails. Record the actual failing assertion.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above.
 
-- [ ] **T2.3: Red: acceptance test 4, parallel run with no `t.Setenv` (R4, R8.4)**
+- [x] **T2.3: Red: acceptance test 4, parallel run with no `t.Setenv` (R4, R8.4)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.2.
@@ -134,7 +134,7 @@ Shared test conventions (file `pkg/runner/credentials_option_test.go`, new, crea
   - Red step: `ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race -v ./pkg/runner` shows `--- FAIL: TestCredentialsOption_ParallelRun`. The prefix clears the two env sources, so HEAD never sends a request to the real API. Expected reason at HEAD: the Options fields are not read, the user `config.toml` has no active key (T0), and the empty-key check at `pkg/runner/run.go:397-400` returns a `ConfigError` before any request, so `err == nil` fails. Record the actual failing assertion.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above.
 
-- [ ] **T2.4: Red: acceptance test 5, neither value printed (R6, R8.5)**
+- [x] **T2.4: Red: acceptance test 5, neither value printed (R6, R8.5)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.3.
@@ -146,7 +146,7 @@ Shared test conventions (file `pkg/runner/credentials_option_test.go`, new, crea
   - Red step: `ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race -v ./pkg/runner` shows `--- FAIL: TestCredentialsOption_NotPrinted/live`. Expected reason at HEAD: the `live` sub-run returns the empty-key `ConfigError`, so the `err == nil` assertion fails. The `live-fail` and `dry` sub-runs pass at HEAD trivially (no Options value is read), and they become meaningful after T3.1. Record the actual failing assertion for each sub-run.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`. For this red task the gate is the red run above.
 
-- [ ] **T2.5: Guards: acceptance tests 3, 6, and 7 (R3, R5, R8.3, R8.6, R8.7)**
+- [x] **T2.5: Guards: acceptance tests 3, 6, and 7 (R3, R5, R8.3, R8.6, R8.7)**
   - Budget: 30 min
   - Owner: code
   - Depends on: T2.4.
@@ -158,7 +158,7 @@ Shared test conventions (file `pkg/runner/credentials_option_test.go`, new, crea
   - Expected at HEAD: all three PASS (guards). Record the PASS lines.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race ./pkg/runner`. Expected FAIL set: only the T2.1-T2.4 tests.
 
-- [ ] **T2.6: Red-run check (all acceptance tests)**
+- [x] **T2.6: Red-run check (all acceptance tests)**
   - Budget: 15 min
   - Owner: code (verification)
   - Depends on: T2.5.
