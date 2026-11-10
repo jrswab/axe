@@ -47,7 +47,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T10: `unchecked`
 - Milestone checkbox: `unchecked`
 - Next safe action: Implement T0
-- Last completed phase/task/gate and timestamp: Checklist planning review r2 APPROVED, 2026-11-10T01:39:08.305874+00:00
+- Last completed phase/task/gate and timestamp: Post-approval plan fix: host-env independence; spec r2 APPROVED, checklist r3 APPROVED WITH NITS (nit fixed a1fea73), 2026-11-10T01:47:37.105092+00:00
 
 ## Gate evidence
 
@@ -121,6 +121,27 @@ spec-lint 009 spec: exit 0, 100 citations, 0 findings. Review r1 APPROVED WITH N
 - Commands/results:
 spec-lint 009 implement: exit 0, 101 citations, 0 findings. Checklist r1 CHANGES REQUESTED (unset-lookup guard must clear ANTHROPIC_API_KEY), fixed 0de5d02; r2 APPROVED. Failing planning rounds: 1 of 3.
 - HEAD commit SHA: `0de5d024599be93fda540578efc4d45017019591`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T0
+
+### Post-approval plan fix: host-env independence; spec r2 APPROVED, checklist r3 APPROVED WITH NITS (nit fixed a1fea73)
+
+- Gate: Post-approval plan fix: host-env independence; spec r2 APPROVED, checklist r3 APPROVED WITH NITS (nit fixed a1fea73)
+- Commands/results:
+T0 first attempt stopped: host ANTHROPIC_API_KEY non-empty, AWS_DEFAULT_REGION=us-east-1, but T0 required both empty. Plans edited in c4632db (names-only env check; red runs clear ANTHROPIC_API_KEY/AXE_ANTHROPIC_BASE_URL; test 5 clears env and guards nil err; T3.3 env-independence run). Re-review: spec r2 APPROVED, checklist r3 APPROVED WITH NITS (T3.3 rg filter dropped ok line), fixed a1fea73. spec-lint both exit 0. Failing planning rounds: 1 of 3.
+- HEAD commit SHA: `a1fea73c8f5dd40376ee0a6e0f496ad00d1de7fe`
 - Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
 - `git status --porcelain` (before checkpoint/checkbox writes):
 
