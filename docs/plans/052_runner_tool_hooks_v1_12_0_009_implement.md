@@ -222,7 +222,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Verification:
     - `go test -race -v ./pkg/runner | rg -- '--- (PASS|FAIL): TestCredentialsOption_[^ ]*( |$)'` → every line `PASS`; `go test -race -v ./pkg/runner | rg -- '--- FAIL'` → no output.
     - `XDG_CACHE_HOME=$(mktemp -d) go test -count=1 ./pkg/runner ./internal/agent ./internal/config` → `ok` for all three.
-    - Env-independence: `ANTHROPIC_API_KEY=sk-dummy-not-a-key AXE_ANTHROPIC_BASE_URL=http://localhost:1 AWS_DEFAULT_REGION=us-east-1 AWS_REGION= AXE_BEDROCK_REGION= go test -race -count=1 -v ./pkg/runner 2>&1 | rg 'TestCredentialsOption_'` → package `ok`, and every `--- PASS: TestCredentialsOption_` line present for the seven tests, no `--- FAIL`. Passes with the host env set to a non-empty key and region, as the spec requires.
+    - Env-independence: `ANTHROPIC_API_KEY=sk-dummy-not-a-key AXE_ANTHROPIC_BASE_URL=http://localhost:1 AWS_DEFAULT_REGION=us-east-1 AWS_REGION= AXE_BEDROCK_REGION= go test -race -count=1 -v ./pkg/runner 2>&1 | rg 'TestCredentialsOption_|^ok |^FAIL'` → package `ok`, and every `--- PASS: TestCredentialsOption_` line present for the seven tests, no `--- FAIL`. Passes with the host env set to a non-empty key and region, as the spec requires.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`. Expected FAIL set: none.
 
 ### Phase 4: Verification (serial, after Phase 3)
