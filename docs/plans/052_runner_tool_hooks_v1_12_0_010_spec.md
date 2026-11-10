@@ -4,7 +4,7 @@
 
 ### Source
 
-- Milestone: `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md`, entry 010 (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:252-263`). Scope and acceptance tests 1-6 are taken from that entry, subject to the unresolved decimal/exponent scope decision in Blockers. No literal-only scope choice is approved.
+- Milestone: `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md`, entry 010 (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:252-263`). Scope and acceptance tests 1-6 are taken from that entry, reconciled with Jaron's 2026-11-10 approval "q1 = yes": include mathematically integral decimal/exponent JSON numbers with bounded exact normalization for absolute values >=1000000. Plain integer literals retain original digit text in that range; no literal-only restriction applies.
 - Design source: `docs/plans/runner-tool-hooks-and-options.md` §A3 (`docs/plans/runner-tool-hooks-and-options.md:269-321`) is rejected for v1.12.0 (see Rejected approaches). The defect itself is milestone decision D12 (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:74`) and §1.2 (`docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:45`).
 - Predecessors: none technically (`Depends on: none`, `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:254`). Milestones 004-009 are complete at the base and are the precedent for test layout and CHANGELOG style. This spec does not depend on their code.
 - Baseline: branch `runner-tool-hooks`, milestone review base `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec`. Clean tree at spec time.
@@ -12,7 +12,7 @@
 
 ### Citation corrections (verified at `8a351c8`)
 
-The milestone entry and the design note cite lines that no longer match. This spec uses the verified lines. Neither source document is edited by this spec.
+The milestone entry and the design note cite lines that no longer match. This spec uses the verified lines. The canonical milestone entry is reconciled in this planning pass; the rejected design note remains untouched.
 
 - The entry's stream flatten site `pkg/runner/run.go:852` is stale. `drainEventStream` is at `pkg/runner/run.go:884`. The flatten is at `pkg/runner/run.go:938`, fed by the raw-argument parse at `pkg/runner/run.go:933-936`. `pkg/runner/run.go:852` is now `if cfg.Memory.Enabled {`.
 - The replay citation `internal/provider/openai.go:168-177` is correct for the marshal (`:168-171`, `:177`), but the replay block starts at `internal/provider/openai.go:165` (`for _, tc := range msg.ToolCalls {`). The entry's `anthropic.go:160-165` is verified (`internal/provider/anthropic.go:160-165`).
@@ -46,21 +46,21 @@ The milestone entry and the design note cite lines that no longer match. This sp
 - The MCP SDK (`github.com/modelcontextprotocol/go-sdk` v1.4.1, pinned at `go.mod:9`) raw `AddTool` handler receives `req.Params.Arguments` unvalidated and unmodified. The typed `AddTool` path validates and re-marshals the arguments through `applySchema`, which would hide the digits. Tests must use the raw form. Cited as external module source, not a repository path.
 - Tool arguments in the response structs are typed `map[string]interface{}`: `anthropic.go:110`, `bedrock.go:92`, `gemini.go:83`, `ollama.go:99`, `opencode.go:123`. No non-test source type-asserts `float64` (verified: `rg '\.\(float64\)' internal/provider pkg/runner cmd --glob '!*_test.go'` has no matches). `UseNumber` also removes the old float64 magnitude-overflow rejection unless range validation is retained recursively, including nested numbers. R2 and R3 preserve that rejection/fallback; no `+Inf` may enter `Arguments`.
 
-### Mechanically settled constraints (scope choice remains blocked)
+### Settled constraints (scope approved 2026-11-10)
 
-- **OS1. Shared top-level formatting boundary.** One shared formatter serves all 12 flatten sites (11 provider sites and `pkg/runner/run.go:938`). It lives in `internal/provider`, reachable from `pkg/runner`. Plain integer digit literals must retain exact digits. Whether mathematically integral decimal/exponent forms are also normalized is pending in B2, not settled here. Nested collections retain their complete existing float64-derived formatting.
-- **OS2. Below one million is unchanged by construction.** For an integer literal below one million, `%v` of the `float64` and the literal text are the same string (table above). So the formatter changes output only at 1e6 and above. Acceptance tests still assert the unchanged cases.
+- **OS1. Shared top-level formatting boundary.** One shared formatter serves all 12 flatten sites (11 provider sites and `pkg/runner/run.go:938`). It lives in `internal/provider`, reachable from `pkg/runner`. Top-level numeric JSON tokens that are exact mathematical integers with |value| >=1000000 retain original plain integer digit text or normalize integral decimal/exponent forms to exact plain integer digits. Integrality and threshold use the exact token value, never Float64-rounded value. Nested collections retain their complete existing float64-derived formatting.
+- **OS2. Unaffected values retain legacy behavior.** All numeric values with |value| <1000000, zero including negative zero, mathematically fractional values, and all JSON string inputs keep today's formatting/coercion. Float64 validation preserves existing range/error/fallback behavior but must not determine exact integrality. For example, `1000000.00000000001` is fractional even if Float64 rounds it to `1000000`, so it follows legacy formatting.
 - **OS3. Decode with `UseNumber`, keep error semantics.** Each buffered decode that feeds a flatten uses `json.Decoder` with `UseNumber`. The decode must keep today's error behavior for malformed input and for trailing data after the first JSON value (`json.Unmarshal` rejects trailing data; a bare `Decoder.Decode` does not, so the implementation adds the check).
 - **OS4. Stream emitters carry raw values.** `gemini.go` and `ollama.go` stream paths emit the raw decoded argument values (not the flattened strings) as the `ToolInput` JSON text. `pkg/runner/run.go` drain decodes that text with `UseNumber` (OS3).
 - **OS5. No type inference on replay.** `Arguments` stays `map[string]string`. Replay keeps sending values as strings, the existing shape, and only the digit text changes (`1e+06` becomes `1000000`). The original JSON type (number or string) is not recoverable from `map[string]string`, so replay does not guess.
 - **OS6. `coerceArg` is verified, not modified.** It already parses plain digits as `int64`. It changes only if a test proves a wire failure (R5).
-- **OS7. No public API change.** `Options`, `ToolCall`, `Arguments map[string]string`, and every exported identifier are unchanged. No `RawArguments` field is added (see Rejected approaches). `pkg/runner` results keep `Arguments` text for values below one million.
+- **OS7. No public API change.** `Options`, `ToolCall`, `Arguments map[string]string`, and every `pkg/runner` exported API/type/identifier are unchanged. Helpers may be exported in `internal/provider` for runner reuse (existing import at `pkg/runner/run.go:25`). No `RawArguments` field is added (see Rejected approaches). `pkg/runner` results keep `Arguments` text for values below one million.
 - **OS8. Test harness: no production change.** `internal/testutil` is not edited. `MockToolCall.Input` stays `map[string]string` (`internal/testutil/mockserver.go:44`). Tests that need JSON numbers use raw-body `testutil.MockLLMResponse{StatusCode: 200, Body: ...}` values built in the test file (the response struct is `internal/testutil/mockserver.go:15-19`). The mock MCP server is the raw `AddTool` form (OS, above), which asserts the bytes it receives.
 - **OS9. CHANGELOG and docs untouched.** Milestone 010 edits no `CHANGELOG.md`, `README.md`, or version file. Milestone 012's `Fixed` entry must disclose corrected digits on MCP wire and replay, `tool_call_details[].input`, `messages[].tool_calls[].arguments`, `ToolHook` arguments, and `ToolObserver` call arguments. Field names/types remain unchanged.
 
 ### Rejected approaches (settled)
 
-- **Typed MCP arguments, A3 (`RawArguments json.RawMessage` on `ToolCall`).** Rejected for v1.12.0 (milestone §1.4, `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:86`; decision D12, `:74`). The fix needs no new field because the digit text is preserved inside `Arguments`. The design note's A3 proposal (`docs/plans/runner-tool-hooks-and-options.md:269-321`) is not implemented. Verification: no new exported identifier (R9).
+- **Typed MCP arguments, A3 (`RawArguments json.RawMessage` on `ToolCall`).** Rejected for v1.12.0 (milestone §1.4, `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:86`; decision D12, `:74`). The fix needs no new field because the digit text is preserved inside `Arguments`. The design note's A3 proposal (`docs/plans/runner-tool-hooks-and-options.md:269-321`) is not implemented. Verification: no new `pkg/runner` exported identifier (R9).
 - **Infer JSON number type for replay.** Rejected (OS5). It needs type information `map[string]string` cannot carry, and a string-typed digit argument would be replayed as a number.
 - **Modify `coerceArg` to accept exponent text.** Rejected. Exponent text is what is being removed at the source; accepting it would mask a regression (OS6).
 - **A `testutil` helper that emits JSON numbers.** Rejected (OS8). Raw-body responses cover the need without a production-package change (milestone decision D14 keeps `internal/testutil` out of the nightshift API, `docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md:76`).
@@ -68,8 +68,8 @@ The milestone entry and the design note cite lines that no longer match. This sp
 
 ### Constraints and assumptions
 
-- **Constraint, wire contract.** The MCP server receives JSON numbers for `integer` parameters with digits preserved. The server contract for a `string` parameter is unchanged (it still receives a string).
-- **Constraint, compatibility.** The fix is a documented bug fix (`COMPATIBILITY.md:29`, "Default runtime behavior is unchanged except for documented bug fixes"). The value a server receives changes only for integers of 1e6 and above.
+- **Constraint, wire contract.** The MCP server receives JSON numbers for `integer` parameters with exact preserved/normalized digits within int64; finite exact integers beyond int64 remain digit strings because `ParseInt` fails. The server contract for a `string` parameter is unchanged (it still receives a string).
+- **Constraint, compatibility.** The fix is a documented bug fix (`COMPATIBILITY.md:29`, "Default runtime behavior is unchanged except for documented bug fixes"). The value a server receives changes only for exact top-level numeric integers with |value| >=1000000, including integral decimal/exponent forms; all unaffected boundaries remain unchanged.
 - **Constraint, no public API.** The change is internal to `internal/provider`, `pkg/runner/run.go`, and tests (OS7).
 - **Assumption, mock MCP server.** The SDK raw handler receives the client's bytes unchanged (go-sdk v1.4.1, raw `AddTool`). Tests assert those bytes, not a decoded value, because decoding to `float64` would hide the digits.
 - **Assumption, decoded `int64` range.** `coerceArg` parses with `strconv.ParseInt(value, 10, 64)` (`internal/mcpclient/mcpclient.go:127`). Values beyond `int64` stay strings (edge E5).
@@ -79,11 +79,13 @@ The milestone entry and the design note cite lines that no longer match. This sp
 
 Requirements are grouped as vertical slices. Each slice is independently verifiable. R1-R3 are shared machinery. R4-R7 are the provider and stream slices. R8-R10 are verification and boundaries.
 
-### R1: Shared top-level integer formatter (scope pending B2)
+### R1: Shared exact top-level integer formatting
 
 - One formatter in `internal/provider` turns one decoded tool-argument value into the string stored in `Arguments` (OS1).
-- Top-level plain integer digit literals retain exact digit text. Decimal/exponent integer-valued inputs await B2; fractional values keep `%v` of their old float64 values. Before formatting any object or array, recursively convert ALL nested `json.Number` values to their old float64 values; the entire collection text must remain exactly unchanged. Other scalar values keep today's formatting. R2/R3 range validation precedes formatting.
-- Verification: unit tests in `internal/provider` for `1000000`, `-1000000`, `1234567`, `9007199254740993` returning digits; `999999`, `1.5`, `true`, `"text"`, and `nil` unchanged. B2 determines decimal/exponent expectations. Exact collection examples: `{"a":1e6}` → `map[a:1e+06]`, `[1.50]` → `[1.5]`, `{"a":1000000}` → `map[a:1e+06]`.
+- Exact signed top-level numeric JSON tokens that are mathematically integral with |value| >=1000000 retain original plain integer digit text or normalize decimal/exponent forms to exact plain integer digits. `1e6` and `1000000.0` become `1000000`; `-1e6` becomes `-1000000`; `9007199254740993` and equivalent integral spellings retain exact value, never Float64 rounding. Finite exact integers beyond int64 also retain normalized digits.
+- All values below the absolute threshold, zeros including negative zero, fractional values, and JSON strings keep legacy formatting. Float64 validates range but does not decide integrality or the threshold. `1000000.00000000001` stays on the legacy path despite Float64 rounding. Before formatting any object or array, recursively convert ALL nested `json.Number` values to their old float64 values; the entire collection text must remain exactly unchanged. Other scalar values keep today's formatting. R2/R3 range validation precedes formatting.
+- Work and memory are bounded by input length plus a bounded finite integer result (the finite Float64 range permits approximately 309 output digits), not arbitrary exponent magnitude. Huge positive exponents must not cause exponent-sized allocations; overflow retains existing failures/fallbacks. Huge negative exponents retain old underflow/fraction formatting. Zero with huge exponents is safe and preserves old signed-zero behavior. These are observable correctness/resource bounds, not a normalization algorithm.
+- Verification: unit tests in `internal/provider` cover the requirement/edge table below, both signs, exact >2^53 spellings, finite beyond-int64 values, huge positive/negative exponents and zero exponents. Exact collection examples: `{"a":1e6}` → `map[a:1e+06]`, `[1.50]` → `[1.5]`, `{"a":1000000}` → `map[a:1e+06]`.
 
 ### R2: Buffered decode uses `UseNumber`
 
@@ -113,14 +115,14 @@ Requirements are grouped as vertical slices. Each slice is independently verifia
 
 ### R7: Provider decode paths keep digits (buffered and stream)
 
-- Every flatten site in Verified defect and `pkg/runner/run.go:938` keeps the digit text of an integer of 1e6 and above, for buffered and (where a stream path exists) streaming responses (milestone acceptance 6).
+- Every flatten site in Verified defect and `pkg/runner/run.go:938` keeps original plain digit text or exact normalized digits of a top-level numeric integer with |value| >=1000000, for buffered and (where a stream path exists) streaming responses (milestone acceptance 6).
 - Covered decode paths: buffered `anthropic`, `bedrock`, `gemini`, `ollama`, `openai`, `openrouter`, `opencode` (Claude, Responses, and Chat routes); stream `anthropic`, `gemini`, `ollama`, `openai`, `openrouter`, `opencode` (Claude, Responses, and Chat routes), and `run.go` drain. `atlascloud` and `minimax` are covered through `openai` and `anthropic`.
 - Verification: one new test per listed path, named with the `TestLargeIntegerArgs_` prefix, using raw numeric mock bodies/chunks and real provider decodes for `1000000` and `9007199254740993`. Buffered provider tests assert stored `Arguments`. Stream-path tests live in `pkg/runner` and use real providers' `SendStream` through `drainEventStream` or `Run` with `stream=true`, asserting drained `Arguments`, not just text deltas. Provider `ToolInput` checks remain useful only for Gemini/Ollama emitter regressions; text-delta checks alone are not failing regression tests today.
 - Returned histories are explicitly required for every buffered and available streaming decode path: use `Run` with non-empty pre-built `Options.Messages` and assert `result.Messages[].ToolCalls[].Arguments` contains both exact integers. History population is conditional at `pkg/runner/run.go:816-817`; use `pkg/runner/run_test.go:579` (`TestRun_PreBuiltMessages_Streaming`) and `pkg/runner/run_test.go:969` (`TestRun_PreBuiltMessages_ToolLoop`) as setup/history assertion patterns, replacing string-only mock tool input with raw numeric response bodies.
 
 ### R8: Below one million and non-integer values are unchanged
 
-- Integers below one million, booleans, strings, `null`, `number`-typed values, and nested object or array values keep today's text (OS2, edges E1-E4). Nested values keep exactly the existing Go-syntax text, including float64-derived number formatting (edge E8).
+- Numeric values with |value| <1000000, zeros including negative zero, fractional values, booleans, all JSON strings, `null`, and nested object or array values keep today's text (OS2, edges E1-E4). MCP `number`-typed parameters preserve the resulting Float64 numerical value, not identical `Arguments` text: exact original and normalized integral tokens denote the same mathematical number. Verify signed zero, rounding boundaries, and values >2^53 using raw provider decode through MCP bytes. Nested values keep exactly the existing Go-syntax text, including float64-derived number formatting (edge E8).
 - Verification: existing provider and runner tests pass unchanged (`go test` on `./internal/provider`, `./internal/mcpclient`, `./pkg/runner`), plus the R1 table rows.
 
 ### R9: No public API or harness change
@@ -132,6 +134,21 @@ Requirements are grouped as vertical slices. Each slice is independently verifia
 
 - Only the files in the Parallelizable work list are edited: `internal/provider` (7 provider source files, `anthropic.go`, `bedrock.go`, `gemini.go`, `ollama.go`, `openai.go`, `opencode.go`, `openrouter.go`, plus the new formatter file), `pkg/runner/run.go`, `internal/mcpclient` tests (only if R5 needs them), and test files. No other file is edited. `CHANGELOG.md`, `README.md`, `AGENTS.md`, and version files are not edited (OS9).
 - Verification: `git diff --name-only 8a351c8 -- . ':(exclude)docs/plans/'` lists only those paths.
+
+### Requirement/edge table
+
+| Input / boundary | Required observable behavior | Verification |
+|---|---|---|
+| Numeric `1e6`, `1000000.0`, `-1e6` | `1000000`, `1000000`, `-1000000` | R1, every R7 buffered/stream/history path, R5/R6 |
+| Numeric `9007199254740993`, `9007199254740993.0`, `90071992547409930e-1` | Exact `9007199254740993`, not `9007199254740992` | R1, R5-R7 |
+| Finite exact integer beyond int64, including integral decimal/exponent spelling | Exact normalized digits in Arguments; integer MCP parameter remains a digit string | R1/R5, E5 |
+| `999999`, `-999999`, `999999.0`, `0`, `-0`, `-0.0` | Legacy Float64 formatting/coercion, including signed zero | R1/R8 |
+| `1.5`, `1000000.00000000001` | Legacy fractional path even when Float64 rounds to an integer | R1/R8 |
+| JSON strings `"1e6"`, `"1000000.0"`, `"9007199254740993"` | Never normalize; existing schema coercion only | R1/R5/R8 |
+| Nested objects/arrays, recursively | Entire old Float64-derived Go-syntax text unchanged | R1/R8, E8 |
+| `1e400`, 400-digit plain integer, nested overflow | Existing error category/fallback; no `+Inf` | Every R2/R3 boundary |
+| Huge positive/negative exponent; zero with huge exponent | Input-length plus bounded-result work/memory; old overflow, underflow and signed-zero behavior | R1-R3 resource/error cases |
+| MCP `number` parameters, signed zero, rounding boundaries, >2^53 | Same Float64 numerical value, not necessarily identical Arguments text | Raw decode → MCP bytes, R5/R8 |
 
 ### Acceptance tests
 
@@ -148,7 +165,9 @@ Tests use the `TestLargeIntegerArgs_` prefix unless an existing name is given. E
 9. Returned histories (R7): every buffered and available stream path retains `1000000` and `9007199254740993` in `result.Messages[].ToolCalls[].Arguments`, using real providers and raw numeric mock bodies/chunks; stream assertions run in `pkg/runner`.
 10. Overflow (R2/R3): `1e400` and a 400-digit integer, top-level and nested, retain server `ProviderError` or empty-args fallback at each affected boundary. No `+Inf` is stored.
 11. Nested formatting (R1/R8): assert the three exact collection examples in R1 unchanged.
-12. MCP integration (R5): raw numeric provider response through `pkg/runner` reaches raw `AddTool` handler bytes with exact unquoted digits.
+12. MCP integration (R5): raw numeric provider response through `pkg/runner` reaches raw `AddTool` handler bytes with exact unquoted digits; finite beyond-int64 values instead reach it as exact digit strings. Include approved integral decimal/exponent spellings and JSON string controls.
+13. Approved forms across all paths (R1/R7): `1e6`, `1000000.0`, and `-1e6` normalize in every buffered/provider-route and real `SendStream` → runner drain path, returned histories, real decode → replay, and raw decode → MCP bytes. Assert exact normalized `Arguments` also in hook/observer calls and detail inputs; field names/types stay unchanged.
+14. Exactness and bounds (R1-R3/R8): verify every requirement/edge table row, including fractional rounding traps, equivalent >2^53 integral spellings, signed zero, huge exponent safety and finite beyond-int64 normalization. MCP `number` tests assert the resulting Float64 numerical value, including signed zero and rounding boundaries; they do not require identical text.
 
 ## Parallelizable work
 
@@ -167,7 +186,7 @@ Tests use the `TestLargeIntegerArgs_` prefix unless an existing name is given. E
 ## Blockers
 
 - **B1 resolved.** Authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0: base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true. The checkpoint's `010 setup and spec lint PASS` records it. The sandbox fetch failure remains historical evidence only.
-- **B2 / F1 pending Jaron's decision.** Include mathematically integral decimal/exponent inputs (`1e6`, `1000000.0`), normalized exactly to `1000000`, or fix only plain digit literals and leave those forms unchanged? Recommendation: inclusion with bounded exact normalization and unchanged treatment of fractional values. Neither alternative is approved; the literal-only proposal is draft only. No normalization algorithm is specified. Milestone 010 remains blocked; no checklist or implementation starts.
+- **B2 / F1 resolved 2026-11-10.** Jaron answered "q1 = yes", approving integral decimal/exponent numeric inputs with exact bounded normalization at |value| >=1000000 (R1). This approval changes milestone 010's local behavior promise only; no normalization algorithm is prescribed. No active scope or sync blocker remains. Phase stays `spec`, first failing planning round stays 1 of 3, and this reconciliation is not a passing review. No checklist or implementation starts in this pass.
 
 ## Acceptance commands
 
@@ -197,18 +216,18 @@ git diff --name-only 8a351c8 -- . ':(exclude)docs/plans/'                       
 
 ## Limitations
 
-- Decimal/exponent integer-valued input scope is pending B2. The draft literal-only alternative would leave `1000000.0` and `1e6` as `1e+06` strings; this limitation is not approved.
+- Finite exact integral values beyond int64 retain exact normalized digits in `Arguments`, but `integer` MCP coercion still returns digit text as a string when `ParseInt` fails (E5).
 - Number-typed parameters still use `float64` (`coerceArg` `ParseFloat`), so a `number` argument of `9007199254740993` still loses precision to `9007199254740992`. This is unchanged from today (edge E6).
 - Replay still sends argument values as strings. The model's original JSON type is not recoverable from `Arguments` (OS5).
 - Bedrock has no stream path (edge E7). Its digits are covered by the buffered test only.
 - `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox. Run them with `XDG_CACHE_HOME=$(mktemp -d)`, as recorded for 005-009.
-- Milestone entry 010 and the design note cite stale lines. The corrected lines are in Citation corrections. Neither document is edited by this spec.
+- The rejected design note retains its historical stale streaming citation. The corrected anchors are in Citation corrections; canonical entry 010 is updated in this reconciliation.
 
 ## Edge cases
 
 - **E1.** `999999` stays `999999`; `1000000` becomes `1000000` (was `1e+06`); `-1000000` becomes `-1000000`; `1234567` becomes `1234567`; `9007199254740993` becomes `9007199254740993` (table, Verified defect).
-- **E2.** Top-level `1e6`: B2 pending. Draft alternatives are exact `1000000` normalization or unchanged `1e+06` string fallback. Neither is approved.
-- **E3.** Top-level `1000000.0`: same pending alternatives as E2.
+- **E2.** Top-level numeric `1e6` → `1000000`; `-1e6` → `-1000000`, exact normalized digits (approved).
+- **E3.** Top-level numeric `1000000.0` → `1000000`; equivalent integral decimal/exponent spellings of `9007199254740993` → `9007199254740993`, never rounded.
 - **E4.** Literal `1.5`: stored text stays `1.5` (unchanged).
 - **E5.** Integer literal beyond `int64` (for example `99999999999999999999999`) for an `integer` parameter: `ParseInt` fails, and the server receives the digit string. Today it receives `1e+23`. The digits change; the type stays string.
 - **E6.** Number-typed parameter with `9007199254740993`: `ParseFloat` returns `9007199254740992`. Unchanged from today, because `%v` of `float64` gave the same value.

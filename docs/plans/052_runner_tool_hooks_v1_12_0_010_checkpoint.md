@@ -22,13 +22,13 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `blocked`
+- Current phase: `spec`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 none
 - Milestone checkbox: `unchecked`
-- Next safe action: Jaron decides whether 010 includes integral decimal/exponent JSON numbers (1e6 and 1000000.0); then reconcile the specification and run planning review round 2
-- Last completed phase/task/gate and timestamp: 010 specification review round 1 CHANGES REQUESTED; scope decision pending, 2026-11-10T11:39:42.736614+00:00
+- Next safe action: Restart validation, then clean-brief planning review round 2 of the approved 010 specification; create the checklist only after its criterion passes
+- Last completed phase/task/gate and timestamp: 010 approved scope reconciliation and lint PASS; handoff interruption, 2026-11-10T14:06:07.848572+00:00
 
 ## Gate evidence
 
@@ -125,20 +125,72 @@ ddf688334f77a5379a1f81e9a9ddba2baa5c882c  "docs/plans/052_runner_tool_hooks_v1_1
 
 - Next action: Jaron decides whether 010 includes integral decimal/exponent JSON numbers (1e6 and 1000000.0); then reconcile the specification and run planning review round 2
 
+### 010 scope decision approved and resume checks PASS
+
+- Gate: 010 scope decision approved and resume checks PASS
+- Commands/results:
+Jaron answered "q1 = yes". Approved scope: include mathematically integral decimal/exponent JSON numbers such as 1e6 and 1000000.0, with bounded exact conversion to plain integer digits for absolute values >=1000000. Fractional values, JSON string inputs, nested collection formatting and current float64-overflow failures/fallbacks remain unchanged. The decimal/exponent blocker B2/F1 is resolved; the spec and canonical milestone entry must record this approval before planning review round2. No source/checklist implementation authorized outside milestone010. Resume evidence: milestone-entries exit0 (13 entries), repo-state clean HEADdcba6db branchrunner-tool-hooks; host factory-sync exit0 origin/master ahead137 behind0 shared_files[] conflicts[]. go-toolchain-check root exit0, go1.26.0/toolchain go1.26.10 available, module loads, govulncheck clean, GOTOOLCHAIN unset and existing PATH retained. Old 009 /tmp test logs are absent, and historical missing inventories cannot be reconstructed; fresh replacement test gate at dcba6db poll0 log /tmp/factory-gate-1001/gate-test-dcba6db0d0d1-20261110T135744Z.log and current 009 spec/checklist lint100/101citations,0findings were recorded in 009 checkpoint commit2eb0ed5. 010 latest inventory spec hash502c4d8f554219eab15b0558fc06ba8e59e4927e matches committed draft; four recorded historical inventory objects exist, checkpoint self-writes and review changes accounted separately, no stash apply. Planning failing roundsremain1of3. Next update approved artifacts, lint, round2 planning review.
+- HEAD commit SHA: `2eb0ed5950afe862454f739f0e4c8525fa4259a6`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Revise 010 specification and milestone wording for the approved exact integral decimal/exponent behavior; then lint and planning review round 2
+
+### 010 approved scope reconciliation and lint PASS; handoff interruption
+
+- Gate: 010 approved scope reconciliation and lint PASS; handoff interruption
+- Commands/results:
+Jaron requested handoff before planning review round2. User decision "q1 = yes" is recorded in the specification, canonical milestone entry010/D12/large-integer scope assumption and current checkpoint approval note. Approved top-level mathematical integer JSON numbers with |value|>=1000000 normalize exactly; 1e6 and1000000.0→1000000, -1e6→-1000000; Float64 must not decide integrality or threshold. |value|<1000000, signedzero, fractions, JSONstrings, nested collection formatting and current magnitude-overflow failures/fallbacks remain unchanged. Work/memory bounded by input size plus finite result, not exponent magnitude. Int64 overflow preserves digitstring fallback; numberparams preserve numerical Float64value, not identical Arguments text. Real provider stream→drain Arguments/history, raw decoded→replay and raw decoded→MCPwire tests remain required. Current verification (HEAD2eb0ed5950afe862454f739f0e4c8525fa4259a6, only three Markdown artifacts modified): spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md exit0,109citations,0findings. docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0, docs-lint1 checks task-id/stale-milestone/broken-mem-link/stale-citation;204Markdownfiles,0findings,0outside-scope. Independent explore git diff --check exit0, only _010_spec.md/_010_checkpoint.md/_milestones.md;no checkbox/source changes. Fixed-string greps for await B2, B2 determines, Neither alternative is approved, subject to the unresolved decimal/exponent scope decision, pending Jaron: zerohits. Historical B1/B2 pending records preserved as dated history, superseded by host sync and scope approval. Planning failing roundsremain1of3. This edit/lint is not a passing review; round2 not run, no _010_implement.md, no code implemented. Recovery preflight and fresh go test -race ./... at dcba6db PASS already recorded in 009/010 checkpoint; old missing logs/inventories remain historical limitations, not fabricated recovered evidence. External interruption is the terminal condition for this session.
+- HEAD commit SHA: `2eb0ed5950afe862454f739f0e4c8525fa4259a6`
+- Relevant work: `uncommitted` — stash ref `b74cda2ab48d0a6b61e2300ef679e67323aee506` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Restart validation, then clean-brief planning review round 2 of the approved 010 specification; create the checklist only after its criterion passes
+
 ## Limitations & blockers
 
 - Limitations:
   - Sandbox fetch failure remains historical evidence only; authoritative HOST sync supersedes it (B1 resolved below).
-  - Decimal/exponent integer-valued scope is pending Jaron's choice (B2); the literal-only proposal is draft, not approved.
+  - B2/F1 scope is approved: integral decimal/exponent numeric forms normalize exactly at |value| >=1000000. Finite beyond-int64 values keep exact digit strings on integer MCP ParseInt failure (spec E5).
   - Number-typed parameters keep `float64` precision (spec E6).
   - Bedrock has no stream path (spec E7).
   - `cmd/` tests may need a writable `XDG_CACHE_HOME` in this sandbox. Run them with `XDG_CACHE_HOME=$(mktemp -d)`.
-  - Milestone entry 010 and the design note cite stale lines. The corrected lines are in the spec's Citation corrections. Neither document is edited.
+  - The rejected design note retains its historical stale streaming citation; canonical entry 010 is reconciled with corrected runner anchors. See the spec's Citation corrections.
   - No `go test` run during spec drafting. The spec pass made no code changes.
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
-  - B2 / F1 pending: include mathematically integral decimal/exponent inputs (`1e6`, `1000000.0`), normalized exactly to `1000000`, or fix only plain digit literals and leave those forms unchanged? Recommend inclusion with bounded exact normalization and unchanged fractional treatment. Neither alternative is approved; no normalization algorithm is specified. Milestone 010 remains blocked; no checklist or implementation starts.
-- Next action: Jaron decides whether 010 includes integral decimal/exponent JSON numbers (1e6 and 1000000.0); then reconcile the specification and run planning review round 2
+  - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
+- Next action: Restart validation, then clean-brief planning review round 2 of the approved 010 specification; create the checklist only after its criterion passes
+
+## Approval / decision note — 2026-11-10
+
+- Approval source: Jaron answered "q1 = yes". B2/F1 resolved; B1 already resolved by authoritative host sync. The prior pending/error entries below and under Gate evidence remain historical, not active blockers.
+- Approved behavior: exact signed top-level numeric JSON integers with |value| >=1000000 retain original plain digit text or exact normalized digits for integral decimal/exponent forms. `1e6`, `1000000.0` → `1000000`; `-1e6` → `-1000000`; `9007199254740993` and equivalent integral spellings never round through Float64. These digits reach Arguments, histories, replay, hook/observer and detail inputs. Replay remains map[string]string with no type inference.
+- Unchanged boundaries: smaller magnitudes, zeros including negative zero, fractions (including `1000000.00000000001`), all JSON strings, recursively Float64-derived nested formatting, malformed/trailing/overflow categories and fallbacks. Float64 validates range, not integrality; no +Inf or exponent-sized allocation. Work/memory is input length plus bounded finite integer output (~309 digits); huge negative exponents and zero exponents retain legacy underflow/signed-zero behavior.
+- MCP integer parameters preserve digits within int64; finite beyond-int64 integers remain exact digit strings. MCP number parameters preserve the resulting Float64 numerical value, not identical Arguments text, with signed-zero/rounding/>2^53 verification. No production MCP change unless a declared test exposes an in-scope failure. Internal provider helpers may be exported for runner reuse; no pkg/runner exported API/type/identifier or internal/testutil production change.
+- Scope remains milestone 010 only. Milestone 012 owns CHANGELOG/README/version disclosure. Phase remains spec; all milestone/task checkboxes and script-managed states are unchanged. First failing planning round remains **1 of 3**; this document reconciliation is not a passing review. Existing F2-F6 fixes and every listed round-1 nit remain required. No implementation/checklist, source changes, shared lint/bookkeeping, commit or network operation performed. Orchestrator runs lint/bookkeeping and planning review next.
 
 ## Decisions & review history — round 1
 
