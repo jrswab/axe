@@ -384,6 +384,12 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 	// Step 14: Resolve API key and validate
 	apiKey := globalCfg.ResolveAPIKey(provName)
 	baseURL := globalCfg.ResolveBaseURL(provName)
+	if opts.APIKey != "" {
+		apiKey = opts.APIKey
+	}
+	if opts.BaseURL != "" {
+		baseURL = opts.BaseURL
+	}
 	region := globalCfg.ResolveRegion(provName)
 
 	if provName == "bedrock" {
