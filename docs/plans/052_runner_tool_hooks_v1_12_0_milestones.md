@@ -238,7 +238,7 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
 - [ ] 009: Set the provider API key and base URL from code with `Options.APIKey` and `Options.BaseURL`
   - Slice enabled: a host runs against a test LLM server with a fake key and no environment changes, and tests can run in parallel.
   - Depends on: none.
-  - Scope: add `APIKey string` and `BaseURL string` to `Options`. Precedence: Options, then env var, then `config.toml` (`internal/config/config.go:81`, `:99`). Apply them at `pkg/runner/run.go:336-337`. Sub-agent credentials are unchanged (`internal/tool/tool.go:224-225`). Never log either value. Bedrock: `Options.APIKey` and `Options.BaseURL` are ignored when the provider is `bedrock`. Region still comes from `AWS_REGION` / `AWS_DEFAULT_REGION` / `AXE_BEDROCK_REGION` / `config.toml` `providers.bedrock.region` (`internal/config/config.go:117-140`); AWS credentials still come from `internal/provider/awscreds.go:17-44`. The implementation must NOT guard `apiKey = region` with `if apiKey == ""`; that would turn the key into the region/endpoint. Doc comments on both fields say "Ignored when the provider is bedrock." Leave `pkg/runner/run.go:340-347`, `internal/provider/registry.go:72-75`, and `cmd/gc.go:132-141` unchanged.
+  - Scope: add `APIKey string` and `BaseURL string` to `Options`. Precedence: Options, then env var, then `config.toml` (`internal/config/config.go:81`, `:99`). Apply them at `pkg/runner/run.go:385-386`. Sub-agent credentials are unchanged (`internal/tool/tool.go:224-225`). Never log either value. Bedrock: `Options.APIKey` and `Options.BaseURL` are ignored when the provider is `bedrock`. Region still comes from `AWS_REGION` / `AWS_DEFAULT_REGION` / `AXE_BEDROCK_REGION` / `config.toml` `providers.bedrock.region` (`internal/config/config.go:117-140`); AWS credentials still come from `internal/provider/awscreds.go:17-44`. The implementation must NOT guard `apiKey = region` with `if apiKey == ""`; that would turn the key into the region/endpoint. Doc comments on both fields say "Ignored when the provider is bedrock." Leave `pkg/runner/run.go:395-402`, `internal/provider/registry.go:72-75`, and `cmd/gc.go:132-141` unchanged.
   - Compatibility impact: API adds two fields. CLI, TOML, `--json`: unchanged. RT unchanged when both are empty.
   - Acceptance tests:
     1. `BaseURL` and `APIKey` set, no env vars: the request reaches an `httptest` server.
@@ -246,8 +246,8 @@ Each decision carries its compatibility impact on each public surface: `pkg/runn
     3. Both unset: current lookup behavior.
     4. A test with `t.Parallel()` that sets both fields and does not call `t.Setenv`.
     5. Logs and verbose output do not contain either value.
-    6. Bedrock model with `Options.APIKey="fake"`, `Options.BaseURL="http://127.0.0.1:1"`, and `AWS_REGION` set via `t.Setenv`: the `newProvider` seam (`run.go:47`, `:358`) receives the region as its key argument and `""` as base URL.
-    7. Bedrock model with `Options.APIKey` set and no region source: `ConfigError`, exit 2 (`run.go:340-343`).
+    6. Bedrock model with `Options.APIKey="fake"`, `Options.BaseURL="http://127.0.0.1:1"`, and `AWS_REGION` set via `t.Setenv`: the `newProvider` seam (`run.go:65`, `:413`) receives the region as its key argument and `""` as base URL.
+    7. Bedrock model with `Options.APIKey` set and no region source: `ConfigError`, exit 2 (`run.go:395-398`).
 
 - [ ] 010: Send integer MCP arguments of 1e6 and above as JSON integers
   - Slice enabled: an MCP tool with an `integer` parameter receives the exact integer the model sent, for every provider.
