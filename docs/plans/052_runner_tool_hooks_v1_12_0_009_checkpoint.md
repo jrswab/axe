@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the milestone adds exported fields (`Options.APIKey`, `Options.BaseURL`) to `pkg/runner`, the external API (public Go API = external contract, `COMPATIBILITY.md:5-10`). The fast-lane condition "external contracts untouched" fails.
 - Current phase: `execute`
-- Current task: T4
+- Current task: T8
 - Task states — checklist checkboxes render from this list:
 - T0: `checked`
 - T1: `checked`
@@ -36,18 +36,18 @@ Absolute paths inside the Repository root (the feature worktree).
 - T3.1: `checked`
 - T3.2: `checked`
 - T3.3: `checked`
-- T4: `unchecked`
-- T5: `unchecked`
-- T6: `unchecked`
-- T7: `unchecked`
-- T7.1: `unchecked`
+- T4: `checked`
+- T5: `checked`
+- T6: `checked`
+- T7: `checked`
+- T7.1: `checked`
 - T8: `unchecked`
 - T8.1: `unchecked`
 - T9: `unchecked`
 - T10: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T4
-- Last completed phase/task/gate and timestamp: T3.1-T3.3 green verification PASS (commit 3c6df3d), 2026-11-10T02:10:47.768374+00:00
+- Next safe action: Implement T8
+- Last completed phase/task/gate and timestamp: T4-T7.1 verification PASS (commit e73cc3e), 2026-11-10T02:18:14.643470+00:00
 
 ## Gate evidence
 
@@ -220,6 +220,27 @@ Commit 3c6df3d: pkg/runner/run.go +6/-0. APIKey override run.go:387-389, BaseURL
 
 - Next action: Implement T4
 
+### T4-T7.1 verification PASS (commit e73cc3e)
+
+- Gate: T4-T7.1 verification PASS (commit e73cc3e)
+- Commands/results:
+All go test runs prefixed ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL=. T4 (on 8f8b10a): go test -count=1 ./pkg/runner ./internal/agent ./internal/config ok x3; XDG_CACHE_HOME=$(mktemp -d) go test -count=1 ./cmd ok; regression filter (MaxTurnsExceeded, MaxTurnsConfigured, SingleShot_NoTools, ToolHookMCPAllow, SubAgent) all PASS; 7 TestCredentialsOption_ tests + 3 NotPrinted sub-runs PASS; go build ./... 0; go vet ./pkg/runner/ 0; gofmt -l options.go run.go credentials_option_test.go empty; git diff --exit-code -- internal cmd 0. T5: go test -race -v ./pkg/runner exit 0, all credential lines PASS, rg DATA RACE exit 1. T6: golangci-lint run exit 0, 0 issues. T7: make apidiff exit 0, stdout 0 bytes, no axe-apidiff.* temp dirs; stderr only go toolchain switch notice. T7.1: CHANGELOG.md:18 bullet added verbatim, numstat 1 0, rg Options.APIKey one match; committed as e73cc3e.
+- HEAD commit SHA: `e73cc3e60d9ac3fcd76449b54e99a8113b8df5f3`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T8
+
 ## Limitations & blockers
 
 - Limitations:
@@ -230,4 +251,4 @@ Commit 3c6df3d: pkg/runner/run.go +6/-0. APIKey override run.go:387-389, BaseURL
   - The milestone entry (`:238-250`) and the design note (`docs/plans/runner-tool-hooks-and-options.md:475-521`) cite stale lines. The spec's "Citation corrections" section records the verified lines. Neither document is edited.
   - No implementation or test has been run yet. The spec-lint PASS covers the spec only.
 - Blockers: none.
-- Next action: Implement T4
+- Next action: Implement T8

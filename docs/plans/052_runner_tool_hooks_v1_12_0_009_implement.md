@@ -227,7 +227,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
 
 ### Phase 4: Verification (serial, after Phase 3)
 
-- [ ] **T4: Regression verification; TOML, CLI, `--json`, and sub-agent paths unchanged (R3, R5, R7)**
+- [x] **T4: Regression verification; TOML, CLI, `--json`, and sub-agent paths unchanged (R3, R5, R7)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T3.3.
@@ -243,7 +243,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
     - `git diff --exit-code -- internal cmd` → `exit=0` (working tree).
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty. T5 runs the race run.
 
-- [ ] **T5: Race run of the `TestCredentialsOption_` family and the package (R3, R4, R5, R6, R8)**
+- [x] **T5: Race run of the `TestCredentialsOption_` family and the package (R3, R4, R5, R6, R8)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T4.
@@ -252,7 +252,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Pass condition: step 1 exit 0, every `TestCredentialsOption_` line `PASS`, and no `DATA RACE`.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. Package for this task: `./pkg/runner`; run `go test -race ./pkg/runner`.
 
-- [ ] **T6: `golangci-lint run` (lint gate)**
+- [x] **T6: `golangci-lint run` (lint gate)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T5.
@@ -260,7 +260,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
   - Any finding in `pkg/runner/options.go`, `pkg/runner/run.go`, or `pkg/runner/credentials_option_test.go` is a failure of the task that introduced it. Fix it in that task's file, then re-run T4 and T6.
   - Per-task gate: Per-task gate: run `go test -race` only on the packages this change touched, derived before commit as below. Do not run `go test -race ./...`; the Factory completion gate runs it. This task changes no files; the derived package list is empty.
 
-- [ ] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R7)**
+- [x] **T7: `make apidiff` (milestone 002 gate; additions only expected) (R7)**
   - Budget: 30 min
   - Owner: code (verification)
   - Depends on: T6.
@@ -272,7 +272,7 @@ Expected FAIL set after each task (any other FAIL is a stop):
 
 ### Phase 5: Documentation (CHANGELOG), then final scope
 
-- [ ] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.APIKey` and `Options.BaseURL` (R7, OS6)**
+- [x] **T7.1: CHANGELOG `[Unreleased]` Added bullet for `Options.APIKey` and `Options.BaseURL` (R7, OS6)**
   - Budget: 15 min
   - Owner: code
   - Depends on: T7.
