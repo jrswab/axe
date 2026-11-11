@@ -42,7 +42,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
 - Next safe action: Implement T06
-- Last completed phase/task/gate and timestamp: T05 round-1 standards APPROVED and design APPROVED; task accepted, 2026-11-11T17:06:06.797705+00:00
+- Last completed phase/task/gate and timestamp: Fresh-session setup and restart validation PASS, 2026-11-11T17:26:56.252972+00:00
 
 ## Gate evidence
 
@@ -976,6 +976,27 @@ Round 1 standards/spec Verdict: APPROVED. No in-scope standards findings, no spe
 Round 1 design Verdict: APPROVED. No blocking findings. Nits: none. All four scoped files were reviewed; no unreviewed changed paths and no Review incomplete line. The actual Claude typed destination preserves legacy error/overflow/ignored-field behavior and server ProviderError; GPT/chat/stream/replay behavior remains unchanged apart from required alignment. No new contract/dependency/security/performance issue was found. Reviewer independently confirmed original test-prefix/RED byte equality; SHA-256 provenance relied on the supplied verification log. Reviewer ran no gate commands or tests.
 T05 is now accepted and checked. No source changed after the reviewed HEAD. This bookkeeping transition does not complete milestone 010, whose remaining tasks T06-T13 are unchecked. Next task is T06. No push, deploy, Docker or paid/live-provider call ran. The prior host wrapper pin/log is historical and must not be used for a future reviewed HEAD.
 - HEAD commit SHA: `7b8f9a7791656a6bae38691cb12fa5c49b68616d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T06
+
+### Fresh-session setup and restart validation PASS
+
+- Gate: Fresh-session setup and restart validation PASS
+- Commands/results:
+milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0, PASS 13 entries. factory-sync --base origin/master: exit 0, branch runner-tool-hooks, head_before dfa5119633f8e5c5b3388c3b6515a8f1eb9de2d1, ahead167 behind0 shared_files[] conflicts[] synced true, no HEAD change. Go preflight command: env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= PATH=/home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin:/home/jaron/.local/share/../bin:/home/jaron/bin:/home/jaron/.local/bin:/home/jaron/.npm-global/bin:/home/jaron/.opencode/bin:/home/jaron/.local/share/pi-node/current/bin:/home/jaron/android-sdk/cmdline-tools/bin:/home/jaron/go/bin:/usr/local/go/bin:/home/jaron/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks. Exit0: go1.26.0 and go1.26.11 available, repository go1.26.11, module loads readonly github.com/jrswab/axe, govulncheck No vulnerabilities found, PASS. stdout /tmp/052-restart-preflight-stdout.log, stderr /tmp/052-restart-preflight-stderr.log empty. HEAD before/after dfa5119633f8e5c5b3388c3b6515a8f1eb9de2d1, git status --porcelain empty, module files unchanged. Restart validation passed identity, absolute paths, all 15 task boxes and milestone checkbox. Exact Git/hash proofs: /tmp/052-restart-validation-core.log, /tmp/052-restart-validation-module.log, /tmp/052-restart-validation-snapshots.log, /tmp/052-restart-validation-evolution.log, /tmp/052-restart-validation-state-corrected.log, /tmp/052-restart-validation-gates.log. All 20 stash refs inspected without applying. Ten inventory paths JSON-decoded and hashed without -w, eight historical blobs inspected and differences accounted through immutable snapshots/commits. Corrected local validator passed after initial validator counting error, original /tmp/052-restart-validation-state.log retained as non-pass evidence. T05 gate poll exit0 for 7b8f9a7791656a6bae38691cb12fa5c49b68616d; only checkpoint/checklist bookkeeping differs from current HEAD, reviewed source unchanged. No gate claimed for new HEAD. Approved toolchain exact patch/ancestry/module equality and R9/R10 scope proofs exit0. Historical missing 009 evidence remains historical under B2 corrections, not invented. Historical b74cda2..c307b92 diffstat reports 26/3 now rather than old 27/4; only checkpoint bookkeeping changed. No tests/paid calls/deploy/push ran. T06 is next. Independent live harness de51656 is behind0 and ahead2 as of fetched refs, dirty only pi/.pi/agent/settings.json; preserve outside this repository.
+- HEAD commit SHA: `dfa5119633f8e5c5b3388c3b6515a8f1eb9de2d1`
 - Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
 - `git status --porcelain` (before checkpoint/checkbox writes):
 
