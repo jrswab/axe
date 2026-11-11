@@ -252,3 +252,32 @@ Expected: no output. The same mechanical clarification is in the approved spec a
 Formatting baseline (measured earlier by code agent, not re-run here): preexisting drift in `internal/provider/anthropic_stream_types.go`, `awscreds.go`, `bedrock.go`, `opencode.go`, `openrouter.go`, `provider_test.go`, `sse_test.go`, `stream.go`, `pkg/runner/result.go`, `result_test.go`. Format full files actually touched by this implementation (including bedrock/opencode/openrouter), but never unrelated files simply to clean baseline. Diff-scoped formatting replaces the approved spec’s broad formatting command; removing deterministic `-count=1` changes only verification mechanics.
 
 This document-only call runs only `git diff --check` and unchecked/unique task-ID inspection. No tests/lints/build/typecheck/network/GitHub/commits or checkpoint writes run here. Orchestrator runs spec-lint on both artifacts and docs-lint through run_script. The existing checkpoint/spec/milestones working-tree edits are preexisting and preserved; only this new checklist and the narrow spec acceptance-command clarification are this call’s repository writes. No current-HEAD code gate is claimed by this plan; historical preflight/probe evidence is not a completion result.
+
+## User-approved toolchain prerequisite exception — 2026-11-11
+
+The user approved a separate prerequisite patch from Go toolchain 1.26.10 to 1.26.11, committed as `70e31fd56c48216a027479a49ebf2cbebe25768c`, followed by pre-flight and compatibility checks before T04. This is outside milestone 010 behavior, not a new task or a waived check. Only that toolchain-line change is excepted from R10; all other scope restrictions and requirements remain in force, and the original commands above remain historical. No push, deploy, or other one-way door is authorized.
+
+The checkpoint's failed pre-flight found GO-2026-6859 in Go 1.26.10. The later `/tmp/052-toolchain-preflight.log` records exit 0 for Go 1.26.11 and govulncheck with no vulnerabilities; `/tmp/052-toolchain-checks.log` records exit 0 for module load, build, vet, lint and apidiff checks. These ran with the pin change uncommitted at parent HEAD `33c3d1928d10b86bc29754b415d4622ede8268e1`, not at a later HEAD; apidiff printed toolchain-selection notices. This passing pin preflight removes the technical blocker but does not satisfy T04, a HEAD-matched review, or completion. It does not replace any later gate.
+
+For the effective R10 scope check before T04 and at completion, run all of the following from the repository root in Bash. The first three checks must exit 0 with no output; the last must exit 0 and list only R10-approved source/test paths. Stop and report any failure or unexpected path. The first check confirms the approved commit is in HEAD's ancestry; the second verifies the entire commit is precisely the one-line toolchain patch, with no other file change; the third requires both module files to match the review base before that patch and the approved commit in the current tree. The last retains the original `8a351c8` base and `docs/plans/` exclusion, excluding only `go.mod` additionally. R9 and every other original restriction and gate remain unchanged.
+
+```bash
+git merge-base --is-ancestor 70e31fd56c48216a027479a49ebf2cbebe25768c HEAD
+
+set -o pipefail
+git diff --no-ext-diff --no-color --no-renames --no-textconv --full-index --unified=0 70e31fd56c48216a027479a49ebf2cbebe25768c^ 70e31fd56c48216a027479a49ebf2cbebe25768c -- | diff -u <(printf '%s\n' \
+  'diff --git a/go.mod b/go.mod' \
+  'index 580f71c94b5e83e19844adf193f36bed1329fdd4..0036e19cb2d5df871a96d9d332cd272b19526c3a 100644' \
+  '--- a/go.mod' \
+  '+++ b/go.mod' \
+  '@@ -5 +5 @@ go 1.26.0' \
+  '-toolchain go1.26.10' \
+  '+toolchain go1.26.11') -
+
+git diff --exit-code 8a351c8 70e31fd56c48216a027479a49ebf2cbebe25768c^ -- go.mod go.sum
+git diff --exit-code 70e31fd56c48216a027479a49ebf2cbebe25768c -- go.mod go.sum
+
+git diff --name-only 8a351c8 -- . ':(exclude)docs/plans/' ':(exclude)go.mod'
+```
+
+The two module-file comparisons must both exit 0 with no output. Together with the exact patch check, they preserve the `go 1.26.0` language directive, dependencies, and `go.sum`, and forbid any additional module change. The approved pin does not change T04 or any later task behavior.
