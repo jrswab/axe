@@ -93,7 +93,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_OpenCodeClaude_Buffered`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_OpenCodeClaude_Buffered` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: none.
 
-- [ ] T06 — OpenCode Responses route buffered/stream/history.
+- [x] T06 — OpenCode Responses route buffered/stream/history.
   Budget: 30 min
   Primary R-IDs: R2, R7. Dependency: T05 (same source/test files serialize edits).
   Source: `internal/provider/opencode.go: sendGPT` response decode 1015, argument-string decode 1040, flatten 1045; Send uses `gpt-*`; read-only streamGPT / convertToOCResponsesMessages replay 946. Both decode errors remain server ProviderError, NOT OpenAI empty fallback.
