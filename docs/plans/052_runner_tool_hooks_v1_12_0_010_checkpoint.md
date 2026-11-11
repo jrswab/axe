@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `execute`
+- Current phase: `blocked`
 - Current task: T04
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T04
-- Last completed phase/task/gate and timestamp: T03 round-1 review PASS (standards APPROVED, design APPROVED), 2026-11-11T14:56:48.538201+00:00
+- Next safe action: Obtain the scope decision for a separate Go 1.26.11 toolchain patch update, then rerun Go pre-flight before T04 RED.
+- Last completed phase/task/gate and timestamp: Restart setup PASS; Go pre-flight FAIL, 2026-11-11T15:06:40.925189+00:00
 
 ## Gate evidence
 
@@ -800,6 +800,28 @@ Round 1, range c02bb9dbb552cb9d68341376c56d544af6537b9c..2ff56f5a134120156e92683
 
 - Next action: Implement T04
 
+### Restart setup PASS; Go pre-flight FAIL
+
+- Gate: Restart setup PASS; Go pre-flight FAIL
+- Commands/results:
+Restart from /tmp/handoff-052-runner-tool-hooks.20261111T150041013506Z.md at f665dacf2899b70b807543b51d980b35080250e6 on runner-tool-hooks with a clean tree. milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md exited 0: PASS, 13 milestone entries. factory-sync --base origin/master exited 0: branch runner-tool-hooks, head_before f665dacf2899b70b807543b51d980b35080250e6, ahead 154, behind 0, shared_files [], conflicts [], synced true, no HEAD movement. Restart inspection confirmed artifact identity/paths, task states T01a-T03 checked and T04-T13 unchecked, and milestone 010 unchecked. Historical T03 gate applies to 2ff56f5 only and is not current HEAD-matched review/completion evidence. Historical missing 009 logs/inventories remain unrecovered as already documented.
+Go pre-flight command (same PATH and GOTOOLCHAIN policy as the accepted gates): env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= PATH=/home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin:/home/jaron/.local/share/../bin:/home/jaron/bin:/home/jaron/.local/bin:/home/jaron/.npm-global/bin:/home/jaron/.opencode/bin:/home/jaron/.local/share/pi-node/current/bin:/home/jaron/android-sdk/cmdline-tools/bin:/home/jaron/go/bin:/usr/local/go/bin:/home/jaron/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks . Pre-flight exited 1. Repository Go version go1.26.10 and read-only module loading passed. govulncheck ./... actually ran and exited 3: GO-2026-6859, HTTP/1 server crash due to MaxBytesReader header race in net/http, found net/http@go1.26.10, fixed net/http@go1.26.11; https://pkg.go.dev/vuln/GO-2026-6859 . The scanner reported no other vulnerabilities in imported packages/modules. Full command/output/provenance: /tmp/052-t04-preflight.log:2-89. Independent read-only inspection confirmed the output, failure semantics, root go.mod as the sole module, go.mod:5 toolchain go1.26.10, no other explicit patch pin in Makefile/.github/.goreleaser.yml, and no repository changes. git diff --exit-code HEAD -- go.mod go.sum exited 0. No T04 test or implementation started. No package tests, paid/provider calls, host factory gate, push, or deploy ran. T04 remains unchecked. Blocker: the required restart pre-flight failed, and upgrading the frozen go.mod toolchain pin requires a scope decision before implementation resumes. Recommendation: authorize a separate, bounded toolchain patch update to go1.26.11, then rerun pre-flight and the affected compatibility gates before resuming T04.
+- HEAD commit SHA: `f665dacf2899b70b807543b51d980b35080250e6`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Obtain the scope decision for a separate Go 1.26.11 toolchain patch update, then rerun Go pre-flight before T04 RED.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -813,7 +835,7 @@ Round 1, range c02bb9dbb552cb9d68341376c56d544af6537b9c..2ff56f5a134120156e92683
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T04
+- Next action: Obtain the scope decision for a separate Go 1.26.11 toolchain patch update, then rerun Go pre-flight before T04 RED.
 
 ## Approval / decision note — 2026-11-10
 
