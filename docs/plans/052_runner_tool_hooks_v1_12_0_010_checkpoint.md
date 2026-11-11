@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: After committing this bookkeeping, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, then have Jaron run it and return the gate run name for poll and T04 reviews.
-- Last completed phase/task/gate and timestamp: T04 pre-review sync and records checks PASS; host gate pending, 2026-11-11T15:33:31.769291+00:00
+- Next safe action: Commit this evidence, repin the safe host-gate script to final HEAD, and obtain a fresh passing host test log before T04 round-2 standards/design reviews.
+- Last completed phase/task/gate and timestamp: T04 round 1 CHANGES REQUESTED; formatting fix gates PASS; round 2 pending, 2026-11-11T15:56:19.526823+00:00
 
 ## Gate evidence
 
@@ -890,6 +890,32 @@ Implementation commit db8984b0d115becdf1e22e15bdeb3efc77ccbbd2 and evidence comm
 
 - Next action: After committing this bookkeeping, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, then have Jaron run it and return the gate run name for poll and T04 reviews.
 
+### T04 round 1 CHANGES REQUESTED; formatting fix gates PASS; round 2 pending
+
+- Gate: T04 round 1 CHANGES REQUESTED; formatting fix gates PASS; round 2 pending
+- Commands/results:
+Jaron ran the credential-isolated host wrapper at reviewed HEAD 24abcda9b9813727d9b161d5190e09d66f1b541c. factory-gate poll gate-test-24abcda9b981-20261111T153651Z exited 0, state exited 0, log /tmp/factory-gate-1001/gate-test-24abcda9b981-20261111T153651Z.log. Both reviewers read the log and confirmed HEAD, trusted test gate, base origin/master at 538632ea56da1c71f8f319076f221e4298148d3e, command go test -race ./..., exit 0 with all packages passing. At that same clean reviewed HEAD, records-stale-check 71d984c4e6ab8497924d2bd52f0721c82e861901 exited 0 (no TAGS.md/.mem/changelog.d targets) and docs-lint --since that base exited 0, docs-lint 1, 205 Markdown files, zero findings. Range 71d984c4e6ab8497924d2bd52f0721c82e861901..24abcda9b9813727d9b161d5190e09d66f1b541c contained 3 commits, 4 files, 405 insertions and 6 deletions.
+Round 1 standards Verdict: CHANGES REQUESTED. T04-STD-01, blocking: 'Required formatting gate was substituted, not satisfied'. Locations internal/provider/openrouter.go:120-121 and checkpoint:854. Offending historical checkpoint text: 'test-file gofmt/source-format-diff comparisons; identity/scope checks all exited 0.' The approved checklist requires empty changed-file gofmt -l and full touched-file formatting, including OpenRouter. Specific fix: 'Apply formatting to internal/provider/openrouter.go, obtain empty gofmt -l output for all three changed Go files, and append the actual gate result to the checkpoint without rewriting historical evidence.' No other findings and no nits. All four scoped files reviewed, no Review incomplete line.
+Round 1 design Verdict: CHANGES REQUESTED. B1, same blocking defect: 'Required touched-file formatting gate is not satisfied.' Locations internal/provider/openrouter.go:120-122 and checkpoint:854. Specific fix: 'format internal/provider/openrouter.go, correcting the two alignment lines in openrouterStreamChunk; obtain empty gofmt -l output for all three touched Go files; append accurate verification evidence to the checkpoint without rewriting historical entries. Supply the required HEAD-matched gate log for the resulting review commit.' No additional design/regression findings and no nits. All four scoped files reviewed, no incomplete line. This is one duplicated blocker across the review axes, not two different defects. No runtime behavior defect was found.
+Correction: prior source-format-drift equality did NOT satisfy the mandatory empty touched-file gofmt -l gate. The earlier record remains historical, not a passing formatting-acceptance claim. Fix commit d9eb9e2ff91083d628608eaf620a4f5f6e1ba521 changes only the two field-alignment lines in internal/provider/openrouter.go:120-121. Full gofmt -w ran and gofmt -l over internal/provider/openrouter.go, internal/provider/openrouter_test.go and pkg/runner/large_integer_args_test.go produced empty output, exit 0. With exact safe prefix/PATH already recorded, go list -m, go build ./..., go vet ./..., make lint (0 issues), make apidiff (toolchain notices only), git diff --check and git diff --exit-code HEAD -- go.mod go.sum all exited 0. Derived touched race package ./internal/provider passed, cached. Verification ran at HEAD 24abcda9b9813727d9b161d5190e09d66f1b541c with only the formatting patch uncommitted, and these verified bytes were committed as d9eb9e2. Command/output/status/exit evidence: /tmp/052-t04-format-preflight.log, -edit.log, -identity.log, -gates.log, -final.log (combined stdout/stderr). Tests, dependencies and original RED assertions were not changed.
+Independent explore verified the exact two-line diff, both replaced-source grep -F checks returned zero hits (exit 1), no module/test/checkpoint changes and git diff --check exit 0. Its read-only guard blocked sha256sum, so a separate general identity check verified the 3852-byte RED snapshot SHA-256 96dc82eb622e4e6827fe929aa025ce4820c4b8ceaa5384a4b0bc9b2945ae1921 and byte-identical current RED code; both complete test files, checkpoint, go.mod and go.sum matched HEAD bytes. Evidence /tmp/052-t04-format-independent-identity.log. All identity commands exited 0.
+factory-sync --base origin/master at d9eb9e2ff91083d628608eaf620a4f5f6e1ba521 exited 0: ahead 162, behind 0, shared_files [], conflicts [], synced true, no HEAD movement. The earlier host log does not apply to the changed HEAD. Next action requires a new credential-isolated host gate and round-2 reviews after this bookkeeping commit. T04 and milestone 010 remain unchecked. No push, deploy, Docker or paid/provider call ran.
+- HEAD commit SHA: `d9eb9e2ff91083d628608eaf620a4f5f6e1ba521`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit this evidence, repin the safe host-gate script to final HEAD, and obtain a fresh passing host test log before T04 round-2 standards/design reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -903,7 +929,7 @@ Implementation commit db8984b0d115becdf1e22e15bdeb3efc77ccbbd2 and evidence comm
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: After committing this bookkeeping, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, then have Jaron run it and return the gate run name for poll and T04 reviews.
+- Next action: Commit this evidence, repin the safe host-gate script to final HEAD, and obtain a fresh passing host test log before T04 round-2 standards/design reviews.
 
 ## Approval / decision note — 2026-11-10
 
