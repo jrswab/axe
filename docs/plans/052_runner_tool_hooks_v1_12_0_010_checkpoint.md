@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T05
-- Last completed phase/task/gate and timestamp: T04 round-2 standards APPROVED and design APPROVED; task accepted, 2026-11-11T16:19:48.556528+00:00
+- Next safe action: Commit this evidence, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, and obtain Jaron's passing host run name before T05 round-1 standards/design reviews.
+- Last completed phase/task/gate and timestamp: T05 RED/GREEN and independent verification PASS; host gate and reviews pending, 2026-11-11T16:34:18.945544+00:00
 
 ## Gate evidence
 
@@ -941,6 +941,31 @@ T04 is now accepted and checked. No code changed after the reviewed HEAD. This b
 
 - Next action: Implement T05
 
+### T05 RED/GREEN and independent verification PASS; host gate and reviews pending
+
+- Gate: T05 RED/GREEN and independent verification PASS; host gate and reviews pending
+- Commands/results:
+T05 review base is 80c36e4dc039233133acf197b0462c898f73ba44 (T04 acceptance commit). T05 implementation commit 2b4493a6727a12b4fb379290674550588c812bca contains exactly internal/provider/opencode.go, internal/provider/opencode_test.go and pkg/runner/large_integer_args_test.go. Production behavior changes only sendClaude response decode to DecodeJSON and flatten to FormatToolArgument at opencode.go:286,308; full-file gofmt also aligns fields at :504,651. GPT/chat, stream, replay, server error and public API behavior remain unchanged. Added TestLargeIntegerArgs_OpenCodeClaude_Buffered (43 cases), DecodeErrors (28 controls), BufferedHistory and StreamHistory (unsplit/split actual tool SSE) with nonempty prebuilt messages and independent exact history/replay/detail/hook/observer expectations.
+All go/gofmt/make commands used the recorded safe prefix env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= and unchanged checkpoint PATH. All task checks ran at parent HEAD 80c36e4dc039233133acf197b0462c898f73ba44 with the verified implementation uncommitted; the same verified bytes were then committed as 2b4493a. RED go test -v ./internal/provider exited 1, exact new Buffered test failed 20 intended digit-preservation cases and passed 23 unaffected controls with no unrelated failures. Full command/output/exit/HEAD/status: /tmp/052-t05-red.log. Immutable RED code snapshot /tmp/052-t05-red-test.txt is 4682 bytes, mode 0444, SHA-256 e4ccfd4a47139f120f697cc491c22159480f2282bb9ee08e900ee2917ec30caa; code and independent verifier confirmed current RED code byte-identical and original provider-test prefix (51736 bytes) plus runner-test prefix (39458 bytes) unchanged.
+GREEN go test -v ./internal/provider exited 0 (851 PASS entries); focused buffered/stream runner histories exited 0 with unsplit/split passing. Checklist touched-package derivation selected ./internal/provider and ./pkg/runner and both full go test -race suites passed (17.301s and 1.838s). Full-file gofmt -w then gofmt -l over all three touched Go files produced empty output, exit 0. git diff --check, go list -m, go build ./..., go vet ./..., make lint (0 issues), make apidiff (no incompatibilities, two toolchain-selection notices), git diff --exit-code HEAD -- go.mod go.sum, allowed scope/R9 checks and approved prerequisite exact-patch/module proofs all exited 0. Decoder/formatter mutation probes detected the intended failures and restored tests passed. Stream mutation was skipped because stream/drain are read-only T02 confirmation paths. Command/output/exit/HEAD/status evidence is in /tmp/052-t05-green-verbose.log, -focused.log, -race.log, -format.log, -gates.log, -scope.log and -final.log.
+Independent test VERIFY-GREEN repeated go test -v ./internal/provider, exit 0 (cached, 348 top-level tests, 851 PASS entries, no failures/skips; buffered 43/43 and decode controls 28/28). It repeated go test -race ./internal/provider ./pkg/runner, both full suites passed cached, without unauthorized count overrides. Full three-file gofmt -l was empty, diff/module checks passed, immutable snapshot/current code and original test prefixes matched, source diff was exactly the two Claude substitutions plus pure required alignment. All code-gate logs had matching command/exit/HEAD/status provenance. Evidence /tmp/052-t05-verify.log records full commands/output/status and archived task logs. These are precommit task checks, not a later HEAD-matched review or completion gate.
+factory-sync --base origin/master at 2b4493a6727a12b4fb379290674550588c812bca exited 0: ahead 165, behind 0, shared_files [], conflicts [], synced true; no HEAD movement. records-stale-check 80c36e4dc039233133acf197b0462c898f73ba44 exited 0: no TAGS.md, .mem or changelog.d targets. docs-lint --since 80c36e4dc039233133acf197b0462c898f73ba44 exited 0, header docs-lint 1, 205 Markdown files, zero findings. No source changed after independent verification. New HEAD-matched host test evidence and round-1 standards/design reviews remain required before T05 can be checked. The old T04 host log is not valid for T05. The orchestrator cannot set inherited run_script credentials, so the existing safe wrapper must be repinned after this bookkeeping commit and run by Jaron. T05 and milestone 010 remain unchecked. No push, deploy, Docker or paid/live-provider calls ran.
+- HEAD commit SHA: `2b4493a6727a12b4fb379290674550588c812bca`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit this evidence, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, and obtain Jaron's passing host run name before T05 round-1 standards/design reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -954,7 +979,7 @@ T04 is now accepted and checked. No code changed after the reviewed HEAD. This b
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T05
+- Next action: Commit this evidence, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, and obtain Jaron's passing host run name before T05 round-1 standards/design reviews.
 
 ## Approval / decision note — 2026-11-10
 
