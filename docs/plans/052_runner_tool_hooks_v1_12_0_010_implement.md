@@ -77,7 +77,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_Anthropic_Buffered`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_Anthropic_Buffered` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: none.
 
-- [ ] T04 — OpenRouter buffered/stream/history.
+- [x] T04 — OpenRouter buffered/stream/history.
   Budget: 30 min
   Primary R-IDs: R2, R7. Dependency: T02.
   Source: `internal/provider/openrouter.go: OpenRouter.Send` response decode 209, argument decode 235, flatten 237; read-only SendStream. Wire both DecodeJSON calls and formatter; outer server error, inner empty args. Existing float64 Cost remains typed float64 and keeps overflow semantics.

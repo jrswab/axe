@@ -23,14 +23,14 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T04
+- Current task: T05
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
 - T01c: `checked`
 - T02: `checked`
 - T03: `checked`
-- T04: `unchecked`
+- T04: `checked`
 - T05: `unchecked`
 - T06: `unchecked`
 - T07: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit this evidence, repin the safe host-gate script to final HEAD, and obtain a fresh passing host test log before T04 round-2 standards/design reviews.
-- Last completed phase/task/gate and timestamp: T04 round 1 CHANGES REQUESTED; formatting fix gates PASS; round 2 pending, 2026-11-11T15:56:19.526823+00:00
+- Next safe action: Implement T05
+- Last completed phase/task/gate and timestamp: T04 round-2 standards APPROVED and design APPROVED; task accepted, 2026-11-11T16:19:48.556528+00:00
 
 ## Gate evidence
 
@@ -916,6 +916,31 @@ factory-sync --base origin/master at d9eb9e2ff91083d628608eaf620a4f5f6e1ba521 ex
 
 - Next action: Commit this evidence, repin the safe host-gate script to final HEAD, and obtain a fresh passing host test log before T04 round-2 standards/design reviews.
 
+### T04 round-2 standards APPROVED and design APPROVED; task accepted
+
+- Gate: T04 round-2 standards APPROVED and design APPROVED; task accepted
+- Commands/results:
+Reviewed HEAD 69b8f597f1ad477c2f05835ef00f72a3e91066ee on runner-tool-hooks was clean. Jaron ran bash /tmp/052-runner-tool-hooks-safe-gate.sh and returned gate-test-69b8f597f1ad-20261111T160132Z with PASS. The orchestrator independently ran factory-gate poll gate-test-69b8f597f1ad-20261111T160132Z, exit 0, state exited 0, log /tmp/factory-gate-1001/gate-test-69b8f597f1ad-20261111T160132Z.log. Both reviewers read the current log and verified exact SHA, gate test, base origin/master at 538632ea56da1c71f8f319076f221e4298148d3e, trusted command go test -race ./..., exit 0, all packages passing. This host evidence applies to the reviewed HEAD, not a later bookkeeping commit.
+At reviewed HEAD, records-stale-check 71d984c4e6ab8497924d2bd52f0721c82e861901 exited 0: no TAGS.md, .mem, or changelog.d targets. docs-lint --since 71d984c4e6ab8497924d2bd52f0721c82e861901 exited 0 with header docs-lint 1, 205 Markdown files, zero findings. Full range 71d984c4e6ab8497924d2bd52f0721c82e861901..69b8f597f1ad477c2f05835ef00f72a3e91066ee measured 5 commits, 4 files, 433 insertions and 8 deletions.
+Round 2 standards/spec Verdict: APPROVED. Prior T04-STD-01 ('Required formatting gate was substituted, not satisfied') resolved by d9eb9e2's two alignment lines and the append-only correction in checkpoint:900. Required full three-file gofmt -l produced empty output and exit 0. Historical substituted gate remains identified as invalid history rather than rewritten. Both source decoders/formatter, outer/inner error handling, float64 cost, unchanged streaming, exact/unaffected/error packs, real buffered/stream histories, hooks/observers/details/replay, task evidence and immutable test identity were reviewed. No new findings. Nits: none. All four scoped files reviewed, no unreviewed files and no Review incomplete line. Reviewer ran no gate/test commands.
+Round 2 design Verdict: APPROVED. Prior B1 ('Required touched-file formatting gate is not satisfied') resolved. Full touched-file formatting evidence, immutable tests, numeric/error-boundary composition and all T04 design/regression paths pass inspection. No new blocking findings. Nits: none. All four scoped files reviewed, no unreviewed files and no Review incomplete line. Reviewer ran git diff --check 71d984c4e6ab8497924d2bd52f0721c82e861901..69b8f597f1ad477c2f05835ef00f72a3e91066ee, exit 0, and no tests/build/lint.
+T04 is now accepted and checked. No code changed after the reviewed HEAD. This bookkeeping transition does not complete milestone 010, whose remaining tasks T05-T13 are unchecked. Next task is T05. No push, deploy, Docker or paid/live-provider call ran. The safety wrapper's old pin remains historical and must be repinned only after the next final reviewed HEAD is committed.
+- HEAD commit SHA: `69b8f597f1ad477c2f05835ef00f72a3e91066ee`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T05
+
 ## Limitations & blockers
 
 - Limitations:
@@ -929,7 +954,7 @@ factory-sync --base origin/master at d9eb9e2ff91083d628608eaf620a4f5f6e1ba521 ex
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit this evidence, repin the safe host-gate script to final HEAD, and obtain a fresh passing host test log before T04 round-2 standards/design reviews.
+- Next action: Implement T05
 
 ## Approval / decision note — 2026-11-10
 
