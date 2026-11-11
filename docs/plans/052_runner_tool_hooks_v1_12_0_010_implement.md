@@ -59,7 +59,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
 
 ### Runner drain switch before native emitter removals
 
-- [ ] T02 — Switch drain and prove OpenAI real stream/history.
+- [x] T02 — Switch drain and prove OpenAI real stream/history.
   Budget: 30 min
   Primary R-IDs: R3, R7, R8. Dependency: T01b.
   Source: `pkg/runner/run.go: drainEventStream` lines 884-976, DecodeJSON call at 936 and FormatToolArgument at 938. Leave API and history propagation unchanged.

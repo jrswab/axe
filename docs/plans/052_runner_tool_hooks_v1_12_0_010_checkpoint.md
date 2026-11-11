@@ -23,12 +23,12 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T02
+- Current task: T03
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
 - T01c: `checked`
-- T02: `unchecked`
+- T02: `checked`
 - T03: `unchecked`
 - T04: `unchecked`
 - T05: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit checkpoint, factory-sync, repin safe gate script, T02 round-2 review
-- Last completed phase/task/gate and timestamp: Correction (B2): evidence fields of two earlier entries, 2026-11-11T03:06:58.783509+00:00
+- Next safe action: Implement T03 (Anthropic buffered, stream, and history; stream case is confirmation after the T02 drain switch, checklist :73-78)
+- Last completed phase/task/gate and timestamp: T02 round-2 review PASS (standards APPROVED, design APPROVED WITH NITS), 2026-11-11T14:20:10.707674+00:00
 
 ## Gate evidence
 
@@ -737,6 +737,27 @@ Correction for T02 round-1 standards finding B2. History is not edited in place.
 
 - Next action: Commit checkpoint, factory-sync, repin safe gate script, T02 round-2 review
 
+### T02 round-2 review PASS (standards APPROVED, design APPROVED WITH NITS)
+
+- Gate: T02 round-2 review PASS (standards APPROVED, design APPROVED WITH NITS)
+- Commands/results:
+Round 2, range dbcc4fed9e3bf7232631f41aedd0fd3c8083c275..00135e193bba38504d956da521c0756c777e7899. Test evidence: /tmp/factory-gate-1001/gate-test-00135e193bba-20261111T140123Z.log (factory-gate test gate, go test -race ./..., HEAD 00135e19, poll exit 0, run by Jaron through /tmp/052-runner-tool-hooks-safe-gate.sh). Records: records-stale-check dbcc4fed -> no TAGS.md, .mem/, or changelog.d/; docs-lint 1 --since dbcc4fed -> PASS, 205 Markdown files, 0 findings. Standards verdict: APPROVED; all round-1 findings (F1, F3/B3, F4, B2, N1-N5) resolved; no new findings. Design verdict: APPROVED WITH NITS; all round-1 findings resolved except one nit, verbatim: 'N5 (standards) - nit: docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md:702 Append the actual checkpoint invocation with --task T02, or explicitly record that the earlier invocation was omitted. Do not reconstruct a command as historical fact or edit earlier entries.' Nit fix (this entry): the two factory-checkpoint invocations that wrote the entries 'T02 round-1 review fixes verification PASS (commit 86e009bc)' and 'Correction (B2)' were run by the orchestrator through run_script with the args --phase execute --task T02, plus --taskstate for T01a..T13 (T01a-T01c checked, T02-T13 unchecked), --gate, --result-text, --next, and --relevant-work committed. No earlier entry was edited. Per Review verdicts, the nit fix needs no re-review; docs-lint runs on the nit commit. T02 is accepted.
+- HEAD commit SHA: `00135e193bba38504d956da521c0756c777e7899`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T03 (Anthropic buffered, stream, and history; stream case is confirmation after the T02 drain switch, checklist :73-78)
+
 ## Limitations & blockers
 
 - Limitations:
@@ -750,7 +771,7 @@ Correction for T02 round-1 standards finding B2. History is not edited in place.
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit checkpoint, factory-sync, repin safe gate script, T02 round-2 review
+- Next action: Implement T03 (Anthropic buffered, stream, and history; stream case is confirmation after the T02 drain switch, checklist :73-78)
 
 ## Approval / decision note — 2026-11-10
 
