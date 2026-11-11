@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit this gate evidence, sync origin/master, prepare a safe HEAD-pinned host test gate, then run T04 standards/design reviews.
-- Last completed phase/task/gate and timestamp: T04 RED/GREEN and independent VERIFY-GREEN PASS; review pending, 2026-11-11T15:32:49.157247+00:00
+- Next safe action: After committing this bookkeeping, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, then have Jaron run it and return the gate run name for poll and T04 reviews.
+- Last completed phase/task/gate and timestamp: T04 pre-review sync and records checks PASS; host gate pending, 2026-11-11T15:33:31.769291+00:00
 
 ## Gate evidence
 
@@ -869,6 +869,27 @@ Independent test VERIFY-GREEN at same parent HEAD/uncommitted bytes confirmed th
 
 - Next action: Commit this gate evidence, sync origin/master, prepare a safe HEAD-pinned host test gate, then run T04 standards/design reviews.
 
+### T04 pre-review sync and records checks PASS; host gate pending
+
+- Gate: T04 pre-review sync and records checks PASS; host gate pending
+- Commands/results:
+Implementation commit db8984b0d115becdf1e22e15bdeb3efc77ccbbd2 and evidence commit b115fdb599e2060a1939ae7a807678a1213cd172 are committed. factory-sync --base origin/master at b115fdb599e2060a1939ae7a807678a1213cd172 exited 0: branch runner-tool-hooks, head_before b115fdb599e2060a1939ae7a807678a1213cd172, ahead 160, behind 0, shared_files [], conflicts [], synced true; no HEAD movement. records-stale-check 71d984c4e6ab8497924d2bd52f0721c82e861901 exited 0: No TAGS.md, .mem/, or changelog.d/ found; nothing to check. docs-lint --since 71d984c4e6ab8497924d2bd52f0721c82e861901 exited 0 with header docs-lint 1: 205 Markdown files, 0 findings, 0 outside scope. No source changed since independent verification. T04 review range begins 71d984c4e6ab8497924d2bd52f0721c82e861901. HEAD-matched full host test evidence is required before standards/design reviews. The orchestrator cannot set run_script's inherited credential environment. The existing safe script must be pinned to the post-bookkeeping HEAD and run by Jaron on the host. This prevents live credential use and preserves the private XDG cache isolation. No host gate, code review, completion gate, push or deploy ran. T04 remains unchecked and the milestone remains unchecked.
+- HEAD commit SHA: `b115fdb599e2060a1939ae7a807678a1213cd172`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: After committing this bookkeeping, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, then have Jaron run it and return the gate run name for poll and T04 reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -882,7 +903,7 @@ Independent test VERIFY-GREEN at same parent HEAD/uncommitted bytes confirmed th
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit this gate evidence, sync origin/master, prepare a safe HEAD-pinned host test gate, then run T04 standards/design reviews.
+- Next action: After committing this bookkeeping, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, then have Jaron run it and return the gate run name for poll and T04 reviews.
 
 ## Approval / decision note — 2026-11-10
 
