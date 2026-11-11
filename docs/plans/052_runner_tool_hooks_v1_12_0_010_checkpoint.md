@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: none
+- Current task: T02
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Review T02 commit 4c9bb51c (design-bearing per-task review round 1)
-- Last completed phase/task/gate and timestamp: T02 RED complete and GREEN verification PASS, 2026-11-10T20:18:47.676320+00:00
+- Next safe action: Commit checkpoint, factory-sync, repin safe gate script, T02 round-2 review
+- Last completed phase/task/gate and timestamp: Correction (B2): evidence fields of two earlier entries, 2026-11-11T03:06:58.783509+00:00
 
 ## Gate evidence
 
@@ -695,6 +695,48 @@ RED (test agent): TestLargeIntegerArgs_OpenAI_StreamHistory appended at pkg/runn
 
 - Next action: Review T02 commit 4c9bb51c (design-bearing per-task review round 1)
 
+### T02 round-1 review fixes verification PASS (commit 86e009bc)
+
+- Gate: T02 round-1 review fixes verification PASS (commit 86e009bc)
+- Commands/results:
+Fixes for T02 round-1 findings F1, F4, N1-N5 committed as 86e009bc0bbc27e59a6d40d79b0f126c3a3e2d8a (test and plan files only; no production edits). A general agent verified the identical uncommitted content at HEAD 2d87c9fa before the commit; factory-commit reported remaining_changes [], so the committed tree matches. Env: env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= with the checkpoint PATH. Results: git diff covers F1 (large_integer_args_test.go:217,222-226), N1 (stream_test.go:330-336), N2 (:363), N3 (stream_test.go:303-321), N4 (large_integer_args_test.go:18-25), N5 (:377-390). go test -v ./pkg/runner -run TestLargeIntegerArgs exit 0 (BufferedHistory, StreamHistory 3 subtests, DrainErrors 34 subtests PASS). go test -race ./pkg/runner exit 0. gofmt -l empty; git diff --check exit 0. go list -m exit 0 (github.com/jrswab/axe); go build ./... exit 0; go vet ./... exit 0. make lint exit 0, 0 issues. make apidiff exit 0, no incompatibilities (resolves F3/B3). git diff --quiet go.mod go.sum exit 0. spec-lint implement.md exit 0, 17 citations, 0 findings; citations at implement.md:66,200 re-read and correct. Earlier /tmp/t02-apidiff-2d87c9fa.log and /tmp/t02-fix-*.log lack provenance and are not evidence. Logs: /tmp/t02-verify-1..8.log, /tmp/t02-verify-final.log. Remaining: B2 correction gate; T02 round-2 review.
+- HEAD commit SHA: `86e009bc0bbc27e59a6d40d79b0f126c3a3e2d8a`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write B2 correction gate, commit checkpoint, factory-sync, repin safe gate script, T02 round-2 review
+
+### Correction (B2): evidence fields of two earlier entries
+
+- Gate: Correction (B2): evidence fields of two earlier entries
+- Commands/results:
+Correction for T02 round-1 standards finding B2. History is not edited in place. Two earlier entries, 'Milestone sync refusal (tracked changes)' and 'Restart validation after handoff', record HEAD dbcc4fed and its status/stash fields. Both events actually ran at HEAD 462c8725b89d50dfb26db464e2006c9a1ee0c4d0 with four dirty paths (handoff stash 0f92050a, untracked blob f0d66f94), and the T01c work was uncommitted at that time. The orchestrator committed T01c (dbcc4fed) before it wrote those two entries, so their appended HEAD, status, and stash fields describe the tree when each entry was written, not when each event ran. The result text of both entries is correct for the event time.
+- HEAD commit SHA: `86e009bc0bbc27e59a6d40d79b0f126c3a3e2d8a`
+- Relevant work: `committed` — stash ref `f2fead6286e17558c929294c10d3c7fcaa5d4665` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit checkpoint, factory-sync, repin safe gate script, T02 round-2 review
+
 ## Limitations & blockers
 
 - Limitations:
@@ -708,7 +750,7 @@ RED (test agent): TestLargeIntegerArgs_OpenAI_StreamHistory appended at pkg/runn
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Review T02 commit 4c9bb51c (design-bearing per-task review round 1)
+- Next action: Commit checkpoint, factory-sync, repin safe gate script, T02 round-2 review
 
 ## Approval / decision note — 2026-11-10
 
