@@ -69,7 +69,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
 
 ### Remaining real-provider slices
 
-- [ ] T03 — Anthropic buffered/stream/history and real-decode replay.
+- [x] T03 — Anthropic buffered/stream/history and real-decode replay.
   Budget: 30 min
   Primary R-IDs: R2, R6, R7. Dependency: T02.
   Source: `internal/provider/anthropic.go: Anthropic.Send` decode 305/flatten 331; read-only `Anthropic.SendStream` and `convertToAnthropicMessages` replay 160-165. DecodeJSON then FormatToolArgument; outer errors remain server ProviderError. MiniMax inherits this route.

@@ -23,13 +23,13 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T03
+- Current task: T04
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
 - T01c: `checked`
 - T02: `checked`
-- T03: `unchecked`
+- T03: `checked`
 - T04: `unchecked`
 - T05: `unchecked`
 - T06: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Repin safe gate script to the T03 docs commit, run gate via Jaron, then T03 round-1 review (range c02bb9db..HEAD)
-- Last completed phase/task/gate and timestamp: T03 RED/GREEN verification PASS (commit bf11aa59); review pending, 2026-11-11T14:29:19.201689+00:00
+- Next safe action: Implement T04
+- Last completed phase/task/gate and timestamp: T03 round-1 review PASS (standards APPROVED, design APPROVED), 2026-11-11T14:56:48.538201+00:00
 
 ## Gate evidence
 
@@ -779,6 +779,27 @@ T03 committed as bf11aa5969c3177ce8ea2b44e8b86fff095ec7c7 on base c02bb9db. Env:
 
 - Next action: Repin safe gate script to the T03 docs commit, run gate via Jaron, then T03 round-1 review (range c02bb9db..HEAD)
 
+### T03 round-1 review PASS (standards APPROVED, design APPROVED)
+
+- Gate: T03 round-1 review PASS (standards APPROVED, design APPROVED)
+- Commands/results:
+Round 1, range c02bb9dbb552cb9d68341376c56d544af6537b9c..2ff56f5a134120156e92683858b2bca4dc69d477. Test evidence: /tmp/factory-gate-1001/gate-test-2ff56f5a1341-20261111T143103Z.log (factory-gate test gate, go test -race ./..., HEAD 2ff56f5a, poll exit 0, run by Jaron through /tmp/052-runner-tool-hooks-safe-gate.sh). Base sync before gate: factory-sync --base origin/master exit 0, behind 0, no merge. Records: records-stale-check c02bb9db -> no removed or renamed names; docs-lint 1 --since c02bb9db -> PASS, 205 Markdown files, 0 findings. Standards verdict: APPROVED, no findings or nits. Design verdict: APPROVED, no findings or nits; R6 replay coverage judged adequate collectively (standalone replay plus history follow-up requests). T03 accepted.
+- HEAD commit SHA: `2ff56f5a134120156e92683858b2bca4dc69d477`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T04
+
 ## Limitations & blockers
 
 - Limitations:
@@ -792,7 +813,7 @@ T03 committed as bf11aa5969c3177ce8ea2b44e8b86fff095ec7c7 on base c02bb9db. Env:
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Repin safe gate script to the T03 docs commit, run gate via Jaron, then T03 round-1 review (range c02bb9db..HEAD)
+- Next action: Implement T04
 
 ## Approval / decision note — 2026-11-10
 
