@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T04
-- Last completed phase/task/gate and timestamp: Approved prerequisite toolchain patch and Go pre-flight PASS, 2026-11-11T15:22:47.006795+00:00
+- Next safe action: Commit this gate evidence, sync origin/master, prepare a safe HEAD-pinned host test gate, then run T04 standards/design reviews.
+- Last completed phase/task/gate and timestamp: T04 RED/GREEN and independent VERIFY-GREEN PASS; review pending, 2026-11-11T15:32:49.157247+00:00
 
 ## Gate evidence
 
@@ -845,6 +845,30 @@ Commit e5093ecdfc362fac3fb7b1091c433ad217dd480a appends the precise approved pre
 
 - Next action: Implement T04
 
+### T04 RED/GREEN and independent VERIFY-GREEN PASS; review pending
+
+- Gate: T04 RED/GREEN and independent VERIFY-GREEN PASS; review pending
+- Commands/results:
+T04 review base: 71d984c4e6ab8497924d2bd52f0721c82e861901. Commit db8984b0d115becdf1e22e15bdeb3efc77ccbbd2 contains the verified T04 implementation/tests in exactly internal/provider/openrouter.go, internal/provider/openrouter_test.go, pkg/runner/large_integer_args_test.go (357 insertions, 3 deletions). OpenRouter.Send uses DecodeJSON at both buffered decode boundaries and FormatToolArgument for flattening; server outer error, inner empty-map fallback, float64 cost and SendStream stay unchanged. Added TestLargeIntegerArgs_OpenRouter_Buffered (31 subtests), TestLargeIntegerArgs_OpenRouter_DecodeErrors (36), BufferedHistory and StreamHistory (unsplit/split actual SSE) with prebuilt messages, history/replay/details/hooks/observer assertions.
+Commands used the exact safe prefix/PATH recorded in the prior prerequisite event: env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= and unchanged PATH, no live provider calls. RED at HEAD 71d984c4 with only openrouter_test.go uncommitted: go test -v ./internal/provider exited 1, exact new buffered test failed 11 digit-preservation cases, 20 unaffected controls passed, no existing provider test failed. /tmp/052-t04-red.log records full command/stdout/stderr/exit/HEAD/status. Immutable added-code snapshot /tmp/052-t04-red-test.txt SHA-256 96dc82eb622e4e6827fe929aa025ce4820c4b8ceaa5384a4b0bc9b2945ae1921 (3852 bytes) matches current RED code byte-for-byte.
+GREEN at HEAD 71d984c4 with the three scoped paths uncommitted: go list -m; go test -v ./internal/provider; go test -v ./pkg/runner -run '^TestLargeIntegerArgs_OpenRouter_(BufferedHistory|StreamHistory)$'; checklist touched-package derivation followed by go test -race ./internal/provider ./pkg/runner; go build ./...; go vet ./...; make lint (0 issues); make apidiff (no incompatibilities, toolchain-selection notices only); git diff --check; git diff --exit-code HEAD -- go.mod go.sum; test-file gofmt/source-format-diff comparisons; identity/scope checks all exited 0. /tmp/052-t04-green-gates.log and /tmp/052-t04-green-final.log retain commands, full outputs, exit and HEAD/status. Buffered formatter and invalid-inner-argument mutation probes failed as expected and passed after restoration. Stream mutation was not run because stream/shared drain are read-only and the stream is T02 confirmation only.
+Independent test VERIFY-GREEN at same parent HEAD/uncommitted bytes confirmed the immutable RED test and pre-existing test-file prefixes unchanged, source exactly two decoder and one formatter substitutions, and only the three allowed paths modified. go test -v ./internal/provider exited 0 (346 top-level tests, 778 PASS entries, no skips; buffered 31/31 and errors 36/36); go test -race ./internal/provider ./pkg/runner exited 0 for both full package suites. Both independent reruns used valid cached results, without unauthorized count overrides. git diff --check, module-diff, approved prerequisite ancestry/exact patch/module proofs and code identity assertions all exited 0. All 20 prior code-task command records have explicit matching HEAD/status and zero exits. /tmp/052-t04-verify.log is the independent evidence. These exact bytes were then committed as db8984b; no claim that uncommitted checks ran at the later commit SHA. Full-repository race/host test gate, standards/design reviews and completion gate remain pending. No push/deploy/Docker/paid call occurred. T04 and milestone 010 remain unchecked.
+- HEAD commit SHA: `db8984b0d115becdf1e22e15bdeb3efc77ccbbd2`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit this gate evidence, sync origin/master, prepare a safe HEAD-pinned host test gate, then run T04 standards/design reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -858,7 +882,7 @@ Commit e5093ecdfc362fac3fb7b1091c433ad217dd480a appends the precise approved pre
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T04
+- Next action: Commit this gate evidence, sync origin/master, prepare a safe HEAD-pinned host test gate, then run T04 standards/design reviews.
 
 ## Approval / decision note — 2026-11-10
 
