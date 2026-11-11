@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Prepare T07 HEAD-matched safe host gate then round-1 standards/spec and design reviews
-- Last completed phase/task/gate and timestamp: T07 RED and independent GREEN PASS; reviews pending, 2026-11-11T19:27:51.520091+00:00
+- Next safe action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T07 round-1 reviews
+- Last completed phase/task/gate and timestamp: T07 pre-review sync and records checks PASS; safe host gate pending, 2026-11-11T19:28:13.929980+00:00
 
 ## Gate evidence
 
@@ -1096,6 +1096,27 @@ T07 implementation59fb832578d751368cbee975c15236d77025f3c4, taskbase08af134d7824
 
 - Next action: Prepare T07 HEAD-matched safe host gate then round-1 standards/spec and design reviews
 
+### T07 pre-review sync and records checks PASS; safe host gate pending
+
+- Gate: T07 pre-review sync and records checks PASS; safe host gate pending
+- Commands/results:
+At clean HEAD ff3fe631e1df18cb485159b6642f8c2d0aaf5edd, factory-sync --base origin/master exited 0. JSON: branch runner-tool-hooks, base origin/master, head_before ff3fe631e1df18cb485159b6642f8c2d0aaf5edd, ahead 174, behind 0, shared_files [], conflicts [], synced true. HEAD did not change. records-stale-check 08af134d78240c3e0a6729f40daf285e72adbbd7 exited 0: no TAGS.md, .mem/, or changelog.d/ targets. docs-lint --since 08af134d78240c3e0a6729f40daf285e72adbbd7 exited 0. Header: docs-lint 1: checks task-id, stale-milestone, broken-mem-link, stale-citation; changed since 08af134d78240c3e0a6729f40daf285e72adbbd7 (merge-base 08af134d7824). Result: 205 Markdown files, 0 findings, 0 outside scope. T07 review round 1 is pending. Review base is 08af134d78240c3e0a6729f40daf285e72adbbd7. After this bookkeeping commit and clean sync, repin only /tmp/052-runner-tool-hooks-safe-gate.sh to the final clean HEAD, retaining all safety checks. Jaron must execute that wrapper because the host factory-gate inherits credentials. Do not run an unscrubbed gate. Independently poll its result and require exit 0 with matching HEAD. Then rerun records checks and dispatch standards/spec and design reviews in parallel. T07 and milestone 010 remain unchecked. No T08 work, paid provider call, push or deploy occurred.
+- HEAD commit SHA: `ff3fe631e1df18cb485159b6642f8c2d0aaf5edd`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T07 round-1 reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1109,7 +1130,7 @@ T07 implementation59fb832578d751368cbee975c15236d77025f3c4, taskbase08af134d7824
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Prepare T07 HEAD-matched safe host gate then round-1 standards/spec and design reviews
+- Next action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T07 round-1 reviews
 
 ## Approval / decision note — 2026-11-10
 
