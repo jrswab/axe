@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T07
-- Last completed phase/task/gate and timestamp: T06 round-1 standards APPROVED and design APPROVED; task accepted, 2026-11-11T19:16:43.412265+00:00
+- Next safe action: Prepare T07 HEAD-matched safe host gate then round-1 standards/spec and design reviews
+- Last completed phase/task/gate and timestamp: T07 RED and independent GREEN PASS; reviews pending, 2026-11-11T19:27:51.520091+00:00
 
 ## Gate evidence
 
@@ -1075,6 +1075,27 @@ Reviewed HEAD aee590bcaabe35f7684f637319e84628ab7bd727, clean runner-tool-hooks.
 
 - Next action: Implement T07
 
+### T07 RED and independent GREEN PASS; reviews pending
+
+- Gate: T07 RED and independent GREEN PASS; reviews pending
+- Commands/results:
+T07 implementation59fb832578d751368cbee975c15236d77025f3c4, taskbase08af134d78240c3e0a6729f40daf285e72adbbd7. Only3production substitutions in sendChatCompletions: outer/inner DecodeJSON, FormatToolArgument. Both server ProviderError prefixes and nil responses unchanged. Modified internal/provider/opencode.go,internal/provider/opencode_test.go,pkg/runner/large_integer_args_test.go only. RED at base with provider test modified: safe env exact go test -v ./internal/provider exit1 solely22 intended numeric failures32 controls pass, log/tmp/052-t07-red.log,evidence/tmp/052-t07-red-evidence.txt. Snapshot/tmp/052-t07-red-test.txt0444 6551bytes SHA256ca05beb613bfc1036aac60a200e9d95408b1f64e6efd768249d954b6bc6705ba unchanged in final test. Code and independent GREEN at base with3filesmodified: exact provider command exit0 54/54Buffered35/35DecodeErrors,no skips,notcached16.095s; focused runner OpenCodeChat buffered/stream tests exit0notcached0.020s, buffered plus unsplit/splitSSE actual Run asserts34arguments histories,map-string replay,hooks,observer,details,JSONhistory/JSONdetails. Exact checklist derivation selected./internal/provider ./pkg/runner; go test -race ./internal/provider ./pkg/runner exit0bothcacheddisclosed. Fullfilegofmt-l all3empty,gitdiff--check0,go list-m0 github.com/jrswab/axe,go build ./...0,go vet ./...0,make lint0 0issues,make apidiff0 no incompatibility two toolchainselectionnotices,moduleunchanged0. Independent exact approvedpin ancestry/wholepatch/bothmodulecomparisons/R9R10scopeproofs all0. Code logs/tmp/052-t07-{focused-final,gates-final,scope,final-state}.log. Independent evidence/tmp/052-t07-independent-*.log and/tmp/052-t07-independent-verify.py retains fullcommands,stdout/stderr,exits,HEAD/status,hashes. EVERYGo/gofmt/make command unsetGOTOOLCHAIN,clearedANTHROPIC_API_KEY/AXE_ANTHROPIC_BASE_URL,used exact approvedPATH. Finalhashes opencode.go4152758b39e53df3612237b617bae85f20d1f9d77728ba7673a3b174d1e76754;opencode_test.godbee6e8050b2f4ba20a944fca2155dc56f1b36cc6f32639081860e316c42ef7a;runnerlarge_integer_args_test.goa19371243805359ef7ad1731f9f9cbb2a4f6a2e3c85ec48e2c443ffb9e569aa3. All preexisting tests and production stream/replay bytes unchanged. No mutation. Verifieduncommittedbytesnowcommittedin59fb832,gitclean. No fullrace./...,hostgate,reviews,milestonecompletion,paidcall,push/deploy/DockerorT08 work. T07 design-bearing and remains unchecked pending safe HEADmatched gate and standards/spec plus designreviews. Taskreviewbase08af134d78240c3e0a6729f40daf285e72adbbd7,milestonereviewbase8a351c8e475ab1bfdc52000f0593f1e6ed7385ec unchanged.
+- HEAD commit SHA: `59fb832578d751368cbee975c15236d77025f3c4`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Prepare T07 HEAD-matched safe host gate then round-1 standards/spec and design reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1088,7 +1109,7 @@ Reviewed HEAD aee590bcaabe35f7684f637319e84628ab7bd727, clean runner-tool-hooks.
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T07
+- Next action: Prepare T07 HEAD-matched safe host gate then round-1 standards/spec and design reviews
 
 ## Approval / decision note — 2026-11-10
 
