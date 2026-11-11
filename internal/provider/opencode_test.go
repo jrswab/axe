@@ -1642,6 +1642,116 @@ func TestLargeIntegerArgs_OpenCodeClaude_Buffered(t *testing.T) {
 	}
 }
 
+func TestLargeIntegerArgs_OpenCodeResponses_Buffered(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "million", raw: `1000000`, want: "1000000"},
+		{name: "negative_million", raw: `-1000000`, want: "-1000000"},
+		{name: "non_round_integer", raw: `1234567`, want: "1234567"},
+		{name: "negative_non_round_integer", raw: `-1234567`, want: "-1234567"},
+		{name: "precise", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "negative_precise", raw: `-9007199254740993`, want: "-9007199254740993"},
+		{name: "exponent", raw: `1e6`, want: "1000000"},
+		{name: "negative_exponent", raw: `-1e6`, want: "-1000000"},
+		{name: "decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative_decimal", raw: `-1000000.0`, want: "-1000000"},
+		{name: "precise_decimal", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "negative_precise_decimal", raw: `-9007199254740993.0`, want: "-9007199254740993"},
+		{name: "precise_exponent", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "negative_precise_exponent", raw: `-90071992547409930e-1`, want: "-9007199254740993"},
+		{name: "beyond_int64", raw: `99999999999999999999999`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64", raw: `-99999999999999999999999`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_decimal", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_decimal", raw: `-99999999999999999999999.0`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_exponent", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_exponent", raw: `-999999999999999999999990e-1`, want: "-99999999999999999999999"},
+		// 10^308 has 309 digits, is finite, and is inside the approved cap.
+		{name: "eligible_309_digits", raw: `1e308`, want: "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+		{name: "negative_eligible_309_digits", raw: `-1e308`, want: "-100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+		{name: "small", raw: `999999`, want: "999999"},
+		{name: "negative_small", raw: `-999999`, want: "-999999"},
+		{name: "small_decimal", raw: `999999.0`, want: "999999"},
+		{name: "negative_small_decimal", raw: `-999999.0`, want: "-999999"},
+		{name: "zero", raw: `0`, want: "0"},
+		{name: "decimal_zero", raw: `0.0`, want: "0"},
+		{name: "negative_zero", raw: `-0`, want: "-0"},
+		{name: "negative_decimal_zero", raw: `-0.0`, want: "-0"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "negative_fraction", raw: `-1.5`, want: "-1.5"},
+		{name: "rounded_threshold", raw: `999999.99999999999`, want: "1e+06"},
+		{name: "negative_rounded_threshold", raw: `-999999.99999999999`, want: "-1e+06"},
+		{name: "rounded_fraction", raw: `1000000.00000000001`, want: "1e+06"},
+		{name: "negative_rounded_fraction", raw: `-1000000.00000000001`, want: "-1e+06"},
+		{name: "huge_negative_exponent", raw: `1e-1000000000`, want: "0"},
+		{name: "negative_huge_negative_exponent", raw: `-1e-1000000000`, want: "-0"},
+		{name: "zero_huge_exponent", raw: `0e1000000000`, want: "0"},
+		{name: "negative_zero_huge_exponent", raw: `-0e1000000000`, want: "-0"},
+		// Approved exceptional tokens A/B: exact normalization would violate
+		// legacy ParseFloat equality / the 309-digit cap. No token-length limit.
+		{name: "exception_A_parse_equality_guard", raw: "1" + strings.Repeat("0", 100006) + "e-100000", want: "0"},
+		{name: "exception_B_digit_cap_guard", raw: "0." + strings.Repeat("0", 9999) + "1e100000", want: "1"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "string_integer", raw: `"1000000"`, want: "1000000"},
+		{name: "string_exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "string_decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "string_precise", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "boolean_true", raw: `true`, want: "true"},
+		{name: "boolean_false", raw: `false`, want: "false"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "object_exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "object_integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "array", raw: `[1.50]`, want: "[1.5]"},
+		{name: "recursive_collection", raw: `{"a":[1000000,1.50]}`, want: "map[a:[1e+06 1.5]]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Quote only the wire arguments string; never decode/re-encode its
+			// numeric tokens through float64 or derive expectations from a formatter.
+			arguments, err := json.Marshal(`{"n":` + tt.raw + `}`)
+			if err != nil {
+				t.Fatalf("encode arguments string: %v", err)
+			}
+			body := `{"model":"gpt-5","status":"completed","output":[{"type":"function_call","id":"call_1","name":"example","arguments":` + string(arguments) + `}],"usage":{"input_tokens":10,"output_tokens":5}}`
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != "/v1/responses" {
+					t.Errorf("request = %s %s, want POST /v1/responses", r.Method, r.URL.Path)
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, body)
+			}))
+			defer server.Close()
+			o, err := NewOpenCode("test-key", WithOpenCodeBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("NewOpenCode: %v", err)
+			}
+
+			resp, err := o.Send(context.Background(), &Request{
+				Model:    "gpt-5",
+				Messages: []Message{{Role: "user", Content: "Read values"}},
+			})
+
+			if err != nil {
+				t.Fatalf("Send: %v", err)
+			}
+			if resp == nil {
+				t.Fatal("Send returned nil response without error")
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+			}
+			if got, ok := resp.ToolCalls[0].Arguments["n"]; !ok || got != tt.want {
+				t.Errorf("Arguments[n] for raw %s = %q (present=%t), want %q", tt.raw, got, ok, tt.want)
+			}
+		})
+	}
+}
+
 func TestLargeIntegerArgs_OpenCodeClaude_DecodeErrors(t *testing.T) {
 	bodyFor := func(input string) string {
 		return `{"content":[{"type":"tool_use","id":"toolu_1","name":"example","input":` + input + `}],"usage":{"input_tokens":10,"output_tokens":5}}`
@@ -1698,6 +1808,101 @@ func TestLargeIntegerArgs_OpenCodeClaude_DecodeErrors(t *testing.T) {
 				var pe *ProviderError
 				if !errors.As(err, &pe) || pe.Category != ErrCategoryServer {
 					t.Fatalf("Send error = %v, want server ProviderError", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Send: %v", err)
+			}
+			if len(resp.ToolCalls) != 1 || resp.InputTokens != tt.wantTokens {
+				t.Fatalf("response = %+v, want one tool call and %d input tokens", resp, tt.wantTokens)
+			}
+			got := resp.ToolCalls[0].Arguments
+			if len(got) != len(tt.want) {
+				t.Errorf("Arguments = %v, want %v", got, tt.want)
+			}
+			for key, want := range tt.want {
+				if value, ok := got[key]; !ok || value != want {
+					t.Errorf("Arguments[%s] = %q (present=%t), want %q", key, value, ok, want)
+				}
+			}
+			for _, value := range got {
+				if strings.Contains(value, "+Inf") {
+					t.Errorf("Arguments contain +Inf: %v", got)
+				}
+			}
+		})
+	}
+}
+
+func TestLargeIntegerArgs_OpenCodeResponses_DecodeErrors(t *testing.T) {
+	bodyFor := func(arguments string) string {
+		quoted, err := json.Marshal(arguments)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return `{"model":"gpt-5","output":[{"type":"function_call","id":"call_1","name":"example","arguments":` + string(quoted) + `}],"usage":{"input_tokens":10}}`
+	}
+	base := bodyFor(`{"n":"text"}`)
+	overflow := "1" + strings.Repeat("0", 399)
+	tests := []struct {
+		name, body, errorPrefix string
+		want                    map[string]string
+		wantTokens              int
+	}{
+		{name: "outer_malformed", body: `{"output":`, errorPrefix: "failed to parse response:"},
+		{name: "outer_trailing_value", body: base + `{}`, errorPrefix: "failed to parse response:"},
+		{name: "outer_trailing_junk", body: base + `junk`, errorPrefix: "failed to parse response:"},
+		{name: "outer_usage_overflow", body: `{"usage":{"input_tokens":1e400},` + base[1:], errorPrefix: "failed to parse response:"},
+		{name: "outer_usage_400_digits", body: `{"usage":{"output_tokens":` + overflow + `},` + base[1:], errorPrefix: "failed to parse response:"},
+		{name: "outer_duplicate_overflow", body: `{"usage":{"input_tokens":1e400,"input_tokens":1},` + base[1:], errorPrefix: "failed to parse response:"},
+		{name: "outer_overwritten_subtree_overflow", body: `{"usage":{"input_tokens":1e400},` + base[1:], errorPrefix: "failed to parse response:"},
+		{name: "outer_duplicate_success", body: `{"output":[{"type":"function_call","arguments":"{}"}],"usage":{"input_tokens":2,"input_tokens":7}}`, want: map[string]string{}, wantTokens: 7},
+		{name: "outer_subtree_success", body: `{"output":[{"type":"function_call","arguments":"{}"}],"usage":{"input_tokens":2},"usage":{"input_tokens":7}}`, want: map[string]string{}, wantTokens: 7},
+		{name: "outer_unknown_scalar_overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "text"}, wantTokens: 10},
+		{name: "outer_unknown_nested_overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "text"}, wantTokens: 10},
+		{name: "outer_unknown_400_digits", body: `{"unknown":` + overflow + `,` + base[1:], want: map[string]string{"n": "text"}, wantTokens: 10},
+		{name: "outer_unknown_output_overflow", body: `{"output":[{"type":"function_call","arguments":"{}","unknown":{"bad":1e400}}]}`, want: map[string]string{}},
+		{name: "outer_arguments_wrong_type", body: `{"output":[{"type":"function_call","arguments":{}}]}`, errorPrefix: "failed to parse response:"},
+		{name: "arguments_malformed", body: bodyFor(`{"n":`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_trailing_value", body: bodyFor(`{} {}`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_trailing_junk", body: bodyFor(`{} junk`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_overflow", body: bodyFor(`{"n":1e400}`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_400_digits", body: bodyFor(`{"n":` + overflow + `}`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_nested_overflow", body: bodyFor(`{"n":[{"bad":1e400}]}`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_nested_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `}}`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_overwritten_scalar", body: bodyFor(`{"n":1e400,"n":1000000}`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_overwritten_subtree", body: bodyFor(`{"n":{"bad":1e400},"n":1000000}`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_scalar_duplicate", body: bodyFor(`{"n":999999,"n":1000000}`), want: map[string]string{"n": "1000000"}, wantTokens: 10},
+		{name: "arguments_subtree_duplicate", body: bodyFor(`{"n":{"ok":1},"n":1000000}`), want: map[string]string{"n": "1000000"}, wantTokens: 10},
+		{name: "arguments_empty", body: bodyFor(`{}`), want: map[string]string{}, wantTokens: 10},
+		{name: "arguments_null", body: bodyFor(`null`), want: map[string]string{}, wantTokens: 10},
+		{name: "arguments_array", body: bodyFor(`[]`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_scalar", body: bodyFor(`0`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_string", body: bodyFor(`"text"`), errorPrefix: "failed to parse tool call arguments:"},
+		{name: "arguments_bool", body: bodyFor(`true`), errorPrefix: "failed to parse tool call arguments:"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != "/v1/responses" {
+					t.Errorf("request = %s %s", r.Method, r.URL.Path)
+				}
+				_, _ = io.WriteString(w, tt.body)
+			}))
+			defer server.Close()
+			p, err := NewOpenCode("test-key", WithOpenCodeBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := p.Send(context.Background(), &Request{Model: "gpt-5", Messages: []Message{{Role: "user", Content: "Read values"}}})
+			if tt.errorPrefix != "" {
+				var pe *ProviderError
+				if !errors.As(err, &pe) || pe.Category != ErrCategoryServer || !strings.HasPrefix(pe.Message, tt.errorPrefix) {
+					t.Fatalf("Send error = %v, want server ProviderError with %q", err, tt.errorPrefix)
+				}
+				if resp != nil {
+					t.Errorf("response on decode error = %+v", resp)
 				}
 				return
 			}

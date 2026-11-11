@@ -1012,7 +1012,7 @@ func (o *OpenCode) sendGPT(ctx context.Context, req *Request) (*Response, error)
 	}
 
 	var parsed ocResponsesResponse
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
+	if err := DecodeJSON(respBody, &parsed); err != nil {
 		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse response: %s", err)}
 	}
 
@@ -1037,12 +1037,12 @@ func (o *OpenCode) sendGPT(ctx context.Context, req *Request) (*Response, error)
 			}
 		case "function_call":
 			var argsMap map[string]interface{}
-			if err := json.Unmarshal([]byte(out.Arguments), &argsMap); err != nil {
+			if err := DecodeJSON([]byte(out.Arguments), &argsMap); err != nil {
 				return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse tool call arguments: %s", err)}
 			}
 			args := make(map[string]string, len(argsMap))
 			for k, v := range argsMap {
-				args[k] = fmt.Sprintf("%v", v)
+				args[k] = FormatToolArgument(v)
 			}
 			result.ToolCalls = append(result.ToolCalls, ToolCall{
 				ID:        out.ID,
