@@ -167,6 +167,172 @@ tools = ["read_file"]
 	}
 }
 
+func TestLargeIntegerArgs_Gemini_StreamHistory(t *testing.T) {
+	// Values are raw JSON; only the runner's formatting boundary produces strings.
+	raw := `{"path":"fixture.txt","million":1000000,"signed":-1234567,"precise":9007199254740993,"negative_precise":-9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"beyond":99999999999999999999999,"beyond_decimal":99999999999999999999999.0,"beyond_exponent":999999999999999999999990e-1,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"zero":0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"rounded_threshold":999999.99999999999,"text":"text","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"false":false,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50],"recursive":{"a":[1000000,1.50]},"underflow":1e-1000000000,"zero_exponent":0e1000000000,"negative_zero_exponent":-0e1000000000,"exception_b":0.` + strings.Repeat("0", 9999) + `1e100000}`
+	want := map[string]string{
+		"path": "fixture.txt", "million": "1000000", "signed": "-1234567", "precise": "9007199254740993", "negative_precise": "-9007199254740993",
+		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000", "precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
+		"beyond": "99999999999999999999999", "beyond_decimal": "99999999999999999999999", "beyond_exponent": "99999999999999999999999",
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999", "zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "rounded_fraction": "1e+06", "rounded_threshold": "1e+06", "text": "text", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "false": "false", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]", "array": "[1.5]", "recursive": "map[a:[1e+06 1.5]]",
+		"underflow": "0", "zero_exponent": "0", "negative_zero_exponent": "-0", "exception_b": "1",
+	}
+	toolBody := `data: {"candidates":[{"content":{"role":"model","parts":[{"text":"Read values"},{"functionCall":{"name":"read_file","args":` + raw + `}}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5}}` + "\n\n"
+	finalBody := `data: {"candidates":[{"content":{"role":"model","parts":[{"text":"All done"}]},"finishReason":"STOP"}]}` + "\n\n"
+
+	t.Run("real_provider_drain", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = io.WriteString(w, toolBody)
+		}))
+		defer server.Close()
+		g, err := provider.NewGemini("test-key", provider.WithGeminiBaseURL(server.URL))
+		if err != nil {
+			t.Fatal(err)
+		}
+		stream, err := g.SendStream(context.Background(), &provider.Request{Model: "gemini-2.0-flash", Messages: []provider.Message{{Role: "user", Content: "Read values"}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := drainEventStream(stream, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(resp.ToolCalls) != 1 || resp.ToolCalls[0].ID != "gemini_0" || resp.ToolCalls[0].Name != "read_file" || !reflect.DeepEqual(resp.ToolCalls[0].Arguments, want) {
+			t.Fatalf("drained calls = %+v, want arguments %v", resp.ToolCalls, want)
+		}
+	})
+
+	t.Run("real_run_history_and_replay", func(t *testing.T) {
+		t.Setenv("XDG_DATA_HOME", t.TempDir())
+		setupTestEnv(t, "", "test-agent", `name = "test-agent"
+model = "google/gemini-2.0-flash"
+tools = ["read_file"]
+`)
+		workdir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(workdir, "fixture.txt"), []byte("controlled result"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		bodies := make(chan string, 2)
+		bodies <- toolBody
+		bodies <- finalBody
+		requests := make(chan []byte, 3)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost || r.URL.Path != "/v1beta/models/gemini-2.0-flash:streamGenerateContent" || r.URL.RawQuery != "alt=sse" {
+				t.Errorf("request = %s %s", r.Method, r.URL.String())
+				http.NotFound(w, r)
+				return
+			}
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Errorf("read request: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			requests <- body
+			select {
+			case response := <-bodies:
+				w.Header().Set("Content-Type", "text/event-stream")
+				_, _ = io.WriteString(w, response)
+			default:
+				t.Error("unexpected extra request")
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}))
+		defer server.Close()
+		var hooks []ToolCall
+		var events []ToolEvent
+		stdout, stderr := newMockStdoutStderr()
+		seed := Message{Role: "user", Content: "Keep this history"}
+		result, err := Run(context.Background(), Options{
+			AgentName: "test-agent", Workdir: workdir, APIKey: "test-key", BaseURL: server.URL, Stream: true,
+			Messages: []Message{seed}, JSON: true, Stdout: stdout, Stderr: stderr,
+			ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+				hooks = append(hooks, call)
+				return ToolDecision{Action: ToolAllow}, nil
+			},
+			ToolObserver: func(_ context.Context, event ToolEvent) { events = append(events, event) },
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.Content != "All done" || result.StopReason != "STOP" || result.ToolCalls != 1 || len(result.Messages) != 4 || len(result.Messages[1].ToolCalls) != 1 || len(result.Messages[2].ToolResults) != 1 {
+			t.Fatalf("result = %+v", result)
+		}
+		call := result.Messages[1].ToolCalls[0]
+		wantResult := ToolResult{CallID: "gemini_0", Content: "1: controlled result"}
+		if !reflect.DeepEqual(result.Messages[0], seed) || result.Messages[1].Role != "assistant" || result.Messages[1].Content != "Read values" || result.Messages[2].Role != "tool" || !reflect.DeepEqual(result.Messages[2].ToolResults[0], wantResult) || result.Messages[3].Role != "assistant" || result.Messages[3].Content != "All done" {
+			t.Errorf("history messages = %+v", result.Messages)
+		}
+		if len(hooks) != 1 || len(events) != 1 || len(result.ToolCallDetails) != 1 {
+			t.Fatalf("hook/observer/detail counts = %d/%d/%d", len(hooks), len(events), len(result.ToolCallDetails))
+		}
+		if call.ID != "gemini_0" || call.Name != "read_file" || hooks[0].ID != call.ID || hooks[0].Name != call.Name || events[0].Call.ID != call.ID || events[0].Call.Name != call.Name {
+			t.Errorf("history/hook/observer calls = %+v/%+v/%+v", call, hooks[0], events[0].Call)
+		}
+		if ev := events[0]; ev.CallID != call.ID || ev.Action != ToolAllow || ev.IsError || ev.Turn != 0 || ev.ContentLength != len(wantResult.Content) {
+			t.Errorf("observer metadata = %+v", ev)
+		}
+		detail := result.ToolCallDetails[0]
+		if detail.Name != call.Name || detail.Output != wantResult.Content || detail.IsError || detail.Turn != 0 {
+			t.Errorf("tool detail = %+v", detail)
+		}
+		var output largeIntegerJSONOutput
+		if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+			t.Fatal(err)
+		}
+		if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 || len(output.ToolCallDetails) != 1 || len(requests) != 2 {
+			t.Fatalf("JSON history/details = %+v, requests = %d", output, len(requests))
+		}
+		type wireRequest struct {
+			Contents []struct {
+				Role  string `json:"role"`
+				Parts []struct {
+					Text         string `json:"text"`
+					FunctionCall *struct {
+						Name string            `json:"name"`
+						Args map[string]string `json:"args"`
+					} `json:"functionCall"`
+					FunctionResponse *struct {
+						Name     string `json:"name"`
+						Response struct {
+							Result string `json:"result"`
+						} `json:"response"`
+					} `json:"functionResponse"`
+				} `json:"parts"`
+			} `json:"contents"`
+		}
+		var initial, followup wireRequest
+		if err := json.Unmarshal(<-requests, &initial); err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(<-requests, &followup); err != nil {
+			t.Fatalf("decode follow-up args as strings: %v", err)
+		}
+		if len(initial.Contents) != 1 || initial.Contents[0].Role != "user" || len(initial.Contents[0].Parts) != 1 || initial.Contents[0].Parts[0].Text != seed.Content {
+			t.Errorf("initial request = %+v", initial)
+		}
+		if len(followup.Contents) != 3 || followup.Contents[0].Role != "user" || len(followup.Contents[0].Parts) != 1 || followup.Contents[0].Parts[0].Text != seed.Content || followup.Contents[1].Role != "model" || len(followup.Contents[1].Parts) != 2 || followup.Contents[1].Parts[0].Text != "Read values" || followup.Contents[2].Role != "user" || len(followup.Contents[2].Parts) != 1 {
+			t.Fatalf("follow-up contents = %+v", followup.Contents)
+		}
+		wireCall := followup.Contents[1].Parts[1].FunctionCall
+		wireResult := followup.Contents[2].Parts[0].FunctionResponse
+		if wireCall == nil || wireCall.Name != call.Name || wireResult == nil || wireResult.Name != call.Name || wireResult.Response.Result != wantResult.Content {
+			t.Fatalf("follow-up call/result = %+v/%+v", wireCall, wireResult)
+		}
+		for name, got := range map[string]map[string]string{
+			"history": call.Arguments, "hook": hooks[0].Arguments, "observer": events[0].Call.Arguments, "detail": detail.Input,
+			"JSON history": output.Messages[1].ToolCalls[0].Arguments, "JSON detail": output.ToolCallDetails[0].Input, "replay": wireCall.Args,
+		} {
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("%s arguments = %v, want %v", name, got, want)
+			}
+		}
+	})
+}
+
 func TestLargeIntegerArgs_OpenAI_BufferedHistory(t *testing.T) {
 	t.Setenv("ANTHROPIC_API_KEY", "")
 	t.Setenv("AXE_ANTHROPIC_BASE_URL", "")

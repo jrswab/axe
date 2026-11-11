@@ -497,7 +497,7 @@ func (g *Gemini) SendStream(ctx context.Context, req *Request) (*EventStream, er
 			}
 
 			var chunk geminiResponse
-			if err := json.Unmarshal([]byte(sseEvent.Data), &chunk); err != nil {
+			if err := DecodeJSON([]byte(sseEvent.Data), &chunk); err != nil {
 				return StreamEvent{}, &ProviderError{
 					Category: ErrCategoryServer,
 					Message:  fmt.Sprintf("failed to parse streaming chunk: %s", err),
@@ -525,13 +525,9 @@ func (g *Gemini) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 			for _, part := range candidate.Content.Parts {
 				if part.FunctionCall != nil {
-					args := make(map[string]string)
-					for k, v := range part.FunctionCall.Args {
-						args[k] = fmt.Sprintf("%v", v)
-					}
 					id := fmt.Sprintf("gemini_%d", toolCallIdx)
 					toolCallIdx++
-					argsJSON, _ := json.Marshal(args)
+					argsJSON, _ := json.Marshal(part.FunctionCall.Args)
 					pending = append(pending, StreamEvent{
 						Type:       StreamEventToolStart,
 						ToolCallID: id,

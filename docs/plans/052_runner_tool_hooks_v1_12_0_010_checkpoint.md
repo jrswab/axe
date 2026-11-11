@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T09
-- Last completed phase/task/gate and timestamp: T08 round-1 standards APPROVED WITH NITS; design APPROVED; nit fixed and task accepted, 2026-11-11T20:42:41.817787+00:00
+- Next safe action: Commit verified T09 files and evidence, sync, run pre-review records checks, repin safe host wrapper SHA, then obtain host gate and parallel reviews
+- Last completed phase/task/gate and timestamp: T09 implementation RED/GREEN PASS; host gate and reviews PENDING, 2026-11-11T22:02:28.835181+00:00
 
 ## Gate evidence
 
@@ -1182,6 +1182,52 @@ T08 reviewed clean HEADa1f190991aaeff050a19da54a3d24a443cfa7890 range29681cef05f
 
 - Next action: Implement T09
 
+### Fresh-session T09 restart validation PASS
+
+- Gate: Fresh-session T09 restart validation PASS
+- Commands/results:
+milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0, PASS 13 entries. factory-sync --base origin/master: exit 0; branch runner-tool-hooks; head_before bf5333a27c04b91f94cc7438a22454b9a64648bf; ahead 178 behind 0 shared_files [] conflicts [] synced true. Scrubbed fixed-PATH go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks: exit 0; Go 1.26.0 and 1.26.11 available, module loads, govulncheck no vulnerabilities; /tmp/052-t09-restart-preflight.log. PYTHONPYCACHEPREFIX=/tmp/052-t09-restart-pycache python3 -m py_compile /tmp/052-t09-restart-validator.py: exit 0. python3 /tmp/052-t09-restart-validator.py: exit 0, PASS restart validator; /tmp/052-t09-restart-validator.log. Validator checked checkpoint identity/paths/checkboxes, 51 recorded HEAD fields, 22 stash refs/status sets, 10 decoded inventory rows and blobs, approved toolchain whole-patch/ancestry, both module equalities and R9/R10 scope. Historical missing 009 evidence remains corrected history, not reconstructed. Repository clean at validated bf5333a before this bookkeeping. All implementation evidence is committed; historical T08 gate does not cover current HEAD. Planning cap stays closed. No T09 source/test change, implementation test, live call, push, deploy or gate ran. Next is T09 native-tool-input RED, with exact safety environment from artifacts.
+- HEAD commit SHA: `bf5333a27c04b91f94cc7438a22454b9a64648bf`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write T09 TestLargeIntegerArgs_Gemini_NativeToolInput and observe declared full-package RED
+
+### T09 implementation RED/GREEN PASS; host gate and reviews PENDING
+
+- Gate: T09 implementation RED/GREEN PASS; host gate and reviews PENDING
+- Commands/results:
+T09 base bf5333a27c04b91f94cc7438a22454b9a64648bf. Relevant implementation is uncommitted. RED TestLargeIntegerArgs_Gemini_NativeToolInput: scrubbed exact-PATH go test -v ./internal/provider exited 1 solely for intended native JSON stringification/precision behavior, no compilation or unrelated failure; /tmp/052-t09-red.log and /tmp/052-t09-red-metadata.json. Frozen test /tmp/052-t09-red-test.txt 0444, 2438 bytes, SHA256 e265c40d0b7fdb96d4eddf43a3fa1ebfe87204e55340c00c61988ffaf97d4b52 independently unchanged. Source scope: only Gemini.SendStream DecodeJSON and raw FunctionCall.Args marshal, no formatter in emitter, no drain/replay change. Added native-token test, 29 StreamErrors cases, and 2 StreamHistory subtests with 37 argument checks including real SendStream/drain/Run, prebuilt history, replay, hooks, observer, details and JSON. Implementation logs/requirement matrix /tmp/052-t09-summary.md, /tmp/052-t09-diff.log. Full provider/runner package tests and derived touched-package race exit0; ordinary MCP/cmd tests exit0; go list -m, go build ./..., go vet ./..., make lint, make apidiff, full-file gofmt/empty gofmt-l and diff-check exit0. Apidiff emitted two toolchain-selection notices. Scoped mutations failed as intended and source restored byte-identically. Independent /tmp/052-t09-independent-summary.md: unchanged RED test, provider full package exit0, runner full package exit0, touched-package race exit0 (cached), extra verbose runner uncached exit0 (155 top-level), provider 356 top-level. Both module equality proofs, approved whole toolchain patch/ancestry and R9/R10 scope pass. Historical cmd log did not prove private cache path: corrective scrubbed go test ./cmd with explicit fresh XDG_CACHE_HOME /tmp/052-t09-cmd-isolation-verified-lKUCLvXj/cache mode0700 exit0 in11.436s, empty stderr, HEAD/status/diffs unchanged; exact command and evidence in that directory. qa-repro prerequisite failed before running tests: missing /home/jaron/.agents/skills/qa/SKILL.md; implementation agent completed corrective verification without infrastructure changes. Only authorized three Go files plus checkpoint and mechanical checklist citations changed. Checklist current transport citations :539→:535 and runner :429→:595 independently grep-F verified old full locators absent; historical inventory preserved. docs-lint --since bf5333a27c04b91f94cc7438a22454b9a64648bf exit0; header docs-lint 1, 205 Markdown files,0 findings. No review/host gate/completion claim. T09 stays unchecked until clean commit, safe HEAD-matched host gate, and parallel Standards/Spec plus design reviews pass. No full-module race, paid/live call, push/deploy or harness change. Wrapper /tmp/052-runner-tool-hooks-safe-gate.sh must get only final commit SHA repinned after commit/sync; Jaron runs bash wrapper because direct orchestrator factory-gate inherits unsafe ambient credentials. Never run unscrubbed gate. Original milestone base remains 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec; task review base bf5333a27c04b91f94cc7438a22454b9a64648bf.
+- HEAD commit SHA: `bf5333a27c04b91f94cc7438a22454b9a64648bf`
+- Relevant work: `uncommitted` — stash ref `f57c9ab03117f09fd207eca7ff0cfbd1dcb413e1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M internal/provider/gemini.go
+ M internal/provider/gemini_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit verified T09 files and evidence, sync, run pre-review records checks, repin safe host wrapper SHA, then obtain host gate and parallel reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1195,7 +1241,7 @@ T08 reviewed clean HEADa1f190991aaeff050a19da54a3d24a443cfa7890 range29681cef05f
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T09
+- Next action: Commit verified T09 files and evidence, sync, run pre-review records checks, repin safe host wrapper SHA, then obtain host gate and parallel reviews
 
 ## Approval / decision note — 2026-11-10
 
