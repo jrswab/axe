@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `blocked`
+- Current phase: `execute`
 - Current task: T04
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Obtain the scope decision for a separate Go 1.26.11 toolchain patch update, then rerun Go pre-flight before T04 RED.
-- Last completed phase/task/gate and timestamp: Restart setup PASS; Go pre-flight FAIL, 2026-11-11T15:06:40.925189+00:00
+- Next safe action: Implement T04
+- Last completed phase/task/gate and timestamp: Approved prerequisite toolchain patch and Go pre-flight PASS, 2026-11-11T15:22:47.006795+00:00
 
 ## Gate evidence
 
@@ -822,6 +822,29 @@ Go pre-flight command (same PATH and GOTOOLCHAIN policy as the accepted gates): 
 
 - Next action: Obtain the scope decision for a separate Go 1.26.11 toolchain patch update, then rerun Go pre-flight before T04 RED.
 
+### Approved prerequisite toolchain patch and Go pre-flight PASS
+
+- Gate: Approved prerequisite toolchain patch and Go pre-flight PASS
+- Commands/results:
+Jaron approved Q1 with 'yes to q1': a separate Go toolchain patch update from 1.26.10 to 1.26.11, followed by pre-flight/compatibility checks before T04, without push or deploy. factory-sync --base origin/master at 33c3d1928d10b86bc29754b415d4622ede8268e1 exited 0: ahead 155, behind 0, shared_files [], conflicts [], synced true, no HEAD movement. Commit 70e31fd56c48216a027479a49ebf2cbebe25768c changes only go.mod:5 toolchain go1.26.10 -> go1.26.11. The go 1.26.0 directive, dependencies and go.sum remain unchanged.
+Verification ran at parent HEAD 33c3d1928d10b86bc29754b415d4622ede8268e1 with the pin uncommitted (status ' M go.mod'), then those exact verified bytes were committed. The same safe environment prefix and PATH recorded earlier apply: env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= PATH=/home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin:/home/jaron/.local/share/../bin:/home/jaron/bin:/home/jaron/.local/bin:/home/jaron/.npm-global/bin:/home/jaron/.opencode/bin:/home/jaron/.local/share/pi-node/current/bin:/home/jaron/android-sdk/cmdline-tools/bin:/home/jaron/go/bin:/usr/local/go/bin:/home/jaron/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin . /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks exited 0: go1.26.11 selected, read-only module load PASS, govulncheck ./... ran and reported No vulnerabilities found. Evidence /tmp/052-toolchain-preflight.log. go version, go list -m, go build ./..., go vet ./..., make lint (0 issues), make apidiff, git diff --check, git diff --exit-code HEAD -- go.sum all exited 0. Apidiff stderr recorded toolchain-switch notices, no incompatibilities. Evidence /tmp/052-toolchain-checks.log. Derived touched-package race list was empty because only go.mod changed; no package test was run, and no full completion suite is claimed. Evidence /tmp/052-toolchain-race-scope.log.
+Commit e5093ecdfc362fac3fb7b1091c433ad217dd480a appends the precise approved prerequisite exception to the spec and checklist while preserving their earlier planning, cap 3/3, and every task/behavior requirement. R10's effective supplemental commands prove the complete 70e31fd patch equals only the one approved toolchain line, prove no prior or later module changes, then except go.mod only from the existing scope listing. spec-lint --root /home/jaron/dev/axe/runner-tool-hooks on each full artifact exited 0 (spec: 111 citations, 0 findings; checklist: 17 citations, 0 findings). docs-lint --since 33c3d1928d10b86bc29754b415d4622ede8268e1 exited 0, header 'docs-lint 1', 205 Markdown files, 0 findings. Read-only post-cap inspection confirmed append-only/consistent permissions but its guard could not run full-index and exit-code proofs. A separate general execution verified every exact supplemental command and constraint, all exit 0, at HEAD 70e31fd with only those two docs modified; /tmp/052-toolchain-scope-proofs.log records provenance and output. No unresolved scope mismatch remained. T04 has not started. This prerequisite evidence removes the restart blocker but does not satisfy a HEAD-matched review or completion gate. No push, deploy, paid/provider call or Docker ran.
+- HEAD commit SHA: `e5093ecdfc362fac3fb7b1091c433ad217dd480a`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T04
+
 ## Limitations & blockers
 
 - Limitations:
@@ -835,7 +858,7 @@ Go pre-flight command (same PATH and GOTOOLCHAIN policy as the accepted gates): 
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Obtain the scope decision for a separate Go 1.26.11 toolchain patch update, then rerun Go pre-flight before T04 RED.
+- Next action: Implement T04
 
 ## Approval / decision note — 2026-11-10
 
