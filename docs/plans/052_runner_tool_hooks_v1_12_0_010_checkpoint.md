@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T08
+- Current task: T09
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -34,15 +34,15 @@ Absolute paths inside the Repository root (the feature worktree).
 - T05: `checked`
 - T06: `checked`
 - T07: `checked`
-- T08: `unchecked`
+- T08: `checked`
 - T09: `unchecked`
 - T10: `unchecked`
 - T11: `unchecked`
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Sync combined T08 commit, repin safe wrapper to clean HEAD, obtain host gate and run T08 round-1 reviews
-- Last completed phase/task/gate and timestamp: T08 RED and independent GREEN PASS; safe host gate and reviews pending, 2026-11-11T19:59:22.381042+00:00
+- Next safe action: Implement T09
+- Last completed phase/task/gate and timestamp: T08 round-1 standards APPROVED WITH NITS; design APPROVED; nit fixed and task accepted, 2026-11-11T20:42:41.817787+00:00
 
 ## Gate evidence
 
@@ -1161,6 +1161,27 @@ T08 task base29681cef05f7b4a02a5896ecf4db54e1b6272d17. Relevant implementation r
 
 - Next action: Sync combined T08 commit, repin safe wrapper to clean HEAD, obtain host gate and run T08 round-1 reviews
 
+### T08 round-1 standards APPROVED WITH NITS; design APPROVED; nit fixed and task accepted
+
+- Gate: T08 round-1 standards APPROVED WITH NITS; design APPROVED; nit fixed and task accepted
+- Commands/results:
+T08 reviewed clean HEADa1f190991aaeff050a19da54a3d24a443cfa7890 range29681cef05f7b4a02a5896ecf4db54e1b6272d17..a1f1909,1commit4files+362/-5. Hostgate gate-test-a1f190991aae-20261111T200936Z executedbyJaronwithpinnedscrubbedwrapper;orchestratorindependentpoll exit0stateexited0. Log/tmp/factory-gate-1001/gate-test-a1f190991aae-20261111T200936Z.log confirmedbybothreviewers:SHAa1f190991aaeff050a19da54a3d24a443cfa7890,gate test,baseorigin/master538632ea56da1c71f8f319076f221e4298148d3e,trustedcommandgo test -race ./...,exit0allpackages. records-stale-check29681cef0notargets;docs-lint --since29681cef0,docs-lint1,205Markdown0findings0outside scope. Completeparallelround1standards Verdict: APPROVED WITH NITS,blockersnone;design Verdict: APPROVED,blockersnone,nitsnone,all4filesreviewed,noincomplete. Nitverbatim: T08-STD-N1 — stale test locator. docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md:200 still cites: `pkg/runner/large_integer_args_test.go:286` construct payloads. The insertion hunk `@@ -24,6 +24,149 @@`, adding `TestLargeIntegerArgs_Gemini_BufferedHistory`, moves that existing `ToolInput: raw` fixture to line429. Line286 now checks tool-detail metadata. Minimalfix: update locatorfrom:286to:429; verifyagainstfixture. Generalagentchangedonlylocator;independentexploregrep-Foldlocatorzeroresults(exit1),source429confirmedToolInput:raw;gitdiffcheck0. Documentonlyfixneedsnopackagetests;nore-reviewpernitpolicy. docs-lint--since29681cefafterfixexit0,205files0findings. Bothreviewersconfirmed2bufferedproductionsubstitutions,nativeArgsmapandservererrorspreserved,independentnumeric/decode/realRunoracles,rawstream/replayunchanged,T09deferred. Taskverifiedsnapshot3Gofilesmatcheda1f1909. T08acceptednow,T09next. Relevantimplementationcommitted;citationnitandthisacceptancebookkeepingwillcommittogether. No milestonecompletion,push/deployorpaidcalls. T09approvedscopeexplicitlyremovesGeminiemitterflatten,marshalrawArgs,DecodeJSONchunk;noOS1blockerpercurrentchecklist.
+- HEAD commit SHA: `a1f190991aaeff050a19da54a3d24a443cfa7890`
+- Relevant work: `committed` — stash ref `025ba54e6f6b60835fe57a9820d41940c4b41801` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T09
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1174,7 +1195,7 @@ T08 task base29681cef05f7b4a02a5896ecf4db54e1b6272d17. Relevant implementation r
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Sync combined T08 commit, repin safe wrapper to clean HEAD, obtain host gate and run T08 round-1 reviews
+- Next action: Implement T09
 
 ## Approval / decision note — 2026-11-10
 
