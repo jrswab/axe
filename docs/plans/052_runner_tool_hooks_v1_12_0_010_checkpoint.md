@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T06
-- Last completed phase/task/gate and timestamp: Fresh-session setup and restart validation PASS, 2026-11-11T17:26:56.252972+00:00
+- Next safe action: Prepare T06 HEAD-matched safe review gate, then standards/spec and design reviews
+- Last completed phase/task/gate and timestamp: T06 RED and independent GREEN PASS; reviews pending, 2026-11-11T17:38:45.737199+00:00
 
 ## Gate evidence
 
@@ -1012,6 +1012,27 @@ milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0
 
 - Next action: Implement T06
 
+### T06 RED and independent GREEN PASS; reviews pending
+
+- Gate: T06 RED and independent GREEN PASS; reviews pending
+- Commands/results:
+T06 implementation commit 2a40ac4ae1365722fc920fd165ea55ef1ec99c5e on runner-tool-hooks. Task base 9262f0f6525a9c06c7f6f7d0dd31bb4d2db0bee7. Only production changes sendGPT opencode.go1015/1040/1045: DecodeJSON for outer response and inner argument string, FormatToolArgument, both server ProviderError paths unchanged. Three changed files internal/provider/opencode.go, internal/provider/opencode_test.go, pkg/runner/large_integer_args_test.go. RED at base with opencode_test modified: exact safe env go test -v ./internal/provider exit1,22 intended numeric failures32 controls pass, no unrelated failure. /tmp/052-t06-red.log, /tmp/052-t06-red-metadata.log; snapshot /tmp/052-t06-red-test.txt mode0444 6505bytes SHA2569384d2eab85b899f8c6038ff45ccad42084d5480e78f3f8d4151c6c3c66a62a9. Code verification and independent VERIFY at base with3 files modified prove snapshot unchanged, all54 Buffered and31 DecodeErrors pass, real buffered and unsplit/split Responses SSE Run histories check34 arguments through returned histories, replay string values, hooks, observer, detail and JSON outputs. Independent commands: safe env go test -v ./internal/provider exit0 not cached15.979s; go test -v ./pkg/runner -run '^TestLargeIntegerArgs_OpenCodeResponses_(BufferedHistory|StreamHistory)$' exit0 not cached0.023s; exact checklist package derivation ./internal/provider ./pkg/runner; go test -race ./internal/provider ./pkg/runner exit0 both cached (disclosed). gofmt -l all3 files empty, git diff --check exit0, go list -m exit0 github.com/jrswab/axe, go build ./... exit0, go vet ./... exit0, make lint exit0 0issues, make apidiff exit0 only toolchain selection notices, git diff --exit-code HEAD -- go.mod go.sum exit0. Exact approved toolchain ancestry/wholepatch/module equality/R9/R10 proofs exit0 /tmp/052-t06-scope.log. Code logs /tmp/052-t06-{restored,race,build-gates,final-format,scope}.log. Independent logs /tmp/052-t06-independent-{identity,provider,runner,race,format,diff,module,build,vet,lint,apidiff,module-unchanged,review,final-state}.log contain exact commands/exits/HEAD/status and file hashes; safe PATH/env recorded in /tmp/052-t06-independent-verify.sh. Every Go/gofmt/make command cleared ANTHROPIC_API_KEY and AXE_ANTHROPIC_BASE_URL, unset GOTOOLCHAIN, used approved PATH. Code agent temporarily mutated read-only streamGPT during mutation check contrary to scope, restored it; independent exact diff confirms entire streamGPT byte-identical to parent and only3 intended production substitutions remain. No existing test assertions changed or removed. Verified uncommitted bytes now committed in2a40ac4; git clean after commit. No full-suite race, host review/completion gate, paid call, push/deploy/Docker, T07 or milestone completion claimed. T06 remains unchecked pending HEAD-matched safe host gate plus standards/spec and design reviews.
+- HEAD commit SHA: `2a40ac4ae1365722fc920fd165ea55ef1ec99c5e`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Prepare T06 HEAD-matched safe review gate, then standards/spec and design reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1025,7 +1046,7 @@ milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T06
+- Next action: Prepare T06 HEAD-matched safe review gate, then standards/spec and design reviews
 
 ## Approval / decision note — 2026-11-10
 
