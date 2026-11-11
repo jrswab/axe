@@ -300,23 +300,26 @@ func TestLargeIntegerArgs_DrainErrors(t *testing.T) {
 		{"successful duplicate subtree", `{"n":{"ok":1},"n":1000000}`, map[string]string{"n": "1000000"}},
 	}
 	for _, tt := range tests {
-		paths := map[string][]provider.StreamEvent{
-			"start input": {
+		paths := []struct {
+			name   string
+			events []provider.StreamEvent
+		}{
+			{"start input", []provider.StreamEvent{
 				{Type: provider.StreamEventToolStart, ToolCallID: "call_1", ToolName: "read_file", ToolInput: tt.raw},
 				{Type: provider.StreamEventToolEnd, ToolCallID: "call_1"},
 				{Type: provider.StreamEventDone, StopReason: "tool_calls"},
-			},
-			"concatenated deltas": {
+			}},
+			{"concatenated deltas", []provider.StreamEvent{
 				{Type: provider.StreamEventToolStart, ToolCallID: "call_1", ToolName: "read_file"},
 				{Type: provider.StreamEventToolDelta, ToolCallID: "call_1", ToolInput: tt.raw[:len(tt.raw)/2]},
 				{Type: provider.StreamEventToolDelta, ToolCallID: "call_1", ToolInput: tt.raw[len(tt.raw)/2:]},
 				{Type: provider.StreamEventToolEnd, ToolCallID: "call_1"},
 				{Type: provider.StreamEventDone, StopReason: "tool_calls"},
-			},
+			}},
 		}
-		for path, events := range paths {
-			t.Run(tt.name+"/"+path, func(t *testing.T) {
-				resp, err := drainEventStream(makeStream(events), nil)
+		for _, path := range paths {
+			t.Run(tt.name+"/"+path.name, func(t *testing.T) {
+				resp, err := drainEventStream(makeStream(path.events), nil)
 				if err != nil {
 					t.Fatalf("drain error = %v, want nil", err)
 				}
@@ -324,13 +327,14 @@ func TestLargeIntegerArgs_DrainErrors(t *testing.T) {
 					t.Fatalf("tool calls = %+v, want one read_file call_1", resp.ToolCalls)
 				}
 				got := resp.ToolCalls[0].Arguments
-				if got == nil || !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("Arguments = %#v, want %#v", got, tt.want)
-				}
+				// Guard against +Inf being stored in arguments.
 				for k, v := range got {
 					if strings.Contains(v, "Inf") {
 						t.Errorf("Arguments[%q] = %q contains Inf", k, v)
 					}
+				}
+				if got == nil || !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Arguments = %#v, want %#v", got, tt.want)
 				}
 			})
 		}

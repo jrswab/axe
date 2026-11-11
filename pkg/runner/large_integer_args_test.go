@@ -15,6 +15,15 @@ import (
 	"github.com/jrswab/axe/internal/provider"
 )
 
+type largeIntegerJSONOutput struct {
+	Messages []struct {
+		ToolCalls []struct {
+			Arguments map[string]string `json:"arguments"`
+		} `json:"tool_calls"`
+	} `json:"messages"`
+	ToolCallDetails []ToolCallDetail `json:"tool_call_details"`
+}
+
 func TestLargeIntegerArgs_OpenAI_BufferedHistory(t *testing.T) {
 	t.Setenv("ANTHROPIC_API_KEY", "")
 	t.Setenv("AXE_ANTHROPIC_BASE_URL", "")
@@ -135,14 +144,7 @@ tools = ["read_file"]
 		t.Errorf("tool detail = %+v", detail)
 	}
 	// Message has no JSON tags for tool calls; decode the wire names directly.
-	var output struct {
-		Messages []struct {
-			ToolCalls []struct {
-				Arguments map[string]string `json:"arguments"`
-			} `json:"tool_calls"`
-		} `json:"messages"`
-		ToolCallDetails []ToolCallDetail `json:"tool_call_details"`
-	}
+	var output largeIntegerJSONOutput
 	if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
 		t.Fatal(err)
 	}
@@ -212,14 +214,16 @@ type largeIntegerOpenAIHistoryRequest struct {
 func TestLargeIntegerArgs_OpenAI_StreamHistory(t *testing.T) {
 	// Arguments text carries raw unquoted numeric tokens; only the outer SSE
 	// arguments string is JSON-encoded.
-	const raw = `{"path":"fixture.txt","million":1000000,"precise":9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"small":999999,"negative_zero":-0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"text":"text","string_exponent":"1e6","boolean":true,"null":null,"object_integer":{"a":1000000},"array":[1.50]}`
+	const raw = `{"path":"fixture.txt","million":1000000,"precise":9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"zero":0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"rounded_threshold":999999.99999999999,"text":"text","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50]}`
 	want := map[string]string{
 		"path": "fixture.txt", "million": "1000000", "precise": "9007199254740993",
 		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000",
 		"precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
-		"small": "999999", "negative_zero": "-0", "fraction": "1.5", "rounded_fraction": "1e+06",
-		"text": "text", "string_exponent": "1e6", "boolean": "true", "null": "<nil>",
-		"object_integer": "map[a:1e+06]", "array": "[1.5]",
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999",
+		"zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "rounded_fraction": "1e+06", "rounded_threshold": "1e+06",
+		"text": "text", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]", "array": "[1.5]",
 	}
 	// Split inside the "precise" token so drain must concatenate deltas.
 	split := strings.Index(raw, "740993,")
@@ -359,11 +363,6 @@ tools = ["read_file"]
 		if !reflect.DeepEqual(call.Arguments, want) {
 			t.Errorf("history arguments = %v, want %v", call.Arguments, want)
 		}
-		for _, key := range []string{"million", "precise"} {
-			if call.Arguments[key] != want[key] {
-				t.Errorf("history %s = %q, want exact %q", key, call.Arguments[key], want[key])
-			}
-		}
 		if !reflect.DeepEqual(result.Messages[0], seed) || call.ID != "call_1" || call.Name != "read_file" ||
 			result.Messages[2].Role != "tool" || result.Messages[3].Content != "All done" {
 			t.Errorf("history messages = %+v", result.Messages)
@@ -375,22 +374,17 @@ tools = ["read_file"]
 			t.Fatalf("hook/observer/detail counts = %d/%d/%d, want 1/1/1", len(hooks), len(events), len(result.ToolCallDetails))
 		}
 		// Message has no JSON tags for tool calls; decode the wire names directly.
-		var output struct {
-			Messages []struct {
-				ToolCalls []struct {
-					Arguments map[string]string `json:"arguments"`
-				} `json:"tool_calls"`
-			} `json:"messages"`
-		}
+		var output largeIntegerJSONOutput
 		if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
 			t.Fatal(err)
 		}
-		if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 {
-			t.Fatalf("JSON history = %+v", output)
+		if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 || len(output.ToolCallDetails) != 1 {
+			t.Fatalf("JSON history/details = %+v", output)
 		}
 		for name, got := range map[string]map[string]string{
 			"hook": hooks[0].Arguments, "observer": events[0].Call.Arguments,
 			"detail": result.ToolCallDetails[0].Input, "JSON history": output.Messages[1].ToolCalls[0].Arguments,
+			"JSON detail": output.ToolCallDetails[0].Input,
 		} {
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("%s arguments = %v, want %v", name, got, want)
