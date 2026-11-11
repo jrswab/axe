@@ -1181,7 +1181,7 @@ func (o *OpenCode) sendChatCompletions(ctx context.Context, req *Request) (*Resp
 	}
 
 	var parsed ocChatResponse
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
+	if err := DecodeJSON(respBody, &parsed); err != nil {
 		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse response: %s", err)}
 	}
 
@@ -1203,12 +1203,12 @@ func (o *OpenCode) sendChatCompletions(ctx context.Context, req *Request) (*Resp
 
 	for _, tc := range choice.Message.ToolCalls {
 		var argsMap map[string]interface{}
-		if err := json.Unmarshal([]byte(tc.Function.Arguments), &argsMap); err != nil {
+		if err := DecodeJSON([]byte(tc.Function.Arguments), &argsMap); err != nil {
 			return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse tool call arguments: %s", err)}
 		}
 		args := make(map[string]string, len(argsMap))
 		for k, v := range argsMap {
-			args[k] = fmt.Sprintf("%v", v)
+			args[k] = FormatToolArgument(v)
 		}
 		result.ToolCalls = append(result.ToolCalls, ToolCall{
 			ID:        tc.ID,
