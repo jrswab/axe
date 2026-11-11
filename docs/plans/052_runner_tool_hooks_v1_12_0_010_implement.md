@@ -85,7 +85,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_OpenRouter_Buffered`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_OpenRouter_Buffered` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: none.
 
-- [ ] T05 — OpenCode Claude route buffered/stream/history.
+- [x] T05 — OpenCode Claude route buffered/stream/history.
   Budget: 30 min
   Primary R-IDs: R2, R7. Dependency: T02.
   Source: `internal/provider/opencode.go: sendClaude` decode 286/flatten 308; existing Send routing via `claude-*`; read-only streamClaude and convertToOCAnthropicMessages. Add helper calls only at the buffered sites, server errors unchanged.

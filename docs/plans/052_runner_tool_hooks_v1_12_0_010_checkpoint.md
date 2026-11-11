@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T05
+- Current task: T06
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -31,7 +31,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T02: `checked`
 - T03: `checked`
 - T04: `checked`
-- T05: `unchecked`
+- T05: `checked`
 - T06: `unchecked`
 - T07: `unchecked`
 - T08: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit this evidence, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, and obtain Jaron's passing host run name before T05 round-1 standards/design reviews.
-- Last completed phase/task/gate and timestamp: T05 RED/GREEN and independent verification PASS; host gate and reviews pending, 2026-11-11T16:34:18.945544+00:00
+- Next safe action: Implement T06
+- Last completed phase/task/gate and timestamp: T05 round-1 standards APPROVED and design APPROVED; task accepted, 2026-11-11T17:06:06.797705+00:00
 
 ## Gate evidence
 
@@ -966,6 +966,31 @@ factory-sync --base origin/master at 2b4493a6727a12b4fb379290674550588c812bca ex
 
 - Next action: Commit this evidence, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, and obtain Jaron's passing host run name before T05 round-1 standards/design reviews.
 
+### T05 round-1 standards APPROVED and design APPROVED; task accepted
+
+- Gate: T05 round-1 standards APPROVED and design APPROVED; task accepted
+- Commands/results:
+Reviewed HEAD 7b8f9a7791656a6bae38691cb12fa5c49b68616d on runner-tool-hooks was clean. Jaron ran bash /tmp/052-runner-tool-hooks-safe-gate.sh and returned gate-test-7b8f9a779165-20261111T163759Z with PASS. The orchestrator independently ran factory-gate poll gate-test-7b8f9a779165-20261111T163759Z, exit 0, state exited 0, log /tmp/factory-gate-1001/gate-test-7b8f9a779165-20261111T163759Z.log. Both reviewers read the current host log and verified the exact reviewed SHA, gate test, base origin/master at 538632ea56da1c71f8f319076f221e4298148d3e, trusted command go test -race ./..., exit 0 with all packages passing. This evidence applies to the reviewed HEAD, not a later bookkeeping commit.
+At the reviewed HEAD, records-stale-check 80c36e4dc039233133acf197b0462c898f73ba44 exited 0: no TAGS.md, .mem, or changelog.d targets. docs-lint --since 80c36e4dc039233133acf197b0462c898f73ba44 exited 0 with header docs-lint 1, 205 Markdown files, zero findings. Full review range 80c36e4dc039233133acf197b0462c898f73ba44..7b8f9a7791656a6bae38691cb12fa5c49b68616d measured 2 commits, 4 files, 420 insertions and 16 deletions.
+Round 1 standards/spec Verdict: APPROVED. No in-scope standards findings, no spec/checklist findings. Nits: none. All four scoped files were reviewed; no unreviewed changed paths and no Review incomplete line. The only semantic production changes are sendClaude DecodeJSON and FormatToolArgument. Real buffered/unsplit/split streaming histories, exact/unaffected/error controls, nonempty prebuilt messages, replay string types, details, hooks/observers, immutable RED test and existing test-file prefixes were verified. Full-file formatting and gate provenance accurately distinguish precommit evidence from current host evidence. Reviewer ran git diff --check 80c36e4dc039233133acf197b0462c898f73ba44..7b8f9a7791656a6bae38691cb12fa5c49b68616d, exit 0, and no tests/builds/lint.
+Round 1 design Verdict: APPROVED. No blocking findings. Nits: none. All four scoped files were reviewed; no unreviewed changed paths and no Review incomplete line. The actual Claude typed destination preserves legacy error/overflow/ignored-field behavior and server ProviderError; GPT/chat/stream/replay behavior remains unchanged apart from required alignment. No new contract/dependency/security/performance issue was found. Reviewer independently confirmed original test-prefix/RED byte equality; SHA-256 provenance relied on the supplied verification log. Reviewer ran no gate commands or tests.
+T05 is now accepted and checked. No source changed after the reviewed HEAD. This bookkeeping transition does not complete milestone 010, whose remaining tasks T06-T13 are unchecked. Next task is T06. No push, deploy, Docker or paid/live-provider call ran. The prior host wrapper pin/log is historical and must not be used for a future reviewed HEAD.
+- HEAD commit SHA: `7b8f9a7791656a6bae38691cb12fa5c49b68616d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T06
+
 ## Limitations & blockers
 
 - Limitations:
@@ -979,7 +1004,7 @@ factory-sync --base origin/master at 2b4493a6727a12b4fb379290674550588c812bca ex
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit this evidence, repin /tmp/052-runner-tool-hooks-safe-gate.sh to final HEAD, and obtain Jaron's passing host run name before T05 round-1 standards/design reviews.
+- Next action: Implement T06
 
 ## Approval / decision note — 2026-11-10
 
