@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T08
-- Last completed phase/task/gate and timestamp: T07 round-1 standards APPROVED and design APPROVED; task accepted, 2026-11-11T19:47:10.620391+00:00
+- Next safe action: Sync combined T08 commit, repin safe wrapper to clean HEAD, obtain host gate and run T08 round-1 reviews
+- Last completed phase/task/gate and timestamp: T08 RED and independent GREEN PASS; safe host gate and reviews pending, 2026-11-11T19:59:22.381042+00:00
 
 ## Gate evidence
 
@@ -1138,6 +1138,29 @@ T07 reviewed HEAD e62af3fac2a39896e202a65024ec605cbacb30b8 was clean. Range08af1
 
 - Next action: Implement T08
 
+### T08 RED and independent GREEN PASS; safe host gate and reviews pending
+
+- Gate: T08 RED and independent GREEN PASS; safe host gate and reviews pending
+- Commands/results:
+T08 task base29681cef05f7b4a02a5896ecf4db54e1b6272d17. Relevant implementation remains uncommitted at this event and will commit with evidence. Exactly2production substitutions Gemini.Send decode/flatten: DecodeJSON and FormatToolArgument; server ProviderError unchanged; Args map[string]interface{} preserved; stream/replay unchanged;T09notstarted. Changed internal/provider/gemini.go,internal/provider/gemini_test.go,pkg/runner/large_integer_args_test.go. RED command safe env go test -v ./internal/provider exit1 solely22intendednumericfailures32controls passed, /tmp/052-t08-red.log and metadata; snapshot/tmp/052-t08-red-test.txt mode0444 6333bytes SHA2564478bbe235a37c61577eb10880d7dacca8086ab9bf582cf13a464dbedae6d45d unchanged. Code+independentGREEN:54Buffered31BufferedErrors pass. Original provider command exit0uncached16.038s,354topleveltests1116PASSentries0skips. FocusedGeminiBufferedHistory exit0cached;33independentargumentexpectationscoverallmandatorycategories throughrealRun nonemptyhistory,quotedstringreplay,hooks,observer,details,JSONhistory/details. Exactchecklistderivation selects./internal/provider ./pkg/runner;go test -race ./internal/provider ./pkg/runner exit0bothcached disclosed,codeagentearlierraceuncached. Fullfilegofmt-lall3empty,diffcheck0,go list-m/build/vet/make lint/make apidiff all0,lint0issues,APIonly2toolchainnotices,moduleunchanged. Approvedpinancestry/wholepatch/modulecomparisons/R9R10proofsall0. Inscopebufferdecodemutationsrestored;initialsnapshotproofnewlineomissioncorrectedwithnoREDchanges. No priorassertionschanged. Independent evidence/tmp/052-t08-independent-summary.md,/tmp/052-t08-independent-*.log,/tmp/052-t08-independent-verify.py containscommands/exits/stdout/stderr/HEAD/status/hashes. Codeevidence/tmp/052-t08-*. FinalSHA256gemini.go058b9b3d10a90c5bfb15564f8d7d1961d1dea17148a5e22b5307a409a376e0d0;gemini_test.gobe06a07b12fa1e3d3c782a804a43c14ccd99e3144c88cf3827528cd55404f64d;runnerlarge_integer_args_test.goc06f76719456cd21b9d17461a130fc96a67854a8fa72c25717c64062afb884bd. EveryGo/gofmt/make used savedexactPATH,unsetGOTOOLCHAIN,emptyANTHROPIC_API_KEY/AXE_ANTHROPIC_BASE_URL. records-stale-check29681cef exit0notargets;docs-lint --since29681cef exit0header docs-lint1 task-id/stale-milestone/broken-mem-link/stale-citation,205Markdownfiles0findings0outside scope. No fullrace./...,hostgate,reviews,paid/livecall,push/deploy. T08 design-bearing remainsunchecked. Nextaftercombinedcommit:factory-syncorigin/master,repinexisting/tmp/052-runner-tool-hooks-safe-gate.sh tocleanHEAD,syntaxcheck,requesthostgate,safelyindependentpoll0,rerunrecordschecks,parallelround1standards/spec+designreviewsatmatchedHEAD. Do notlaunchunscrubbedhostgate. Userwantsdeliverynotinfrastructuredetour;avoidextrabookkeepingcommitsbutpreservemandatorygates. Milestone010unchecked.
+- HEAD commit SHA: `29681cef05f7b4a02a5896ecf4db54e1b6272d17`
+- Relevant work: `uncommitted` — stash ref `38750af4725b5fc6e8b115a6fb3498c5cc74015a` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M internal/provider/gemini.go
+ M internal/provider/gemini_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Sync combined T08 commit, repin safe wrapper to clean HEAD, obtain host gate and run T08 round-1 reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1151,7 +1174,7 @@ T07 reviewed HEAD e62af3fac2a39896e202a65024ec605cbacb30b8 was clean. Range08af1
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T08
+- Next action: Sync combined T08 commit, repin safe wrapper to clean HEAD, obtain host gate and run T08 round-1 reviews
 
 ## Approval / decision note — 2026-11-10
 
