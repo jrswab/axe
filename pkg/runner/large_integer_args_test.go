@@ -611,3 +611,181 @@ tools = ["read_file"]
 		}
 	}
 }
+
+func TestLargeIntegerArgs_OpenRouter_BufferedHistory(t *testing.T) {
+	testLargeIntegerArgsOpenRouterHistory(t, false, false)
+}
+
+func TestLargeIntegerArgs_OpenRouter_StreamHistory(t *testing.T) {
+	for _, split := range []bool{false, true} {
+		name := "unsplit"
+		if split {
+			name = "split"
+		}
+		t.Run(name, func(t *testing.T) { testLargeIntegerArgsOpenRouterHistory(t, true, split) })
+	}
+}
+
+func testLargeIntegerArgsOpenRouterHistory(t *testing.T, stream, split bool) {
+	t.Helper()
+	t.Setenv("OPENROUTER_API_KEY", "test-key")
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	setupTestEnv(t, "", "test-agent", `name = "test-agent"
+model = "openrouter/openai/gpt-5"
+tools = ["read_file"]
+`)
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "fixture.txt"), []byte("controlled result"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	const raw = `{"path":"fixture.txt","million":1000000,"precise":9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"beyond":99999999999999999999999,"beyond_decimal":99999999999999999999999.0,"beyond_exponent":999999999999999999999990e-1,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"zero":0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"rounded_threshold":999999.99999999999,"text":"text","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"false":false,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50],"recursive":{"a":[1000000,1.50]}}`
+	want := map[string]string{
+		"path": "fixture.txt", "million": "1000000", "precise": "9007199254740993",
+		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000",
+		"precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
+		"beyond": "99999999999999999999999", "beyond_decimal": "99999999999999999999999", "beyond_exponent": "99999999999999999999999",
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999",
+		"zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "rounded_fraction": "1e+06", "rounded_threshold": "1e+06",
+		"text": "text", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "false": "false", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]",
+		"array": "[1.5]", "recursive": "map[a:[1e+06 1.5]]",
+	}
+	quoted, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	toolBody := `{"model":"openai/gpt-5","choices":[{"message":{"content":"Read values","tool_calls":[{"id":"call_1","type":"function","function":{"name":"read_file","arguments":` + string(quoted) + `}}]},"finish_reason":"tool_calls"}]}`
+	finalBody := `{"model":"openai/gpt-5","choices":[{"message":{"content":"All done"},"finish_reason":"stop"}]}`
+	if stream {
+		deltas := []string{raw}
+		if split {
+			at := strings.Index(raw, "740993,")
+			if at < 0 {
+				t.Fatal("fixture split point missing")
+			}
+			deltas = []string{raw[:at], raw[at:]}
+		}
+		var body strings.Builder
+		body.WriteString(`data: {"choices":[{"delta":{"content":"Read values"}}]}` + "\n\n")
+		body.WriteString(`data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"read_file"}}]}}]}` + "\n\n")
+		for _, delta := range deltas {
+			encoded, err := json.Marshal(delta)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body.WriteString(`data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":` + string(encoded) + `}}]}}]}` + "\n\n")
+		}
+		body.WriteString(`data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}` + "\n\n" + `data: {"usage":{"prompt_tokens":10,"completion_tokens":5,"cost":0.01}}` + "\n\n" + "data: [DONE]\n\n")
+		toolBody = body.String()
+		finalBody = `data: {"choices":[{"delta":{"content":"All done"}}]}` + "\n\n" + `data: {"choices":[{"delta":{},"finish_reason":"stop"}]}` + "\n\n" + `data: {"usage":{"prompt_tokens":12,"completion_tokens":2,"cost":0.01}}` + "\n\n" + "data: [DONE]\n\n"
+	}
+	bodies := make(chan string, 2)
+	bodies <- toolBody
+	bodies <- finalBody
+	requests := make(chan []byte, 3)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		request, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- request
+		select {
+		case body := <-bodies:
+			if stream {
+				w.Header().Set("Content-Type", "text/event-stream")
+			} else {
+				w.Header().Set("Content-Type", "application/json")
+			}
+			_, _ = io.WriteString(w, body)
+		default:
+			t.Error("unexpected extra request")
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("AXE_OPENROUTER_BASE_URL", server.URL)
+	var hooks []ToolCall
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	seed := Message{Role: "user", Content: "Keep this history"}
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent", Workdir: workdir, Stream: stream,
+		Messages: []Message{seed}, JSON: true, Stdout: stdout, Stderr: stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			hooks = append(hooks, call)
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+		ToolObserver: func(_ context.Context, event ToolEvent) { events = append(events, event) },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Content != "All done" || result.StopReason != "stop" || result.ToolCalls != 1 {
+		t.Errorf("result content/stop/calls = %q/%q/%d", result.Content, result.StopReason, result.ToolCalls)
+	}
+	if len(result.Messages) != 4 || len(result.Messages[1].ToolCalls) != 1 || len(result.Messages[2].ToolResults) != 1 {
+		t.Fatalf("history = %+v, want user, assistant call, tool result, final assistant", result.Messages)
+	}
+	call := result.Messages[1].ToolCalls[0]
+	wantResult := ToolResult{CallID: "call_1", Content: "1: controlled result"}
+	if !reflect.DeepEqual(result.Messages[0], seed) || result.Messages[1].Role != "assistant" || result.Messages[1].Content != "Read values" || result.Messages[2].Role != "tool" || !reflect.DeepEqual(result.Messages[2].ToolResults[0], wantResult) || result.Messages[3].Role != "assistant" || result.Messages[3].Content != "All done" {
+		t.Errorf("history messages = %+v", result.Messages)
+	}
+	if len(hooks) != 1 || len(events) != 1 || len(result.ToolCallDetails) != 1 {
+		t.Fatalf("hook/observer/detail counts = %d/%d/%d, want 1/1/1", len(hooks), len(events), len(result.ToolCallDetails))
+	}
+	if call.ID != "call_1" || call.Name != "read_file" || hooks[0].ID != call.ID || hooks[0].Name != call.Name || events[0].Call.ID != call.ID || events[0].Call.Name != call.Name {
+		t.Errorf("history/hook/observer calls = %+v/%+v/%+v", call, hooks[0], events[0].Call)
+	}
+	if ev := events[0]; ev.CallID != call.ID || ev.Action != ToolAllow || ev.IsError || ev.Turn != 0 || ev.ContentLength != len(wantResult.Content) {
+		t.Errorf("observer metadata = %+v", ev)
+	}
+	detail := result.ToolCallDetails[0]
+	if detail.Name != call.Name || detail.Output != wantResult.Content || detail.IsError || detail.Turn != 0 {
+		t.Errorf("tool detail = %+v", detail)
+	}
+	var output largeIntegerJSONOutput
+	if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+		t.Fatal(err)
+	}
+	if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 || len(output.ToolCallDetails) != 1 {
+		t.Fatalf("JSON history/details = %+v", output)
+	}
+	if len(requests) != 2 {
+		t.Fatalf("requests = %d, want 2", len(requests))
+	}
+	var initial, followup largeIntegerOpenAIHistoryRequest
+	if err := json.Unmarshal(<-requests, &initial); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(<-requests, &followup); err != nil {
+		t.Fatal(err)
+	}
+	if initial.Stream != stream || len(initial.Messages) != 1 || initial.Messages[0].Role != seed.Role || initial.Messages[0].Content != seed.Content {
+		t.Errorf("initial request = %+v", initial)
+	}
+	if followup.Stream != stream || len(followup.Messages) != 3 || len(followup.Messages[1].ToolCalls) != 1 {
+		t.Fatalf("follow-up request = %+v, want user, assistant call, tool result", followup)
+	}
+	wireCall := followup.Messages[1].ToolCalls[0]
+	if followup.Messages[1].Role != "assistant" || wireCall.ID != call.ID || wireCall.Type != "function" || wireCall.Function.Name != call.Name || followup.Messages[2].Role != "tool" || followup.Messages[2].ToolCallID != wantResult.CallID || followup.Messages[2].Content != wantResult.Content {
+		t.Errorf("follow-up messages = %+v", followup.Messages)
+	}
+	var replayed map[string]string
+	if err := json.Unmarshal([]byte(wireCall.Function.Arguments), &replayed); err != nil {
+		t.Fatalf("decode replay arguments as strings: %v", err)
+	}
+	for name, got := range map[string]map[string]string{
+		"history": call.Arguments, "hook": hooks[0].Arguments,
+		"observer": events[0].Call.Arguments, "detail": detail.Input,
+		"JSON history": output.Messages[1].ToolCalls[0].Arguments,
+		"JSON detail":  output.ToolCallDetails[0].Input, "replay": replayed,
+	} {
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%s arguments = %v, want %v", name, got, want)
+		}
+	}
+}
