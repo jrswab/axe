@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Prepare T06 HEAD-matched safe review gate, then standards/spec and design reviews
-- Last completed phase/task/gate and timestamp: T06 RED and independent GREEN PASS; reviews pending, 2026-11-11T17:38:45.737199+00:00
+- Next safe action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T06 round-1 reviews
+- Last completed phase/task/gate and timestamp: T06 pre-review sync and records checks PASS; safe host gate pending, 2026-11-11T17:39:30.941535+00:00
 
 ## Gate evidence
 
@@ -1033,6 +1033,27 @@ T06 implementation commit 2a40ac4ae1365722fc920fd165ea55ef1ec99c5e on runner-too
 
 - Next action: Prepare T06 HEAD-matched safe review gate, then standards/spec and design reviews
 
+### T06 pre-review sync and records checks PASS; safe host gate pending
+
+- Gate: T06 pre-review sync and records checks PASS; safe host gate pending
+- Commands/results:
+At clean HEAD ccae160b02c0567073e096bf2f28e3ec2f0ff686: factory-sync --base origin/master exit0 JSON branch runner-tool-hooks base origin/master head_before ccae160b02c0567073e096bf2f28e3ec2f0ff686 ahead170 behind0 shared_files[] conflicts[] synced true, no HEAD change. records-stale-check 9262f0f6525a9c06c7f6f7d0dd31bb4d2db0bee7 exit0 No TAGS.md,.mem/,or changelog.d/ found;nothing to check. docs-lint --since 9262f0f6525a9c06c7f6f7d0dd31bb4d2db0bee7 exit0; header docs-lint 1: checks task-id, stale-milestone, broken-mem-link, stale-citation; changed since9262f0f (merge-base9262f0f6525a). PASS205 Markdown files,0 findings,0 outside scope. T06 design-bearing per exec. Standards/spec and design reviews are pending, round1; task review base9262f0f6525a9c06c7f6f7d0dd31bb4d2db0bee7, full milestone base remains8a351c8e475ab1bfdc52000f0593f1e6ed7385ec. Host test gate inherits credentials and must not launch through unscrubbed run_script. Next after this bookkeeping commit: code agent repins only /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD and verifies bash -n, Jaron runs it with safety environment, orchestrator independently polls result to exit0, reruns records checks, then dispatches parallel standards/spec and design reviews on exact reviewed HEAD with matching gate log. No new host/review/completion gate result yet. T06 and milestone010 remain unchecked. No paid/live provider call, push/deploy or T07 work.
+- HEAD commit SHA: `ccae160b02c0567073e096bf2f28e3ec2f0ff686`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T06 round-1 reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1046,7 +1067,7 @@ T06 implementation commit 2a40ac4ae1365722fc920fd165ea55ef1ec99c5e on runner-too
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Prepare T06 HEAD-matched safe review gate, then standards/spec and design reviews
+- Next action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T06 round-1 reviews
 
 ## Approval / decision note — 2026-11-10
 
