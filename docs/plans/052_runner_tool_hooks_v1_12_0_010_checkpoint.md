@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T03 (Anthropic buffered, stream, and history; stream case is confirmation after the T02 drain switch, checklist :73-78)
-- Last completed phase/task/gate and timestamp: T02 round-2 review PASS (standards APPROVED, design APPROVED WITH NITS), 2026-11-11T14:20:10.707674+00:00
+- Next safe action: Repin safe gate script to the T03 docs commit, run gate via Jaron, then T03 round-1 review (range c02bb9db..HEAD)
+- Last completed phase/task/gate and timestamp: T03 RED/GREEN verification PASS (commit bf11aa59); review pending, 2026-11-11T14:29:19.201689+00:00
 
 ## Gate evidence
 
@@ -758,6 +758,27 @@ Round 2, range dbcc4fed9e3bf7232631f41aedd0fd3c8083c275..00135e193bba38504d956da
 
 - Next action: Implement T03 (Anthropic buffered, stream, and history; stream case is confirmation after the T02 drain switch, checklist :73-78)
 
+### T03 RED/GREEN verification PASS (commit bf11aa59); review pending
+
+- Gate: T03 RED/GREEN verification PASS (commit bf11aa59); review pending
+- Commands/results:
+T03 committed as bf11aa5969c3177ce8ea2b44e8b86fff095ec7c7 on base c02bb9db. Env: env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= with the checkpoint PATH. RED (test agent, /tmp/t03-red.log): appended TestLargeIntegerArgs_Anthropic_Buffered at internal/provider/anthropic_test.go:1103-1239; go test -v ./internal/provider -run TestLargeIntegerArgs_Anthropic_Buffered exit 1, 12 digit subtests failed (got 1e+06 / 9.007199254740992e+15 / -1e+06 / 1e+23, want exact digits), 47 passed; full ./internal/provider run showed no other failures. GREEN (code agent, /tmp/t03-green-*.log): internal/provider/anthropic.go:305 json.Unmarshal -> DecodeJSON, :331 fmt.Sprintf(%v) -> FormatToolArgument; decode error still ProviderError ErrCategoryServer (:306-309). Added TestLargeIntegerArgs_Anthropic_Replay (anthropic_test.go:1241-1333) and runner TestLargeIntegerArgs_Anthropic_BufferedHistory / _StreamHistory (pkg/runner/large_integer_args_test.go:419-425, shared helper :427-613). Code agent gates all exit 0: focused provider and runner tests; derived-package go test -race ./internal/provider ./pkg/runner; gofmt -l empty; git diff --check; go list -m; go build ./...; go vet ./...; make lint 0 issues; make apidiff no incompatibilities; go.mod/go.sum unchanged. Mutation check: buffered replay/history tests failed under a temporary formatter mutation and passed after restore; stream-history mutation skipped because it would need an out-of-scope drain edit (stream is T02 confirmation per checklist :78). VERIFY (test agent, /tmp/t03-verify-*.log): RED test byte-identical; Buffered 59/59 PASS; provider and runner TestLargeIntegerArgs* PASS; go test -race ./internal/provider ./pkg/runner exit 0; production diff only the two substitutions; no SendStream, replay, testutil, go.mod, or go.sum edits. Coverage note: standalone replay test checks 1e6, precise, and beyond-int64 values only; history tests cover the other spellings through replay. T03 stays unchecked until its review passes.
+- HEAD commit SHA: `bf11aa5969c3177ce8ea2b44e8b86fff095ec7c7`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Repin safe gate script to the T03 docs commit, run gate via Jaron, then T03 round-1 review (range c02bb9db..HEAD)
+
 ## Limitations & blockers
 
 - Limitations:
@@ -771,7 +792,7 @@ Round 2, range dbcc4fed9e3bf7232631f41aedd0fd3c8083c275..00135e193bba38504d956da
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T03 (Anthropic buffered, stream, and history; stream case is confirmation after the T02 drain switch, checklist :73-78)
+- Next action: Repin safe gate script to the T03 docs commit, run gate via Jaron, then T03 round-1 review (range c02bb9db..HEAD)
 
 ## Approval / decision note — 2026-11-10
 
