@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T07
+- Current task: T08
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -33,7 +33,7 @@ Absolute paths inside the Repository root (the feature worktree).
 - T04: `checked`
 - T05: `checked`
 - T06: `checked`
-- T07: `unchecked`
+- T07: `checked`
 - T08: `unchecked`
 - T09: `unchecked`
 - T10: `unchecked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T07 round-1 reviews
-- Last completed phase/task/gate and timestamp: T07 pre-review sync and records checks PASS; safe host gate pending, 2026-11-11T19:28:13.929980+00:00
+- Next safe action: Implement T08
+- Last completed phase/task/gate and timestamp: T07 round-1 standards APPROVED and design APPROVED; task accepted, 2026-11-11T19:47:10.620391+00:00
 
 ## Gate evidence
 
@@ -1117,6 +1117,27 @@ At clean HEAD ff3fe631e1df18cb485159b6642f8c2d0aaf5edd, factory-sync --base orig
 
 - Next action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T07 round-1 reviews
 
+### T07 round-1 standards APPROVED and design APPROVED; task accepted
+
+- Gate: T07 round-1 standards APPROVED and design APPROVED; task accepted
+- Commands/results:
+T07 reviewed HEAD e62af3fac2a39896e202a65024ec605cbacb30b8 was clean. Range08af134d78240c3e0a6729f40daf285e72adbbd7..e62af3fac2a39896e202a65024ec605cbacb30b8:3commits4files+434/-6. Jaron ran pinned scrubbed wrapper; orchestrator independently polled gate-test-e62af3fac2a3-20261111T193040Z, exit0,state exited0,log /tmp/factory-gate-1001/gate-test-e62af3fac2a3-20261111T193040Z.log. Both reviewers confirmed exact HEAD,gate test,base origin/master at538632ea56da1c71f8f319076f221e4298148d3e, trusted go test -race ./... exit0 allpackages. records-stale-check08af134d exit0 no targets; docs-lint --since08af134d exit0,header docs-lint1 task-id/stale-milestone/broken-mem-link/stale-citation,205Markdownfiles,0findings,0outside scope. Parallel round1 standards/spec Verdict: APPROVED and design-bearing design Verdict: APPROVED. Both complete,all4filesreviewed,no blockers,no nits,no incomplete lines. Reviewers confirmed exactly3sendChatCompletions substitutions, bothservererrors unchanged,independent numeric/legacy/decode/history/replay/observability oracles,unchanged existingtests/REDsnapshot,stream/replayproduction untouched,module/API/dependencies unchanged. No reviewer tests ran. T07 accepted and T08 next. Milestone010 unchecked. User requests focus on delivery and less avoidable ceremony; no infrastructure detour authorized. Combine prospective implementation/evidence commits when possible without weakening required gates. No new approval requirement or promise to omit safety gates. No paid call,push/deploy or T08 implementation yet.
+- HEAD commit SHA: `e62af3fac2a39896e202a65024ec605cbacb30b8`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T08
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1130,7 +1151,7 @@ At clean HEAD ff3fe631e1df18cb485159b6642f8c2d0aaf5edd, factory-sync --base orig
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Repin /tmp/052-runner-tool-hooks-safe-gate.sh to final clean HEAD; Jaron runs safe host test gate before T07 round-1 reviews
+- Next action: Implement T08
 
 ## Approval / decision note — 2026-11-10
 

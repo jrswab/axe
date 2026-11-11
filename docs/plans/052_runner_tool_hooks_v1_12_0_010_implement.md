@@ -101,7 +101,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_OpenCodeResponses_Buffered`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_OpenCodeResponses_Buffered` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: none.
 
-- [ ] T07 — OpenCode Chat route buffered/stream/history.
+- [x] T07 — OpenCode Chat route buffered/stream/history.
   Budget: 30 min
   Primary R-IDs: R2, R7. Dependency: T06.
   Source: `internal/provider/opencode.go: sendChatCompletions` response decode 1184, argument decode 1206, flatten 1211; non-Claude/non-GPT Send routing; read-only streamChatCompletions / convertToOCChatMessages replay 1114. DecodeJSON twice, formatter once, both errors stay server ProviderError.
