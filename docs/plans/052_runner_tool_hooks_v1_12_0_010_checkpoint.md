@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T10
+- Current task: T11
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -36,13 +36,13 @@ Absolute paths inside the Repository root (the feature worktree).
 - T07: `checked`
 - T08: `checked`
 - T09: `checked`
-- T10: `unchecked`
+- T10: `checked`
 - T11: `unchecked`
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit verified T10 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
-- Last completed phase/task/gate and timestamp: T10 implementation RED/GREEN PASS; host gate and reviews PENDING, 2026-11-12T14:32:10.180494+00:00
+- Next safe action: Implement T11 after reading complete requirements and declared native ToolInput RED
+- Last completed phase/task/gate and timestamp: T10 host test and round-1 Standards/Spec/design reviews PASS, 2026-11-12T15:09:08.379215+00:00
 
 ## Gate evidence
 
@@ -1273,6 +1273,27 @@ T10 base b6c9fb55a3b3ec12569a3cb185c3061599527f27. Relevant work uncommitted. RE
 
 - Next action: Commit verified T10 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
 
+### T10 host test and round-1 Standards/Spec/design reviews PASS
+
+- Gate: T10 host test and round-1 Standards/Spec/design reviews PASS
+- Commands/results:
+Implementation/reviewed HEAD 5dd00f2a43010a8f11a6e95a136d4744c4028c40, clean git status --porcelain. factory-sync --base origin/master exit0: ahead181 behind0 shared_files[] conflicts[] syncedtrue. Jaron executed bash /tmp/052-runner-tool-hooks-safe-gate.sh pinned to reviewed HEAD, preserving credential scrub/fixed PATH/private cache. Host gate gate-test-5dd00f2a4301-20261112T143414Z completed exit0. Orchestrator independently factory-gate poll exit0. Log /tmp/factory-gate-1001/gate-test-5dd00f2a4301-20261112T143414Z.log: sha5dd00f2a43010a8f11a6e95a136d4744c4028c40 gate test base origin/master at538632ea56da1c71f8f319076f221e4298148d3e command go test -race ./... exit0 all packages pass. Pre-review docs-lint --since b6c9fb55a3b3ec12569a3cb185c3061599527f27 exit0 header docs-lint1 205Markdown0findings; records-stale-check samebase exit0 no TAGS/.mem/changelog.d. Parallel complete round1: Standards/Spec Verdict: APPROVED (Standards APPROVED, Spec APPROVED), no findings/nits; design Verdict: APPROVED, no findings/nits. Both reviewed all five files/every hunk, range b6c9fb55a3b3ec12569a3cb185c3061599527f27..5dd00f2a43010a8f11a6e95a136d4744c4028c40,1commit5files+350/-7. Both read and validated exact HEAD-matched trusted fullrace gate metadata, no reviewer tests/build/lint/network. T10 accepted R2/R7 buffered exact integers, legacy decode/error semantics, realRun prebuilthistory/hooks/observer/details/JSON/stringreplay; source only two substitutions and stream/drain/shared helpers unchanged. No source/test change after reviewed HEAD. This is T10 acceptance only, not milestone completion. T11–T13 remain unchecked; next T11 reconnaissance and declared RED. No push/deploy/livecall.
+- HEAD commit SHA: `5dd00f2a43010a8f11a6e95a136d4744c4028c40`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T11 after reading complete requirements and declared native ToolInput RED
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1286,7 +1307,7 @@ T10 base b6c9fb55a3b3ec12569a3cb185c3061599527f27. Relevant work uncommitted. RE
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit verified T10 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
+- Next action: Implement T11 after reading complete requirements and declared native ToolInput RED
 
 ## Approval / decision note — 2026-11-10
 

@@ -125,7 +125,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_Gemini_NativeToolInput`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_Gemini_NativeToolInput` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: `pkg/runner/run.go: drainEventStream` ToolStart input read lines 920-921, ToolDelta read 927, accumulated decode/flatten 933-938; switch completed in T02 BEFORE removing emitter writes. Existing stream transport assertions in `internal/provider/stream_test.go: TestEventStream_ToolCallEvents` compare payload transparently and require no type/API change; numeric/native assertions are NEW.
 
-- [ ] T10 — Ollama buffered/history.
+- [x] T10 — Ollama buffered/history.
   Budget: 30 min
   Primary R-IDs: R2, R7. Dependency: T01b.
   Source: `internal/provider/ollama.go: Ollama.Send` decode 290/flatten 303. Keep Arguments map field unchanged, add DecodeJSON and formatter, server errors retained.
