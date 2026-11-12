@@ -287,7 +287,7 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	var apiResp ollamaResponse
-	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+	if err := DecodeJSON(respBody, &apiResp); err != nil {
 		return nil, &ProviderError{
 			Category: ErrCategoryServer,
 			Message:  fmt.Sprintf("failed to parse response: %s", err),
@@ -300,7 +300,7 @@ func (o *Ollama) Send(ctx context.Context, req *Request) (*Response, error) {
 	for i, tc := range apiResp.Message.ToolCalls {
 		args := make(map[string]string)
 		for k, v := range tc.Function.Arguments {
-			args[k] = fmt.Sprintf("%v", v)
+			args[k] = FormatToolArgument(v)
 		}
 		toolCalls = append(toolCalls, ToolCall{
 			ID:        fmt.Sprintf("ollama_%d", i),

@@ -24,6 +24,139 @@ type largeIntegerJSONOutput struct {
 	ToolCallDetails []ToolCallDetail `json:"tool_call_details"`
 }
 
+func TestLargeIntegerArgs_Ollama_BufferedHistory(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	setupTestEnv(t, "", "test-agent", `name = "test-agent"
+model = "ollama/llama3"
+tools = ["read_file"]
+`)
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "fixture.txt"), []byte("controlled result"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Native argument values are raw JSON, including exceptional long tokens.
+	raw := `{"path":"fixture.txt","million":1000000,"negative_million":-1000000,"signed":-1234567,"precise":9007199254740993,"negative_precise":-9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"beyond":99999999999999999999999,"beyond_decimal":99999999999999999999999.0,"beyond_exponent":999999999999999999999990e-1,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"zero":0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"rounded_threshold":999999.99999999999,"text":"text","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"false":false,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50],"recursive":{"a":[1000000,1.50]},"underflow":1e-1000000000,"zero_exponent":0e1000000000,"negative_zero_exponent":-0e1000000000,"exception_a":1` + strings.Repeat("0", 100006) + `e-100000,"exception_b":0.` + strings.Repeat("0", 9999) + `1e100000}`
+	want := map[string]string{
+		"path": "fixture.txt", "million": "1000000", "negative_million": "-1000000", "signed": "-1234567", "precise": "9007199254740993", "negative_precise": "-9007199254740993",
+		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000", "precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
+		"beyond": "99999999999999999999999", "beyond_decimal": "99999999999999999999999", "beyond_exponent": "99999999999999999999999",
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999", "zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "rounded_fraction": "1e+06", "rounded_threshold": "1e+06", "text": "text", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "false": "false", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]", "array": "[1.5]", "recursive": "map[a:[1e+06 1.5]]",
+		"underflow": "0", "zero_exponent": "0", "negative_zero_exponent": "-0", "exception_a": "0", "exception_b": "1",
+	}
+	bodies := make(chan string, 2)
+	bodies <- `{"model":"llama3","message":{"content":"Read values","tool_calls":[{"function":{"name":"read_file","arguments":` + raw + `}}]},"done":true,"done_reason":"stop"}` + "\n"
+	bodies <- `{"model":"llama3","message":{"content":"All done"},"done":true,"done_reason":"stop"}` + "\n"
+	requests := make(chan []byte, 3)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/chat" {
+			t.Errorf("request = %s %s, want POST /api/chat", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- body
+		select {
+		case response := <-bodies:
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, response)
+		default:
+			t.Error("unexpected extra request")
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	defer server.Close()
+	var hooks []ToolCall
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	seed := Message{Role: "user", Content: "Keep this history"}
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent", Workdir: workdir, BaseURL: server.URL,
+		Messages: []Message{seed}, JSON: true, Stdout: stdout, Stderr: stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			hooks = append(hooks, call)
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+		ToolObserver: func(_ context.Context, event ToolEvent) { events = append(events, event) },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Content != "All done" || result.StopReason != "stop" || result.ToolCalls != 1 || len(result.Messages) != 4 || len(result.Messages[1].ToolCalls) != 1 || len(result.Messages[2].ToolResults) != 1 {
+		t.Fatalf("result = %+v", result)
+	}
+	call := result.Messages[1].ToolCalls[0]
+	wantResult := ToolResult{CallID: "ollama_0", Content: "1: controlled result"}
+	if !reflect.DeepEqual(result.Messages[0], seed) || result.Messages[1].Role != "assistant" || result.Messages[1].Content != "Read values" || result.Messages[2].Role != "tool" || !reflect.DeepEqual(result.Messages[2].ToolResults[0], wantResult) || result.Messages[3].Role != "assistant" || result.Messages[3].Content != "All done" {
+		t.Errorf("history = %+v", result.Messages)
+	}
+	if len(hooks) != 1 || len(events) != 1 || len(result.ToolCallDetails) != 1 {
+		t.Fatalf("hook/observer/detail counts = %d/%d/%d", len(hooks), len(events), len(result.ToolCallDetails))
+	}
+	if call.ID != "ollama_0" || call.Name != "read_file" || hooks[0].ID != call.ID || hooks[0].Name != call.Name || events[0].Call.ID != call.ID || events[0].Call.Name != call.Name {
+		t.Errorf("history/hook/observer calls = %+v/%+v/%+v", call, hooks[0], events[0].Call)
+	}
+	if ev := events[0]; ev.CallID != call.ID || ev.Action != ToolAllow || ev.IsError || ev.Turn != 0 || ev.ContentLength != len(wantResult.Content) {
+		t.Errorf("observer = %+v", ev)
+	}
+	detail := result.ToolCallDetails[0]
+	if detail.Name != call.Name || detail.Output != wantResult.Content || detail.IsError || detail.Turn != 0 {
+		t.Errorf("detail = %+v", detail)
+	}
+	var output largeIntegerJSONOutput
+	if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+		t.Fatal(err)
+	}
+	if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 || len(output.ToolCallDetails) != 1 || len(requests) != 2 {
+		t.Fatalf("JSON history/details = %+v, requests = %d", output, len(requests))
+	}
+	type wireRequest struct {
+		Model    string `json:"model"`
+		Stream   bool   `json:"stream"`
+		Messages []struct {
+			Role      string `json:"role"`
+			Content   string `json:"content"`
+			ToolCalls []struct {
+				Function struct {
+					Name      string            `json:"name"`
+					Arguments map[string]string `json:"arguments"`
+				} `json:"function"`
+			} `json:"tool_calls"`
+		} `json:"messages"`
+	}
+	var initial, followup wireRequest
+	if err := json.Unmarshal(<-requests, &initial); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(<-requests, &followup); err != nil {
+		t.Fatalf("decode replay arguments as strings: %v", err)
+	}
+	if initial.Model != "llama3" || initial.Stream || len(initial.Messages) != 1 || initial.Messages[0].Role != seed.Role || initial.Messages[0].Content != seed.Content {
+		t.Errorf("initial request = %+v", initial)
+	}
+	if followup.Model != "llama3" || followup.Stream || len(followup.Messages) != 3 || len(followup.Messages[1].ToolCalls) != 1 {
+		t.Fatalf("follow-up = %+v", followup)
+	}
+	wireCall := followup.Messages[1].ToolCalls[0].Function
+	if followup.Messages[0].Role != seed.Role || followup.Messages[0].Content != seed.Content || followup.Messages[1].Role != "assistant" || followup.Messages[1].Content != "Read values" || wireCall.Name != call.Name || followup.Messages[2].Role != "tool" || followup.Messages[2].Content != wantResult.Content {
+		t.Errorf("follow-up messages = %+v", followup.Messages)
+	}
+	for name, got := range map[string]map[string]string{
+		"history": call.Arguments, "hook": hooks[0].Arguments, "observer": events[0].Call.Arguments, "detail": detail.Input,
+		"JSON history": output.Messages[1].ToolCalls[0].Arguments, "JSON detail": output.ToolCallDetails[0].Input, "replay": wireCall.Arguments,
+	} {
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%s arguments = %v, want %v", name, got, want)
+		}
+	}
+}
+
 func TestLargeIntegerArgs_Gemini_BufferedHistory(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	setupTestEnv(t, "", "test-agent", `name = "test-agent"

@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T10 after reading its complete requirements and declared RED gate
-- Last completed phase/task/gate and timestamp: T09 host test and round-1 Standards/Spec/design reviews PASS, 2026-11-12T14:14:34.777187+00:00
+- Next safe action: Commit verified T10 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
+- Last completed phase/task/gate and timestamp: T10 implementation RED/GREEN PASS; host gate and reviews PENDING, 2026-11-12T14:32:10.180494+00:00
 
 ## Gate evidence
 
@@ -1249,6 +1249,30 @@ Implementation/reviewed HEAD 29004e21ad1d85ff500bb58a4c96d5994eb6b09f, clean git
 
 - Next action: Implement T10 after reading its complete requirements and declared RED gate
 
+### T10 implementation RED/GREEN PASS; host gate and reviews PENDING
+
+- Gate: T10 implementation RED/GREEN PASS; host gate and reviews PENDING
+- Commands/results:
+T10 base b6c9fb55a3b3ec12569a3cb185c3061599527f27. Relevant work uncommitted. RED exact scrubbed fixed-PATH go test -v ./internal/provider exited1 only TestLargeIntegerArgs_Ollama_Buffered,22intendednumericfailures32controls pass, no compile/unrelated failures; /tmp/052-t10-red.log and metadata. Frozen test /tmp/052-t10-red-test.txt mode0444 bytes5761 SHA256 de6e75bdcd68c5f479469b96c033f227b1e08013d46d32d27b9d44455fe6f7b2 independently byte-identical. Production scope exactly Ollama.Send DecodeJSON and FormatToolArgument substitutions; map type/server errors unchanged; SendStream/replay/drain/shared helpers untouched. New buffered54cases, BufferedErrors30cases, realRun BufferedHistory39argumentchecks with rawnumericresponses/prebuilthistory/replay/hooks/observer/details/JSON. /tmp/052-t10-summary.md and /tmp/052-t10-diff.log hold all commands/output/exits and requirement matrix. Full provider/runner/MCP/private-cachecmd tests exit0; derived touched-package provider/runner race exit0; go list -m/build/vet/make lint/apidiff/fullfilegofmt/emptygofmt-l/diff-check exit0. Approved toolchain exactpatch/ancestry BOTHmoduleequalities/R9/R10scope pass. Independent /tmp/052-t10-independent-summary.md: exactREDidentity, go test -v ./internal/provider exit0(54buffered30errors,cached), go test -v ./pkg/runner exit0(cached), go test -race ./internal/provider ./pkg/runner exit0(cached). Extra isolated cmd test uncached exit0, explicit fresh0700XDGcache provenance /tmp/052-t10-independent-cmd-isolation.json and /tmp/052-t10-independent-cmd.json; implementation /tmp/052-t10-cmd-isolation.txt and /tmp/052-t10-cmd.json. No test weakening or formattingdrift. No mandatoryacceptancegap. Current checklist citations runner:595→:728 and T11 pattern1004→1109 only, targetssymbolsread and independentgrep-F oldstringszero; historicalspec/checkpointlocatorspreserved. docs-lint --since b6c9fb55a3b3ec12569a3cb185c3061599527f27 exit0 docs-lint1 205Markdown0findings. T10 unchecked, T11–T13 notstarted. Next commit verified fivepaths, sync/pre-reviewrecords, repin ONLY SHA safehostwrapper, Jaron runs scrubbedhostgate, independentlypoll and parallel Standards/Spec/designreviews. Do not launch unscrubbedgate. Nofullmodulerace/hostgate/review yet. Nopush/deploy/livecall/infrastructurechange. Originalmilestonereviewbase8a351c8e475ab1bfdc52000f0593f1e6ed7385ec retained; taskreviewbaseb6c9fb55a3b3ec12569a3cb185c3061599527f27.
+- HEAD commit SHA: `b6c9fb55a3b3ec12569a3cb185c3061599527f27`
+- Relevant work: `uncommitted` — stash ref `6c8f11311b574f262d2d707e5652e9b825029175` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M internal/provider/ollama.go
+ M internal/provider/ollama_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit verified T10 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1262,7 +1286,7 @@ Implementation/reviewed HEAD 29004e21ad1d85ff500bb58a4c96d5994eb6b09f, clean git
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T10 after reading its complete requirements and declared RED gate
+- Next action: Commit verified T10 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
 
 ## Approval / decision note — 2026-11-10
 
