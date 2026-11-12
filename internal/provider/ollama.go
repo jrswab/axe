@@ -464,7 +464,7 @@ func (o *Ollama) SendStream(ctx context.Context, req *Request) (*EventStream, er
 			}
 
 			var chunk ollamaResponse
-			if err := json.Unmarshal([]byte(line), &chunk); err != nil {
+			if err := DecodeJSON([]byte(line), &chunk); err != nil {
 				return StreamEvent{}, &ProviderError{
 					Category: ErrCategoryServer,
 					Message:  fmt.Sprintf("failed to parse streaming chunk: %s", err),
@@ -474,17 +474,13 @@ func (o *Ollama) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 			if len(chunk.Message.ToolCalls) > 0 {
 				for _, tc := range chunk.Message.ToolCalls {
-					args := make(map[string]string)
-					for k, v := range tc.Function.Arguments {
-						args[k] = fmt.Sprintf("%v", v)
-					}
 					id := fmt.Sprintf("ollama_%d", toolCallIdx)
 					toolCallIdx++
 					pending = append(pending, StreamEvent{
 						Type:       StreamEventToolStart,
 						ToolCallID: id,
 						ToolName:   tc.Function.Name,
-						ToolInput:  mustMarshal(args),
+						ToolInput:  mustMarshal(tc.Function.Arguments),
 					})
 					pending = append(pending, StreamEvent{
 						Type:       StreamEventToolEnd,

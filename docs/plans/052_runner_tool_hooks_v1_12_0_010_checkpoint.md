@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T11 after reading complete requirements and declared native ToolInput RED
-- Last completed phase/task/gate and timestamp: T10 host test and round-1 Standards/Spec/design reviews PASS, 2026-11-12T15:09:08.379215+00:00
+- Next safe action: Commit verified T11 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
+- Last completed phase/task/gate and timestamp: T11 implementation RED/GREEN PASS; host gate and reviews PENDING, 2026-11-12T15:31:07.469367+00:00
 
 ## Gate evidence
 
@@ -1294,6 +1294,30 @@ Implementation/reviewed HEAD 5dd00f2a43010a8f11a6e95a136d4744c4028c40, clean git
 
 - Next action: Implement T11 after reading complete requirements and declared native ToolInput RED
 
+### T11 implementation RED/GREEN PASS; host gate and reviews PENDING
+
+- Gate: T11 implementation RED/GREEN PASS; host gate and reviews PENDING
+- Commands/results:
+T11 base 4a0afe7319ba3cc21165ee51d0d687f0be5fc509. Relevant implementation is uncommitted. RED: exact scrubbed fixed-PATH go test -v ./internal/provider exited 1 solely for TestLargeIntegerArgs_Ollama_NativeToolInput, seven intended native-argument assertions failed, 358 existing top-level tests passed. /tmp/052-t11-red.log and /tmp/052-t11-red-metadata.json. Frozen /tmp/052-t11-red-test.txt mode 0444, 2507 bytes, SHA256 c1c7000664c654a7ea94d64ce2d0398f07c4c4294f5cd01623a10897a46337a4 independently byte-identical. Production scope: only Ollama.SendStream DecodeJSON, flatten loop removal and raw tc.Function.Arguments passed to existing mustMarshal; map types, buffered Send, replay, scanner, drain and shared helpers unchanged. Added native test, 30 StreamErrors cases, and StreamHistory with four subcases covering real SendStream/drain/Run, prebuilt history, actual tool, string replay, hooks, observer, details and JSON. Exceptional 100015-byte token exceeds unchanged scanner limit; existing helper and buffered coverage remains, no transport expansion. /tmp/052-t11-summary.md, /tmp/052-t11-diff.patch and final gate logs hold implementation evidence. Named and full provider/runner, MCP and isolated cmd tests passed. /tmp/052-t11-final-gates.log records go test ./cmd exit 0 in 11.493s with fresh private XDG_CACHE_HOME=/tmp/052-t11-final-cmd-cache.9vh4RW5l mode 0700; MCP cached. Derived go test -race ./internal/provider ./pkg/runner exit 0 (provider cached, runner 2.091s). Full-file gofmt, empty gofmt-l and diff-check passed; preexisting tests unchanged. Independent /tmp/052-t11-independent-summary.md and /tmp/052-t11-independent-tests.json: unchanged RED identity, exact full provider/runner tests and touched-package race all exit 0, cached. Correct counts: provider 360 top-level PASS plus 905 indented PASS lines, runner 157 plus 165; indented lines are not necessarily distinct scenarios. Earlier summary counts were inaccurate and are superseded. Independent verifier initially ran go --help without required safety prefix; it printed usage only. All subsequent independent Go commands used required prefix. No credentials printed. Static final logs recorded passing commands but did not prove environment, so rerun explicitly: /tmp/052-t11-static-safe-summary.md and /tmp/052-t11-static-safe-metadata.log:4-18 record literal env -u GOTOOLCHAIN, empty ANTHROPIC_API_KEY/AXE_ANTHROPIC_BASE_URL and exact fixed PATH for go list -m, go build ./..., go vet ./..., make lint, make apidiff, all exit 0. Lint 0 issues, apidiff no incompatibilities and two toolchain-selection notices. Observed safety assertions pass. Static repair proof :19-28 shows same HEAD/status/index/four modified file hashes/workspace manifest before and after. Earlier static environment remains unproven, not retroactively claimed. Approved exact toolchain patch/ancestry, BOTH module equality checks and R9/R10 scope independently corroborated. Only three authorized Go paths plus two mechanical current checklist citations changed. Current locators internal/provider/ollama.go:487→:483 and pkg/runner/large_integer_args_test.go:728→:912 independently grep-F verified old complete strings absent; historical source inventory/spec/checkpoint preserved. docs-lint --since 4a0afe7319ba3cc21165ee51d0d687f0be5fc509 exit 0, docs-lint 1, 205 Markdown files, 0 findings. No host gate, review or completion claim. T11 and T12–T13 remain unchecked. Next: commit verified files/evidence, sync and pre-review records, repin ONLY final SHA in existing safe wrapper, Jaron runs scrubbed host gate, poll independently and run parallel Standards/Spec and design reviews. Never launch an unscrubbed gate. No live/paid call, push, deploy or infrastructure change. Original milestone review base 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec; T11 task base 4a0afe7319ba3cc21165ee51d0d687f0be5fc509.
+- HEAD commit SHA: `4a0afe7319ba3cc21165ee51d0d687f0be5fc509`
+- Relevant work: `uncommitted` — stash ref `b2b85555ba1548a36f443c9b4580589d00ba05b1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M internal/provider/ollama.go
+ M internal/provider/ollama_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit verified T11 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1307,7 +1331,7 @@ Implementation/reviewed HEAD 5dd00f2a43010a8f11a6e95a136d4744c4028c40, clean git
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T11 after reading complete requirements and declared native ToolInput RED
+- Next action: Commit verified T11 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
 
 ## Approval / decision note — 2026-11-10
 
