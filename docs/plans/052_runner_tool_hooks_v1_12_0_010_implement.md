@@ -117,7 +117,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_Gemini_Buffered`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_Gemini_Buffered` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: none.
 
-- [ ] T09 — Gemini native raw emitter and real stream/history.
+- [x] T09 — Gemini native raw emitter and real stream/history.
   Budget: 30 min
   Primary R-IDs: R3, R4, R7. Dependencies: T02, T08.
   Source: `internal/provider/gemini.go: Gemini.SendStream` chunk decode 500 and flatten/remarshal 529-539. DecodeJSON with unchanged map fields; REMOVE flatten-to-string loop, marshal raw FunctionCall.Args directly. This covers the former eleventh-site inventory’s Gemini stream flatten without adding a formatter call to an emitter that must stay raw.

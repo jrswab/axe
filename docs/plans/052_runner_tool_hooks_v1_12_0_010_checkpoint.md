@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T09
+- Current task: T10
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -35,14 +35,14 @@ Absolute paths inside the Repository root (the feature worktree).
 - T06: `checked`
 - T07: `checked`
 - T08: `checked`
-- T09: `unchecked`
+- T09: `checked`
 - T10: `unchecked`
 - T11: `unchecked`
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit verified T09 files and evidence, sync, run pre-review records checks, repin safe host wrapper SHA, then obtain host gate and parallel reviews
-- Last completed phase/task/gate and timestamp: T09 implementation RED/GREEN PASS; host gate and reviews PENDING, 2026-11-11T22:02:28.835181+00:00
+- Next safe action: Implement T10 after reading its complete requirements and declared RED gate
+- Last completed phase/task/gate and timestamp: T09 host test and round-1 Standards/Spec/design reviews PASS, 2026-11-12T14:14:34.777187+00:00
 
 ## Gate evidence
 
@@ -1228,6 +1228,27 @@ T09 base bf5333a27c04b91f94cc7438a22454b9a64648bf. Relevant implementation is un
 
 - Next action: Commit verified T09 files and evidence, sync, run pre-review records checks, repin safe host wrapper SHA, then obtain host gate and parallel reviews
 
+### T09 host test and round-1 Standards/Spec/design reviews PASS
+
+- Gate: T09 host test and round-1 Standards/Spec/design reviews PASS
+- Commands/results:
+Implementation/reviewed HEAD 29004e21ad1d85ff500bb58a4c96d5994eb6b09f, clean git status --porcelain. factory-sync --base origin/master exit0: ahead179 behind0 shared_files[] conflicts[] syncedtrue. Jaron executed bash /tmp/052-runner-tool-hooks-safe-gate.sh pinned to reviewed HEAD with credential scrub/fixed PATH/private cache. gate-test-29004e21ad1d-20261112T134917Z completed exit0. Orchestrator factory-gate poll same name independently exit0; log /tmp/factory-gate-1001/gate-test-29004e21ad1d-20261112T134917Z.log: sha29004e21ad1d85ff500bb58a4c96d5994eb6b09f gate test base origin/master at538632ea56da1c71f8f319076f221e4298148d3e command go test -race ./... exit0 all packages passed. Pre-review docs-lint --since bf5333a27c04b91f94cc7438a22454b9a64648bf exit0 header docs-lint1 205Markdown0findings; records-stale-check samebase exit0 no TAGS/.mem/changelog.d. Parallel complete round1: Standards/Spec Verdict: APPROVED, Standards APPROVED and Spec APPROVED, no blockers or nits; design Verdict: APPROVED, no blockers or nits. Both reviewed all five files and every hunk, range bf5333a27c04b91f94cc7438a22454b9a64648bf..29004e21ad1d85ff500bb58a4c96d5994eb6b09f, 1commit5files+356/-10. Both independently read HEAD-matched gate metadata; no reviewer tests. Findings: none. T09 accepted for R3/R4/R7, native unquoted input, duplicates/overwritten-overflow/server semantics, unchanged drain/replay, full test packs and real stream/Run/history/hooks/observer/details/JSON. No source or test changes after reviewed HEAD. This is T09 acceptance only, not milestone completion. T10–T13 remain unchecked; continue T10 after acceptance commit. No push/deploy/live call.
+- HEAD commit SHA: `29004e21ad1d85ff500bb58a4c96d5994eb6b09f`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T10 after reading its complete requirements and declared RED gate
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1241,7 +1262,7 @@ T09 base bf5333a27c04b91f94cc7438a22454b9a64648bf. Relevant implementation is un
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit verified T09 files and evidence, sync, run pre-review records checks, repin safe host wrapper SHA, then obtain host gate and parallel reviews
+- Next action: Implement T10 after reading its complete requirements and declared RED gate
 
 ## Approval / decision note — 2026-11-10
 
