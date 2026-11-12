@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T11
+- Current task: T12
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -37,12 +37,12 @@ Absolute paths inside the Repository root (the feature worktree).
 - T08: `checked`
 - T09: `checked`
 - T10: `checked`
-- T11: `unchecked`
+- T11: `checked`
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit verified T11 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
-- Last completed phase/task/gate and timestamp: T11 implementation RED/GREEN PASS; host gate and reviews PENDING, 2026-11-12T15:31:07.469367+00:00
+- Next safe action: Implement T12 Bedrock buffered/history after writing its declared failing provider test
+- Last completed phase/task/gate and timestamp: T11 host test and round-1 Standards/Spec/design reviews PASS, 2026-11-12T15:53:17.178118+00:00
 
 ## Gate evidence
 
@@ -1318,6 +1318,27 @@ T11 base 4a0afe7319ba3cc21165ee51d0d687f0be5fc509. Relevant implementation is un
 
 - Next action: Commit verified T11 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
 
+### T11 host test and round-1 Standards/Spec/design reviews PASS
+
+- Gate: T11 host test and round-1 Standards/Spec/design reviews PASS
+- Commands/results:
+Reviewed implementation HEAD: 9a38bccc878a08c9b1c746690199b1eeede222c0. git status --porcelain was empty. factory-sync --base origin/master exited 0: ahead 183, behind 0, shared_files [], conflicts [], synced true. Jaron ran bash /tmp/052-runner-tool-hooks-safe-gate.sh pinned to this HEAD with credential clearing, fixed PATH and private cache. Gate gate-test-9a38bccc878a-20261112T153340Z exited 0. Orchestrator independently ran factory-gate poll and received exit 0. Log: /tmp/factory-gate-1001/gate-test-9a38bccc878a-20261112T153340Z.log. Metadata: exact reviewed SHA, gate test, base origin/master at 538632ea56da1c71f8f319076f221e4298148d3e, command go test -race ./..., exit 0, all packages passed. Pre-review docs-lint --since 4a0afe7319ba3cc21165ee51d0d687f0be5fc509 exited 0; header docs-lint 1, 205 Markdown files, 0 findings. records-stale-check same base exited 0, no TAGS/.mem/changelog.d. Complete parallel round 1: Standards/Spec Verdict: APPROVED, both axes APPROVED, no findings or nits. Design Verdict: APPROVED, no findings or nits. Both reviewed all five files and every hunk, range 4a0afe7319ba3cc21165ee51d0d687f0be5fc509..9a38bccc878a08c9b1c746690199b1eeede222c0, 1 commit, 5 files, +353/-10. Both verified matching trusted full-race gate metadata. Reviewers ran no tests, builds, lint or network operations. T11 satisfies R3/R4/R7, native stream arguments, legacy errors/duplicates, real drain/Run/history/replay/hooks/observer/details/JSON. Source and tests remain unchanged after reviewed HEAD. T11 accepted only. Milestone 010 and T12/T13 remain unchecked. Next: T12 Bedrock buffered/history with its declared provider RED and isolated local credentials. No push, deploy or live provider call.
+- HEAD commit SHA: `9a38bccc878a08c9b1c746690199b1eeede222c0`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T12 Bedrock buffered/history after writing its declared failing provider test
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1331,7 +1352,7 @@ T11 base 4a0afe7319ba3cc21165ee51d0d687f0be5fc509. Relevant implementation is un
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit verified T11 and evidence, sync/pre-review records, repin safe wrapper SHA, obtain host gate and parallel reviews
+- Next action: Implement T12 Bedrock buffered/history after writing its declared failing provider test
 
 ## Approval / decision note — 2026-11-10
 

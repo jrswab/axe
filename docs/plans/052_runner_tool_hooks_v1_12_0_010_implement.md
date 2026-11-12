@@ -133,7 +133,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_Ollama_Buffered`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_Ollama_Buffered` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: none.
 
-- [ ] T11 — Ollama native raw emitter and real stream/history.
+- [x] T11 — Ollama native raw emitter and real stream/history.
   Budget: 30 min
   Primary R-IDs: R3, R4, R7. Dependencies: T02, T10.
   Source: `internal/provider/ollama.go: Ollama.SendStream` chunk decode 467, flatten 478-480, ToolInput marshal 487. DecodeJSON into unchanged ollamaResponse; REMOVE flattened args writes and pass raw tc.Function.Arguments to existing mustMarshal.
