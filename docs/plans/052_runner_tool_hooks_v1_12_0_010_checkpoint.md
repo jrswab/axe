@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit five verified T12 paths, then initial factory-sync; obtain clean-HEAD safe host gate before Standards, Spec, and Design reviews.
-- Last completed phase/task/gate and timestamp: T12 planning/records lint PASS; verified commit ready, 2026-11-13T01:51:42.275111+00:00
+- Next safe action: Commit this sync evidence, repin only safe wrapper SHA to final clean HEAD, validate wrapper, then ask Jaron to run host gate before parallel Standards/Spec/Design reviews.
+- Last completed phase/task/gate and timestamp: T12 verified implementation committed and initial sync PASS; host gate pending, 2026-11-13T01:52:19.161524+00:00
 
 ## Gate evidence
 
@@ -1460,6 +1460,27 @@ run_script docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec: exit 0, h
 
 - Next action: Commit five verified T12 paths, then initial factory-sync; obtain clean-HEAD safe host gate before Standards, Spec, and Design reviews.
 
+### T12 verified implementation committed and initial sync PASS; host gate pending
+
+- Gate: T12 verified implementation committed and initial sync PASS; host gate pending
+- Commands/results:
+factory-commit exited 0, implementation/evidence commit a3f121d40423470bd1b5c834cc1ae91888dcdaef, five exact paths and no remaining changes. factory-sync --base origin/master exited 0 after commit: branch runner-tool-hooks, head_before a3f121d40423470bd1b5c834cc1ae91888dcdaef, ahead 185, behind 0, shared_files [], conflicts [], synced true; HEAD unchanged. This fulfills user's one-time verification-before-initial-sync exception. records-stale-check 2747db100d41b99bf489815dd3890c44529c1431 exit 0: No TAGS.md, .mem/, or changelog.d/ found; nothing to check. docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit 0, docs-lint 1 header, PASS 205 Markdown files, 0 findings. Current sources retain independently verified bytes; no full-module race/current host gate/reviews yet. Task review base 2747db100d41b99bf489815dd3890c44529c1431; milestone base 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec. Read current exec/auto-review/design-review guidance: T12 is design-bearing and needs parallel separate Standards, Spec, Design review axes against final clean review HEAD with valid host factory-gate log. Earlier combined Standards/Spec convention is historical, not a waiver of separate axes. Safe host wrapper still old T11 until repinned to final committed HEAD. Preserve all safety checks and exact approved environment. No unscrubbed factory-gate launch, infrastructure changes, pushes or deploys.
+- HEAD commit SHA: `a3f121d40423470bd1b5c834cc1ae91888dcdaef`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit this sync evidence, repin only safe wrapper SHA to final clean HEAD, validate wrapper, then ask Jaron to run host gate before parallel Standards/Spec/Design reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1473,7 +1494,7 @@ run_script docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec: exit 0, h
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit five verified T12 paths, then initial factory-sync; obtain clean-HEAD safe host gate before Standards, Spec, and Design reviews.
+- Next action: Commit this sync evidence, repin only safe wrapper SHA to final clean HEAD, validate wrapper, then ask Jaron to run host gate before parallel Standards/Spec/Design reviews.
 
 ## Approval / decision note — 2026-11-10
 
