@@ -26,7 +26,7 @@ class AdmissionTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="axe-release-admit-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        git(self.root, "init", "-q")
+        git(self.root, "init", "-q", "--object-format=sha1")
         git(self.root, "config", "user.name", "Fixture")
         git(self.root, "config", "user.email", "fixture@example.invalid")
         (self.root / "CHANGELOG.md").write_text("## [1.2.3]\n### Added\n- A change\n\n## [Older]\nold\n")
@@ -52,7 +52,7 @@ class AdmissionTest(unittest.TestCase):
         result = subprocess.run(command[:-4] + ["--sha", "0" * 40, "--notes", str(self.notes)],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
-        self.assertIn("must match", result.stderr)
+        self.assertIn("event SHA must resolve to a commit", result.stderr)
         (self.root / "new").write_text("new")
         git(self.root, "add", "new")
         git(self.root, "commit", "-qm", "off branch")
@@ -63,8 +63,96 @@ class AdmissionTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "must match"):
             self.admit()
         git(self.root, "reset", "--hard", self.head)
-        with self.assertRaisesRegex(ValueError, "must match"):
+        with self.assertRaisesRegex(ValueError, "event SHA must resolve to a commit"):
             self.admit(sha="0" * 40)
+
+    def test_cli_event_sha(self):
+        scripts = self.root / ".agents/scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        command = [str(scripts / "release-check"), "admit", "--tag", "v1.2.3", "--ref",
+                   "refs/tags/v1.2.3", "--notes", str(self.notes)]
+        tag_object = git(self.root, "rev-parse", "refs/tags/v1.2.3")
+        self.assertNotEqual(tag_object, self.head)
+        self.assertEqual(git(self.root, "rev-parse", f"{tag_object}^{{commit}}"), self.head)
+        for sha in (tag_object, self.head, tag_object.upper(), self.head.upper()):
+            with self.subTest(valid_sha=sha):
+                result = subprocess.run(command + [f"--sha={sha}"], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, f"admitted v1.2.3 at {self.head}; notes: {self.notes}\n")
+                self.assertEqual(result.stderr, "")
+                self.assertEqual(self.notes.read_text(), "### Added\n- A change\n")
+
+        (self.root / "other").write_text("other")
+        git(self.root, "add", "other")
+        git(self.root, "commit", "-qm", "other")
+        other_commit = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "tag", "-a", "other", "-m", "other")
+        other_tag = git(self.root, "rev-parse", "refs/tags/other")
+        blob = git(self.root, "rev-parse", "HEAD:other")
+        git(self.root, "reset", "--hard", self.head)
+        invalid = {
+            "short": (self.head[:12], "full hexadecimal object ID"),
+            "flag": ("--help", "full hexadecimal object ID"),
+            "revision": (f"{self.head}^{{commit}}", "full hexadecimal object ID"),
+            "non-hex": ("z" * 40, "full hexadecimal object ID"),
+            "wrong length": (self.head + "0" * 24, "full hexadecimal object ID"),
+            "unknown": ("0" * 40, "event SHA must resolve to a commit"),
+            "blob": (blob, "event SHA must resolve to a commit"),
+            "other commit": (other_commit, "must match"),
+            "other tag object": (other_tag, "must match"),
+        }
+        for name, (sha, diagnostic) in invalid.items():
+            with self.subTest(invalid_sha=name):
+                self.notes.unlink(missing_ok=True)
+                result = subprocess.run(command + [f"--sha={sha}"], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn(diagnostic, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertFalse(self.notes.exists())
+
+        git(self.root, "tag", "-d", "v1.2.3")
+        git(self.root, "tag", "v1.2.3")
+        self.assertEqual(git(self.root, "rev-parse", "refs/tags/v1.2.3"), self.head)
+        result = subprocess.run(command + [f"--sha={self.head}"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, f"admitted v1.2.3 at {self.head}; notes: {self.notes}\n")
+        self.assertEqual(result.stderr, "")
+        self.assertEqual(self.notes.read_text(), "### Added\n- A change\n")
+
+    def test_cli_sha256_object_format(self):
+        root = self.root / "sha256"
+        root.mkdir()
+        git(root, "init", "-q", "--object-format=sha256")
+        git(root, "config", "user.name", "Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        (root / "CHANGELOG.md").write_text("## [1.2.3]\n- A change\n")
+        git(root, "add", "CHANGELOG.md")
+        git(root, "commit", "-qm", "fixture")
+        head = git(root, "rev-parse", "HEAD")
+        git(root, "tag", "-a", "v1.2.3", "-m", "fixture")
+        tag_object = git(root, "rev-parse", "refs/tags/v1.2.3")
+        git(root, "update-ref", "refs/remotes/origin/master", head)
+        scripts = root / ".agents/scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        notes = root / "notes.md"
+        command = [str(scripts / "release-check"), "admit", "--tag", "v1.2.3", "--ref",
+                   "refs/tags/v1.2.3", "--notes", str(notes)]
+        self.assertEqual(len(head), 64)
+        self.assertNotEqual(tag_object, head)
+        for sha in (head, tag_object):
+            with self.subTest(valid_sha=sha):
+                result = subprocess.run(command + [f"--sha={sha}"], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, f"admitted v1.2.3 at {head}; notes: {notes}\n")
+                self.assertEqual(result.stderr, "")
+                self.assertEqual(notes.read_text(), "- A change\n")
+        result = subprocess.run(command + [f"--sha={head[:40]}"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("full hexadecimal object ID", result.stderr)
 
     def test_reference_definitions_are_not_release_notes(self):
         text = "## [1.2.3]\n### Added\n\n[1.2.3]: https://example.invalid/release\n"

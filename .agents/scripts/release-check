@@ -52,7 +52,13 @@ def admit(tag, ref, sha, notes, root=ROOT):
     run("git", "check-ref-format", ref, cwd=root)
     head = run("git", "rev-parse", "--verify", "HEAD^{commit}", cwd=root).stdout.strip()
     tagged = run("git", "rev-parse", "--verify", f"{ref}^{{commit}}", cwd=root).stdout.strip()
-    if sha != head or tagged != head:
+    if not re.fullmatch(rf"[0-9a-fA-F]{{{len(head)}}}", sha):
+        raise ValueError("event SHA must be a full hexadecimal object ID")
+    try:
+        event = run("git", "rev-parse", "--verify", f"{sha.lower()}^{{commit}}", cwd=root).stdout.strip()
+    except subprocess.CalledProcessError as error:
+        raise ValueError("event SHA must resolve to a commit") from error
+    if event != head or tagged != head:
         raise ValueError("event SHA, checkout HEAD, and peeled tag commit must match")
     ancestry = subprocess.run(["git", "merge-base", "--is-ancestor", head, "refs/remotes/origin/master"],
                               cwd=root, capture_output=True, text=True)
