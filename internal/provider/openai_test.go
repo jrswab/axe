@@ -222,6 +222,185 @@ func TestOpenAI_Send_OmitsEmptySystem(t *testing.T) {
 	}
 }
 
+func TestOpenAI_ReasoningEffort(t *testing.T) {
+	methods := []struct {
+		name        string
+		isStream    bool
+		wantLowBody string
+	}{
+		{
+			name:        "Send",
+			wantLowBody: `{"model":"gpt-4o","messages":[{"role":"user","content":"Hi"}],"reasoning_effort":"low"}`,
+		},
+		{
+			name:        "SendStream",
+			isStream:    true,
+			wantLowBody: `{"model":"gpt-4o","messages":[{"role":"user","content":"Hi"}],"reasoning_effort":"low","stream":true,"stream_options":{"include_usage":true}}`,
+		},
+	}
+	tests := []struct {
+		name   string
+		effort string
+	}{
+		{name: "empty"},
+		{name: "low", effort: "low"},
+		{name: "none", effort: "none"},
+		{name: "high", effort: "high"},
+		{name: "max", effort: "max"},
+		{name: "custom", effort: "custom-effort"},
+	}
+
+	for _, method := range methods {
+		t.Run(method.name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					var gotBody []byte
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						gotBody, _ = io.ReadAll(r.Body)
+						if method.isStream {
+							w.Header().Set("Content-Type", "text/event-stream")
+							_, _ = w.Write([]byte("data: [DONE]\n\n"))
+							return
+						}
+						_ = json.NewEncoder(w).Encode(map[string]interface{}{
+							"model":   "gpt-4o",
+							"choices": []map[string]interface{}{{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"}},
+							"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+						})
+					}))
+					defer server.Close()
+
+					o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+					req := &Request{
+						Model:           "gpt-4o",
+						Messages:        []Message{{Role: "user", Content: "Hi"}},
+						ReasoningEffort: tt.effort,
+					}
+					if method.isStream {
+						stream, err := o.SendStream(context.Background(), req)
+						if err != nil {
+							t.Fatalf("unexpected error: %v", err)
+						}
+						defer func() { _ = stream.Close() }()
+					} else if _, err := o.Send(context.Background(), req); err != nil {
+						t.Fatalf("unexpected error: %v", err)
+					}
+
+					if tt.effort == "low" && string(gotBody) != method.wantLowBody {
+						t.Errorf("request body = %s, want %s", gotBody, method.wantLowBody)
+					}
+					var body map[string]interface{}
+					if err := json.Unmarshal(gotBody, &body); err != nil {
+						t.Fatalf("failed to parse request body: %v", err)
+					}
+					effort, hasEffort := body["reasoning_effort"]
+					if tt.effort == "" {
+						if hasEffort {
+							t.Error("expected reasoning_effort to be omitted when empty")
+						}
+					} else {
+						if effort != tt.effort {
+							t.Errorf("reasoning_effort = %v, want %q", effort, tt.effort)
+						}
+						if !strings.Contains(string(gotBody), `"reasoning_effort":"`+tt.effort+`"`) {
+							t.Errorf("raw body does not contain reasoning_effort %q: %s", tt.effort, gotBody)
+						}
+					}
+					if _, ok := body["reasoning"]; ok {
+						t.Error("request body should not contain a nested reasoning object")
+					}
+					if method.isStream && body["stream"] != true {
+						t.Errorf("stream = %v, want true", body["stream"])
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestOpenAI_TemperatureAndLegacyBody(t *testing.T) {
+	methods := []struct {
+		name           string
+		isStream       bool
+		wantLegacyBody string
+	}{
+		{
+			name:           "Send",
+			wantLegacyBody: `{"model":"gpt-4o","messages":[{"role":"user","content":"Hi"}]}`,
+		},
+		{
+			name:           "SendStream",
+			isStream:       true,
+			wantLegacyBody: `{"model":"gpt-4o","messages":[{"role":"user","content":"Hi"}],"stream":true,"stream_options":{"include_usage":true}}`,
+		},
+	}
+	tests := []struct {
+		name        string
+		temperature float64
+		set         bool
+		wantRaw     string
+	}{
+		{name: "explicit zero", set: true, wantRaw: "0"},
+		{name: "legacy unset"},
+		{name: "nonzero without presence", temperature: 0.7, wantRaw: "0.7"},
+		{name: "nonzero with presence", temperature: 0.7, set: true, wantRaw: "0.7"},
+	}
+	for _, method := range methods {
+		t.Run(method.name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					var gotBody []byte
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						gotBody, _ = io.ReadAll(r.Body)
+						if method.isStream {
+							w.Header().Set("Content-Type", "text/event-stream")
+							_, _ = w.Write([]byte("data: [DONE]\n\n"))
+							return
+						}
+						_ = json.NewEncoder(w).Encode(map[string]interface{}{
+							"model":   "gpt-4o",
+							"choices": []map[string]interface{}{{"message": map[string]string{"content": "ok"}, "finish_reason": "stop"}},
+							"usage":   map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+						})
+					}))
+					defer server.Close()
+
+					o, _ := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+					req := &Request{
+						Model:          "gpt-4o",
+						Messages:       []Message{{Role: "user", Content: "Hi"}},
+						Temperature:    tt.temperature,
+						TemperatureSet: tt.set,
+					}
+					if method.isStream {
+						stream, err := o.SendStream(context.Background(), req)
+						if err != nil {
+							t.Fatalf("unexpected error: %v", err)
+						}
+						defer func() { _ = stream.Close() }()
+					} else if _, err := o.Send(context.Background(), req); err != nil {
+						t.Fatalf("unexpected error: %v", err)
+					}
+
+					var body map[string]json.RawMessage
+					if err := json.Unmarshal(gotBody, &body); err != nil {
+						t.Fatalf("failed to parse request body: %v", err)
+					}
+					if got := string(body["temperature"]); got != tt.wantRaw {
+						t.Errorf("temperature = %q, want %q", got, tt.wantRaw)
+					}
+					if tt.wantRaw != "" && !strings.Contains(string(gotBody), `"temperature":`+tt.wantRaw) {
+						t.Errorf("raw body missing temperature %s: %s", tt.wantRaw, gotBody)
+					}
+					if tt.wantRaw == "" && string(gotBody) != method.wantLegacyBody {
+						t.Errorf("legacy request body = %s, want %s", gotBody, method.wantLegacyBody)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestOpenAI_Send_OmitsZeroTemperature(t *testing.T) {
 	var hasTemperature bool
 
@@ -249,7 +428,7 @@ func TestOpenAI_Send_OmitsZeroTemperature(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if hasTemperature {
-		t.Error("expected temperature to be omitted when 0")
+		t.Error("expected temperature to be omitted when zero and unset")
 	}
 }
 

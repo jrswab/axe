@@ -341,6 +341,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 
 [params]
 temperature = 0.3
+reasoning_effort = "low"           # optional; OpenAI and Atlas Cloud only
 max_tokens = 4096
 # response_format = "json_object"   # text, json_object, or json_schema
 
@@ -361,6 +362,12 @@ args = ["--root", "/home/user/projects"]
 ```
 
 All fields except `name` and `model` are optional.
+
+### Parameters
+
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI and Atlas Cloud send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+
+OpenAI and Atlas Cloud send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures. This changes behavior for OpenAI and Atlas Cloud agents that set `temperature = 0.0`.
 
 ### Retry
 

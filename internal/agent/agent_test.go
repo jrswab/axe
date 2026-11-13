@@ -169,6 +169,89 @@ max_tokens = 4096
 	}
 }
 
+func TestLoad_ReasoningEffort(t *testing.T) {
+	tests := []struct {
+		name   string
+		params string
+		want   string
+	}{
+		{name: "params omitted"},
+		{name: "field omitted", params: "[params]\nmax_tokens = 4096"},
+		{name: "empty", params: "[params]\nreasoning_effort = \"\""},
+		{name: "low", params: "[params]\nreasoning_effort = \"low\"", want: "low"},
+		{name: "none", params: "[params]\nreasoning_effort = \"none\"", want: "none"},
+		{name: "high", params: "[params]\nreasoning_effort = \"high\"", want: "high"},
+		{name: "max", params: "[params]\nreasoning_effort = \"max\"", want: "max"},
+		{name: "custom", params: "[params]\nreasoning_effort = \"provider-specific\"", want: "provider-specific"},
+		{name: "whitespace and case", params: "[params]\nreasoning_effort = \" LOW \"", want: " LOW "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agentsDir := setupAgentsDir(t)
+			writeAgentFile(t, agentsDir, "test", "name = \"test\"\nmodel = \"openai/gpt-4o\"\n"+tt.params)
+
+			cfg, err := Load("test", nil)
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+			if err := Validate(cfg); err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+			if cfg.Params.ReasoningEffort != tt.want {
+				t.Errorf("Params.ReasoningEffort = %q, want %q", cfg.Params.ReasoningEffort, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoad_TemperaturePresence(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  string
+		want    float64
+		wantSet bool
+	}{
+		{name: "explicit zero", params: "[params]\ntemperature = 0.0", wantSet: true},
+		{name: "nonzero", params: "[params]\ntemperature = 0.7", want: 0.7, wantSet: true},
+		{name: "field omitted", params: "[params]\nmax_tokens = 4096"},
+		{name: "params omitted"},
+	}
+	for _, source := range []string{"global", "local"} {
+		t.Run(source, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					agentsDir := setupAgentsDir(t)
+					var searchDirs []string
+					if source == "local" {
+						agentsDir = t.TempDir()
+						searchDirs = []string{agentsDir}
+					}
+					writeAgentFile(t, agentsDir, "test", "name = \"test\"\nmodel = \"openai/gpt-4o\"\n"+tt.params)
+
+					cfg, err := Load("test", searchDirs)
+					if err != nil {
+						t.Fatalf("Load() error = %v", err)
+					}
+					if cfg.Params.Temperature != tt.want || cfg.Params.TemperatureSet != tt.wantSet {
+						t.Errorf("Load() temperature = %g, set = %t, want %g, %t", cfg.Params.Temperature, cfg.Params.TemperatureSet, tt.want, tt.wantSet)
+					}
+
+					configs, err := List(searchDirs)
+					if err != nil {
+						t.Fatalf("List() error = %v", err)
+					}
+					if len(configs) != 1 {
+						t.Fatalf("List() returned %d agents, want 1", len(configs))
+					}
+					if configs[0].Params.Temperature != tt.want || configs[0].Params.TemperatureSet != tt.wantSet {
+						t.Errorf("List() temperature = %g, set = %t, want %g, %t", configs[0].Params.Temperature, configs[0].Params.TemperatureSet, tt.want, tt.wantSet)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestLoad_MinimalConfig(t *testing.T) {
 	agentsDir := setupAgentsDir(t)
 
@@ -714,29 +797,50 @@ func TestScaffold_ContainsModelPlaceholder(t *testing.T) {
 	}
 }
 
+func TestScaffold_IncludesReasoningEffortConfig(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, `# reasoning_effort = "low"`) {
+		t.Errorf("scaffold output missing reasoning_effort example:\n%s", out)
+	}
+}
+
 func TestScaffold_IsValidTOML(t *testing.T) {
 	out, err := Scaffold("test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Remove comment lines and parse
-	var cleaned strings.Builder
-	for _, line := range strings.Split(out, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-		cleaned.WriteString(line)
-		cleaned.WriteString("\n")
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default", input: out},
+		{
+			name: "reasoning effort enabled",
+			input: strings.NewReplacer(
+				"# [params]", "[params]",
+				`# reasoning_effort = "low"`, `reasoning_effort = "low"`,
+			).Replace(out),
+			want: "low",
+		},
 	}
-
-	// Replace placeholder model with a real value for valid parsing
-	tomlStr := strings.Replace(cleaned.String(), `"provider/model-name"`, `"openai/gpt-4o"`, 1)
-
-	var cfg AgentConfig
-	if _, decodeErr := tomlDecode(tomlStr, &cfg); decodeErr != nil {
-		t.Errorf("scaffold output (cleaned) is not valid TOML: %v\ncleaned:\n%s", decodeErr, tomlStr)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cfg AgentConfig
+			if _, err := tomlDecode(tt.input, &cfg); err != nil {
+				t.Fatalf("scaffold output is not valid TOML: %v\n%s", err, tt.input)
+			}
+			if err := Validate(&cfg); err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+			if cfg.Params.ReasoningEffort != tt.want {
+				t.Errorf("Params.ReasoningEffort = %q, want %q", cfg.Params.ReasoningEffort, tt.want)
+			}
+		})
 	}
 }
 

@@ -213,6 +213,57 @@ func TestAnthropic_Send_OmitsZeroTemperature(t *testing.T) {
 	}
 }
 
+func TestAnthropic_Send_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name        string
+		newProvider func(string, ...AnthropicOption) (*Anthropic, error)
+		model       string
+	}{
+		{"anthropic", NewAnthropic, "claude-sonnet-4-20250514"},
+		{"minimax", NewMiniMax, "MiniMax-M2.5"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]interface{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Errorf("failed to parse request body: %v", err)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(makeAnthropicSuccessResponse("ok", tc.model)))
+			}))
+			defer server.Close()
+
+			a, err := tc.newProvider("test-key", WithBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			resp, err := a.Send(context.Background(), &Request{
+				Model:           tc.model,
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+			})
+			if err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+			if resp.Content != "ok" {
+				t.Errorf("Content = %q, want ok", resp.Content)
+			}
+			if gotBody["model"] != tc.model {
+				t.Errorf("model = %v, want %q", gotBody["model"], tc.model)
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if _, exists := gotBody[key]; exists {
+					t.Errorf("body contains %q: %v", key, gotBody[key])
+				}
+			}
+		})
+	}
+}
+
 func TestAnthropic_Send_DefaultMaxTokens(t *testing.T) {
 	var gotBody map[string]interface{}
 

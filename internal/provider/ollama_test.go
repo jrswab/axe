@@ -226,6 +226,83 @@ func TestOllama_Send_OmitsZeroTemperature(t *testing.T) {
 	}
 }
 
+func TestOllama_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name   string
+		stream bool
+	}{
+		{"Send", false},
+		{"SendStream", true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody []byte
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var err error
+				gotBody, err = io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("failed to read request body: %v", err)
+				}
+				if tc.stream {
+					_, _ = fmt.Fprintln(w, `{"message":{"content":"ok"},"done":true,"done_reason":"stop"}`)
+					return
+				}
+				_ = json.NewEncoder(w).Encode(ollamaSuccessResponse())
+			}))
+			defer server.Close()
+
+			o, err := NewOllama(WithOllamaBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			req := &Request{
+				Model:           "llama3",
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+				MaxTokens:       100,
+			}
+			if tc.stream {
+				stream, err := o.SendStream(context.Background(), req)
+				if err != nil {
+					t.Fatalf("unexpected SendStream error: %v", err)
+				}
+				defer func() { _ = stream.Close() }()
+				for {
+					_, err := stream.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						t.Fatalf("unexpected stream error: %v", err)
+					}
+				}
+			} else if _, err := o.Send(context.Background(), req); err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+
+			var body map[string]interface{}
+			if err := json.Unmarshal(gotBody, &body); err != nil {
+				t.Fatalf("failed to parse request body: %v", err)
+			}
+			if body["stream"] != tc.stream {
+				t.Errorf("stream = %v, want %v", body["stream"], tc.stream)
+			}
+			opts, ok := body["options"].(map[string]interface{})
+			if !ok || opts["num_predict"] != float64(100) {
+				t.Errorf("options = %v, want num_predict 100", body["options"])
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if strings.Contains(string(gotBody), `"`+key+`"`) {
+					t.Errorf("body contains %q: %s", key, gotBody)
+				}
+			}
+		})
+	}
+}
+
 func TestOllama_Send_OmitsZeroMaxTokens(t *testing.T) {
 	var hasNumPredict bool
 

@@ -41,6 +41,207 @@ func newMockStdoutStderr() (*bytes.Buffer, *bytes.Buffer) {
 	return new(bytes.Buffer), new(bytes.Buffer)
 }
 
+type capturingProvider struct {
+	requests []provider.Request
+}
+
+func (p *capturingProvider) Send(_ context.Context, req *provider.Request) (*provider.Response, error) {
+	p.requests = append(p.requests, *req)
+	return &provider.Response{Content: "Done", Model: req.Model, StopReason: "stop"}, nil
+}
+
+func (p *capturingProvider) SendStream(_ context.Context, req *provider.Request) (*provider.EventStream, error) {
+	p.requests = append(p.requests, *req)
+	return makeStream([]provider.StreamEvent{
+		{Type: provider.StreamEventText, Text: "Done"},
+		{Type: provider.StreamEventDone, StopReason: "stop"},
+	}), nil
+}
+
+func TestRun_ReasoningEffort(t *testing.T) {
+	tests := []struct {
+		name   string
+		params string
+		want   string
+	}{
+		{name: "omitted"},
+		{name: "empty", params: "[params]\nreasoning_effort = \"\""},
+		{name: "low", params: "[params]\nreasoning_effort = \"low\"", want: "low"},
+		{name: "none", params: "[params]\nreasoning_effort = \"none\"", want: "none"},
+		{name: "high", params: "[params]\nreasoning_effort = \"high\"", want: "high"},
+		{name: "max", params: "[params]\nreasoning_effort = \"max\"", want: "max"},
+		{name: "custom", params: "[params]\nreasoning_effort = \"provider-specific\"", want: "provider-specific"},
+		{name: "whitespace and case", params: "[params]\nreasoning_effort = \" LOW \"", want: " LOW "},
+	}
+	for _, mode := range []struct {
+		name   string
+		stream bool
+	}{
+		{name: "send"},
+		{name: "stream", stream: true},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					setupTestEnv(t,
+						"[providers.openai]\napi_key = \"fake-key\"\n",
+						"test-agent",
+						"name = \"test-agent\"\nmodel = \"openai/gpt-4o\"\n"+tt.params,
+					)
+					prov := &capturingProvider{}
+					newProvider := func(name, _, _ string) (provider.Provider, error) {
+						if name != "openai" {
+							t.Fatalf("provider = %q, want openai", name)
+						}
+						return prov, nil
+					}
+					stdout, stderr := newMockStdoutStderr()
+					_, err := run(context.Background(), Options{
+						AgentName: "test-agent",
+						Prompt:    "Test reasoning effort",
+						Stdin:     strings.NewReader(""),
+						Stdout:    stdout,
+						Stderr:    stderr,
+						Stream:    mode.stream,
+					}, newProvider)
+					if err != nil {
+						t.Fatalf("run() error = %v", err)
+					}
+					if len(prov.requests) != 1 {
+						t.Fatalf("got %d requests, want 1", len(prov.requests))
+					}
+					if got := prov.requests[0].ReasoningEffort; got != tt.want {
+						t.Errorf("Request.ReasoningEffort = %q, want %q", got, tt.want)
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestRun_ParamsOutput(t *testing.T) {
+	tests := []struct {
+		name   string
+		params string
+		want   string
+	}{
+		{name: "omitted", want: "temperature=0, max_tokens=0"},
+		{name: "empty", params: "[params]\nreasoning_effort = \"\"", want: "temperature=0, max_tokens=0"},
+		{name: "low", params: "[params]\nreasoning_effort = \"low\"", want: "temperature=0, max_tokens=0, reasoning_effort=low"},
+		{
+			name:   "all params",
+			params: "[params]\ntemperature = 0.7\nmax_tokens = 4096\nresponse_format = \"json_object\"\nreasoning_effort = \"high\"",
+			want:   "temperature=0.7, max_tokens=4096, response_format=json_object, reasoning_effort=high",
+		},
+	}
+	for _, mode := range []struct {
+		name   string
+		dryRun bool
+	}{
+		{name: "dry-run", dryRun: true},
+		{name: "verbose"},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					setupTestEnv(t,
+						"[providers.openai]\napi_key = \"fake-key\"\n",
+						"test-agent",
+						"name = \"test-agent\"\nmodel = \"openai/gpt-4o\"\n"+tt.params,
+					)
+					prov := &capturingProvider{}
+					newProvider := func(_, _, _ string) (provider.Provider, error) {
+						if mode.dryRun {
+							t.Fatal("dry-run should not create a provider")
+						}
+						return prov, nil
+					}
+					stdout, stderr := newMockStdoutStderr()
+					result, err := run(context.Background(), Options{
+						AgentName: "test-agent",
+						Stdin:     strings.NewReader(""),
+						Stdout:    stdout,
+						Stderr:    stderr,
+						DryRun:    mode.dryRun,
+						Verbose:   !mode.dryRun,
+					}, newProvider)
+					if err != nil {
+						t.Fatalf("run() error = %v", err)
+					}
+					if mode.dryRun {
+						if !result.DryRun || result.DryRunInfo == nil {
+							t.Fatal("expected dry-run information")
+						}
+						if got := result.DryRunInfo.Params; got != tt.want {
+							t.Errorf("Params = %q, want %q", got, tt.want)
+						}
+						return
+					}
+					if !strings.Contains(stderr.String(), "Params:   "+tt.want+"\n") {
+						t.Errorf("verbose output missing Params line %q:\n%s", tt.want, stderr.String())
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestRun_TemperaturePresence(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  string
+		want    float64
+		wantSet bool
+	}{
+		{name: "explicit zero", params: "[params]\ntemperature = 0.0", wantSet: true},
+		{name: "nonzero", params: "[params]\ntemperature = 0.7", want: 0.7, wantSet: true},
+		{name: "field omitted", params: "[params]\nmax_tokens = 4096"},
+		{name: "params omitted"},
+	}
+	for _, mode := range []struct {
+		name   string
+		stream bool
+	}{
+		{name: "send"},
+		{name: "stream", stream: true},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					setupTestEnv(t,
+						"[providers.openai]\napi_key = \"fake-key\"\n",
+						"test-agent",
+						"name = \"test-agent\"\nmodel = \"openai/gpt-4o\"\n"+tt.params,
+					)
+					prov := &capturingProvider{}
+					newProvider := func(_, _, _ string) (provider.Provider, error) {
+						return prov, nil
+					}
+					stdout, stderr := newMockStdoutStderr()
+					_, err := run(context.Background(), Options{
+						AgentName: "test-agent",
+						Prompt:    "Test temperature presence",
+						Stdin:     strings.NewReader(""),
+						Stdout:    stdout,
+						Stderr:    stderr,
+						Stream:    mode.stream,
+					}, newProvider)
+					if err != nil {
+						t.Fatalf("run() error = %v", err)
+					}
+					if len(prov.requests) != 1 {
+						t.Fatalf("got %d requests, want 1", len(prov.requests))
+					}
+					req := prov.requests[0]
+					if req.Temperature != tt.want || req.TemperatureSet != tt.wantSet {
+						t.Errorf("Request temperature = %g, set = %t, want %g, %t", req.Temperature, req.TemperatureSet, tt.want, tt.wantSet)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestRun_SingleShot_NoTools(t *testing.T) {
 	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
 		testutil.AnthropicResponse("Hello from runner"),

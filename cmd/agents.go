@@ -124,11 +124,14 @@ var agentsShowCmd = &cobra.Command{
 		if cfg.Memory.MaxEntries != 0 {
 			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Memory MaxEntries:", cfg.Memory.MaxEntries)
 		}
-		if cfg.Params.Temperature != 0 {
+		if cfg.Params.TemperatureSet || cfg.Params.Temperature != 0 {
 			_, _ = fmt.Fprintf(w, "%-16s%g\n", "Temperature:", cfg.Params.Temperature)
 		}
 		if cfg.Params.MaxTokens != 0 {
 			_, _ = fmt.Fprintf(w, "%-16s%d\n", "Max Tokens:", cfg.Params.MaxTokens)
+		}
+		if cfg.Params.ReasoningEffort != "" {
+			_, _ = fmt.Fprintf(w, "%-16s%s\n", "Reasoning:", cfg.Params.ReasoningEffort)
 		}
 
 		return nil

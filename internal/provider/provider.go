@@ -75,14 +75,19 @@ func (r ResponseFormat) IsSet() bool {
 
 // Request represents an LLM completion request.
 type Request struct {
-	Model          string
-	System         string
-	Messages       []Message
-	Temperature    float64
+	Model       string
+	System      string
+	Messages    []Message
+	Temperature float64
+	// TemperatureSet is true when the caller explicitly configured temperature, so providers that honor it can send an explicit 0.
+	// Currently only OpenAI and Atlas Cloud honor it.
+	TemperatureSet bool
 	MaxTokens      int
-	CacheConfig    bool
-	Tools          []Tool         // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
-	ResponseFormat ResponseFormat // Optional structured output constraint.
+	// ReasoningEffort is passed through unchanged; only OpenAI-compatible providers (OpenAI, Atlas Cloud) send it. Empty means omit.
+	ReasoningEffort string
+	CacheConfig     bool
+	Tools           []Tool         // Tool definitions to send to the LLM. If nil or empty, no tools are sent.
+	ResponseFormat  ResponseFormat // Optional structured output constraint.
 }
 
 // Response represents an LLM completion response.

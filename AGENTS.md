@@ -100,7 +100,8 @@ max_entries = 100    # Default: 100 (warn when exceeded)
 path = "/custom/path" # Optional (default: $XDG_DATA_HOME/axe/memory/{agent-name}.md)
 
 [params]
-temperature = 0.7  # Default: 0 (omitted if 0)
+temperature = 0.7  # Optional (OpenAI/Atlas Cloud send explicit 0)
+reasoning_effort = "low" # Optional (OpenAI/Atlas Cloud only, no value validation)
 max_tokens = 4096  # Default: 0 (provider default)
 
 [artifacts]
@@ -205,6 +206,7 @@ region = "us-east-1"
 
 - **GitHub Actions** - `.github/workflows/go.yml` runs tests and linting on push/PR.
 - **Release workflow** - `.github/workflows/release.yml` uses GoReleaser on tag push.
+- **Provider key check** - `.github/workflows/provider-key-check.yml` runs daily and on demand. `.github/scripts/provider-key-check.sh` probes each smoke-test key and opens or updates one issue on auth or billing failure.
 - **GoReleaser** - `.goreleaser.yml` builds multi-platform binaries, creates GitHub release.
 - **Linting** - `.golangci.yml` configures golangci-lint. Run with `golangci-lint run`.
 

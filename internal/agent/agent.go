@@ -74,10 +74,13 @@ func (r ResponseFormatConfig) IsSet() bool {
 
 // ParamsConfig holds model parameter overrides for an agent.
 type ParamsConfig struct {
-	Temperature    float64              `toml:"temperature"`
-	MaxTokens      int                  `toml:"max_tokens"`
-	CacheEnabled   *bool                `toml:"cache_enabled"`
-	ResponseFormat ResponseFormatConfig `toml:"response_format"`
+	Temperature float64 `toml:"temperature"`
+	// TemperatureSet reports whether the agent TOML explicitly configured temperature, including zero.
+	TemperatureSet  bool                 `toml:"-"`
+	MaxTokens       int                  `toml:"max_tokens"`
+	ReasoningEffort string               `toml:"reasoning_effort"`
+	CacheEnabled    *bool                `toml:"cache_enabled"`
+	ResponseFormat  ResponseFormatConfig `toml:"response_format"`
 }
 
 // RetryConfig holds retry sub-configuration for an agent.
@@ -258,9 +261,11 @@ func loadFromPath(path string) (*AgentConfig, error) {
 	}
 
 	var cfg AgentConfig
-	if _, err := toml.Decode(string(data), &cfg); err != nil {
+	md, err := toml.Decode(string(data), &cfg)
+	if err != nil {
 		return nil, err
 	}
+	cfg.Params.TemperatureSet = md.IsDefined("params", "temperature")
 
 	if err := Validate(&cfg); err != nil {
 		return nil, err
@@ -438,6 +443,7 @@ model = "provider/model-name"
 # [params]
 # temperature = 0.3
 # max_tokens = 4096
+# reasoning_effort = "low" # Optional, passed through unchanged. Empty means omit.
 # response_format = "json_object"
 # For json_schema with validation, use the table form instead:
 # [params.response_format]

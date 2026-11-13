@@ -1327,6 +1327,121 @@ func TestOpenCode_SendStream_UnknownModelFallsThrough(t *testing.T) {
 	}
 }
 
+func TestOpenCode_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	routes := []struct {
+		name           string
+		model          string
+		path           string
+		response       string
+		streamResponse string
+	}{
+		{
+			name:           "messages",
+			model:          "claude-sonnet-4-6",
+			path:           "/v1/messages",
+			response:       makeAnthropicSuccessResponse("ok", "claude-sonnet-4-6"),
+			streamResponse: sseData(`{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}`) + sseData(`{"type":"message_stop"}`),
+		},
+		{
+			name:           "responses",
+			model:          "gpt-5",
+			path:           "/v1/responses",
+			response:       makeGPTSuccessResponse("ok", "gpt-5"),
+			streamResponse: sseData(`{"type":"response.completed","response":{"usage":{"input_tokens":1,"output_tokens":1}}}`) + sseData(`[DONE]`),
+		},
+		{
+			name:           "chat/completions",
+			model:          "kimi-k2",
+			path:           "/v1/chat/completions",
+			response:       makeChatCompletionsSuccessResponse("ok", "kimi-k2"),
+			streamResponse: sseData(`{"choices":[{"index":0,"delta":{"content":"ok"}}]}`) + sseData(`{"choices":[{"index":0,"finish_reason":"stop","delta":{}}]}`) + sseData(`[DONE]`),
+		},
+	}
+	methods := []struct {
+		name   string
+		stream bool
+	}{
+		{"Send", false},
+		{"SendStream", true},
+	}
+
+	for _, route := range routes {
+		t.Run(route.name, func(t *testing.T) {
+			for _, method := range methods {
+				t.Run(method.name, func(t *testing.T) {
+					var capturedPath string
+					var capturedBody []byte
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						capturedPath = r.URL.Path
+						var err error
+						capturedBody, err = readBody(r)
+						if err != nil {
+							t.Errorf("failed to read request body: %v", err)
+						}
+						if method.stream {
+							w.Header().Set("Content-Type", "text/event-stream")
+							_, _ = fmt.Fprint(w, route.streamResponse)
+							return
+						}
+						w.Header().Set("Content-Type", "application/json")
+						_, _ = fmt.Fprint(w, route.response)
+					}))
+					defer server.Close()
+
+					p, err := NewOpenCode("test-key", WithOpenCodeBaseURL(server.URL))
+					if err != nil {
+						t.Fatalf("unexpected constructor error: %v", err)
+					}
+					req := &Request{
+						Model:           route.model,
+						Messages:        []Message{{Role: "user", Content: "Hi"}},
+						ReasoningEffort: "low",
+						TemperatureSet:  true,
+						Temperature:     0,
+					}
+					if method.stream {
+						stream, err := p.SendStream(context.Background(), req)
+						if err != nil {
+							t.Fatalf("unexpected SendStream error: %v", err)
+						}
+						defer func() { _ = stream.Close() }()
+						for {
+							_, err := stream.Next()
+							if err == io.EOF {
+								break
+							}
+							if err != nil {
+								t.Fatalf("unexpected stream error: %v", err)
+							}
+						}
+					} else if _, err := p.Send(context.Background(), req); err != nil {
+						t.Fatalf("unexpected Send error: %v", err)
+					}
+
+					if capturedPath != route.path {
+						t.Errorf("path = %q, want %q", capturedPath, route.path)
+					}
+					var body map[string]interface{}
+					if err := json.Unmarshal(capturedBody, &body); err != nil {
+						t.Fatalf("failed to parse request body: %v", err)
+					}
+					if body["model"] != route.model {
+						t.Errorf("model = %v, want %q", body["model"], route.model)
+					}
+					if method.stream && body["stream"] != true {
+						t.Errorf("stream = %v, want true", body["stream"])
+					}
+					for _, key := range []string{"reasoning_effort", "temperature"} {
+						if strings.Contains(string(capturedBody), `"`+key+`"`) {
+							t.Errorf("body contains %q: %s", key, capturedBody)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestOpenCode_SendStream_ErrorResponse(t *testing.T) {
 	routes := []struct {
 		model string
