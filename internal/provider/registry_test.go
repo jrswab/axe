@@ -42,6 +42,33 @@ func TestNew_AtlasCloud(t *testing.T) {
 	}
 }
 
+func TestNew_CheaperInference(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultCheaperInferenceBaseURL},
+		{name: "custom base URL", input: "http://custom:8080", want: "http://custom:8080"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("cheaperinference", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			cheaperInference, ok := p.(*CheaperInference)
+			if !ok {
+				t.Fatalf("provider type = %T, want *CheaperInference", p)
+			}
+			if cheaperInference.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", cheaperInference.baseURL, tt.want)
+			}
+		})
+	}
+}
+
 func TestNew_Bedrock(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKID")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "SECRET")
@@ -96,7 +123,7 @@ func TestNew_UnsupportedProvider(t *testing.T) {
 	if !strings.Contains(err.Error(), `unsupported provider "groq"`) {
 		t.Errorf("expected error to mention 'unsupported provider \"groq\"', got %q", err.Error())
 	}
-	if !strings.Contains(err.Error(), "anthropic, atlascloud, openai, ollama, opencode, google, minimax, bedrock") {
+	if !strings.Contains(err.Error(), "anthropic, atlascloud, cheaperinference, openai, ollama, opencode, google, minimax, bedrock") {
 		t.Errorf("expected error to list supported providers, got %q", err.Error())
 	}
 }
@@ -139,7 +166,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode"} {
+	for _, name := range []string{"anthropic", "atlascloud", "cheaperinference", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
@@ -235,7 +262,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "atlascloud", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter"} {
+	for _, name := range []string{"anthropic", "atlascloud", "cheaperinference", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}

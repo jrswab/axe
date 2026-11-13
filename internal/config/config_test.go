@@ -248,6 +248,7 @@ func TestAPIKeyEnvVar_KnownProvider(t *testing.T) {
 		{name: "Anthropic", input: "anthropic", want: "ANTHROPIC_API_KEY"},
 		{name: "OpenAI", input: "openai", want: "OPENAI_API_KEY"},
 		{name: "Atlas Cloud", input: "atlascloud", want: "ATLASCLOUD_API_KEY"},
+		{name: "Cheaper Inference", input: "cheaperinference", want: "CHEAPER_INFERENCE_API_KEY"},
 	}
 
 	for _, tt := range tests {

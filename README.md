@@ -587,6 +587,7 @@ The first directory containing a matching `<name>.toml` wins.
 |---|---|---|
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| Cheaper Inference | `CHEAPER_INFERENCE_API_KEY` | `https://api.cheaperinference.com/v1` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
@@ -600,6 +601,8 @@ The first directory containing a matching `<name>.toml` wins.
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
+
+For Cheaper Inference, use model names such as `cheaperinference/gpt-5.4-mini` in agent TOML.
 
 ## License
 
