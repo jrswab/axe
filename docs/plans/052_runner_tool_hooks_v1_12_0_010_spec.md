@@ -133,7 +133,7 @@ Requirements are grouped as vertical slices. Each slice is independently verifia
 
 ### R9: No public API or harness change
 
-- `Arguments map[string]string` is unchanged. No exported identifier is added, removed, or changed in `pkg/runner`. `make apidiff` exits 0 with no output (`Makefile:14-24`, `COMPATIBILITY.md:39-41`).
+- `Arguments map[string]string` is unchanged. No exported identifier is added, removed, or changed in `pkg/runner`. `make apidiff` must satisfy the [F2 acceptance criterion](#f2-apidiff-acceptance-clarification--2026-11-13) (`Makefile:14-24`, `COMPATIBILITY.md:39-41`).
 - `internal/testutil` is unchanged (OS8). Verification: `git diff --name-only 8a351c8 -- internal/testutil pkg/runner/options.go pkg/runner/result.go` prints no paths.
 
 ### R10: Scope boundary
@@ -205,7 +205,7 @@ go vet ./internal/provider/ ./internal/mcpclient/ ./pkg/runner/                 
 ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race ./internal/provider ./internal/mcpclient ./pkg/runner   # expect: exit 0
 ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -race ./internal/mcpclient ./pkg/runner   # expect: exit 0; existing tests TestCoerceArg, TestCallTool_CoercesArgTypes, TestDrainEventStream_ToolCalls included
 XDG_CACHE_HOME=$(mktemp -d) ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test ./cmd   # expect: exit 0 (see Limitations)
-make apidiff                                                                    # expect: exit 0, no output
+make apidiff                                                                    # expect: F2 acceptance criterion below
 git diff --name-only 8a351c8 -- . ':(exclude)docs/plans/'                       # expect: only the paths in R10
 ~/.agents/scripts/spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md   # expect: exit 0
 ~/.agents/scripts/docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec /home/jaron/dev/axe/runner-tool-hooks   # expect: exit 0
@@ -250,7 +250,7 @@ The user approved a separate prerequisite patch from Go toolchain 1.26.10 to 1.2
 
 The checkpoint's failed pre-flight found GO-2026-6859 in Go 1.26.10. The later `/tmp/052-toolchain-preflight.log` records exit 0 for Go 1.26.11 and govulncheck with no vulnerabilities; `/tmp/052-toolchain-checks.log` records exit 0 for module load, build, vet, lint and apidiff checks. These ran with the pin change uncommitted at parent HEAD `33c3d1928d10b86bc29754b415d4622ede8268e1`, not at a later HEAD; apidiff printed toolchain-selection notices. This passing pin preflight removes the technical blocker but does not satisfy T04, a HEAD-matched review, or completion. It does not replace any later gate.
 
-For the effective R10 scope check before T04 and at completion, run all of the following from the repository root in Bash. The first three checks must exit 0 with no output; the last must exit 0 and list only R10-approved source/test paths. Stop and report any failure or unexpected path. The first check confirms the approved commit is in HEAD's ancestry; the second verifies the entire commit is precisely the one-line toolchain patch, with no other file change; the third requires both module files to match the review base before that patch and the approved commit in the current tree. The last retains the original `8a351c8` base and `docs/plans/` exclusion, excluding only `go.mod` additionally. R9 and every other original restriction and gate remain unchanged.
+For the effective R10 scope check before T04 and at completion, run all of the following from the repository root in Bash. The first three checks must exit 0 with no output; the last must exit 0 and list only R10-approved source/test paths. Stop and report any failure or unexpected path. The first check confirms the approved commit is in HEAD's ancestry; the second verifies the entire commit is precisely the one-line toolchain patch, with no other file change; the third requires both module files to match the review base before that patch and the approved commit in the current tree. The last retains the original `8a351c8` base and `docs/plans/` exclusion, excluding only `go.mod` additionally. R9 and every other original restriction and gate remain unchanged, except for the subsequent narrow [F2 apidiff acceptance clarification](#f2-apidiff-acceptance-clarification--2026-11-13).
 
 ```bash
 git merge-base --is-ancestor 70e31fd56c48216a027479a49ebf2cbebe25768c HEAD
@@ -272,3 +272,15 @@ git diff --name-only 8a351c8 -- . ':(exclude)docs/plans/' ':(exclude)go.mod'
 ```
 
 The two module-file comparisons must both exit 0 with no output. Together with the exact patch check, they preserve the `go 1.26.0` language directive, dependencies, and `go.sum`, and forbid any additional module change. The approved pin does not change T04 or any later task behavior.
+
+## F2 apidiff acceptance clarification — 2026-11-13
+
+The user answered `q1 yes` to allowing only the two toolchain-switch notices from `make apidiff`, with exit 0, empty stdout, no other stderr, and no incompatible API report.
+
+**Acceptance criterion:** `make apidiff` must exit 0 with empty stdout. Stderr must be empty or consist of exactly two newline-terminated copies of this exact notice, with no other stderr and no incompatible API report:
+
+```text
+go: golang.org/x/exp@v0.0.0-20261106192419-47ce03d25ef0 requires go >= 1.26.0; switching to go1.26.11
+```
+
+This clarifies only the output acceptance criterion; it does not broaden the toolchain exception or waive any other gate.

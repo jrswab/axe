@@ -15,10 +15,128 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/jrswab/axe/internal/agent"
+	"github.com/jrswab/axe/internal/mcpclient"
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+type largeIntegerMCPCapture struct{ name, raw string }
+
+func largeIntegerMCPCaptureHandler(captured chan<- largeIntegerMCPCapture) mcp.ToolHandler {
+	return func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		select {
+		case captured <- largeIntegerMCPCapture{req.Params.Name, string(req.Params.Arguments)}:
+			return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "ok"}}}, nil
+		default:
+			return nil, fmt.Errorf("unexpected extra MCP call: %s", req.Params.Name)
+		}
+	}
+}
+
+func largeIntegerOpenAIHandler(stream bool, responses <-chan string, requests chan<- bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request struct {
+			Stream bool `json:"stream"`
+		}
+		if r.Method != http.MethodPost || r.URL.Path != "/chat/completions" || json.NewDecoder(r.Body).Decode(&request) != nil {
+			http.Error(w, "unexpected OpenAI request", http.StatusBadRequest)
+			return
+		}
+		select {
+		case requests <- request.Stream:
+		default:
+			http.Error(w, "unexpected extra OpenAI request", http.StatusBadRequest)
+			return
+		}
+		select {
+		case body := <-responses:
+			if stream {
+				w.Header().Set("Content-Type", "text/event-stream")
+			} else {
+				w.Header().Set("Content-Type", "application/json")
+			}
+			_, _ = io.WriteString(w, body)
+		default:
+			http.Error(w, "unexpected extra OpenAI request", http.StatusBadRequest)
+		}
+	})
+}
+
+func TestLargeIntegerArgs_OpenAIUnexpectedRequest(t *testing.T) {
+	for _, capacity := range []int{2, 3} {
+		t.Run(fmt.Sprintf("request_capacity_%d", capacity), func(t *testing.T) {
+			responses := make(chan string, 2)
+			responses <- "first"
+			responses <- "second"
+			requests := make(chan bool, capacity)
+			server := httptest.NewServer(largeIntegerOpenAIHandler(false, responses, requests))
+			t.Cleanup(server.Close)
+			// Release a broken blocking handler before server cleanup if the deadline fires.
+			t.Cleanup(func() {
+				for len(requests) > 0 {
+					<-requests
+				}
+			})
+			client := &http.Client{Timeout: 3 * time.Second}
+			for i := 0; i < 3; i++ {
+				response, err := client.Post(server.URL+"/chat/completions", "application/json", strings.NewReader(`{"stream":false}`))
+				if err != nil {
+					t.Fatalf("request %d did not return promptly: %v", i+1, err)
+				}
+				body, err := io.ReadAll(response.Body)
+				_ = response.Body.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if i < 2 && (response.StatusCode != http.StatusOK || string(body) != []string{"first", "second"}[i]) {
+					t.Fatalf("request %d = %d %q", i+1, response.StatusCode, body)
+				}
+				if i == 2 && (response.StatusCode != http.StatusBadRequest || !strings.Contains(string(body), "unexpected extra OpenAI request")) {
+					t.Fatalf("extra request = %d %q", response.StatusCode, body)
+				}
+			}
+			if len(requests) != capacity {
+				t.Fatalf("recorded requests = %d, want %d", len(requests), capacity)
+			}
+		})
+	}
+}
+
+func TestLargeIntegerArgs_MCPUnexpectedDispatch(t *testing.T) {
+	captured := make(chan largeIntegerMCPCapture, 2)
+	server := mcp.NewServer(&mcp.Implementation{Name: "wire-test", Version: "1.0.0"}, nil)
+	server.AddTool(&mcp.Tool{Name: "wire", InputSchema: map[string]any{"type": "object"}}, largeIntegerMCPCaptureHandler(captured))
+	httpServer := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return server }, nil))
+	t.Cleanup(httpServer.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	client, err := mcpclient.Connect(ctx, agent.MCPServerConfig{Name: "local", URL: httpServer.URL, Transport: "streamable-http"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Release a broken blocking handler before closing its client or server.
+	t.Cleanup(func() { _ = client.Close() })
+	t.Cleanup(func() {
+		for len(captured) > 0 {
+			<-captured
+		}
+	})
+	for i := 0; i < 3; i++ {
+		result, err := client.CallTool(ctx, provider.ToolCall{ID: "call", Name: "wire", Arguments: map[string]string{"n": "value"}})
+		if i < 2 && (err != nil || result.IsError) {
+			t.Fatalf("call %d = %+v, %v", i+1, result, err)
+		}
+		if i == 2 && (err == nil || !strings.Contains(err.Error(), "unexpected extra MCP call")) {
+			t.Fatalf("extra call = %+v, %v", result, err)
+		}
+	}
+	if len(captured) != 2 {
+		t.Fatalf("captured calls = %d, want 2", len(captured))
+	}
+}
 
 func TestLargeIntegerArgs_MCPIntegration(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
@@ -92,17 +210,13 @@ tools = []
 		stream bool
 	}{{"buffered", false}, {"stream", true}} {
 		t.Run(mode.name, func(t *testing.T) {
-			type capture struct{ name, raw string }
-			captured := make(chan capture, len(cases))
+			captured := make(chan largeIntegerMCPCapture, len(cases))
 			mcpServer := mcp.NewServer(&mcp.Implementation{Name: "wire-test", Version: "1.0.0"}, nil)
 			for _, tc := range cases {
 				name := "mcp_" + tc.name
 				mcpServer.AddTool(&mcp.Tool{Name: name, InputSchema: map[string]any{
 					"type": "object", "properties": map[string]any{"n": map[string]any{"type": tc.schema}},
-				}}, func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-					captured <- capture{req.Params.Name, string(req.Params.Arguments)}
-					return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "ok"}}}, nil
-				})
+				}}, largeIntegerMCPCaptureHandler(captured))
 			}
 			mcpHTTP := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return mcpServer }, nil))
 			t.Cleanup(mcpHTTP.Close)
@@ -142,29 +256,7 @@ tools = []
 				responses <- `{"model":"gpt-4o","choices":[{"message":{"content":"All done"},"finish_reason":"stop"}]}`
 			}
 			requests := make(chan bool, 2)
-			openai := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				var request struct {
-					Stream bool `json:"stream"`
-				}
-				if r.Method != http.MethodPost || r.URL.Path != "/chat/completions" || json.NewDecoder(r.Body).Decode(&request) != nil {
-					t.Error("unexpected OpenAI request")
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-				requests <- request.Stream
-				select {
-				case body := <-responses:
-					if mode.stream {
-						w.Header().Set("Content-Type", "text/event-stream")
-					} else {
-						w.Header().Set("Content-Type", "application/json")
-					}
-					_, _ = io.WriteString(w, body)
-				default:
-					t.Error("unexpected extra OpenAI request")
-					w.WriteHeader(http.StatusBadRequest)
-				}
-			}))
+			openai := httptest.NewServer(largeIntegerOpenAIHandler(mode.stream, responses, requests))
 			t.Cleanup(openai.Close)
 			var mu sync.Mutex
 			hooks := make(map[string]map[string]string)

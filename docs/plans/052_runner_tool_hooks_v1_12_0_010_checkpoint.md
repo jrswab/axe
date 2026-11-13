@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `checked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Await Jaron's explicit F2 API-output acceptance decision before remediation or changing acceptance.
-- Last completed phase/task/gate and timestamp: Resume validation and Go preflight PASS; F2 zero-output API gate BLOCKED awaiting user decision, 2026-11-13T20:05:49.948806+00:00
+- Next safe action: Commit the four verified milestone010 paths, sync, then prepare the SHA-only safe host wrapper update for Jaron's fresh gate run.
+- Last completed phase/task/gate and timestamp: F2 user clarification durable; F1 test-only remediation and independent GREEN PASS; fresh safe host gate and round2 pending, 2026-11-13T22:11:15.579059+00:00
 
 ## Gate evidence
 
@@ -1611,6 +1611,29 @@ Factory resume from /tmp/handoff-052-runner-tool-hooks.latest.md. milestone-entr
 
 - Next action: Await Jaron's explicit F2 API-output acceptance decision before remediation or changing acceptance.
 
+### F2 user clarification durable; F1 test-only remediation and independent GREEN PASS; fresh safe host gate and round2 pending
+
+- Gate: F2 user clarification durable; F1 test-only remediation and independent GREEN PASS; fresh safe host gate and round2 pending
+- Commands/results:
+User answered 'q1 yes' to allowing ONLY the two exact apidiff toolchain-switch notices, retaining exit0, empty stdout, no other stderr, no incompatible API report. No other acceptance/toolchain/API/dependency/production changes authorized. Active clauses updated in 010_spec.md:136,208,253,276-286 and 010_implement.md:31,240,262; prior failed gates preserved as history. Independent post-cap explore fix check PASS, no new planning loop. grep -F 'exits 0 with no output' and 'expect: exit 0, no output' against both docs exited1/zero hits independently. run_script spec-lint --root /home/jaron/dev/axe/runner-tool-hooks <010_spec> <010_implement> exit0:111/17citations,0findings. Current-session initial repo-state at67f3029 clean; factory-sync --base origin/master exit0,head_before67f3029bc0ea2cdef95edc3eaa7ae3a417512a34,ahead191,behind0,shared_files[],conflicts[],syncedtrue,HEADunchanged. Prior current-session preflight and govulncheck passed under frozen safe env; module files unchanged. F1 fixes limited to pkg/runner/large_integer_args_test.go: shared guarded MCP capture and OpenAI handlers return prompt errors on recorder overflow or exhausted responses. Integration uses same helpers as new TestLargeIntegerArgs_OpenAIUnexpectedRequest and TestLargeIntegerArgs_MCPUnexpectedDispatch. All original50 numerical cases and normal exact-count assertions/history/details/hooks/observer/raw-wire checks unchanged byte-for-byte, independently verified. Hard pre-fix RED explicitly skipped for test-only hanging fixture; no fabricated RED. Author mutation probe made both regressions fail with guards disabled and pass restored; historical supporting /tmp/052-f1-mutation.log, not independent RED. Author common gates passed but environment provenance missing in those logs, so they were NOT accepted alone. Independently test-agent reran exact focused new tests plus TestLargeIntegerArgs_MCPIntegration and full go test -race ./pkg/runner under exact safe prefix; focused PASS both exhaustion tests+integration, full race exit0(cached),gofmt-l empty,diffcheck exit0. /tmp/052-f1-independent-summary.md and focused/race logs retain commands and output, before/after hashes identical. No full module race yet. Additional verification-only general reran go list -m,go build ./...,go vet ./...,make lint,make apidiff,gofmt-l,diffcheck with explicit literal safe env launch recorded per gate /tmp/052-f1-safe-{diff,gofmt,module,build,vet,lint,apidiff}.{meta,stdout,stderr}; all exit0. API streams stdout0bytes/stderr204bytes,cmp exact TWO newline-terminated authorized notices PASS /tmp/052-f1-safe-apidiff-compare.log. /tmp/052-f1-safe-proofs.log: toolchain70e31fd ancestry/full exact patch/BOTH go.mod+go.sum prepatch/current comparisons PASS,R9empty,R10withinapproved. Prefix ALL Go-spawning checks: env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= PATH=/home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin:/home/jaron/.local/share/../bin:/home/jaron/bin:/home/jaron/.local/bin:/home/jaron/.npm-global/bin:/home/jaron/.opencode/bin:/home/jaron/.local/share/pi-node/current/bin:/home/jaron/android-sdk/cmdline-tools/bin:/home/jaron/go/bin:/usr/local/go/bin:/home/jaron/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin. No credentials inspected. Full tracked/nonignored inventory stable during safe reruns /tmp/052-f1-safe-{before,after,inventory-compare}.log. SHA256 testba94bf59d5e9187b66b8639342bdf42430d487ede17eeab0f4820721bcab8aea,specce125f362714807c91be6bf03826d26bc679f024c645078a897ed03c74b5612b,checklistfd0faad6a9d03d3298dcb2eb23991b560990ad5bb9e940fd8581ebdcdcee8170 unchanged. Fresh docs-lint1 --since originalbase8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit0:205Markdown,0findings. F1 grep: old requests-send remains only guarded selectcase; raw unguarded capture literal zero hits, replacement only guarded selectcase. Similar fixture sends outside two F1 handlers reported, not broadened. No production/source/API/dependency/toolchain drift. No T13/milestone tick, no fresh host/full-module gate, no round2, push or deploy. Prior ab53ab4 evidence is historical only. Next commit4changedpaths then sync and repin ONLY safe wrapper SHA to final cleanHEAD,bash-n/--check,askJaron run. New HEAD requires new host evidence before affected reviews. Round1 owner approvals remain history; affected Standards/backendD.1/records scopes require round2; preserve gate ownership of unchanged approved owners.
+- HEAD commit SHA: `67f3029bc0ea2cdef95edc3eaa7ae3a417512a34`
+- Relevant work: `uncommitted` — stash ref `5cc6050e4bfca083009646c4f6507f9786a22d16` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit the four verified milestone010 paths, sync, then prepare the SHA-only safe host wrapper update for Jaron's fresh gate run.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1624,7 +1647,7 @@ Factory resume from /tmp/handoff-052-runner-tool-hooks.latest.md. milestone-entr
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Await Jaron's explicit F2 API-output acceptance decision before remediation or changing acceptance.
+- Next action: Commit the four verified milestone010 paths, sync, then prepare the SHA-only safe host wrapper update for Jaron's fresh gate run.
 
 ## Approval / decision note — 2026-11-10
 
