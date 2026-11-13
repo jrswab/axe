@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `checked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit the four verified milestone010 paths, sync, then prepare the SHA-only safe host wrapper update for Jaron's fresh gate run.
-- Last completed phase/task/gate and timestamp: F2 user clarification durable; F1 test-only remediation and independent GREEN PASS; fresh safe host gate and round2 pending, 2026-11-13T22:11:15.579059+00:00
+- Next safe action: After committing this bookkeeping and syncing, repin ONLY the safe wrapper SHA to final clean HEAD and validate; Jaron runs the wrapper, then independently poll/read its gate before affected round2 reviews.
+- Last completed phase/task/gate and timestamp: F1/F2 remediation committed and synced; awaiting user-run fresh safe host race gate, 2026-11-13T22:13:15.831403+00:00
 
 ## Gate evidence
 
@@ -1634,6 +1634,27 @@ User answered 'q1 yes' to allowing ONLY the two exact apidiff toolchain-switch n
 
 - Next action: Commit the four verified milestone010 paths, sync, then prepare the SHA-only safe host wrapper update for Jaron's fresh gate run.
 
+### F1/F2 remediation committed and synced; awaiting user-run fresh safe host race gate
+
+- Gate: F1/F2 remediation committed and synced; awaiting user-run fresh safe host race gate
+- Commands/results:
+Verified F1 test-only remediation and narrow user-approved F2 acceptance documentation committed by run_script factory-commit as cdcb2f8ff51319db791aeb3780a24543ac45911c; exact4paths: 010_checkpoint/spec/implement.md and pkg/runner/large_integer_args_test.go; remaining_changes[]. Before-source-commit docs-lint1 --since originalbase exit0,205Markdown0findings. Fresh postcommit factory-sync --base origin/master exit0 JSON branch runner-tool-hooks,base origin/master,head_before cdcb2f8ff51319db791aeb3780a24543ac45911c,ahead192,behind0,shared_files[],conflicts[],syncedtrue; HEADunchanged,treeclean. records-stale-check originalbase8a351c8e475ab1bfdc52000f0593f1e6ed7385ec AND T13basea47f383d5f05a7ff75a612d162bb22bacd97de74 each exit0:no TAGS.md/.mem/changelog.d. Independent GREEN and provenance-repaired safe common gates in preceding event remain matching source-byte evidence, not newly run at cdcb2f8. Safe host wrapper /tmp/052-runner-tool-hooks-safe-gate.sh changed ONLY SHA ab53ab4->cdcb2f8, full-byte replace comparison PASS, before SHA256da6388fed859cfbf299bcb3898643f27e325f8b2fc8aca7556f399905a7c1017 after0c64446dd7eec6c8bf3014cb3a2afdf272819c356ad426d8555b2089e84ef10e. bash-n exit0 and --check exit0 confirm clean matching branch/root/HEAD, guards intact, no test/cache/fetch run. --check does not verify host remote trust/network/toolchain readiness. Actual host gate NOT RUN. This checkpoint selfwrite must commit before host gate; then fresh sync, repin ONLY wrapper SHA to final clean committed HEAD and bash-n/--check again. Keep repository unchanged during gate/reviews; Jaron explicitly starts actual bash wrapper. Orchestrator independently poll run name and read matching passed factory-gate log. No inherited-env run_script launch, no sandbox full module host gate and no Docker. Fresh HEAD gate essential; old ab53ab4 result historical only. F1/F2 fixes pending affected round2 review, not claimed approved yet. Task Standards failed round1; Task Spec approved round1. Milestone backendA failed F2; B/C approved; backendD.1 failed F1, D.2 approved; RecordsA approved pre-new-bookkeeping, RecordsB failed F2. Re-measure originalbase range after bookkeeping, split affected owner scopes under2000changedlines and carry unchanged approved owners only with unchanged bytes. Full completion acceptance and all changed-path review status required before T13/010 tick. Prior planning cap closed3/3 no new planning review; postcap factual F2 fix check and spec-lints passed. Both milestones011/012 remain unstarted. No push/deploy/source drift or full-module test claimed.
+- HEAD commit SHA: `cdcb2f8ff51319db791aeb3780a24543ac45911c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: After committing this bookkeeping and syncing, repin ONLY the safe wrapper SHA to final clean HEAD and validate; Jaron runs the wrapper, then independently poll/read its gate before affected round2 reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1647,7 +1668,7 @@ User answered 'q1 yes' to allowing ONLY the two exact apidiff toolchain-switch n
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit the four verified milestone010 paths, sync, then prepare the SHA-only safe host wrapper update for Jaron's fresh gate run.
+- Next action: After committing this bookkeeping and syncing, repin ONLY the safe wrapper SHA to final clean HEAD and validate; Jaron runs the wrapper, then independently poll/read its gate before affected round2 reviews.
 
 ## Approval / decision note — 2026-11-10
 
