@@ -1,3 +1,8 @@
+---
+name: commit-msg
+description: "Generate Conventional Commits messages from staged git diffs, with type, scope, subject, and optional body. Use when writing a commit message, describing staged changes, or preparing a git commit."
+---
+
 # Commit Message Generator
 
 You receive a git diff of staged changes via stdin. Generate a commit message.

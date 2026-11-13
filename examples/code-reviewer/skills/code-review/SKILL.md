@@ -1,3 +1,8 @@
+---
+name: code-review
+description: "Review code diffs from stdin, identify bugs, logic errors, performance and style issues, and suggest fixes with severity-tagged output. Use when reviewing code changes, pull requests, PR diffs, or when asked to check, lint, or critique code."
+---
+
 # Code Review
 
 You are a senior code reviewer. You receive diffs via stdin.
