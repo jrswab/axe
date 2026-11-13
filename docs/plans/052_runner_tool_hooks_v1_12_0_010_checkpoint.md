@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `unchecked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T12 Bedrock buffered/history after writing its declared failing provider test
-- Last completed phase/task/gate and timestamp: T11 host test and round-1 Standards/Spec/design reviews PASS, 2026-11-12T15:53:17.178118+00:00
+- Next safe action: Commit five verified T12 paths, then initial factory-sync; obtain clean-HEAD safe host gate before Standards, Spec, and Design reviews.
+- Last completed phase/task/gate and timestamp: T12 planning/records lint PASS; verified commit ready, 2026-11-13T01:51:42.275111+00:00
 
 ## Gate evidence
 
@@ -1339,6 +1339,127 @@ Reviewed implementation HEAD: 9a38bccc878a08c9b1c746690199b1eeede222c0. git stat
 
 - Next action: Implement T12 Bedrock buffered/history after writing its declared failing provider test
 
+### User handoff interruption: T12 implemented, independent GREEN and acceptance PENDING
+
+- Gate: User handoff interruption: T12 implemented, independent GREEN and acceptance PENDING
+- Commands/results:
+The user requested a handoff immediately after the T12 implementation agent returned. Stop before independent T12 GREEN verification. HEAD is 2747db100d41b99bf489815dd3890c44529c1431 on runner-tool-hooks. Three implementation files remain uncommitted: internal/provider/bedrock.go, internal/provider/bedrock_test.go, pkg/runner/large_integer_args_test.go; diff 3 files +345/-15. This checkpoint write is additional bookkeeping, not part of the implementation snapshot. T01a/T01b/T01c and T02–T11 checked; T12/T13 and milestone 010 unchecked; 011/012 not started. RED already confirmed by separate test agent: exact safe-environment go test -v ./internal/provider exit 1 only TestLargeIntegerArgs_Bedrock_Buffered,20 intended numeric failures,32 unaffected controls pass,360 existing top-level tests pass. /tmp/052-t12-red-summary.md, /tmp/052-t12-red.log, /tmp/052-t12-red-metadata.json. Frozen RED /tmp/052-t12-red-test.txt mode0444 bytes5564 SHA2568eaec152b5da7dd59b9c9073cb28c727e32e96bec0edf16d2dc51118d5cc2f8b. Code-agent implementation report only, NOT independently verified: /tmp/052-t12-summary.md reports two behavioral substitutions at bedrock.go280/348 (FormatToolArgument and DecodeJSON) plus five baseline struct alignment hunks from mandatory full-file gofmt; new52case buffered and30case decode-errors tests; real Bedrock runner history/replay/hooks/observer/details/JSON with local endpoint/fake isolated credentials/explicit region/nonparallel test. Frozen RED and preexisting test bytes reported unchanged. Code-agent reports named tests, full provider/runner/MCP/private-cachecmd, derived provider/runner race, go list -m/build/vet/lint/apidiff/gofmt/diff/scope/toolchain proofs passing. These reports have NOT received independent current-tree verification, T12 host gate or review. Exact argv/exits/output paths: /tmp/052-t12-focus-metadata.json, /tmp/052-t12-gates-metadata.json, /tmp/052-t12-race-metadata.json, /tmp/052-t12-cmd-metadata.json; driver /tmp/052-t12-driver.py; scope proof /tmp/052-t12-proof.py, /tmp/052-t12-proof.log, /tmp/052-t12-proof-metadata.json; diff /tmp/052-t12-proof-diff.stdout; formatting-separated /tmp/052-t12-proof-whitespace-ignored.stdout. First race driver failed BEFORE executing Go with Python formatting TypeError at /tmp/run-detached-1001/code-t12-race-a8d1/output.log; corrected run /tmp/run-detached-1001/code-t12-race-fix-a8d1/output.log reported pass. Other detached logs: /tmp/052-t12-focus-driver.log, /tmp/run-detached-1001/code-t12-gates-a8d1/output.log, /tmp/run-detached-1001/code-t12-cmd-a8d1/output.log. Metadata records fixed PATH/GOTOOLCHAIN unset/Anthropic variables empty. MCP cached, provider lock-wait notice, apidiff toolchain notices. Read-only handoff inspection found only authorized changes; this is not an acceptance verdict. Current checklist row200 runner fixture citation :912 shifted to :1059, repair pending. No checklist/spec edits for T12 yet. On resume preserve all four dirty files including this checkpoint. Fresh setup must validate milestone entries/checkpoint identity/snapshots/hashes, perform Go preflight with exact safety environment, and reconcile dirty-tree sync prerequisites without discarding edits or silently skipping the required sync. Never blindly invoke clean-tree sync or host gate assuming clean status. Next behavioral action after safe setup is independent unchanged frozen-test GREEN and touched-package tests, not a repeated RED or reimplementation. Then repair current citation, record/commit verified scope, sync/pre-review records, repin only final SHA in /tmp/052-runner-tool-hooks-safe-gate.sh and have Jaron run safe host gate before parallel Standards/Spec/design reviews. Wrapper remains pinned to OLD T11 SHA9a38bccc878a08c9b1c746690199b1eeede222c0; do not execute it now. T13 remains acceptance-only confirmation, no fabricated RED or MCP production change. Original milestone base8a351c8e475ab1bfdc52000f0593f1e6ed7385ec retained; T12 task base2747db100d41b99bf489815dd3890c44529c1431. Approved toolchain exception remains exact70e31fd56c48216a027479a49ebf2cbebe25768c with both module equality/R9/R10 proofs, not expanded. Planning cap closed. Handoff itself runs no tests/preflight/sync/fetch/host gate/push/deploy/livepaidcall. No commit created for partial T12.
+- HEAD commit SHA: `2747db100d41b99bf489815dd3890c44529c1431`
+- Relevant work: `uncommitted` — stash ref `daace72200fa8b5d9f807ab170f27c6bdb8166f5` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume preserved T12 edits with setup/restart checks, then independent unchanged-test GREEN verification before any acceptance
+
+### Factory resume setup: dirty-tree synchronization prerequisite BLOCKED
+
+- Gate: Factory resume setup: dirty-tree synchronization prerequisite BLOCKED
+- Commands/results:
+milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md: exit 0, PASS 13 milestone entries. repo-state: branch runner-tool-hooks, HEAD 2747db100d41b99bf489815dd3890c44529c1431, four tracked edits and no untracked paths. Read-only restart inspection found first unchecked milestone 010 and pending independent T12 GREEN. git diff against saved snapshot daace72200fa8b5d9f807ab170f27c6bdb8166f5 lists only checkpoint (+26/-3); all three implementation files match snapshot. Checkpoint self-write is separate. Current full diff four files +371/-18, git diff --check exit 0. Frozen RED fixture mode 0444 and size 5564 confirmed, but fresh SHA256 and extraction comparison remain unrun due read-only guard. No tests, fresh Go preflight, sync/fetch, commit, push, deploy or host gate ran. factory-sync requires a clean tracked tree; current T12 implementation must pass independent verification before commit. Applicable guidance/history supplies no approved dirty-tree reconciliation. Preserve all four edits. Request a one-time ordering exception: fresh safe Go preflight and independent unchanged-test GREEN on the preserved dirty tree, then verified implementation/evidence commit, then normal factory-sync before host gates/reviews. No synchronization or T12 acceptance claimed. Original milestone review base remains 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec. T12/T13 and milestone 010 remain unchecked.
+- HEAD commit SHA: `2747db100d41b99bf489815dd3890c44529c1431`
+- Relevant work: `uncommitted` — stash ref `025e2f94091e106e84d6ecccbd3e24a2e91f290b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Obtain approval for one-time verification-before-sync ordering, preserving all edits; then fresh safe Go preflight and independent T12 GREEN before verified commit and normal factory-sync.
+
+### User approved one-time T12 verification-before-initial-sync order
+
+- Gate: User approved one-time T12 verification-before-initial-sync order
+- Commands/results:
+User approval verbatim: "yes, verify T12 before the initial sync". Scope: preserve existing dirty work; run fresh safety-environment Go preflight and independent unchanged-frozen-test GREEN before initial sync; commit only verified T12 implementation and evidence; then run normal factory-sync before host gates/reviews. No reset, discard, stash apply, reimplementation, production/live calls, deploy, infrastructure change or extra one-way action authorized. All other Factory gates remain required. Prior setup blocker is resolved only for this ordering exception, not proof of a passing sync. T12/T13 and milestone 010 remain unchecked.
+- HEAD commit SHA: `2747db100d41b99bf489815dd3890c44529c1431`
+- Relevant work: `uncommitted` — stash ref `b8ee51db7eb39412edc52bad8d30a963c229bb9f` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run fresh safe Go preflight, validate frozen/existing test bytes, and independently verify T12 unchanged GREEN on the preserved dirty tree; then verified commit and initial sync.
+
+### T12 independent unchanged-test GREEN and fresh safe preflight PASS; review pending
+
+- Gate: T12 independent unchanged-test GREEN and fresh safe preflight PASS; review pending
+- Commands/results:
+Independent test agent VERIFY-GREEN completed on HEAD 2747db100d41b99bf489815dd3890c44529c1431 with four tracked edits. Evidence /tmp/052-t12-independent-summary.md, /tmp/052-t12-independent-metadata.json and /tmp/052-t12-independent-*.stdout/.stderr. Every recorded command exited 0. Fresh go-toolchain-check passed using exact approved PATH, GOTOOLCHAIN unset and empty ANTHROPIC_API_KEY/AXE_ANTHROPIC_BASE_URL. Go 1.26.11 selected; actual govulncheck ./... reported No vulnerabilities found. Frozen fixture mode 0444, 5564 bytes, SHA256 8eaec152b5da7dd59b9c9073cb28c727e32e96bec0edf16d2dc51118d5cc2f8b, extracted function equality and baseline test-byte equality passed. Three implementation files matched saved snapshot daace72200fa8b5d9f807ab170f27c6bdb8166f5 and all tracked bytes/modes stayed unchanged during verification. Full go test -v ./internal/provider, ./pkg/runner, ./internal/mcpclient passed (cached). Fresh mode-0700 private XDG_CACHE_HOME cmd suite passed uncached. Derived touched-package go test -race ./internal/provider ./pkg/runner passed (cached). No full-module race or host gate run. go list -m, go build ./..., go vet ./..., make lint (0 issues), make apidiff (no API diff), changed-file gofmt and git diff --check passed; apidiff emitted only two Go toolchain-selection notices. Approved toolchain ancestry and entire exact one-line patch verified; BOTH go.mod/go.sum equality comparisons against approved prerequisite and original base passed. R9 empty; R10 changed path inventory inspected as approved source/tests. General corrected only current checklist fixture locator :912 to :1059 at implement.md:200 after independent verification, with no source byte changes. Explore independently confirmed old fixed-string locator absent in checklist, new present, historical references preserved. This locator points to existing OpenAI stream fixture, not new Bedrock history. T12/T13/milestone remain unchecked pending host gate and reviews. Initial sync remains pending under user's explicit order exception.
+- HEAD commit SHA: `2747db100d41b99bf489815dd3890c44529c1431`
+- Relevant work: `uncommitted` — stash ref `4cd6b5582cbf06439d967b206ec2fa4707558ef8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T12
+
+### T12 planning/records lint PASS; verified commit ready
+
+- Gate: T12 planning/records lint PASS; verified commit ready
+- Commands/results:
+run_script docs-lint --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec: exit 0, header docs-lint 1: checks task-id, stale-milestone, broken-mem-link, stale-citation; changed since original milestone base. PASS 205 Markdown files, 0 findings, 0 outside scope. run_script spec-lint --root /home/jaron/dev/axe/runner-tool-hooks docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md: exit 0; spec 111 citations, checklist 17 citations, both 0/0 gocyclo and 0 findings. No current same-line go test -run or measured-complexity claims found before lint. No Go/gofmt/make invocation by orchestrator authorized under unsafe inherited env. All T12 implementation bytes remain independently verified; doc-only locator fix and checkpoint bookkeeping are separately accounted. Entering execute rendered default Implement T12, which this same-phase bookkeeping replaces with the actual verified-commit next action. No reimplementation or RED repeat required.
+- HEAD commit SHA: `2747db100d41b99bf489815dd3890c44529c1431`
+- Relevant work: `uncommitted` — stash ref `c4bec649c2633d74b8e67c23a586e4e799cbe456` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit five verified T12 paths, then initial factory-sync; obtain clean-HEAD safe host gate before Standards, Spec, and Design reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1352,7 +1473,7 @@ Reviewed implementation HEAD: 9a38bccc878a08c9b1c746690199b1eeede222c0. git stat
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Implement T12 Bedrock buffered/history after writing its declared failing provider test
+- Next action: Commit five verified T12 paths, then initial factory-sync; obtain clean-HEAD safe host gate before Standards, Spec, and Design reviews.
 
 ## Approval / decision note — 2026-11-10
 

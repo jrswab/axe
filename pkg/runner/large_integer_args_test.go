@@ -15,6 +15,153 @@ import (
 	"github.com/jrswab/axe/internal/provider"
 )
 
+func TestLargeIntegerArgs_Bedrock_BufferedHistory(t *testing.T) {
+	t.Setenv("AWS_REGION", "us-east-1")
+	t.Setenv("AWS_ACCESS_KEY_ID", "test-access-key")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test-secret-key")
+	t.Setenv("AWS_SESSION_TOKEN", "")
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	setupTestEnv(t, "", "test-agent", `name = "test-agent"
+model = "bedrock/test-model"
+tools = ["read_file"]
+`)
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "fixture.txt"), []byte("controlled result"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Keep the provider response numeric, including both approved exceptional tokens.
+	raw := `{"path":"fixture.txt","million":1000000,"negative_million":-1000000,"integer":1234567,"negative_integer":-1234567,"precise":9007199254740993,"negative_precise":-9007199254740993,"exponent":1e6,"negative_exponent":-1e6,"decimal":1000000.0,"negative_decimal":-1000000.0,"precise_decimal":9007199254740993.0,"negative_precise_decimal":-9007199254740993.0,"precise_exponent":90071992547409930e-1,"negative_precise_exponent":-90071992547409930e-1,"beyond":99999999999999999999999,"negative_beyond":-99999999999999999999999,"beyond_decimal":99999999999999999999999.0,"negative_beyond_decimal":-99999999999999999999999.0,"beyond_exponent":999999999999999999999990e-1,"negative_beyond_exponent":-999999999999999999999990e-1,"cap":1e308,"negative_cap":-1e308,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"negative_small_decimal":-999999.0,"zero":0,"decimal_zero":0.0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"negative_fraction":-1.5,"rounded_fraction":1000000.00000000001,"negative_rounded_fraction":-1000000.00000000001,"rounded_threshold":999999.99999999999,"negative_rounded_threshold":-999999.99999999999,"text":"text","string_integer":"1000000","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"false":false,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50],"recursive":{"a":[1000000,1.50]},"underflow":1e-1000000000,"negative_underflow":-1e-1000000000,"zero_exponent":0e1000000000,"negative_zero_exponent":-0e1000000000,"exception_a":1` + strings.Repeat("0", 100006) + `e-100000,"exception_b":0.` + strings.Repeat("0", 9999) + `1e100000}`
+	want := map[string]string{
+		"path": "fixture.txt", "million": "1000000", "negative_million": "-1000000", "integer": "1234567", "negative_integer": "-1234567", "precise": "9007199254740993", "negative_precise": "-9007199254740993",
+		"exponent": "1000000", "negative_exponent": "-1000000", "decimal": "1000000", "negative_decimal": "-1000000", "precise_decimal": "9007199254740993", "negative_precise_decimal": "-9007199254740993", "precise_exponent": "9007199254740993", "negative_precise_exponent": "-9007199254740993",
+		"beyond": "99999999999999999999999", "negative_beyond": "-99999999999999999999999", "beyond_decimal": "99999999999999999999999", "negative_beyond_decimal": "-99999999999999999999999", "beyond_exponent": "99999999999999999999999", "negative_beyond_exponent": "-99999999999999999999999", "cap": "1" + strings.Repeat("0", 308), "negative_cap": "-1" + strings.Repeat("0", 308),
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999", "negative_small_decimal": "-999999", "zero": "0", "decimal_zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "negative_fraction": "-1.5", "rounded_fraction": "1e+06", "negative_rounded_fraction": "-1e+06", "rounded_threshold": "1e+06", "negative_rounded_threshold": "-1e+06", "text": "text", "string_integer": "1000000", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "false": "false", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]", "array": "[1.5]", "recursive": "map[a:[1e+06 1.5]]", "underflow": "0", "negative_underflow": "-0", "zero_exponent": "0", "negative_zero_exponent": "-0", "exception_a": "0", "exception_b": "1",
+	}
+	bodies := make(chan string, 2)
+	bodies <- `{"output":{"message":{"role":"assistant","content":[{"text":"Read values"},{"toolUse":{"toolUseId":"call_1","name":"read_file","input":` + raw + `}}]}},"stopReason":"tool_use"}`
+	bodies <- `{"output":{"message":{"role":"assistant","content":[{"text":"All done"}]}},"stopReason":"end_turn"}`
+	requests := make(chan []byte, 3)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/model/test-model/converse" {
+			t.Errorf("request = %s %s", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- body
+		select {
+		case response := <-bodies:
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, response)
+		default:
+			t.Error("unexpected extra request")
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	defer server.Close()
+	var hooks []ToolCall
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	seed := Message{Role: "user", Content: "Keep this history"}
+	result, err := run(context.Background(), Options{
+		AgentName: "test-agent", Workdir: workdir, Messages: []Message{seed}, JSON: true, Stdout: stdout, Stderr: stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			hooks = append(hooks, call)
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+		ToolObserver: func(_ context.Context, event ToolEvent) { events = append(events, event) },
+	}, func(name, region, baseURL string) (provider.Provider, error) {
+		if name != "bedrock" || region != "us-east-1" || baseURL != "" {
+			t.Errorf("provider args = %q %q %q", name, region, baseURL)
+		}
+		return provider.NewBedrock("us-east-1", provider.WithBedrockBaseURL(server.URL))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Content != "All done" || result.StopReason != "end_turn" || result.ToolCalls != 1 || len(result.Messages) != 4 || len(result.Messages[1].ToolCalls) != 1 || len(result.Messages[2].ToolResults) != 1 {
+		t.Fatalf("result = %+v", result)
+	}
+	call := result.Messages[1].ToolCalls[0]
+	wantResult := ToolResult{CallID: "call_1", Content: "1: controlled result"}
+	if !reflect.DeepEqual(result.Messages[0], seed) || result.Messages[1].Role != "assistant" || result.Messages[1].Content != "Read values" || result.Messages[2].Role != "tool" || !reflect.DeepEqual(result.Messages[2].ToolResults[0], wantResult) || result.Messages[3].Role != "assistant" || result.Messages[3].Content != "All done" {
+		t.Errorf("history = %+v", result.Messages)
+	}
+	if len(hooks) != 1 || len(events) != 1 || len(result.ToolCallDetails) != 1 {
+		t.Fatalf("hook/observer/detail counts = %d/%d/%d", len(hooks), len(events), len(result.ToolCallDetails))
+	}
+	if call.ID != "call_1" || call.Name != "read_file" || hooks[0].ID != call.ID || hooks[0].Name != call.Name || events[0].Call.ID != call.ID || events[0].Call.Name != call.Name {
+		t.Errorf("history/hook/observer calls = %+v/%+v/%+v", call, hooks[0], events[0].Call)
+	}
+	if ev := events[0]; ev.CallID != call.ID || ev.Action != ToolAllow || ev.IsError || ev.Turn != 0 || ev.ContentLength != len(wantResult.Content) {
+		t.Errorf("observer = %+v", ev)
+	}
+	detail := result.ToolCallDetails[0]
+	if detail.Name != call.Name || detail.Output != wantResult.Content || detail.IsError || detail.Turn != 0 {
+		t.Errorf("detail = %+v", detail)
+	}
+	var output largeIntegerJSONOutput
+	if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+		t.Fatal(err)
+	}
+	if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != 1 || len(output.ToolCallDetails) != 1 || len(requests) != 2 {
+		t.Fatalf("JSON history/details = %+v, requests = %d", output, len(requests))
+	}
+	type wireRequest struct {
+		Messages []struct {
+			Role    string `json:"role"`
+			Content []struct {
+				Text    string `json:"text"`
+				ToolUse *struct {
+					ID    string            `json:"toolUseId"`
+					Name  string            `json:"name"`
+					Input map[string]string `json:"input"`
+				} `json:"toolUse"`
+				ToolResult *struct {
+					ID      string `json:"toolUseId"`
+					Status  string `json:"status"`
+					Content []struct {
+						Text string `json:"text"`
+					} `json:"content"`
+				} `json:"toolResult"`
+			} `json:"content"`
+		} `json:"messages"`
+	}
+	var initial, followup wireRequest
+	if err := json.Unmarshal(<-requests, &initial); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(<-requests, &followup); err != nil {
+		t.Fatalf("decode replay inputs as strings: %v", err)
+	}
+	if len(initial.Messages) != 1 || initial.Messages[0].Role != seed.Role || len(initial.Messages[0].Content) != 1 || initial.Messages[0].Content[0].Text != seed.Content {
+		t.Errorf("initial request = %+v", initial)
+	}
+	if len(followup.Messages) != 3 || followup.Messages[0].Role != seed.Role || len(followup.Messages[0].Content) != 1 || followup.Messages[0].Content[0].Text != seed.Content || followup.Messages[1].Role != "assistant" || len(followup.Messages[1].Content) != 2 || followup.Messages[1].Content[0].Text != "Read values" || followup.Messages[2].Role != "assistant" || len(followup.Messages[2].Content) != 1 {
+		t.Fatalf("follow-up = %+v", followup.Messages)
+	}
+	wireCall := followup.Messages[1].Content[1].ToolUse
+	wireResult := followup.Messages[2].Content[0].ToolResult
+	if wireCall == nil || wireCall.ID != call.ID || wireCall.Name != call.Name || wireResult == nil || wireResult.ID != wantResult.CallID || wireResult.Status != "success" || len(wireResult.Content) != 1 || wireResult.Content[0].Text != wantResult.Content {
+		t.Fatalf("replayed call/result = %+v/%+v", wireCall, wireResult)
+	}
+	for name, got := range map[string]map[string]string{
+		"history": call.Arguments, "hook": hooks[0].Arguments, "observer": events[0].Call.Arguments, "detail": detail.Input,
+		"JSON history": output.Messages[1].ToolCalls[0].Arguments, "JSON detail": output.ToolCallDetails[0].Input, "replay": wireCall.Input,
+	} {
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%s arguments = %v, want %v", name, got, want)
+		}
+	}
+}
+
 type largeIntegerJSONOutput struct {
 	Messages []struct {
 		ToolCalls []struct {
