@@ -22,7 +22,7 @@ Absolute paths inside the Repository root (the feature worktree).
 ## State
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
-- Current phase: `execute`
+- Current phase: `blocked`
 - Current task: T13
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `checked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Resume from handoff: validate checkpoint and current dirty bookkeeping against reviewed ab53ab4; resolve F1 capture hangs in test-only scope and investigate F2 output-free API gate, then verified commit, sync, fresh HEAD-matched safe host gate and round2 affected reviews. No RED fabrication or criterion waiver.
-- Last completed phase/task/gate and timestamp: INTERRUPTION: T13 and full milestone round1 reviews complete, CHANGES REQUESTED with two unique blockers; handoff requested before remediation, 2026-11-13T19:54:39.008338+00:00
+- Next safe action: Await Jaron's explicit F2 API-output acceptance decision before remediation or changing acceptance.
+- Last completed phase/task/gate and timestamp: Resume validation and Go preflight PASS; F2 zero-output API gate BLOCKED awaiting user decision, 2026-11-13T20:05:49.948806+00:00
 
 ## Gate evidence
 
@@ -1590,6 +1590,27 @@ User requested handoff immediately after completed round1 reviews, before fixes.
 
 - Next action: Resume from handoff: validate checkpoint and current dirty bookkeeping against reviewed ab53ab4; resolve F1 capture hangs in test-only scope and investigate F2 output-free API gate, then verified commit, sync, fresh HEAD-matched safe host gate and round2 affected reviews. No RED fabrication or criterion waiver.
 
+### Resume validation and Go preflight PASS; F2 zero-output API gate BLOCKED awaiting user decision
+
+- Gate: Resume validation and Go preflight PASS; F2 zero-output API gate BLOCKED awaiting user decision
+- Commands/results:
+Factory resume from /tmp/handoff-052-runner-tool-hooks.latest.md. milestone-entries docs/plans/052_runner_tool_hooks_v1_12_0_milestones.md exit 0: 13 milestone entries. Root/branch verified /home/jaron/dev/axe/runner-tool-hooks / runner-tool-hooks. At initial HEAD ab53ab4959c9f2e0630425340b3d4f298caafd5d the sole dirty path was checkpoint interruption bookkeeping. Read-only inspection and separate general validation found no acceptance or checkbox changes; git diff --check exit 0. Applicable records lint this session: docs-lint 1 --since 8a351c8e475ab1bfdc52000f0593f1e6ed7385ec exit 0, 205 Markdown files, 0 findings. Completed latest relevant T13 stash a7019daa670d601d90452f2bc4162e17002a6cb1-to-21bb3fa/HEAD source blob comparisons with only checkpoint bookkeeping differing; current T13 test hashes match retained final evidence. Approved toolchain 70e31fd56c48216a027479a49ebf2cbebe25768c ancestry and entire exact full-index patch passed. BOTH go.mod/go.sum comparisons against original prepatch base and approved commit passed; R9 empty and R10 within approved paths. Missing 009 original inventories/review transcripts remain disclosed history, not reconstructed. Original review verdicts remain recorded history; retained host log independently confirms ab53ab4 and full race exit 0. No new reviews or tests claimed. Verified checkpoint-only commit 6d7da0276fa92fd5de82e22f38973abeaa677cd3 created by factory-commit, remaining_changes []. Fresh factory-sync --base origin/master exit 0 JSON: branch runner-tool-hooks, base origin/master, head_before 6d7da0276fa92fd5de82e22f38973abeaa677cd3, ahead 190, behind 0, shared_files [], conflicts [], synced true. HEAD remained 6d7da0276fa92fd5de82e22f38973abeaa677cd3. All following Go-spawning commands used exact prefix env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= PATH=/home/jaron/.pi/agent/bin:/home/jaron/.cache/pi-go-bin:/home/jaron/.local/share/../bin:/home/jaron/bin:/home/jaron/.local/bin:/home/jaron/.npm-global/bin:/home/jaron/.opencode/bin:/home/jaron/.local/share/pi-node/current/bin:/home/jaron/android-sdk/cmdline-tools/bin:/home/jaron/go/bin:/usr/local/go/bin:/home/jaron/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin. Command /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/runner-tool-hooks exit 0, stderr empty; stdout /tmp/052-resume-f2-preflight.stdout: release Go 1.26.0 and 1.26.11 checks PASS, repository Go 1.26.11 PASS, module loads read-only PASS, govulncheck ./... ran and returned 'No vulnerabilities found.', preflight PASS. Exact make apidiff under same prefix exit 0, /tmp/052-resume-f2-apidiff.stdout empty (0 bytes), /tmp/052-resume-f2-apidiff.stderr 204 bytes containing exactly twice: 'go: golang.org/x/exp@v0.0.0-20261106192419-47ce03d25ef0 requires go >= 1.26.0; switching to go1.26.11'. No incompatible API report, but unchanged literal no-output acceptance FAILS. Makefile:22-23 invokes the pinned versioned apidiff twice; initial Go selection under frozen PATH emits one notice per invocation. No compliant output-free execution found without altering approved conditions. No filtering/suppression, toolchain/API/dependency changes, installs or acceptance reinterpretation performed. HEAD/status unchanged and clean during commands; git diff --check exit 0. F1 capture-hang remediation remains unstarted and open. F2 requires an explicit user acceptance decision: recommended narrow allowance for these exact toolchain-switch stderr notices only, retaining exit 0, empty stdout and no other stderr. No user decision yet. Terminal condition: required user decision, not milestone completion. T13/010 stay unchecked; 011/012 not started. No production/source edits, fresh host gate, round 2, push or deploy. Existing host evidence remains valid only for old ab53ab4. After a decision, update durable acceptance if authorized, then fix F1 in test-only scope, run applicable task gates, commit/sync, obtain fresh safe host evidence, and perform affected round-2 reviews before completion.
+- HEAD commit SHA: `6d7da0276fa92fd5de82e22f38973abeaa677cd3`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await Jaron's explicit F2 API-output acceptance decision before remediation or changing acceptance.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1603,7 +1624,7 @@ User requested handoff immediately after completed round1 reviews, before fixes.
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Resume from handoff: validate checkpoint and current dirty bookkeeping against reviewed ab53ab4; resolve F1 capture hangs in test-only scope and investigate F2 output-free API gate, then verified commit, sync, fresh HEAD-matched safe host gate and round2 affected reviews. No RED fabrication or criterion waiver.
+- Next action: Await Jaron's explicit F2 API-output acceptance decision before remediation or changing acceptance.
 
 ## Approval / decision note — 2026-11-10
 
