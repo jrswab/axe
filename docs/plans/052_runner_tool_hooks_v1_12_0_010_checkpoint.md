@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `checked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit this completion/sync evidence, sync once more before final host tests, repin audited wrapper SHA only and validate; Jaron runs ONE final safe host gate before parallel T13 axes and full split milestone reviews.
-- Last completed phase/task/gate and timestamp: T13 committed/synced; milestone010 completion preparation PASS except pending host race and reviews, 2026-11-13T18:50:14.611083+00:00
+- Next safe action: Resume from handoff: validate checkpoint and current dirty bookkeeping against reviewed ab53ab4; resolve F1 capture hangs in test-only scope and investigate F2 output-free API gate, then verified commit, sync, fresh HEAD-matched safe host gate and round2 affected reviews. No RED fabrication or criterion waiver.
+- Last completed phase/task/gate and timestamp: INTERRUPTION: T13 and full milestone round1 reviews complete, CHANGES REQUESTED with two unique blockers; handoff requested before remediation, 2026-11-13T19:54:39.008338+00:00
 
 ## Gate evidence
 
@@ -1569,6 +1569,27 @@ T13 verified tests/citations/evidence committed21bb3faffe684d45d25d3dc9dc3816156
 
 - Next action: Commit this completion/sync evidence, sync once more before final host tests, repin audited wrapper SHA only and validate; Jaron runs ONE final safe host gate before parallel T13 axes and full split milestone reviews.
 
+### INTERRUPTION: T13 and full milestone round1 reviews complete, CHANGES REQUESTED with two unique blockers; handoff requested before remediation
+
+- Gate: INTERRUPTION: T13 and full milestone round1 reviews complete, CHANGES REQUESTED with two unique blockers; handoff requested before remediation
+- Commands/results:
+User requested handoff immediately after completed round1 reviews, before fixes. Reviewed clean HEAD ab53ab4959c9f2e0630425340b3d4f298caafd5d, no implementation changes since. User ran audited safe wrapper and supplied PASS; orchestrator independently factory-gate poll gate-test-ab53ab4959c9-20261113T190429Z exit0/networkonline/stateexited0. Existing log /tmp/factory-gate-1001/gate-test-ab53ab4959c9-20261113T190429Z.log independently read by setup/reviewers: exact reviewedHEAD, gate test, origin/master baseSHA538632ea56da1c71f8f319076f221e4298148d3e, exact go test -race ./..., allpackagespass/exit0. Safety provenance user exact invocation plus audited wrapper hash da6388fed859cfbf299bcb3898643f27e325f8b2fc8aca7556f399905a7c1017, corrected eightlinevalidator; no retained effective-env telemetry claimed. Final sync before host tests was run_script factory-sync --base origin/master at HEADab53ab4, exit0,ahead189,behind0,shared_files[],conflicts[],syncedtrue. No later sync needed before sameHEAD reviews. Fresh records-stale-check both originalbase8a351c8e475ab1bfdc52000f0593f1e6ed7385ec and T13basea47f383d5f05a7ff75a612d162bb22bacd97de74 exit0/norecords; docs-lint1 --since originalbase exit0/205Markdown/0findings. Task review round1: T13 Standards Verdict: CHANGES REQUESTED, COMPLETE all5files, one blocking capture hang; T13 Spec Verdict: APPROVED, COMPLETE all5files, nofindings/nits. Milestone review round1 originalbase..ab53ab4, 53commits26files+7215/-75: BackendA Verdict: CHANGES REQUESTED, COMPLETE8files929lines, sole API no-output prerequisite; BackendB Verdict: APPROVED, COMPLETE4files810lines, nofindings/nits; BackendC Verdict: APPROVED, COMPLETE6files891lines, nofindings/nits; BackendD.1 Verdict: CHANGES REQUESTED, COMPLETE runnerfile1-1426, sole capturehangfinding; BackendD.2 Verdict: APPROVED, COMPLETE runnerfile1427-2378 plusrun.go/stream_test.go, nofindings/nits; combinedBackendD CHANGES REQUESTED. RecordsA Verdict: APPROVED, COMPLETE009+010checkpoints1632changedlines, nofindings/nits; RecordsB Verdict: CHANGES REQUESTED, COMPLETEspec/checklist/milestones575changedlines, same API no-output prerequisite. Every review had valid Verdict, no Review incomplete, no nits. First attempted batch9 was refused max8 and spawnednone; actual successful batches2taskaxes then7milestoneslices, all round1. Reviewers ran no tests. No round2 or fix dispatch has occurred. Unique F1 blocking: T13 Standards at pkg/runner/large_integer_args_test.go:144-165 quote 'requests := make(chan bool, 2)' and 'requests <- request.Stream': 'The channel fills after the two expected requests and is drained only after Run returns. A third request therefore blocks before reaching the explicit extra-request diagnostic. Run’s context timeout cannot unblock this channel send; subsequent t.Cleanup(openai.Close) also waits for the blocked handler.' Reviewer fix verbatim: 'make request recording nonblocking—using a synchronized counter/slice or a guarded channel send—and return an error immediately when responses are exhausted. The handler must terminate on every unexpected-request path.' BackendD.1 independently confirms and extends same F1 at lines96-104: 'The raw MCP capture has the same failure shape at lines 96–104: its capacity is exactly the expected 50 calls, consumption starts after Run, and the handler’s send ignores cancellation. Unexpected additional dispatches can exhaust that buffer too.' Specific fix verbatim: 'Make capture writes nonblocking and return an immediate test/server error when capacity is exceeded, or record captures in a mutex-protected collection independently of expected counts. Keep the final exact-count assertions. Merely increasing the buffer postpones the problem.' F1 is latent testcorrectness defect, not failure of the passing hostgate. Unique F2 blocking shared BackendA/RecordsB: spec136 and208 quote 'make apidiff exits 0 with no output'; spec253/checklist262 'R9 and every other original restriction and gate remain unchanged.' Actual /tmp/052-010-completion-apidiff.stderr:1-2 contains twice 'go: golang.org/x/exp@v0.0.0-20261106192419-47ce03d25ef0 requires go >= 1.26.0; switching to go1.26.11'. makeapidiff exit0 and emptystdout do NOT meet unchanged outputfree criterion; no incompatible API detected. BackendA required resolution verbatim: 'Can completion supply an output-free make apidiff result, or obtain an explicit clarification allowing toolchain notices?' RecordsB required resolution verbatim: 'supply passing evidence satisfying the unchanged zero-output criterion, or obtain an explicit decision reconciling that criterion with permitted toolchain notices.' Do not silently suppress/filterstderr or waivecriterion. No API criterion clarification approved; approved exception remains exact one-linetoolchainpatchonly. Next session should investigate safe deterministic outputfree execution if possible; if not, batch user decision with recommendation before altering criterion. Existing code/production API found no other defects in all owners. Historical009missingoriginalinventories/oldtmplogs remain disclosedlimitations with recordedreplacementproof, notactiveblockers. T13/milestone010 unchecked, 011/012 notstarted. User interruption terminal for this run; no furtherfix/test/commit/sync/push/deploy. Bookkeeping selfwrite is separate from clean reviewedHEAD evidence. Preserve current repo on resume and validate checkpoint before any remediation.
+- HEAD commit SHA: `ab53ab4959c9f2e0630425340b3d4f298caafd5d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume from handoff: validate checkpoint and current dirty bookkeeping against reviewed ab53ab4; resolve F1 capture hangs in test-only scope and investigate F2 output-free API gate, then verified commit, sync, fresh HEAD-matched safe host gate and round2 affected reviews. No RED fabrication or criterion waiver.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1582,7 +1603,7 @@ T13 verified tests/citations/evidence committed21bb3faffe684d45d25d3dc9dc3816156
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit this completion/sync evidence, sync once more before final host tests, repin audited wrapper SHA only and validate; Jaron runs ONE final safe host gate before parallel T13 axes and full split milestone reviews.
+- Next action: Resume from handoff: validate checkpoint and current dirty bookkeeping against reviewed ab53ab4; resolve F1 capture hangs in test-only scope and investigate F2 output-free API gate, then verified commit, sync, fresh HEAD-matched safe host gate and round2 affected reviews. No RED fabrication or criterion waiver.
 
 ## Approval / decision note — 2026-11-10
 
