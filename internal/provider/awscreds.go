@@ -10,9 +10,9 @@ import (
 
 // awsCredentials holds AWS access credentials for request signing.
 type awsCredentials struct {
-	AccessKeyID    string
+	AccessKeyID     string
 	SecretAccessKey string
-	SessionToken   string
+	SessionToken    string
 }
 
 // resolveCredentials loads AWS credentials from env vars first, then ~/.aws/credentials.

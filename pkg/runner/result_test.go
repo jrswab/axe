@@ -19,12 +19,22 @@ func TestResultMarshalJSON_TableDriven(t *testing.T) {
 		{
 			name:  "cost and cache status present",
 			input: Result{Content: "Hello", Cost: 0.00014, CacheStatus: "HIT", InputTokens: 10, OutputTokens: 5, Model: "openrouter/test", StopReason: "stop"},
-			want:  struct{ Cost bool; CostVal float64; Cache bool; CacheVal string }{Cost: true, CostVal: 0.00014, Cache: true, CacheVal: "HIT"},
+			want: struct {
+				Cost     bool
+				CostVal  float64
+				Cache    bool
+				CacheVal string
+			}{Cost: true, CostVal: 0.00014, Cache: true, CacheVal: "HIT"},
 		},
 		{
 			name:  "zero cost and empty cache omitted",
 			input: Result{Content: "Hello", InputTokens: 10, OutputTokens: 5, Model: "openai/gpt-4", StopReason: "stop"},
-			want:  struct{ Cost bool; CostVal float64; Cache bool; CacheVal string }{Cost: false, Cache: false},
+			want: struct {
+				Cost     bool
+				CostVal  float64
+				Cache    bool
+				CacheVal string
+			}{Cost: false, Cache: false},
 		},
 	}
 

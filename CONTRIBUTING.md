@@ -77,6 +77,46 @@ golangci-lint run
 
 Configuration is in `.golangci.yml`.
 
+### CI and release checks
+
+`Check` runs on pull requests and master pushes, and is reused by tagged releases.
+Its existing `lint`, `test`, and `build` job names remain; `integrity`,
+`workflow-syntax`, and `docker-smoke` add format/module/vet, workflow and
+Python helper tests, and a locally built, no-push container smoke test. Review
+branch-protection required contexts separately when adopting the new jobs;
+workflow changes do not update repository settings.
+
+Run the deterministic checks locally (install actionlint v1.7.12 and
+golangci-lint separately):
+
+```bash
+.agents/scripts/ci-check integrity
+.agents/scripts/ci-check vet
+.agents/scripts/ci-check build
+.agents/scripts/ci-check test  # full race suite
+python3 -B -m unittest discover -s .agents/scripts/tests -v
+actionlint -shellcheck= -pyflakes=
+golangci-lint run
+```
+
+The separate provider smoke workflow uses paid provider APIs and secrets; it is
+not part of deterministic release validation. Docker smoke requires Docker and
+runs its image without network access; it does not push an image.
+
+A `v*` tag release admits only the tagged checkout reachable from current
+`origin/master`, with one nonempty literal changelog section for its version.
+After reusable `Check`, GoReleaser 2.12.7 (pinned for reproducible tooling)
+checks config, builds without publishing, and validates all six archive names,
+members, SHA-256 checksums, plus the Linux amd64 version and dry-run skill.
+The source version must equal the tag version (without `v`); for a numeric-core
+prerelease such as `v1.2.3-rc.1`, it may instead equal the `1.2.3` base.
+The packaged Linux amd64 binary must match the source version exactly.
+GoReleaser then **rebuilds** for publication: the preflight does not prove the
+published bytes are identical. Docker publication builds a separate image; no
+image identity, deployment, or rollback is implied. The nonpublishing GoReleaser
+command can still require GitHub access; run it without credentials only in an
+isolated fixture repository when investigating locally.
+
 ## Code Style and Standards
 
 ### General Guidelines

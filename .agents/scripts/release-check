@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""Validate a tag's admission and the nonpublishing GoReleaser artifacts."""
+
+import argparse
+import gzip
+import hashlib
+from pathlib import Path
+import re
+import stat
+import subprocess
+import sys
+import tarfile
+import tempfile
+import zipfile
+import zlib
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def run(*args, cwd=ROOT, **kwargs):
+    return subprocess.run(args, cwd=cwd, check=True, text=True, capture_output=True, **kwargs)
+
+
+def notes_for(tag, changelog):
+    version = tag[1:]
+    lines = changelog.splitlines(keepends=True)
+    headings = [(i, match.group(1)) for i, line in enumerate(lines)
+                if (match := re.match(r"^## \[([^\]]+)\](?:\s|$)", line))]
+    matches = [i for i, name in headings if name == version]
+    if len(matches) != 1:
+        raise ValueError(f"expected exactly one changelog section for [{version}], found {len(matches)}")
+    start = matches[0] + 1
+    end = next((i for i in range(start, len(lines)) if re.match(r"^##\s", lines[i])), len(lines))
+    body = "".join(lines[start:end]).strip()
+    visible = re.sub(r"<!--.*?-->", "", body, flags=re.DOTALL)
+    visible = re.sub(
+        r'''(?m)^ {0,3}\[(?:\\.|[^\]\\])+\]:[ \t]*(?:\n[ \t]*)?'''
+        r'''(?:<(?:\\.|[^<>\\\n])*>|(?:\\.|[^\s<>])+)(?:[ \t]+|[ \t]*\n[ \t]*)?'''
+        r'''(?:"(?:\\.|[^"\\\n]|\n(?![ \t]*\n))*"|'''
+        r'''\'(?:\\.|[^\'\\\n]|\n(?![ \t]*\n))*\'|'''
+        r'''\((?:\\.|[^()\\\n]|\n(?![ \t]*\n))*\))?[ \t]*(?=\n|$)''',
+        "", visible)
+    if not any(re.search(r"[\w]", line) for line in visible.splitlines()
+               if not line.lstrip().startswith("#")):
+        raise ValueError(f"changelog section [{version}] has no meaningful body")
+    return body + "\n"
+
+
+def admit(tag, ref, sha, notes, root=ROOT):
+    if not tag.startswith("v") or ref != f"refs/tags/{tag}":
+        raise ValueError("event must name a matching v* tag and refs/tags/ ref")
+    run("git", "check-ref-format", ref, cwd=root)
+    head = run("git", "rev-parse", "--verify", "HEAD^{commit}", cwd=root).stdout.strip()
+    tagged = run("git", "rev-parse", "--verify", f"{ref}^{{commit}}", cwd=root).stdout.strip()
+    if not re.fullmatch(rf"[0-9a-fA-F]{{{len(head)}}}", sha):
+        raise ValueError("event SHA must be a full hexadecimal object ID")
+    try:
+        event = run("git", "rev-parse", "--verify", f"{sha.lower()}^{{commit}}", cwd=root).stdout.strip()
+    except subprocess.CalledProcessError as error:
+        raise ValueError("event SHA must resolve to a commit") from error
+    if event != head or tagged != head:
+        raise ValueError("event SHA, checkout HEAD, and peeled tag commit must match")
+    ancestry = subprocess.run(["git", "merge-base", "--is-ancestor", head, "refs/remotes/origin/master"],
+                              cwd=root, capture_output=True, text=True)
+    if ancestry.returncode != 0:
+        raise ValueError("tag commit is not reachable from fetched origin/master (or ancestry could not be checked)")
+    body = notes_for(tag, (root / "CHANGELOG.md").read_text())
+    notes.write_text(body)
+    print(f"admitted {tag} at {head}; notes: {notes}")
+
+
+def archive_binary(path, windows):
+    required = {"axe.exe" if windows else "axe", "LICENSE", "README.md"}
+    found = {}
+    binary_mode = None
+    if windows:
+        with zipfile.ZipFile(path) as archive:
+            for item in archive.infolist():
+                mode = item.external_attr >> 16
+                kind = stat.S_IFMT(mode)
+                if item.filename not in required or item.filename in found or kind not in (0, stat.S_IFREG):
+                    raise ValueError(f"unsafe or unexpected ZIP member: {item.filename}")
+                found[item.filename] = archive.read(item)
+    else:
+        try:
+            with gzip.open(path, "rb") as stream:
+                while stream.read(1024 * 1024):
+                    pass
+        except (gzip.BadGzipFile, EOFError, zlib.error) as error:
+            raise ValueError(f"invalid gzip archive {path.name}: {error}") from error
+        with tarfile.open(path, "r:gz") as archive:
+            for item in archive:
+                if item.name not in required or item.name in found or not item.isfile():
+                    raise ValueError(f"unsafe or unexpected tar member: {item.name}")
+                if item.name == "axe":
+                    if item.mode & 0o500 != 0o500:
+                        raise ValueError(f"{path.name} binary must be owner-readable and executable")
+                    binary_mode = item.mode
+                stream = archive.extractfile(item)
+                if stream is None:
+                    raise ValueError(f"cannot read tar member: {item.name}")
+                found[item.name] = stream.read()
+    if set(found) != required:
+        raise ValueError(f"{path.name} missing members: {', '.join(sorted(required - set(found)))}")
+    return found["axe.exe" if windows else "axe"], binary_mode
+
+
+def prerelease_base(version):
+    identifier = r"[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*"
+    match = re.fullmatch(rf"([0-9]+\.[0-9]+\.[0-9]+)-{identifier}(?:\+{identifier})?", version)
+    return match.group(1) if match else None
+
+
+def artifacts(tag, dist, root=ROOT):
+    version = tag[1:]
+    if not tag.startswith("v") or not version or "/" in version or "\\" in version:
+        raise ValueError("invalid tag for artifact filenames")
+    names = {f"axe_{version}_{osname}_{arch}.{'zip' if osname == 'windows' else 'tar.gz'}"
+             for osname in ("linux", "darwin", "windows") for arch in ("amd64", "arm64")}
+    archives = {p.name for p in dist.iterdir() if p.name.endswith((".tar.gz", ".zip"))}
+    if archives != names:
+        raise ValueError(f"archive set mismatch: missing {sorted(names - archives)}, unexpected {sorted(archives - names)}")
+    checksums = {}
+    for line in (dist / "checksums.txt").read_text().splitlines():
+        match = re.fullmatch(r"([0-9a-fA-F]{64})  ([^/\\]+)", line)
+        if not match or match.group(2) in checksums:
+            raise ValueError("invalid or duplicate checksum manifest entry")
+        checksums[match.group(2)] = match.group(1).lower()
+    if set(checksums) != names:
+        raise ValueError("checksum manifest must list exactly the six expected archives")
+    linux_binary = None
+    for name in sorted(names):
+        path = dist / name
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"archive is not a regular file: {name}")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != checksums[name]:
+            raise ValueError(f"checksum mismatch: {name}")
+        binary, mode = archive_binary(path, name.endswith(".zip"))
+        if name == f"axe_{version}_linux_amd64.tar.gz":
+            linux_binary = binary
+            linux_mode = mode
+    source = (root / "cmd/root.go").read_text()
+    match = re.search(r'^const Version = "([^"]+)"$', source, re.MULTILINE)
+    if not match:
+        raise ValueError("cannot find source version in cmd/root.go")
+    source_version = match.group(1)
+    if source_version != version:
+        base = prerelease_base(version)
+        if source_version != base:
+            expected = f"{version!r} or {base!r}" if base else repr(version)
+            raise ValueError(f"source version mismatch for tag {tag!r}: expected {expected}, got {source_version!r}")
+    with tempfile.TemporaryDirectory(prefix="axe-release-check-") as temporary:
+        binary_path = Path(temporary) / "axe"
+        binary_path.write_bytes(linux_binary)
+        binary_path.chmod(linux_mode)
+        output = run(str(binary_path), "version", cwd=root).stdout.strip()
+        expected_output = f"axe version {source_version}"
+        if output != expected_output:
+            raise ValueError(f"archive binary version mismatch: expected {expected_output!r}, got {output!r}")
+        fixtures = root / ".github/smoke-agents"
+        output = run(str(binary_path), "run", "--agents-dir", str(fixtures), "dry-skill",
+                     "--skill", str(fixtures / "skills/smoke-skill/SKILL.md"),
+                     "--dry-run", "-p", "ping", cwd=root).stdout
+        run(str(root / ".agents/scripts/check-dry-skill"), cwd=root, input=output)
+    print(f"validated six archives, checksums, version and dry-run skill for {tag}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    admission = sub.add_parser("admit")
+    admission.add_argument("--tag", required=True)
+    admission.add_argument("--ref", required=True)
+    admission.add_argument("--sha", required=True)
+    admission.add_argument("--notes", type=Path, required=True)
+    packages = sub.add_parser("artifacts")
+    packages.add_argument("--tag", required=True)
+    packages.add_argument("--dist", type=Path, default=Path("dist"))
+    args = parser.parse_args()
+    try:
+        if args.command == "admit":
+            admit(args.tag, args.ref, args.sha, args.notes)
+        else:
+            artifacts(args.tag, args.dist)
+    except (OSError, ValueError, subprocess.CalledProcessError, tarfile.TarError, zipfile.BadZipFile) as error:
+        detail = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) and error.stderr else str(error)
+        print(f"release-check: {detail}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

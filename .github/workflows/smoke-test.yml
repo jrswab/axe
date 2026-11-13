@@ -6,17 +6,22 @@ on:
     branches: [ "master" ]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
 
   dry-run:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -38,8 +43,7 @@ jobs:
       run: |
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-skill --skill "$(pwd)/.github/smoke-agents/skills/smoke-skill/SKILL.md" --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q -- "--- Skill ---" || { echo "FAIL: '--- Skill ---' not found"; exit 1; }
-        echo "$OUTPUT" | grep -A1 -- "--- Skill ---" | grep -q "(none)" && { echo "FAIL: skill section is '(none)'"; exit 1; } || true
+        printf '%s\n' "$OUTPUT" | .agents/scripts/check-dry-skill
 
     - name: dry-memory
       run: |
@@ -63,11 +67,13 @@ jobs:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -98,11 +104,13 @@ jobs:
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -157,11 +165,13 @@ jobs:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -205,11 +215,13 @@ jobs:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .

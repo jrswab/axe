@@ -1,0 +1,467 @@
+"""Release admission and package checks using local Git and synthetic archives."""
+
+import hashlib
+import io
+from pathlib import Path
+import re
+import runpy
+import shutil
+import subprocess
+import tarfile
+import tempfile
+import unittest
+from unittest import mock
+import zipfile
+
+
+ROOT = Path(__file__).resolve().parents[3]
+CHECK = runpy.run_path(str(ROOT / ".agents/scripts/release-check"))
+
+
+def git(root, *args):
+    return subprocess.run(["git", *args], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+
+
+class AdmissionTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="axe-release-admit-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        git(self.root, "init", "-q", "--object-format=sha1")
+        git(self.root, "config", "user.name", "Fixture")
+        git(self.root, "config", "user.email", "fixture@example.invalid")
+        (self.root / "CHANGELOG.md").write_text("## [1.2.3]\n### Added\n- A change\n\n## [Older]\nold\n")
+        git(self.root, "add", "CHANGELOG.md")
+        git(self.root, "commit", "-qm", "fixture")
+        self.head = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "tag", "-a", "v1.2.3", "-m", "fixture")
+        git(self.root, "update-ref", "refs/remotes/origin/master", self.head)
+        self.notes = self.root / "notes.md"
+
+    def admit(self, tag="v1.2.3", ref="refs/tags/v1.2.3", sha=None):
+        CHECK["admit"](tag, ref, self.head if sha is None else sha, self.notes, self.root)
+
+    def test_admission_and_ancestry(self):
+        scripts = self.root / ".agents/scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        command = [str(scripts / "release-check"), "admit", "--tag", "v1.2.3", "--ref",
+                   "refs/tags/v1.2.3", "--sha", self.head, "--notes", str(self.notes)]
+        result = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.notes.read_text(), "### Added\n- A change\n")
+        result = subprocess.run(command[:-4] + ["--sha", "0" * 40, "--notes", str(self.notes)],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("event SHA must resolve to a commit", result.stderr)
+        (self.root / "new").write_text("new")
+        git(self.root, "add", "new")
+        git(self.root, "commit", "-qm", "off branch")
+        git(self.root, "tag", "v1.2.4")
+        new_head = git(self.root, "rev-parse", "HEAD")
+        with self.assertRaisesRegex(ValueError, "not reachable"):
+            self.admit("v1.2.4", "refs/tags/v1.2.4", new_head)
+        with self.assertRaisesRegex(ValueError, "must match"):
+            self.admit()
+        git(self.root, "reset", "--hard", self.head)
+        with self.assertRaisesRegex(ValueError, "event SHA must resolve to a commit"):
+            self.admit(sha="0" * 40)
+
+    def test_cli_event_sha(self):
+        scripts = self.root / ".agents/scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        command = [str(scripts / "release-check"), "admit", "--tag", "v1.2.3", "--ref",
+                   "refs/tags/v1.2.3", "--notes", str(self.notes)]
+        tag_object = git(self.root, "rev-parse", "refs/tags/v1.2.3")
+        self.assertNotEqual(tag_object, self.head)
+        self.assertEqual(git(self.root, "rev-parse", f"{tag_object}^{{commit}}"), self.head)
+        for sha in (tag_object, self.head, tag_object.upper(), self.head.upper()):
+            with self.subTest(valid_sha=sha):
+                result = subprocess.run(command + [f"--sha={sha}"], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, f"admitted v1.2.3 at {self.head}; notes: {self.notes}\n")
+                self.assertEqual(result.stderr, "")
+                self.assertEqual(self.notes.read_text(), "### Added\n- A change\n")
+
+        (self.root / "other").write_text("other")
+        git(self.root, "add", "other")
+        git(self.root, "commit", "-qm", "other")
+        other_commit = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "tag", "-a", "other", "-m", "other")
+        other_tag = git(self.root, "rev-parse", "refs/tags/other")
+        blob = git(self.root, "rev-parse", "HEAD:other")
+        git(self.root, "reset", "--hard", self.head)
+        invalid = {
+            "short": (self.head[:12], "full hexadecimal object ID"),
+            "flag": ("--help", "full hexadecimal object ID"),
+            "revision": (f"{self.head}^{{commit}}", "full hexadecimal object ID"),
+            "non-hex": ("z" * 40, "full hexadecimal object ID"),
+            "wrong length": (self.head + "0" * 24, "full hexadecimal object ID"),
+            "unknown": ("0" * 40, "event SHA must resolve to a commit"),
+            "blob": (blob, "event SHA must resolve to a commit"),
+            "other commit": (other_commit, "must match"),
+            "other tag object": (other_tag, "must match"),
+        }
+        for name, (sha, diagnostic) in invalid.items():
+            with self.subTest(invalid_sha=name):
+                self.notes.unlink(missing_ok=True)
+                result = subprocess.run(command + [f"--sha={sha}"], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn(diagnostic, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertFalse(self.notes.exists())
+
+        git(self.root, "tag", "-d", "v1.2.3")
+        git(self.root, "tag", "v1.2.3")
+        self.assertEqual(git(self.root, "rev-parse", "refs/tags/v1.2.3"), self.head)
+        result = subprocess.run(command + [f"--sha={self.head}"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, f"admitted v1.2.3 at {self.head}; notes: {self.notes}\n")
+        self.assertEqual(result.stderr, "")
+        self.assertEqual(self.notes.read_text(), "### Added\n- A change\n")
+
+    def test_cli_sha256_object_format(self):
+        root = self.root / "sha256"
+        root.mkdir()
+        git(root, "init", "-q", "--object-format=sha256")
+        git(root, "config", "user.name", "Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        (root / "CHANGELOG.md").write_text("## [1.2.3]\n- A change\n")
+        git(root, "add", "CHANGELOG.md")
+        git(root, "commit", "-qm", "fixture")
+        head = git(root, "rev-parse", "HEAD")
+        git(root, "tag", "-a", "v1.2.3", "-m", "fixture")
+        tag_object = git(root, "rev-parse", "refs/tags/v1.2.3")
+        git(root, "update-ref", "refs/remotes/origin/master", head)
+        scripts = root / ".agents/scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        notes = root / "notes.md"
+        command = [str(scripts / "release-check"), "admit", "--tag", "v1.2.3", "--ref",
+                   "refs/tags/v1.2.3", "--notes", str(notes)]
+        self.assertEqual(len(head), 64)
+        self.assertNotEqual(tag_object, head)
+        for sha in (head, tag_object):
+            with self.subTest(valid_sha=sha):
+                result = subprocess.run(command + [f"--sha={sha}"], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, f"admitted v1.2.3 at {head}; notes: {notes}\n")
+                self.assertEqual(result.stderr, "")
+                self.assertEqual(notes.read_text(), "- A change\n")
+        result = subprocess.run(command + [f"--sha={head[:40]}"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("full hexadecimal object ID", result.stderr)
+
+    def test_reference_definitions_are_not_release_notes(self):
+        text = "## [1.2.3]\n### Added\n\n[1.2.3]: https://example.invalid/release\n"
+        with self.assertRaisesRegex(ValueError, "no meaningful body"):
+            CHECK["notes_for"]("v1.2.3", text)
+        for definition in ("   [a\\]b]: <https://example.invalid>",
+                           '[ref]: https://example.invalid\n  "Link title"',
+                           '[ref]: /url "Title with \\"escaped\\" quotes"',
+                           '[ref]: /url "A title\non two lines"',
+                           r"[ref]: <https://example.invalid/a\>b>",
+                           "[ref]:\nhttps://example.invalid"):
+            with self.subTest(definition=definition), self.assertRaisesRegex(ValueError, "no meaningful body"):
+                CHECK["notes_for"]("v1.2.3", "## [1.2.3]\n" + definition + "\n")
+        prose = "## [1.2.3]\n### Added\nA plain prose note.\n\n[1.2.3]: https://example.invalid/release\n"
+        self.assertEqual(CHECK["notes_for"]("v1.2.3", prose), prose.split("\n", 1)[1])
+        self.assertEqual(CHECK["notes_for"]("v1.2.3", "## [1.2.3]\n[Note]: plain prose here\n"),
+                         "[Note]: plain prose here\n")
+        paragraphs = '## [1.2.3]\n[ref]: /url\n"Prose\n\ncontinues"\n'
+        self.assertEqual(CHECK["notes_for"]("v1.2.3", paragraphs), paragraphs.split("\n", 1)[1])
+        self.assertEqual(CHECK["notes_for"]("v1.2.3", "## [1.2.3]\n- A bullet\n"), "- A bullet\n")
+
+    def test_invalid_ref_and_changelog(self):
+        for tag, ref in (("1.2.3", "refs/tags/1.2.3"), ("v1.2.3", "refs/heads/master")):
+            with self.subTest(tag=tag), self.assertRaisesRegex(ValueError, "event must"):
+                self.admit(tag, ref)
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.admit("vbad..ref", "refs/tags/vbad..ref")
+        cases = {
+            "missing": "## [1.2.30]\n- wrong\n",
+            "duplicate": "## [1.2.3]\n- first\n## [1.2.3]\n- second\n",
+            "empty": "## [1.2.3]\n### Added\n<!-- hidden -->\n## Other\n- not this section\n",
+            "near match": "## [1X2X3]\n- wrong\n",
+        }
+        for name, text in cases.items():
+            with self.subTest(name=name):
+                (self.root / "CHANGELOG.md").write_text(text)
+                with self.assertRaises(ValueError):
+                    self.admit()
+        self.assertEqual(CHECK["notes_for"]("v1.2.3+rc.1", "## [1.2.3+rc.1]\n- literal\n"), "- literal\n")
+        with self.assertRaises(ValueError):
+            CHECK["notes_for"]("v1.2.3+rc.1", "## [1.2.33rc.1]\n- wrong\n")
+
+
+class ArtifactsTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="axe-release-artifacts-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.dist = self.root / "dist"
+        self.dist.mkdir()
+        (self.root / "cmd").mkdir()
+        (self.root / "cmd/root.go").write_text('const Version = "1.2.3"\n')
+        scripts = self.root / ".agents/scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / ".agents/scripts/check-dry-skill", scripts)
+        self.binary = b'#!/bin/sh\nif [ "$1" = version ]; then echo "axe version 1.2.3"; else printf "%s\\n" "--- Skill ---" "smoke-skill-loaded" "--- Files (0) ---"; fi\n'
+        self.names = [f"axe_1.2.3_{system}_{arch}.{'zip' if system == 'windows' else 'tar.gz'}"
+                      for system in ("linux", "darwin", "windows") for arch in ("amd64", "arm64")]
+        for name in self.names:
+            self.archive(name)
+        self.checksums()
+
+    def archive(self, name, *, binary=None, extra=None, missing=None, mode=0o755):
+        binary = self.binary if binary is None else binary
+        windows = name.endswith(".zip")
+        members = {"axe.exe" if windows else "axe": binary, "LICENSE": b"license", "README.md": b"readme"}
+        if missing:
+            del members[missing]
+        if extra:
+            members[extra] = b"unsafe"
+        path = self.dist / name
+        if windows:
+            with zipfile.ZipFile(path, "w") as archive:
+                for member, contents in members.items():
+                    archive.writestr(member, contents)
+        else:
+            with tarfile.open(path, "w:gz") as archive:
+                for member, contents in members.items():
+                    info = tarfile.TarInfo(member)
+                    info.size = len(contents)
+                    info.mode = mode if member == "axe" else 0o644
+                    archive.addfile(info, io.BytesIO(contents))
+
+    def checksums(self):
+        (self.dist / "checksums.txt").write_text("".join(
+            f"{hashlib.sha256((self.dist / name).read_bytes()).hexdigest()}  {name}\n" for name in sorted(self.names)))
+
+    def check(self):
+        CHECK["artifacts"]("v1.2.3", self.dist, self.root)
+
+    def test_valid_and_archive_set(self):
+        self.check()
+        (self.dist / self.names[0]).unlink()
+        with self.assertRaisesRegex(ValueError, "archive set mismatch"):
+            self.check()
+        self.archive(self.names[0])
+        (self.dist / "unexpected.zip").write_bytes(b"")
+        with self.assertRaisesRegex(ValueError, "unexpected"):
+            self.check()
+        (self.dist / "unexpected.zip").unlink()
+        path = self.dist / self.names[0]
+        path.unlink()
+        path.symlink_to(self.dist / self.names[1])
+        with self.assertRaisesRegex(ValueError, "not a regular file"):
+            self.check()
+
+    def test_checksum_failures(self):
+        (self.dist / self.names[0]).write_bytes(b"corrupt")
+        with self.assertRaisesRegex(ValueError, "checksum mismatch"):
+            self.check()
+        self.checksums()
+        with self.assertRaisesRegex(ValueError, "invalid gzip archive"):
+            self.check()
+        self.archive(self.names[0])
+        self.checksums()
+        manifest = self.dist / "checksums.txt"
+        lines = manifest.read_text().splitlines()
+        manifest.write_text("\n".join(lines[:-1]) + "\n")
+        with self.assertRaisesRegex(ValueError, "exactly the six"):
+            self.check()
+        manifest.write_text("\n".join(lines + [lines[0]]) + "\n")
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            self.check()
+        manifest.write_text("not a checksum\n")
+        with self.assertRaisesRegex(ValueError, "invalid"):
+            self.check()
+
+    def test_unsafe_or_missing_members(self):
+        for name, kwargs in ((self.names[0], {"extra": "../evil"}),
+                             (self.names[4], {"extra": "../evil"}),
+                             (self.names[0], {"missing": "LICENSE"})):
+            with self.subTest(name=name, kwargs=kwargs):
+                self.archive(name, **kwargs)
+                self.checksums()
+                with self.assertRaises(ValueError):
+                    self.check()
+                self.archive(name)
+        path = self.dist / self.names[0]
+        with tarfile.open(path, "w:gz") as archive:
+            info = tarfile.TarInfo("axe")
+            info.type = tarfile.SYMTYPE
+            info.linkname = "../outside"
+            archive.addfile(info)
+        self.checksums()
+        with self.assertRaisesRegex(ValueError, "unsafe"):
+            self.check()
+        self.archive(self.names[4])
+        with zipfile.ZipFile(self.dist / self.names[4], "w") as archive:
+            info = zipfile.ZipInfo("axe.exe")
+            info.create_system = 3
+            info.external_attr = (0o120777 << 16)
+            archive.writestr(info, "../outside")
+        self.archive(self.names[0])
+        self.checksums()
+        with self.assertRaisesRegex(ValueError, "unsafe"):
+            self.check()
+
+    def test_unix_binary_owner_permissions_and_preserved_mode(self):
+        for name, mode in ((self.names[0], 0o645), (self.names[0], 0o644),
+                           (self.names[1], 0o644), (self.names[3], 0o644),
+                           (self.names[0], 0o111)):
+            with self.subTest(name=name, mode=oct(mode)):
+                self.archive(name, mode=mode)
+                self.checksums()
+                with self.assertRaisesRegex(ValueError, "owner-readable and executable"):
+                    self.check()
+                self.archive(name)
+        self.checksums()
+        self.check()  # All Unix binaries have the normal 0755 mode.
+        self.archive(self.names[0], mode=0o705)
+        self.checksums()
+        original_chmod = Path.chmod
+        with mock.patch.object(Path, "chmod", autospec=True, side_effect=original_chmod) as chmod:
+            self.check()
+        self.assertEqual(chmod.call_count, 1)
+        self.assertEqual(chmod.call_args.args[1], 0o705)
+
+    def test_gzip_trailers_are_validated(self):
+        path = self.dist / self.names[0]
+        for corruption in ("truncated", "crc", "size"):
+            with self.subTest(corruption=corruption):
+                self.archive(self.names[0])
+                data = bytearray(path.read_bytes())
+                if corruption == "truncated":
+                    del data[-8:]
+                else:
+                    data[-8 if corruption == "crc" else -4] ^= 1
+                path.write_bytes(data)
+                self.checksums()
+                with self.assertRaisesRegex(ValueError, "invalid gzip archive"):
+                    self.check()
+                result = subprocess.run([str(ROOT / ".agents/scripts/release-check"), "artifacts",
+                                         "--tag", "v1.2.3", "--dist", str(self.dist)],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("invalid gzip archive", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
+    def test_cli_tag_source_and_binary_version_compatibility(self):
+        scripts = self.root / ".agents/scripts"
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        cases = (
+            ("stable exact", "v1.2.3", "1.2.3", "1.2.3", True),
+            ("stable wrong source", "v1.2.3", "9.9.9", "9.9.9", False),
+            ("RC base", "v1.2.3-rc.1", "1.2.3", "1.2.3", True),
+            ("RC full", "v1.2.3-rc.1", "1.2.3-rc.1", "1.2.3-rc.1", True),
+            ("RC wrong base", "v1.2.3-rc.1", "9.9.9", "9.9.9", False),
+            ("RC different suffix", "v1.2.3-rc.1", "1.2.3-rc.2", "1.2.3-rc.2", False),
+            ("stable binary disagrees", "v1.2.3", "1.2.3", "9.9.9", False),
+            ("RC base source full binary", "v1.2.3-rc.1", "1.2.3", "1.2.3-rc.1", False),
+            ("RC full source base binary", "v1.2.3-rc.1", "1.2.3-rc.1", "1.2.3", False),
+        )
+        for name, tag, source, binary, accepted in cases:
+            with self.subTest(case=name):
+                # Arrange a complete package set named for the tag, independently of source/binary.
+                for archive in self.names:
+                    (self.dist / archive).unlink()
+                self.names = [f"axe_{tag[1:]}_{system}_{arch}.{'zip' if system == 'windows' else 'tar.gz'}"
+                              for system in ("linux", "darwin", "windows") for arch in ("amd64", "arm64")]
+                (self.root / "cmd/root.go").write_text(f'const Version = "{source}"\n')
+                payload = self.binary.replace(b"1.2.3", binary.encode())
+                for archive in self.names:
+                    self.archive(archive, binary=payload)
+                self.checksums()
+
+                result = subprocess.run([str(scripts / "release-check"), "artifacts",
+                                         "--tag", tag, "--dist", str(self.dist)],
+                                        capture_output=True, text=True)
+
+                evidence = f"exit={result.returncode}\nstdout={result.stdout!r}\nstderr={result.stderr!r}"
+                if accepted:
+                    self.assertEqual(result.returncode, 0, evidence)
+                    self.assertEqual(result.stderr, "", evidence)
+                else:
+                    self.assertNotEqual(result.returncode, 0, evidence)
+                    self.assertNotIn("Traceback", result.stdout + result.stderr, evidence)
+                    self.assertIn("version", result.stderr.lower(), evidence)
+                    if source == binary:
+                        self.assertRegex(result.stderr.lower(), r"release|tag", evidence)
+                        expected, actual = tag[1:], source
+                    else:
+                        expected, actual = source, binary
+                    for version in (expected, actual):
+                        self.assertRegex(result.stderr,
+                                         rf"(?<![\w.+-])v?{re.escape(version)}(?![\w.+-])", evidence)
+
+    def test_cli_prerelease_base_recognition_and_exact_identity_fallback(self):
+        scripts = self.root / ".agents/scripts"
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        cases = (
+            ("hyphenated prerelease", "v1.2.3-preview-build.1", "1.2.3", True),
+            ("prerelease with build metadata", "v1.2.3-rc.1+build.7", "1.2.3", True),
+            ("stable metadata hyphen is not prerelease", "v1.2.3+build-ci.7", "1.2.3", False),
+            ("stable metadata exact identity", "v1.2.3+build-ci.7", "1.2.3+build-ci.7", True),
+            ("arbitrary hyphen tag is not prerelease", "vrelease-candidate", "release", False),
+            ("arbitrary hyphen tag exact identity", "vrelease-candidate", "release-candidate", True),
+            ("nonnumeric core is not prerelease", "v1.2.x-rc.1", "1.2.x", False),
+            ("nonnumeric core exact identity", "v1.2.x-rc.1", "1.2.x-rc.1", True),
+            ("malformed core is not prerelease", "v1..3-rc.1", "1..3", False),
+            ("malformed core exact identity", "v1..3-rc.1", "1..3-rc.1", True),
+        )
+        for name, tag, source, accepted in cases:
+            with self.subTest(case=name):
+                # Source and binary agree; only the allowed source/tag relationship varies.
+                for archive in self.names:
+                    (self.dist / archive).unlink()
+                self.names = [f"axe_{tag[1:]}_{system}_{arch}.{'zip' if system == 'windows' else 'tar.gz'}"
+                              for system in ("linux", "darwin", "windows") for arch in ("amd64", "arm64")]
+                (self.root / "cmd/root.go").write_text(f'const Version = "{source}"\n')
+                payload = self.binary.replace(b"1.2.3", source.encode())
+                for archive in self.names:
+                    self.archive(archive, binary=payload)
+                self.checksums()
+
+                result = subprocess.run([str(scripts / "release-check"), "artifacts",
+                                         "--tag", tag, "--dist", str(self.dist)],
+                                        capture_output=True, text=True)
+
+                evidence = f"exit={result.returncode}\nstdout={result.stdout!r}\nstderr={result.stderr!r}"
+                self.assertEqual(result.returncode, 0 if accepted else 1, evidence)
+                if accepted:
+                    self.assertEqual(result.stderr, "", evidence)
+                    self.assertEqual(result.stdout,
+                                     f"validated six archives, checksums, version and dry-run skill for {tag}\n",
+                                     evidence)
+                else:
+                    self.assertEqual(result.stdout, "", evidence)
+                    self.assertNotIn("Traceback", result.stderr, evidence)
+                    self.assertIn("version", result.stderr.lower(), evidence)
+                    self.assertRegex(result.stderr.lower(), r"release|tag", evidence)
+                    for version in (tag[1:], source):
+                        self.assertRegex(result.stderr,
+                                         rf"(?<![\w.+-])v?{re.escape(version)}(?![\w.+-])", evidence)
+
+    def test_binary_version_execution_and_skill(self):
+        name = "axe_1.2.3_linux_amd64.tar.gz"
+        cases = ((self.binary.replace(b"1.2.3", b"9.9.9"), 0o755, "version mismatch"),
+                 (b"not executable\n", 0o755, None),
+                 (self.binary.replace(b"smoke-skill-loaded", b"(none)"), 0o755, None))
+        for binary, mode, message in cases:
+            with self.subTest(message=message, binary=binary[:20]):
+                self.archive(name, binary=binary, mode=mode)
+                self.checksums()
+                with self.assertRaises((ValueError, OSError, subprocess.CalledProcessError)) as error:
+                    self.check()
+                if message:
+                    self.assertIn(message, str(error.exception))
+
+
+if __name__ == "__main__":
+    unittest.main()

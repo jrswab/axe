@@ -1,7 +1,7 @@
 name = "cfg-subagents"
 model = "openrouter/minimax/minimax-m2.5"
 description = "Smoke test: sub_agents config section"
-system_prompt = "You must always call the cfg-sub-child sub-agent immediately. Do not ask for clarification. Call the sub-agent with the task 'respond' and report its exact reply."
+system_prompt = "You must always call the cfg-sub-child sub-agent immediately. Do not ask for clarification. Call the sub-agent with the task 'reply with only: sub-agent-ok' and report its exact reply."
 sub_agents = ["cfg-sub-child"]
 
 [sub_agents_config]

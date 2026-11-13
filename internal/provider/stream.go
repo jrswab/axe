@@ -15,7 +15,7 @@ const (
 )
 
 type StreamEvent struct {
-	Type             string  // one of the constants above
+	Type             string // one of the constants above
 	Text             string
 	ToolCallID       string
 	ToolName         string
