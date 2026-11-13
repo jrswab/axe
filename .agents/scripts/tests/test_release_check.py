@@ -3,6 +3,7 @@
 import hashlib
 import io
 from pathlib import Path
+import re
 import runpy
 import shutil
 import subprocess
@@ -350,6 +351,102 @@ class ArtifactsTest(unittest.TestCase):
                 self.assertEqual(result.returncode, 1)
                 self.assertIn("invalid gzip archive", result.stderr)
                 self.assertNotIn("Traceback", result.stderr)
+
+    def test_cli_tag_source_and_binary_version_compatibility(self):
+        scripts = self.root / ".agents/scripts"
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        cases = (
+            ("stable exact", "v1.2.3", "1.2.3", "1.2.3", True),
+            ("stable wrong source", "v1.2.3", "9.9.9", "9.9.9", False),
+            ("RC base", "v1.2.3-rc.1", "1.2.3", "1.2.3", True),
+            ("RC full", "v1.2.3-rc.1", "1.2.3-rc.1", "1.2.3-rc.1", True),
+            ("RC wrong base", "v1.2.3-rc.1", "9.9.9", "9.9.9", False),
+            ("RC different suffix", "v1.2.3-rc.1", "1.2.3-rc.2", "1.2.3-rc.2", False),
+            ("stable binary disagrees", "v1.2.3", "1.2.3", "9.9.9", False),
+            ("RC base source full binary", "v1.2.3-rc.1", "1.2.3", "1.2.3-rc.1", False),
+            ("RC full source base binary", "v1.2.3-rc.1", "1.2.3-rc.1", "1.2.3", False),
+        )
+        for name, tag, source, binary, accepted in cases:
+            with self.subTest(case=name):
+                # Arrange a complete package set named for the tag, independently of source/binary.
+                for archive in self.names:
+                    (self.dist / archive).unlink()
+                self.names = [f"axe_{tag[1:]}_{system}_{arch}.{'zip' if system == 'windows' else 'tar.gz'}"
+                              for system in ("linux", "darwin", "windows") for arch in ("amd64", "arm64")]
+                (self.root / "cmd/root.go").write_text(f'const Version = "{source}"\n')
+                payload = self.binary.replace(b"1.2.3", binary.encode())
+                for archive in self.names:
+                    self.archive(archive, binary=payload)
+                self.checksums()
+
+                result = subprocess.run([str(scripts / "release-check"), "artifacts",
+                                         "--tag", tag, "--dist", str(self.dist)],
+                                        capture_output=True, text=True)
+
+                evidence = f"exit={result.returncode}\nstdout={result.stdout!r}\nstderr={result.stderr!r}"
+                if accepted:
+                    self.assertEqual(result.returncode, 0, evidence)
+                    self.assertEqual(result.stderr, "", evidence)
+                else:
+                    self.assertNotEqual(result.returncode, 0, evidence)
+                    self.assertNotIn("Traceback", result.stdout + result.stderr, evidence)
+                    self.assertIn("version", result.stderr.lower(), evidence)
+                    if source == binary:
+                        self.assertRegex(result.stderr.lower(), r"release|tag", evidence)
+                        expected, actual = tag[1:], source
+                    else:
+                        expected, actual = source, binary
+                    for version in (expected, actual):
+                        self.assertRegex(result.stderr,
+                                         rf"(?<![\w.+-])v?{re.escape(version)}(?![\w.+-])", evidence)
+
+    def test_cli_prerelease_base_recognition_and_exact_identity_fallback(self):
+        scripts = self.root / ".agents/scripts"
+        shutil.copy(ROOT / ".agents/scripts/release-check", scripts)
+        cases = (
+            ("hyphenated prerelease", "v1.2.3-preview-build.1", "1.2.3", True),
+            ("prerelease with build metadata", "v1.2.3-rc.1+build.7", "1.2.3", True),
+            ("stable metadata hyphen is not prerelease", "v1.2.3+build-ci.7", "1.2.3", False),
+            ("stable metadata exact identity", "v1.2.3+build-ci.7", "1.2.3+build-ci.7", True),
+            ("arbitrary hyphen tag is not prerelease", "vrelease-candidate", "release", False),
+            ("arbitrary hyphen tag exact identity", "vrelease-candidate", "release-candidate", True),
+            ("nonnumeric core is not prerelease", "v1.2.x-rc.1", "1.2.x", False),
+            ("nonnumeric core exact identity", "v1.2.x-rc.1", "1.2.x-rc.1", True),
+            ("malformed core is not prerelease", "v1..3-rc.1", "1..3", False),
+            ("malformed core exact identity", "v1..3-rc.1", "1..3-rc.1", True),
+        )
+        for name, tag, source, accepted in cases:
+            with self.subTest(case=name):
+                # Source and binary agree; only the allowed source/tag relationship varies.
+                for archive in self.names:
+                    (self.dist / archive).unlink()
+                self.names = [f"axe_{tag[1:]}_{system}_{arch}.{'zip' if system == 'windows' else 'tar.gz'}"
+                              for system in ("linux", "darwin", "windows") for arch in ("amd64", "arm64")]
+                (self.root / "cmd/root.go").write_text(f'const Version = "{source}"\n')
+                payload = self.binary.replace(b"1.2.3", source.encode())
+                for archive in self.names:
+                    self.archive(archive, binary=payload)
+                self.checksums()
+
+                result = subprocess.run([str(scripts / "release-check"), "artifacts",
+                                         "--tag", tag, "--dist", str(self.dist)],
+                                        capture_output=True, text=True)
+
+                evidence = f"exit={result.returncode}\nstdout={result.stdout!r}\nstderr={result.stderr!r}"
+                self.assertEqual(result.returncode, 0 if accepted else 1, evidence)
+                if accepted:
+                    self.assertEqual(result.stderr, "", evidence)
+                    self.assertEqual(result.stdout,
+                                     f"validated six archives, checksums, version and dry-run skill for {tag}\n",
+                                     evidence)
+                else:
+                    self.assertEqual(result.stdout, "", evidence)
+                    self.assertNotIn("Traceback", result.stderr, evidence)
+                    self.assertIn("version", result.stderr.lower(), evidence)
+                    self.assertRegex(result.stderr.lower(), r"release|tag", evidence)
+                    for version in (tag[1:], source):
+                        self.assertRegex(result.stderr,
+                                         rf"(?<![\w.+-])v?{re.escape(version)}(?![\w.+-])", evidence)
 
     def test_binary_version_execution_and_skill(self):
         name = "axe_1.2.3_linux_amd64.tar.gz"

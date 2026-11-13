@@ -73,6 +73,7 @@ Your job is to guide the user through a full release for this project. Prepare t
 
 12. **Verify the workflow and release**
     - Confirm admission, reusable checks, package preflight, publication, and Docker publication succeed. Admission requires the tag commit on current master and exactly one nonempty matching changelog section.
+    - Package preflight requires the source version to match the tag without `v`; a numeric-core prerelease such as `v1.2.3-rc.1` also accepts the `1.2.3` base. The packaged Linux amd64 binary must match the source version exactly.
     - Check that release notes contain the validated changelog section and configured Docker footer. Do not overwrite the notes after publication.
     - Preflight checks a nonpublishing build, but publication rebuilds packages and does not guarantee identical bytes. Docker builds separately; the workflow does not deploy or roll back.
 

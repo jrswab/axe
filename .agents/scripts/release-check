@@ -105,6 +105,12 @@ def archive_binary(path, windows):
     return found["axe.exe" if windows else "axe"], binary_mode
 
 
+def prerelease_base(version):
+    identifier = r"[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*"
+    match = re.fullmatch(rf"([0-9]+\.[0-9]+\.[0-9]+)-{identifier}(?:\+{identifier})?", version)
+    return match.group(1) if match else None
+
+
 def artifacts(tag, dist, root=ROOT):
     version = tag[1:]
     if not tag.startswith("v") or not version or "/" in version or "\\" in version:
@@ -137,13 +143,20 @@ def artifacts(tag, dist, root=ROOT):
     match = re.search(r'^const Version = "([^"]+)"$', source, re.MULTILINE)
     if not match:
         raise ValueError("cannot find source version in cmd/root.go")
+    source_version = match.group(1)
+    if source_version != version:
+        base = prerelease_base(version)
+        if source_version != base:
+            expected = f"{version!r} or {base!r}" if base else repr(version)
+            raise ValueError(f"source version mismatch for tag {tag!r}: expected {expected}, got {source_version!r}")
     with tempfile.TemporaryDirectory(prefix="axe-release-check-") as temporary:
         binary_path = Path(temporary) / "axe"
         binary_path.write_bytes(linux_binary)
         binary_path.chmod(linux_mode)
         output = run(str(binary_path), "version", cwd=root).stdout.strip()
-        if output != f"axe version {match.group(1)}":
-            raise ValueError(f"archive binary version mismatch: {output!r}")
+        expected_output = f"axe version {source_version}"
+        if output != expected_output:
+            raise ValueError(f"archive binary version mismatch: expected {expected_output!r}, got {output!r}")
         fixtures = root / ".github/smoke-agents"
         output = run(str(binary_path), "run", "--agents-dir", str(fixtures), "dry-skill",
                      "--skill", str(fixtures / "skills/smoke-skill/SKILL.md"),

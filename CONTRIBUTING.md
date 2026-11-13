@@ -108,6 +108,9 @@ A `v*` tag release admits only the tagged checkout reachable from current
 After reusable `Check`, GoReleaser 2.12.7 (pinned for reproducible tooling)
 checks config, builds without publishing, and validates all six archive names,
 members, SHA-256 checksums, plus the Linux amd64 version and dry-run skill.
+The source version must equal the tag version (without `v`); for a numeric-core
+prerelease such as `v1.2.3-rc.1`, it may instead equal the `1.2.3` base.
+The packaged Linux amd64 binary must match the source version exactly.
 GoReleaser then **rebuilds** for publication: the preflight does not prove the
 published bytes are identical. Docker publication builds a separate image; no
 image identity, deployment, or rollback is implied. The nonpublishing GoReleaser
