@@ -4,6 +4,7 @@
 |---|---|---|---|
 | Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `atlascloud` | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| LiteLLM (proxy) | `litellm` | `LITELLM_API_KEY` | `http://localhost:4000/v1` |
 | OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
 | MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |
@@ -31,6 +32,10 @@ api_key = "sk-ant-..."
 [providers.atlascloud]
 api_key = "..."
 
+[providers.litellm]
+api_key = "sk-..."          # the proxy's virtual or master key
+base_url = "http://localhost:4000"
+
 [providers.google]
 api_key = "AIza..."
 
@@ -48,6 +53,15 @@ region = "us-east-1"
 Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
+
+## LiteLLM
+
+[LiteLLM](https://github.com/BerriAI/litellm) is a self-hosted AI gateway: one OpenAI-compatible endpoint in front of 100+ providers (Anthropic, Bedrock, Vertex AI, Azure OpenAI, Mistral, and more), with virtual keys, budgets and fallbacks. Point axe at the proxy and use the proxy's model names:
+
+- **Model:** `litellm/<model name on the proxy>`, e.g. `litellm/claude-sonnet` or `litellm/gemini-2.5-flash`. Everything after the first `/` is sent as-is, so aliases containing `/` work too.
+- **Base URL:** `AXE_LITELLM_BASE_URL` or `[providers.litellm] base_url`. Both `http://host:4000` and `http://host:4000/v1` work; the default is `http://localhost:4000/v1`.
+- **Key:** `LITELLM_API_KEY` or `[providers.litellm] api_key`, the proxy's virtual key.
+- **Cost:** the proxy reports each request's cost in the `x-litellm-response-cost` header; axe puts it in the run result's `cost` field (JSON output), for streaming and non-streaming runs.
 
 ## Streaming Support
 

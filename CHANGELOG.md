@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Atlas Cloud provider using the OpenAI-compatible Chat Completions API
+- LiteLLM proxy provider (`litellm/<model>`), with per-request cost reported from the proxy
 - OpenRouter provider support with streaming, configurable app attribution, and `cost` / `cache_status` in `--json` output (#85)
 - `reasoning_effort` in agent TOML `[params]`, passed through unchanged without validation. OpenAI and Atlas Cloud send it as a top-level field when non-empty. Other providers ignore it.
 - Pre-built message history in `pkg/runner` via `Options.Messages`, with updated history returned in `Result.Messages` (#86)
