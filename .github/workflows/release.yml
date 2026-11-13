@@ -36,6 +36,8 @@ jobs:
   goreleaser:
     needs: [validation]
     runs-on: ubuntu-latest
+    env:
+      GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
     permissions:
       contents: write
     steps:

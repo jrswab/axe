@@ -50,6 +50,7 @@ release-notes.md
 !.agents/scripts/tests/test_check_dry_skill.py
 !.agents/scripts/tests/test_ci_check.py
 !.agents/scripts/tests/test_release_check.py
+!.agents/scripts/tests/test_release_tag_binding.py
 
 # Documentation Tools
 docs/book/
