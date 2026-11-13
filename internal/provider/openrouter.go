@@ -117,8 +117,8 @@ type openrouterStreamUsage struct {
 
 // openrouterStreamChunk represents a single SSE chunk from OpenRouter streaming API.
 type openrouterStreamChunk struct {
-	Model   string               `json:"model"`
-	Choices []openaiStreamChoice `json:"choices"`
+	Model   string                 `json:"model"`
+	Choices []openaiStreamChoice   `json:"choices"`
 	Usage   *openrouterStreamUsage `json:"usage,omitempty"`
 }
 

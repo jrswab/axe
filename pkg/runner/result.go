@@ -21,32 +21,32 @@ type ArtifactInfo struct {
 
 // BudgetState captures the token budget status.
 type BudgetState struct {
-	Max       int  `json:"max_tokens"`
-	Used      int  `json:"used_tokens"`
-	Exceeded  bool `json:"exceeded"`
+	Max      int  `json:"max_tokens"`
+	Used     int  `json:"used_tokens"`
+	Exceeded bool `json:"exceeded"`
 }
 
 // DryRunInfo holds resolved context for dry-run display.
 type DryRunInfo struct {
-	Model             string
-	Workdir           string
-	Timeout           int
-	Params            string
-	Budget            int
-	Stream            bool
-	SystemPrompt      string
-	Skill             string
-	Files             []string
-	UserMessage       string
-	Memory            string
-	MemoryEnabled     bool
-	Tools             []string
-	MCPServers        []string
-	SubAgents         []string
-	MaxDepth          int
-	Parallel          bool
-	SubAgentTimeout   int
-	MessageCount      int
+	Model           string
+	Workdir         string
+	Timeout         int
+	Params          string
+	Budget          int
+	Stream          bool
+	SystemPrompt    string
+	Skill           string
+	Files           []string
+	UserMessage     string
+	Memory          string
+	MemoryEnabled   bool
+	Tools           []string
+	MCPServers      []string
+	SubAgents       []string
+	MaxDepth        int
+	Parallel        bool
+	SubAgentTimeout int
+	MessageCount    int
 }
 
 // Result captures all outputs of a completed agent run.

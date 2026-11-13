@@ -3,7 +3,7 @@ name: release
 description: Prepare code for release (version bumps, changelog, README updates) and create an annotated tag to trigger the GoReleaser workflow.
 ---
 
-Your job is to guide the user through a full release for this project. A release includes preparing the code (version bumps, README documentation, changelog), creating an annotated git tag with a `v` prefix (e.g. `v1.5.0`), pushing it to trigger the GoReleaser GitHub Actions workflow, setting release notes, and linking the GHCR Docker image.
+Your job is to guide the user through a full release for this project. Prepare the code (version bumps, README documentation, changelog), create an annotated `v` tag after approval, and push it to trigger the release workflow. The workflow uses the validated changelog section as release notes and appends the configured Docker footer.
 
 ## Rules
 
@@ -71,29 +71,16 @@ Your job is to guide the user through a full release for this project. A release
 
 11. **Push the tag** to origin only after the user confirms. The `v*` tag push triggers the GoReleaser workflow which builds binaries and creates the GitHub release.
 
-12. **Set release notes via `gh`**
-    - Extract the new version's section from `CHANGELOG.md` — everything between the `## [X.Y.Z]` heading and the next `##` heading, excluding the heading itself and trailing blank lines.
-    - Append a Docker section to the extracted notes:
-      ````
-      ## Docker
-
-      ```bash
-      docker pull ghcr.io/jrswab/axe:X.Y.Z
-      ```
-
-      See the [GHCR package page](https://github.com/jrswab/axe/pkgs/container/axe) for all available tags.
-      ````
-    - Write the combined content (changelog section + Docker section) to a temporary file.
-    - Poll `gh release view vX.Y.Z` every 10 seconds (up to 120 seconds) until the GoReleaser workflow creates the release.
-    - Run `gh release edit vX.Y.Z --notes-file <tmp-file>` to set the release description.
-    - Clean up the temporary file.
-    - This is the authoritative source for release notes — do NOT rely on the workflow's awk extraction.
+12. **Verify the workflow and release**
+    - Confirm admission, reusable checks, package preflight, publication, and Docker publication succeed. Admission requires the tag commit on current master and exactly one nonempty matching changelog section.
+    - Check that release notes contain the validated changelog section and configured Docker footer. Do not overwrite the notes after publication.
+    - Preflight checks a nonpublishing build, but publication rebuilds packages and does not guarantee identical bytes. Docker builds separately; the workflow does not deploy or roll back.
 
 ## Reference
 
 ### Project Files
 - GoReleaser config: `.goreleaser.yml` (auto-changelog is disabled)
-- Release workflow: `.github/workflows/release.yml` (builds binaries and Docker image; do NOT rely on it for release notes)
+- Release workflow: `.github/workflows/release.yml` (validates changelog notes and checks packages before publishing binaries and a separate Docker image)
 - Changelog: `CHANGELOG.md`
 
 ### Version Strings (all three must match)

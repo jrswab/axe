@@ -39,6 +39,17 @@ release-notes.md
 .kiro/
 .agents/*
 !.agents/factory-gates.json
+!.agents/scripts/
+.agents/scripts/*
+!.agents/scripts/ci-check
+!.agents/scripts/check-dry-skill
+!.agents/scripts/release-check
+!.agents/scripts/tests/
+.agents/scripts/tests/*
+!.agents/scripts/tests/test_dry_skill.py
+!.agents/scripts/tests/test_check_dry_skill.py
+!.agents/scripts/tests/test_ci_check.py
+!.agents/scripts/tests/test_release_check.py
 
 # Documentation Tools
 docs/book/

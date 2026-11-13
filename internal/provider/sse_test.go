@@ -10,9 +10,9 @@ func TestSSEParser(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name   string
-		input  string
-		want   []SSEEvent
+		name  string
+		input string
+		want  []SSEEvent
 	}{
 		{
 			name:  "single data event",

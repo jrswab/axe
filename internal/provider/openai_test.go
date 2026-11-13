@@ -1109,6 +1109,57 @@ func TestOpenAI_Send_DoesNotSetStreamField(t *testing.T) {
 
 // --- SendStream tests ---
 
+func TestOpenAI_SendStream_IgnoresOptionalCostMetadata(t *testing.T) {
+	tests := []struct {
+		name string
+		cost string
+	}{
+		{name: "absent"},
+		{name: "null", cost: `,"cost":null`},
+		{name: "numeric", cost: `,"cost":0.125`},
+		{name: "not available", cost: `,"cost":"n/a"`},
+		{name: "quoted numeric", cost: `,"cost":"0.125"`},
+		{name: "large number", cost: `,"cost":1e1000`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				_, _ = io.WriteString(w, "data: {\"choices\":[{\"delta\":{\"content\":\"hello\"},\"finish_reason\":null}]}\n\n")
+				_, _ = io.WriteString(w, "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n")
+				_, _ = io.WriteString(w, `data: {"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":5`+tt.cost+"}}\n\ndata: [DONE]\n\n")
+			}))
+			defer server.Close()
+
+			o, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			stream, err := o.SendStream(context.Background(), &Request{
+				Model:    "gpt-4o",
+				Messages: []Message{{Role: "user", Content: "Hi"}},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = stream.Close() }()
+
+			ev, err := stream.Next()
+			if err != nil || ev.Type != StreamEventText || ev.Text != "hello" {
+				t.Fatalf("text event = %+v, error = %v", ev, err)
+			}
+			ev, err = stream.Next()
+			if err != nil || ev.Type != StreamEventDone || ev.InputTokens != 10 || ev.OutputTokens != 5 {
+				t.Fatalf("done event = %+v, error = %v; want input=10 output=5", ev, err)
+			}
+			if _, err = stream.Next(); err != io.EOF {
+				t.Errorf("stream end = %v, want EOF", err)
+			}
+		})
+	}
+}
+
 func TestOpenAI_SendStream_RequestFormat(t *testing.T) {
 	var gotMethod, gotPath, gotAuth string
 	var gotBody map[string]json.RawMessage

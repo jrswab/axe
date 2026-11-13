@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+awk '
+  !seen && /^--- Skill ---[[:space:]]*$/ { in_skill = 1; seen = 1; next }
+  in_skill && /^--- .*---[[:space:]]*$/ { in_skill = 0 }
+  in_skill && /\(none\)/ { none = 1 }
+  in_skill && /smoke-skill-loaded/ { found = 1 }
+  END {
+    if (!found || none) {
+      print "FAIL: Skill section must contain smoke-skill-loaded and not (none)" > "/dev/stderr"
+      exit 1
+    }
+  }
+'
