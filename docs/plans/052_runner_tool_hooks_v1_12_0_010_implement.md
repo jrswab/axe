@@ -141,7 +141,7 @@ All tests/gates use `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_UR
   RED: after writing NEW `TestLargeIntegerArgs_Ollama_NativeToolInput`, run `env -u GOTOOLCHAIN ANTHROPIC_API_KEY= AXE_ANTHROPIC_BASE_URL= go test -v ./internal/provider`. Verify verbose output shows exact name `TestLargeIntegerArgs_Ollama_NativeToolInput` and that it failed on missing intended behavior, not compilation or unrelated test failure.
   Depends on reads: same runner start/delta/accumulated reads as T09, switched in T02. No other production ToolInput consumer was found; transport tests compare strings transparently.
 
-- [ ] T12 — Bedrock buffered/history only.
+- [x] T12 — Bedrock buffered/history only.
   Budget: 30 min
   Primary R-IDs: R2, R7. Dependency: T01b.
   Source: `internal/provider/bedrock.go: Bedrock.Send` decode 348 and `parseBedrockResponse` flatten 280. DecodeJSON then formatter; no existing signature change. No SendStream exists.

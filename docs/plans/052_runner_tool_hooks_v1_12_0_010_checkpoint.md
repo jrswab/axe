@@ -23,7 +23,7 @@ Absolute paths inside the Repository root (the feature worktree).
 
 - Lane: `full` — the fix changes the value an external MCP server receives (a JSON string becomes a JSON integer for integers of 1e6 and above) and the replay text sent to the model, across about 17 decode paths in 8 files, with test-harness gaps. The fast-lane conditions "external contracts untouched" and "small bounded behavior" both fail.
 - Current phase: `execute`
-- Current task: T12
+- Current task: T13
 - Task states — checklist checkboxes render from this list:
 - T01a: `checked`
 - T01b: `checked`
@@ -38,11 +38,11 @@ Absolute paths inside the Repository root (the feature worktree).
 - T09: `checked`
 - T10: `checked`
 - T11: `checked`
-- T12: `unchecked`
+- T12: `checked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit this sync evidence, repin only safe wrapper SHA to final clean HEAD, validate wrapper, then ask Jaron to run host gate before parallel Standards/Spec/Design reviews.
-- Last completed phase/task/gate and timestamp: T12 verified implementation committed and initial sync PASS; host gate pending, 2026-11-13T01:52:19.161524+00:00
+- Next safe action: Verify T13 unchanged named MCP and runner acceptance tests, including raw handler bytes and beyond-int64 quoted digit strings; do not invent RED or change MCP coercer.
+- Last completed phase/task/gate and timestamp: T12 host full-race evidence PASS and Standards/Spec/Design round1 APPROVED; T12 accepted, 2026-11-13T18:16:32.925851+00:00
 
 ## Gate evidence
 
@@ -1481,6 +1481,27 @@ factory-commit exited 0, implementation/evidence commit a3f121d40423470bd1b5c834
 
 - Next action: Commit this sync evidence, repin only safe wrapper SHA to final clean HEAD, validate wrapper, then ask Jaron to run host gate before parallel Standards/Spec/Design reviews.
 
+### T12 host full-race evidence PASS and Standards/Spec/Design round1 APPROVED; T12 accepted
+
+- Gate: T12 host full-race evidence PASS and Standards/Spec/Design round1 APPROVED; T12 accepted
+- Commands/results:
+User ran bash /tmp/052-runner-tool-hooks-safe-gate.sh and supplied Started gate-test-534823f5d8e1-20261113T164518Z; wrapper reported successful poll then rejected header. Orchestrator independently run_script factory-gate poll named run: exit0, state exited0, network online, log /tmp/factory-gate-1001/gate-test-534823f5d8e1-20261113T164518Z.log. Read-only inspection confirmed log/run metadata match clean reviewed HEAD534823f5d8e15a9408e843baf1e6c935c211e7f3, gate test, origin/master SHA538632ea56da1c71f8f319076f221e4298148d3e, exact go test -race ./..., all packages pass/exit0. Root cause was stale seven-line wrapper parser omitting new network: online header. Code agent changed ONLY read7->8 and exact required suffix, preserving all other bytes by reverse-reconstruction hash; old hash65727837236eb198203e58fe7b9fed187502b17d7f052c052755610f69ad66eb matched prior audit, new hash718971442f7978b382437251ba9564d81cf549f9b94c9ef0dec02c64ed1eefac. bash -n, wrapper --check, corrected embedded validator on existing log all exit0. NO gate rerun. Safety provenance is user's explicit exact audited-wrapper invocation plus hash identity and deterministic env scrub/private-cache creation, not retained effective-env telemetry. Wrapper removes finished cache before validation error; absence not claimed as independent proof. Pre-review docs-lint 1 --since original milestone base exit0/205Markdown/0findings and records-stale-check task base2747db1 exit0/no records repeated before both review dispatches. Parallel round1: Design Verdict: APPROVED, no nits, all five sections/files complete; Standards and Spec initial calls Verdict: CHANGES REQUESTED with Review incomplete only because agent cannot load skills, all five code files covered and zero code findings. Caller extracted rubric inline and retried same round1 only missing assessment. Standards final Verdict: APPROVED, no nits/unfinished scope; Spec final Verdict: APPROVED, no nits/unfinished scope. No tests run by reviewers. All three final axes complete for task range2747db100d41b99bf489815dd3890c44529c1431..534823f5d8e15a9408e843baf1e6c935c211e7f3, 2commits/5files/+491-19. T12 accepted after independent unchanged-test GREEN, trusted HEAD-matched host fullrace and complete reviews. T13 remains acceptance-only pending named MCP/runner checks; milestone010 stays unchecked. No production/source changes or push/deploy.
+- HEAD commit SHA: `534823f5d8e15a9408e843baf1e6c935c211e7f3`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Verify T13 unchanged named MCP and runner acceptance tests, including raw handler bytes and beyond-int64 quoted digit strings; do not invent RED or change MCP coercer.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1494,7 +1515,7 @@ factory-commit exited 0, implementation/evidence commit a3f121d40423470bd1b5c834
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Commit this sync evidence, repin only safe wrapper SHA to final clean HEAD, validate wrapper, then ask Jaron to run host gate before parallel Standards/Spec/Design reviews.
+- Next action: Verify T13 unchanged named MCP and runner acceptance tests, including raw handler bytes and beyond-int64 quoted digit strings; do not invent RED or change MCP coercer.
 
 ## Approval / decision note — 2026-11-10
 
