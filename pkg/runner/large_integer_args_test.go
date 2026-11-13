@@ -3,17 +3,252 @@ package runner
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/jrswab/axe/internal/provider"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+func TestLargeIntegerArgs_MCPIntegration(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	t.Setenv("OPENAI_API_KEY", "test-key")
+	setupTestEnv(t, "", "test-agent", `name = "test-agent"
+model = "openai/gpt-4o"
+tools = []
+`)
+
+	// Raw is inserted into provider arguments without decoding; wire is the
+	// independently specified raw MCP argument object for non-number schemas.
+	cases := []struct {
+		name, schema, raw, want, wire string
+		legacy                        float64
+		negative                      bool
+	}{
+		{"million", "integer", `1000000`, "1000000", `{"n":1000000}`, 0, false},
+		{"negative_million", "integer", `-1000000`, "-1000000", `{"n":-1000000}`, 0, false},
+		{"integer", "integer", `1234567`, "1234567", `{"n":1234567}`, 0, false},
+		{"negative_integer", "integer", `-1234567`, "-1234567", `{"n":-1234567}`, 0, false},
+		{"precise", "integer", `9007199254740993`, "9007199254740993", `{"n":9007199254740993}`, 0, false},
+		{"negative_precise", "integer", `-9007199254740993`, "-9007199254740993", `{"n":-9007199254740993}`, 0, false},
+		{"exponent", "integer", `1e6`, "1000000", `{"n":1000000}`, 0, false},
+		{"negative_exponent", "integer", `-1e6`, "-1000000", `{"n":-1000000}`, 0, false},
+		{"decimal", "integer", `1000000.0`, "1000000", `{"n":1000000}`, 0, false},
+		{"negative_decimal", "integer", `-1000000.0`, "-1000000", `{"n":-1000000}`, 0, false},
+		{"precise_decimal", "integer", `9007199254740993.0`, "9007199254740993", `{"n":9007199254740993}`, 0, false},
+		{"negative_precise_decimal", "integer", `-9007199254740993.0`, "-9007199254740993", `{"n":-9007199254740993}`, 0, false},
+		{"precise_exponent", "integer", `90071992547409930e-1`, "9007199254740993", `{"n":9007199254740993}`, 0, false},
+		{"negative_precise_exponent", "integer", `-90071992547409930e-1`, "-9007199254740993", `{"n":-9007199254740993}`, 0, false},
+		{"beyond", "integer", `99999999999999999999999`, "99999999999999999999999", `{"n":"99999999999999999999999"}`, 0, false},
+		{"negative_beyond", "integer", `-99999999999999999999999`, "-99999999999999999999999", `{"n":"-99999999999999999999999"}`, 0, false},
+		{"beyond_decimal", "integer", `99999999999999999999999.0`, "99999999999999999999999", `{"n":"99999999999999999999999"}`, 0, false},
+		{"beyond_exponent", "integer", `999999999999999999999990e-1`, "99999999999999999999999", `{"n":"99999999999999999999999"}`, 0, false},
+		{"negative_beyond_decimal", "integer", `-99999999999999999999999.0`, "-99999999999999999999999", `{"n":"-99999999999999999999999"}`, 0, false},
+		{"negative_beyond_exponent", "integer", `-999999999999999999999990e-1`, "-99999999999999999999999", `{"n":"-99999999999999999999999"}`, 0, false},
+		{"small", "integer", `999999`, "999999", `{"n":999999}`, 0, false},
+		{"negative_small", "integer", `-999999`, "-999999", `{"n":-999999}`, 0, false},
+		{"small_decimal", "integer", `999999.0`, "999999", `{"n":999999}`, 0, false},
+		{"fraction", "integer", `1.5`, "1.5", `{"n":"1.5"}`, 0, false},
+		{"rounded_fraction", "integer", `1000000.00000000001`, "1e+06", `{"n":"1e+06"}`, 0, false},
+		{"text", "integer", `"text"`, "text", `{"n":"text"}`, 0, false},
+		{"string_exponent", "integer", `"1e6"`, "1e6", `{"n":"1e6"}`, 0, false},
+		{"string_decimal", "integer", `"1000000.0"`, "1000000.0", `{"n":"1000000.0"}`, 0, false},
+		{"string_digits", "integer", `"9007199254740993"`, "9007199254740993", `{"n":9007199254740993}`, 0, false},
+		{"numeric_string_schema", "string", `9007199254740993`, "9007199254740993", `{"n":"9007199254740993"}`, 0, false},
+		{"string_schema", "string", `"1e6"`, "1e6", `{"n":"1e6"}`, 0, false},
+		{"object_exponent", "integer", `{"a":1e6}`, "map[a:1e+06]", `{"n":"map[a:1e+06]"}`, 0, false},
+		{"object_integer", "integer", `{"a":1000000}`, "map[a:1e+06]", `{"n":"map[a:1e+06]"}`, 0, false},
+		{"array", "integer", `[1.50]`, "[1.5]", `{"n":"[1.5]"}`, 0, false},
+		{"boolean", "boolean", `true`, "true", `{"n":true}`, 0, false},
+		{"null", "integer", `null`, "<nil>", `{"n":"<nil>"}`, 0, false},
+		{"zero", "number", `0`, "0", "", 0, false},
+		{"negative_zero", "number", `-0`, "-0", "", 0, true},
+		{"negative_decimal_zero", "number", `-0.0`, "-0", "", 0, true},
+		{"huge_exponent_zero", "number", `0e1000000000`, "0", `{"n":0}`, 0, false},
+		{"negative_huge_exponent_zero", "number", `-0e1000000000`, "-0", `{"n":-0}`, 0, true},
+		{"number_precise", "number", `9007199254740993`, "9007199254740993", "", 9007199254740992, false},
+		{"number_negative_precise", "number", `-9007199254740993`, "-9007199254740993", "", -9007199254740992, true},
+		{"number_precise_decimal", "number", `9007199254740993.0`, "9007199254740993", "", 9007199254740992, false},
+		{"number_precise_exponent", "number", `90071992547409930e-1`, "9007199254740993", "", 9007199254740992, false},
+		{"number_fraction_trap", "number", `1000000.00000000001`, "1e+06", "", 1000000, false},
+		{"number_threshold_trap", "number", `999999.99999999999`, "1e+06", "", 1000000, false},
+		{"number_fraction", "number", `-1.5`, "-1.5", "", -1.5, true},
+		{"exception_a", "number", `1` + strings.Repeat("0", 100006) + `e-100000`, "0", "", 0, false},
+		{"exception_b", "number", `0.` + strings.Repeat("0", 9999) + `1e100000`, "1", "", 1, false},
+	}
+
+	for _, mode := range []struct {
+		name   string
+		stream bool
+	}{{"buffered", false}, {"stream", true}} {
+		t.Run(mode.name, func(t *testing.T) {
+			type capture struct{ name, raw string }
+			captured := make(chan capture, len(cases))
+			mcpServer := mcp.NewServer(&mcp.Implementation{Name: "wire-test", Version: "1.0.0"}, nil)
+			for _, tc := range cases {
+				name := "mcp_" + tc.name
+				mcpServer.AddTool(&mcp.Tool{Name: name, InputSchema: map[string]any{
+					"type": "object", "properties": map[string]any{"n": map[string]any{"type": tc.schema}},
+				}}, func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					captured <- capture{req.Params.Name, string(req.Params.Arguments)}
+					return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "ok"}}}, nil
+				})
+			}
+			mcpHTTP := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return mcpServer }, nil))
+			t.Cleanup(mcpHTTP.Close)
+
+			var calls, events strings.Builder
+			for i, tc := range cases {
+				name, id := "mcp_"+tc.name, fmt.Sprintf("call_%d", i)
+				arg := `{"n":` + tc.raw + `}`
+				quoted, err := json.Marshal(arg)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if i > 0 {
+					calls.WriteByte(',')
+				}
+				fmt.Fprintf(&calls, `{"id":%q,"type":"function","function":{"name":%q,"arguments":%s}}`, id, name, quoted)
+				fmt.Fprintf(&events, "data: {\"model\":\"gpt-4o\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":%d,\"id\":%q,\"type\":\"function\",\"function\":{\"name\":%q,\"arguments\":\"\"}}]},\"index\":0}]}\n\n", i, id, name)
+				// OpenAI's SSE scanner has a 64 KiB line limit; split long tokens as real deltas.
+				for len(arg) > 0 {
+					n := min(len(arg), 12000)
+					part, err := json.Marshal(arg[:n])
+					if err != nil {
+						t.Fatal(err)
+					}
+					fmt.Fprintf(&events, "data: {\"model\":\"gpt-4o\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":%d,\"function\":{\"arguments\":%s}}]},\"index\":0}]}\n\n", i, part)
+					arg = arg[n:]
+				}
+			}
+			buffered := `{"model":"gpt-4o","choices":[{"message":{"tool_calls":[` + calls.String() + `]},"finish_reason":"tool_calls"}]}`
+			streamed := events.String() + "data: {\"model\":\"gpt-4o\",\"choices\":[{\"delta\":{},\"index\":0,\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n"
+			responses := make(chan string, 2)
+			if mode.stream {
+				responses <- streamed
+				responses <- "data: {\"model\":\"gpt-4o\",\"choices\":[{\"delta\":{\"content\":\"All done\"},\"index\":0}]}\n\ndata: {\"model\":\"gpt-4o\",\"choices\":[{\"delta\":{},\"index\":0,\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+			} else {
+				responses <- buffered
+				responses <- `{"model":"gpt-4o","choices":[{"message":{"content":"All done"},"finish_reason":"stop"}]}`
+			}
+			requests := make(chan bool, 2)
+			openai := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var request struct {
+					Stream bool `json:"stream"`
+				}
+				if r.Method != http.MethodPost || r.URL.Path != "/chat/completions" || json.NewDecoder(r.Body).Decode(&request) != nil {
+					t.Error("unexpected OpenAI request")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				requests <- request.Stream
+				select {
+				case body := <-responses:
+					if mode.stream {
+						w.Header().Set("Content-Type", "text/event-stream")
+					} else {
+						w.Header().Set("Content-Type", "application/json")
+					}
+					_, _ = io.WriteString(w, body)
+				default:
+					t.Error("unexpected extra OpenAI request")
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			}))
+			t.Cleanup(openai.Close)
+			var mu sync.Mutex
+			hooks := make(map[string]map[string]string)
+			observed := make(map[string]map[string]string)
+			stdout, stderr := newMockStdoutStderr()
+			seed := Message{Role: "user", Content: "Keep this history"}
+			result, err := Run(context.Background(), Options{
+				AgentName: "test-agent", Workdir: t.TempDir(), APIKey: "test-key", BaseURL: openai.URL,
+				Stream: mode.stream, JSON: true, Stdout: stdout, Stderr: stderr, Messages: []Message{seed},
+				MCPServers: []MCPServer{{Name: "local", URL: mcpHTTP.URL, Transport: "streamable-http"}},
+				ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+					mu.Lock()
+					hooks[call.Name] = call.Arguments
+					mu.Unlock()
+					return ToolDecision{Action: ToolAllow}, nil
+				},
+				ToolObserver: func(_ context.Context, event ToolEvent) {
+					mu.Lock()
+					observed[event.Call.Name] = event.Call.Arguments
+					mu.Unlock()
+				},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(requests) != 2 || <-requests != mode.stream || <-requests != mode.stream {
+				t.Fatal("expected two requests in the selected provider mode")
+			}
+			if result.Content != "All done" || result.ToolCalls != len(cases) || len(result.Messages) != 4 || len(result.Messages[1].ToolCalls) != len(cases) || len(result.Messages[2].ToolResults) != len(cases) || len(result.ToolCallDetails) != len(cases) || !reflect.DeepEqual(result.Messages[0], seed) {
+				t.Fatalf("unexpected result counts or history: calls=%d messages=%d details=%d", result.ToolCalls, len(result.Messages), len(result.ToolCallDetails))
+			}
+			var output largeIntegerJSONOutput
+			if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+				t.Fatal(err)
+			}
+			if len(output.Messages) != 4 || len(output.Messages[1].ToolCalls) != len(cases) || len(output.ToolCallDetails) != len(cases) || len(captured) != len(cases) || len(hooks) != len(cases) || len(observed) != len(cases) {
+				t.Fatal("missing JSON history, detail, hook, observer, or raw handler calls")
+			}
+			wire := make(map[string]string, len(cases))
+			for range cases {
+				got := <-captured
+				wire[got.name] = got.raw
+			}
+			for i, tc := range cases {
+				t.Run(tc.name, func(t *testing.T) {
+					name := "mcp_" + tc.name
+					want := map[string]string{"n": tc.want}
+					for where, got := range map[string]map[string]string{
+						"history": result.Messages[1].ToolCalls[i].Arguments, "hook": hooks[name], "observer": observed[name],
+						"detail": result.ToolCallDetails[i].Input, "JSON history": output.Messages[1].ToolCalls[i].Arguments, "JSON detail": output.ToolCallDetails[i].Input,
+					} {
+						if !reflect.DeepEqual(got, want) {
+							t.Errorf("%s = %v, want %v", where, got, want)
+						}
+					}
+					if result.Messages[1].ToolCalls[i].Name != name || result.ToolCallDetails[i].Name != name || result.ToolCallDetails[i].IsError {
+						t.Errorf("unexpected history/detail for %s", name)
+					}
+					if tc.schema != "number" {
+						if wire[name] != tc.wire {
+							t.Errorf("raw MCP arguments = %s, want %s", wire[name], tc.wire)
+						}
+						return
+					}
+					if tc.wire != "" && wire[name] != tc.wire {
+						t.Errorf("raw MCP arguments = %s, want %s", wire[name], tc.wire)
+					}
+					legacy, err := strconv.ParseFloat(tc.raw, 64)
+					if err != nil || legacy != tc.legacy || math.Signbit(legacy) != tc.negative {
+						t.Fatalf("legacy original-token parse = %v, sign=%v, err=%v; want %v, sign=%v", legacy, math.Signbit(legacy), err, tc.legacy, tc.negative)
+					}
+					var object map[string]json.RawMessage
+					if err := json.Unmarshal([]byte(wire[name]), &object); err != nil || len(object) != 1 {
+						t.Fatalf("raw MCP arguments = %s, err=%v", wire[name], err)
+					}
+					received, err := strconv.ParseFloat(string(object["n"]), 64)
+					if err != nil || received != legacy || math.Signbit(received) != math.Signbit(legacy) {
+						t.Errorf("MCP number = %v, sign=%v, err=%v; legacy = %v, sign=%v", received, math.Signbit(received), err, legacy, math.Signbit(legacy))
+					}
+				})
+			}
+		})
+	}
+}
 
 func TestLargeIntegerArgs_Bedrock_BufferedHistory(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")

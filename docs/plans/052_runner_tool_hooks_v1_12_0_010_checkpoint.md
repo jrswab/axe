@@ -41,8 +41,8 @@ Absolute paths inside the Repository root (the feature worktree).
 - T12: `checked`
 - T13: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Verify T13 unchanged named MCP and runner acceptance tests, including raw handler bytes and beyond-int64 quoted digit strings; do not invent RED or change MCP coercer.
-- Last completed phase/task/gate and timestamp: T12 host full-race evidence PASS and Standards/Spec/Design round1 APPROVED; T12 accepted, 2026-11-13T18:16:32.925851+00:00
+- Next safe action: Commit verified T13 tests/citation/evidence, sync, then prepare final clean-HEAD safe host gate and milestone completion checks before parallel task and split milestone reviews.
+- Last completed phase/task/gate and timestamp: T13 final independent acceptance GREEN; commit and reviews pending, 2026-11-13T18:43:44.821804+00:00
 
 ## Gate evidence
 
@@ -1502,6 +1502,52 @@ User ran bash /tmp/052-runner-tool-hooks-safe-gate.sh and supplied Started gate-
 
 - Next action: Verify T13 unchanged named MCP and runner acceptance tests, including raw handler bytes and beyond-int64 quoted digit strings; do not invent RED or change MCP coercer.
 
+### T13 initial confirmation NOT ACCEPTED: both required NEW tests absent; approved test-only scope grounded
+
+- Gate: T13 initial confirmation NOT ACCEPTED: both required NEW tests absent; approved test-only scope grounded
+- Commands/results:
+T13 test verifier on clean HEADa47f383d5f05a7ff75a612d162bb22bacd97de74 ran exact safe full go test -v ./internal/mcpclient ./pkg/runner, exit0 both cached, but TestLargeIntegerArgs_MCPWire and TestLargeIntegerArgs_MCPIntegration absent from source and RUN/PASS. Supporting common gates/module/build/vet/lint/API/format/toolchain entire patch+ancestry/BOTH module equalities/R9/R10 passed; clean-tree package derivation empty so no task-race run. Evidence /tmp/052-t13-summary.md and /tmp/052-t13-metadata.json. No source changes or production failure/behavioral RED claimed. Explore independently read spec/checklist and mapped real SDK AddTool raw req.Params.Arguments wire seam. Checklist lines158-160 explicitly authorize both NEW acceptance tests in internal/mcpclient/mcpclient_test.go and pkg/runner/large_integer_args_test.go, including buffered and OpenAI real-stream flows and quoted beyond-int64 normalized digits. Prior next action's assumption tests existed was wrong; adding required tests remains existing approved scope, not product/requirements extension. R9 forbids production/public harness changes; coerceArg untouched, only two approved test files. Both tests must assert observable normalized hook/observer/detail inputs, raw handler digits, number legacy Float64/signbit, controls/A/B per complete T13. If tests reveal failure, stop/report before production changes. T13 and milestone010 stay unchecked.
+- HEAD commit SHA: `a47f383d5f05a7ff75a612d162bb22bacd97de74`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Add exactly the two approved NEW T13 acceptance tests in allowed test files, verify both exact names and common/touched-package gates, then independent unchanged-test confirmation.
+
+### T13 final independent acceptance GREEN; commit and reviews pending
+
+- Gate: T13 final independent acceptance GREEN; commit and reviews pending
+- Commands/results:
+Two approved NEW tests added ONLY internal/mcpclient/mcpclient_test.go TestLargeIntegerArgs_MCPWire and pkg/runner/large_integer_args_test.go TestLargeIntegerArgs_MCPIntegration. Original author proof /tmp/052-t13-author-summary.md/metadata/source.diff passed package/race/common gates. First independent verification /tmp/052-t13-independent-summary.md found coverage omission: checklist explicit huge-exponent0/-0 tokens absent from MCP. This was acceptance coverage gap, not production defect; no RED/mutation claimed. Additive fix /tmp/052-t13-zero-summary.md/metadata added both exact tokens 0e1000000000/-0e1000000000 in directwire plus BOTH provider modes using number-schema tool and independent Float64/signbit checks; production untouched. Final independent verifier /tmp/052-t13-final-summary.md and /tmp/052-t13-final-metadata.json reports GREEN, both exact test names PASS in full safe go test -v ./internal/mcpclient ./pkg/runner; 50 cases each real buffered and OpenAI-stream modes (100total), nine directwire cases. Verified real raw SDK AddTool bytes before floatdecode, quoted beyondint64 forms99999999999999999999999.0/999999999999999999999990e-1 normalize exact digits, signs/equivalents/A/B/legacy nested/schema and number values/signbits; hook/observer/detail JSON mapstringstring preserved. Derived touched-package go test -race ./internal/mcpclient ./pkg/runner PASS. Full packages/race/provider cached, fresh private0700 cmd uncached. Build/vet/lint/API/gofmt/toolchain fullpatch+ancestry/BOTH moduleequalities/R9R10 all independently rerun pass, exact approved safe PATH/GOTOOLCHAIN unset and Anthropicvars empty. All389 checkout hashes/modes unchanged during final verification; existing tests preserved. Current testdiff matches independently verified diff. General changed only CURRENT citations spec115 MCP388->474, checklist158 CoerceArg323->325/CoercesArgTypes388->474, inventory runner1059->1294. Historical spec41 and checkpoint refs preserved. Explore independently confirmed replacements/oldliteral zerohits and actual symbols/fixture. Initial spec-lint caught stale spec115; corrected rerun exit0 spec111/checklist17citations and0findings. docs-lint1 --since originalbase exit0/205Markdown/0findings. T13 classified STANDARD: acceptance tests/docs only, no production or design change, needs separate Standards+Spec task reviews, no new Design axis. Full milestone code/design review remains required. T13/milestone unchecked pending reviews/completion. Task review base a47f383d5f05a7ff75a612d162bb22bacd97de74; milestone base8a351c8e475ab1bfdc52000f0593f1e6ed7385ec.
+- HEAD commit SHA: `a47f383d5f05a7ff75a612d162bb22bacd97de74`
+- Relevant work: `uncommitted` — stash ref `a7019daa670d601d90452f2bc4162e17002a6cb1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_checkpoint.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_implement.md
+ M docs/plans/052_runner_tool_hooks_v1_12_0_010_spec.md
+ M internal/mcpclient/mcpclient_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit verified T13 tests/citation/evidence, sync, then prepare final clean-HEAD safe host gate and milestone completion checks before parallel task and split milestone reviews.
+
 ## Limitations & blockers
 
 - Limitations:
@@ -1515,7 +1561,7 @@ User ran bash /tmp/052-runner-tool-hooks-safe-gate.sh and supplied Started gate-
 - Blockers:
   - B1 resolved: authoritative HOST `run_script factory-sync` at HEAD `8a351c8e475ab1bfdc52000f0593f1e6ed7385ec` exited 0, base `origin/master`, ahead 136, behind 0, shared_files [], conflicts [], synced true; recorded in `010 setup and spec lint PASS`.
   - B2 / F1 resolved: Jaron's 2026-11-10 "q1 = yes" approves exact bounded normalization of top-level integral decimal/exponent JSON numbers with |value| >=1000000. Spec and canonical milestone now record the approval; no active approval or origin-sync blocker remains. Planning review round 2 is still required; no checklist or implementation starts in this pass.
-- Next action: Verify T13 unchanged named MCP and runner acceptance tests, including raw handler bytes and beyond-int64 quoted digit strings; do not invent RED or change MCP coercer.
+- Next action: Commit verified T13 tests/citation/evidence, sync, then prepare final clean-HEAD safe host gate and milestone completion checks before parallel task and split milestone reviews.
 
 ## Approval / decision note — 2026-11-10
 

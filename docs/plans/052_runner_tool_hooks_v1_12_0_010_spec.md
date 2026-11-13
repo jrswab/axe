@@ -112,7 +112,7 @@ Requirements are grouped as vertical slices. Each slice is independently verifia
 ### R5: MCP wire receives digits as JSON integers
 
 - For an `integer`-typed tool parameter with `Arguments` value `1000000`, `-1000000`, `1234567`, or `9007199254740993`, the MCP server receives the same digits as a JSON number. `coerceArg` is unchanged (OS6).
-- Verification: test in `internal/mcpclient` using the raw SDK `AddTool` handler, which asserts the received bytes contain `1000000` and no quotes around it. Pattern: `TestCallTool_CoercesArgTypes` (`internal/mcpclient/mcpclient_test.go:388`). Also require an end-to-end `pkg/runner` test: raw numeric provider response → real provider decode → runner dispatch → raw `AddTool` handler bytes, following `pkg/runner/hook_mcp_test.go:17-48`. Hand-built argument strings alone already pass today and cannot demonstrate the fix.
+- Verification: test in `internal/mcpclient` using the raw SDK `AddTool` handler, which asserts the received bytes contain `1000000` and no quotes around it. Pattern: `TestCallTool_CoercesArgTypes` (`internal/mcpclient/mcpclient_test.go:474`). Also require an end-to-end `pkg/runner` test: raw numeric provider response → real provider decode → runner dispatch → raw `AddTool` handler bytes, following `pkg/runner/hook_mcp_test.go:17-48`. Hand-built argument strings alone already pass today and cannot demonstrate the fix.
 
 ### R6: Replay carries the digits
 
