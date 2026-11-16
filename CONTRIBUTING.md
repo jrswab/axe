@@ -16,11 +16,13 @@ Thank you for your interest in contributing to Axe! This document provides guide
 
 ### Prerequisites
 
-- Go 1.26.0 or later
+- Go 1.26.11 or later
 - Git
 - A text editor or IDE with Go support
 - (Optional) Docker for container testing
 - (Optional) golangci-lint for linting
+
+For a checkout, Go's default automatic toolchain selection may use an available `go1.26.11` on `PATH` or download it if the installed toolchain is older. A blocked or unverifiable download can fail even with cached dependencies. `GOTOOLCHAIN=local` disables switching and requires an installed Go version at least 1.26.11. Versioned `go install` uses the target module's minimum but not its toolchain suggestion.
 
 ### Fork and Clone
 

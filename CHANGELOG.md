@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Options.MaxTurns` in `pkg/runner` overrides the agent's TOML `max_turns` for one run when greater than 0. Zero keeps the TOML value, and a TOML value of 0 or unset means 50. A negative value is a `ConfigError`. Sub-agents do not inherit the value.
 - `Options.APIKey` and `Options.BaseURL` in `pkg/runner` override the provider key and base URL for one run; precedence is Options, then env var, then `config.toml`; an empty value means unset; neither value is printed; both are ignored for `bedrock`.
 
+### Changed
+- `pkg/runner` imports and source builds require Go 1.26.11 (previously 1.25.0). With automatic toolchain switching disabled, an older installed Go version fails to build.
+
 ## [1.11.0] - 2026-10-21
 
 ### Added
