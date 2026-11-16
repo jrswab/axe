@@ -5,6 +5,10 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
 
@@ -12,11 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Lint
       uses: golangci/golangci-lint-action@v7
@@ -25,26 +31,80 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Test
-      env:
-        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      run: go test -race -v ./...
+      run: .agents/scripts/ci-check test
 
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build
-      run: go build -v ./...
+      run: .agents/scripts/ci-check build
+
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - name: Format and module integrity
+      run: .agents/scripts/ci-check integrity
+    - name: Vet
+      if: ${{ !cancelled() }}
+      run: .agents/scripts/ci-check vet
+
+  workflow-syntax:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - name: Install actionlint
+      run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+    - name: Check workflows
+      run: actionlint -shellcheck= -pyflakes=
+    - name: Test CI scripts
+      run: python3 -m unittest discover -s .agents/scripts/tests -p 'test_*.py' -v
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Build local image
+      run: docker build -t axe-ci:local .
+    - name: Check version and dry-run skill
+      run: |
+        set -euo pipefail
+        VERSION=$(awk -F '"' '/^const Version = "/ { print $2 }' cmd/root.go)
+        test -n "$VERSION"
+        test "$(docker run --rm --network none --user 10001:10001 axe-ci:local version)" = "axe version $VERSION"
+        OUTPUT=$(docker run --rm --network none --user 10001:10001 \
+          --mount "type=bind,src=$PWD/.github/smoke-agents,dst=/fixtures,readonly" \
+          axe-ci:local run --agents-dir /fixtures dry-skill \
+          --skill /fixtures/skills/smoke-skill/SKILL.md --dry-run -p ping)
+        printf '%s\n' "$OUTPUT"
+        printf '%s\n' "$OUTPUT" | .agents/scripts/check-dry-skill

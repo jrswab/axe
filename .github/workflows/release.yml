@@ -8,31 +8,72 @@ on:
       - 'v*' # only version tags trigger a run
 
 permissions:
-  contents: write      # GoReleaser: create GitHub Release & checkout
+  contents: read
 
 jobs:
-  goreleaser:
+  admission:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check tag and changelog
+        env:
+          TAG: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: |
+          git fetch --no-tags origin +refs/heads/master:refs/remotes/origin/master
+          .agents/scripts/release-check admit --tag "$TAG" --ref "$REF" --sha "$SHA" --notes "$RUNNER_TEMP/release-notes.md"
+
+  validation:
+    needs: [admission]
+    uses: ./.github/workflows/go.yml
+    permissions:
+      contents: read
+
+  goreleaser:
+    needs: [validation]
+    runs-on: ubuntu-latest
+    env:
+      GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # fetch all tags so GoReleaser sees them
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Recheck tag and changelog
+        env:
+          TAG: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: |
+          git fetch --no-tags origin +refs/heads/master:refs/remotes/origin/master
+          .agents/scripts/release-check admit --tag "$TAG" --ref "$REF" --sha "$SHA" --notes "$RUNNER_TEMP/release-notes.md"
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: stable
-      - name: Extract changelog for this version
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          # Extract the section between this version's heading and the next
-          awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found" CHANGELOG.md > release-notes.md
-      - name: Run GoReleaser
+          go-version-file: go.mod
+      - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: "~> v2"
-          args: release --clean --release-notes=release-notes.md
+          version: "v2.12.7"
+          install-only: true
+      - name: Check GoReleaser config
+        run: goreleaser check
+      - name: Build release packages without publishing
+        run: goreleaser release --clean --skip=publish --release-notes="$RUNNER_TEMP/release-notes.md"
+      - name: Check release packages
+        env:
+          TAG: ${{ github.ref_name }}
+        run: .agents/scripts/release-check artifacts --tag "$TAG" --dist dist
+      - name: Publish release
+        run: goreleaser release --clean --release-notes="$RUNNER_TEMP/release-notes.md"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
