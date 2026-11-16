@@ -54,3 +54,9 @@ release-notes.md
 
 # Documentation Tools
 docs/book/
+
+# Local plans
+docs/plans/*
+
+# Wayfinder local tracker
+.scratch/

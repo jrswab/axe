@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -873,6 +874,68 @@ func TestOpenAI_Send_ToolCallResponse(t *testing.T) {
 	}
 	if resp.ToolCalls[0].Arguments["task"] != "run tests" {
 		t.Errorf("ToolCalls[0].Arguments[task] = %q, want %q", resp.ToolCalls[0].Arguments["task"], "run tests")
+	}
+}
+
+// Spec 010 R1/R7/R8: eligible top-level integers keep exact digits;
+// strings and nested collections retain their legacy text.
+func TestLargeIntegerArgs_OpenAI_Buffered(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "threshold integer", raw: `1000000`, want: "1000000"},
+		{name: "integer beyond float64 precision", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "integral exponent", raw: `1e6`, want: "1000000"},
+		{name: "integral decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative integral exponent", raw: `-1e6`, want: "-1000000"},
+		{name: "exact exponent beyond float64 precision", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "exact decimal beyond float64 precision", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "integral decimal beyond int64", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "integral exponent beyond int64", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "below threshold", raw: `999999`, want: "999999"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "boolean", raw: `true`, want: "true"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "quoted exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "quoted decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "quoted large integer", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "nested exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "nested integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "nested array", raw: `[1.50]`, want: "[1.5]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Encode only the outer arguments string, never decode the raw value
+			// into float64 or quote numeric tokens inside the argument object.
+			body := openAIRawArgumentBody(t, `{"model":"gpt-4o","choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":%s}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":10,"completion_tokens":5}}`, `{"n":`+tt.raw+`}`)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(body))
+			}))
+			defer server.Close()
+
+			o, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected NewOpenAI error: %v", err)
+			}
+
+			resp, err := o.Send(context.Background(), &Request{Model: "gpt-4o"})
+			if err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+			}
+			if got, ok := resp.ToolCalls[0].Arguments["n"]; !ok || got != tt.want {
+				t.Errorf("Arguments[n] for raw %s = %q (present=%t), want %q", tt.raw, got, ok, tt.want)
+			}
+		})
 	}
 }
 
@@ -1972,5 +2035,199 @@ func TestOpenAI_CacheUsage(t *testing.T) {
 				t.Errorf("CacheReadTokens = %d, want %d", got, tc.wantCacheRead)
 			}
 		})
+	}
+}
+
+func TestLargeIntegerArgs_OpenAI_DecodeErrors(t *testing.T) {
+	// Only the outer string is encoded; numeric argument tokens stay raw.
+	const envelope = `{"model":"gpt-4o","choices":[{"message":{"tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":%s}}]},"finish_reason":"tool_calls"}]}`
+	base := openAIRawArgumentBody(t, envelope, `{"n":1000000}`)
+	type decodeErrorCase struct {
+		name    string
+		body    string
+		wantErr bool
+		want    map[string]string
+	}
+	tests := []decodeErrorCase{
+		{name: "outer malformed", body: `{"choices":`, wantErr: true},
+		{name: "outer trailing value", body: base + `{}`, wantErr: true},
+		{name: "outer trailing junk", body: base + `junk`, wantErr: true},
+		{name: "known integer overflow", body: `{"choices":[{}],"usage":{"prompt_tokens":1e400}}`, wantErr: true},
+		{name: "known 400 digit overflow", body: `{"choices":[{}],"usage":{"completion_tokens":` + strings.Repeat("9", 400) + `}}`, wantErr: true},
+		{name: "known nested overflow", body: `{"choices":[{}],"usage":{"prompt_tokens_details":{"cached_tokens":1e400}}}`, wantErr: true},
+		{name: "overwritten known scalar", body: `{"choices":[{}],"usage":{"prompt_tokens":1e400,"prompt_tokens":1}}`, wantErr: true},
+		{name: "overwritten known subtree", body: `{"choices":[{}],"usage":{"prompt_tokens":1e400},"usage":{"prompt_tokens":1}}`, wantErr: true},
+		{name: "outer type mismatch", body: `{"choices":[{}],"usage":{"prompt_tokens":true}}`, wantErr: true},
+		{name: "unknown scalar overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "1000000"}},
+		{name: "unknown subtree overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "1000000"}},
+		{name: "unknown 400 digits", body: `{"unknown":` + strings.Repeat("9", 400) + `,` + base[1:], want: map[string]string{"n": "1000000"}},
+		{name: "successful outer duplicate", body: `{"usage":{"prompt_tokens":1,"prompt_tokens":2},` + base[1:], want: map[string]string{"n": "1000000"}},
+		{name: "successful outer subtree", body: `{"usage":{"prompt_tokens":1},"usage":{"completion_tokens":2},` + base[1:], want: map[string]string{"n": "1000000"}},
+	}
+	for _, tt := range []struct {
+		name string
+		raw  string
+		want map[string]string
+	}{
+		{name: "inner malformed", raw: `{"n":`},
+		{name: "inner trailing value", raw: `{"n":1} {}`},
+		{name: "inner trailing junk", raw: `{"n":1} junk`},
+		{name: "inner overflow", raw: `{"n":1e400}`},
+		{name: "inner 400 digits", raw: `{"n":` + strings.Repeat("9", 400) + `}`},
+		{name: "inner nested overflow", raw: `{"n":[{"bad":1e400}]}`},
+		{name: "inner nested 400 digits", raw: `{"n":{"bad":` + strings.Repeat("9", 400) + `}}`},
+		{name: "inner overwritten scalar overflow", raw: `{"n":1e400,"n":1000000}`},
+		{name: "inner overwritten subtree overflow", raw: `{"n":{"bad":1e400},"n":1000000}`},
+		{name: "inner successful scalar duplicate", raw: `{"n":999999,"n":1000000}`, want: map[string]string{"n": "1000000"}},
+		{name: "inner successful subtree duplicate", raw: `{"n":{"ok":1},"n":1000000}`, want: map[string]string{"n": "1000000"}},
+		{name: "inner successful map replacement", raw: `{"n":{"old":1},"n":{"new":2}}`, want: map[string]string{"n": "map[new:2]"}},
+		{name: "inner empty", raw: `{}`},
+		{name: "inner null", raw: `null`},
+		{name: "inner array mismatch", raw: `[]`},
+		{name: "inner scalar mismatch", raw: `0`},
+		{name: "inner negative zero mismatch", raw: `-0`},
+		{name: "inner decimal zero mismatch", raw: `-0.0`},
+		{name: "inner boolean mismatch", raw: `true`},
+		{name: "inner string mismatch", raw: `"text"`},
+	} {
+		tests = append(tests, decodeErrorCase{name: tt.name, body: openAIRawArgumentBody(t, envelope, tt.raw), want: tt.want})
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+			o, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := o.Send(context.Background(), &Request{Model: "gpt-4o"})
+			if tt.wantErr {
+				var providerErr *ProviderError
+				if !errors.As(err, &providerErr) || providerErr.Category != ErrCategoryServer {
+					t.Fatalf("Send error = %v, want server ProviderError", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("ToolCalls = %#v, want one call", resp.ToolCalls)
+			}
+			want := tt.want
+			if want == nil {
+				want = map[string]string{}
+			}
+			if !reflect.DeepEqual(resp.ToolCalls[0].Arguments, want) {
+				t.Errorf("Arguments = %#v, want %#v", resp.ToolCalls[0].Arguments, want)
+			}
+		})
+	}
+}
+
+func openAIRawArgumentBody(t *testing.T, envelope, raw string) string {
+	t.Helper()
+	quoted, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatalf("failed to encode arguments string: %v", err)
+	}
+	return strings.Replace(envelope, "%s", string(quoted), 1)
+}
+
+func TestLargeIntegerArgs_OpenAI_Replay(t *testing.T) {
+	const raw = `{"million":1000000,"precise":9007199254740993,"exponent":1e6,"decimal":1000000.0,"negative":-1e6,"precise_decimal":9007199254740993.0,"precise_exponent":90071992547409930e-1,"beyond":99999999999999999999999,"beyond_decimal":99999999999999999999999.0,"beyond_exponent":999999999999999999999990e-1,"small":999999,"negative_small":-999999,"small_decimal":999999.0,"zero":0,"negative_zero":-0,"negative_decimal_zero":-0.0,"fraction":1.5,"rounded_fraction":1000000.00000000001,"rounded_threshold":999999.99999999999,"text":"text","string_exponent":"1e6","string_decimal":"1000000.0","string_precise":"9007199254740993","boolean":true,"null":null,"object_exponent":{"a":1e6},"object_integer":{"a":1000000},"array":[1.50],"recursive":{"a":[1000000,1.50]}}`
+	want := map[string]string{
+		"million": "1000000", "precise": "9007199254740993",
+		"exponent": "1000000", "decimal": "1000000", "negative": "-1000000",
+		"precise_decimal": "9007199254740993", "precise_exponent": "9007199254740993",
+		"beyond": "99999999999999999999999", "beyond_decimal": "99999999999999999999999", "beyond_exponent": "99999999999999999999999",
+		"small": "999999", "negative_small": "-999999", "small_decimal": "999999",
+		"zero": "0", "negative_zero": "-0", "negative_decimal_zero": "-0",
+		"fraction": "1.5", "rounded_fraction": "1e+06", "rounded_threshold": "1e+06",
+		"text": "text", "string_exponent": "1e6", "string_decimal": "1000000.0", "string_precise": "9007199254740993",
+		"boolean": "true", "null": "<nil>", "object_exponent": "map[a:1e+06]", "object_integer": "map[a:1e+06]",
+		"array": "[1.5]", "recursive": "map[a:[1e+06 1.5]]",
+	}
+	body := openAIRawArgumentBody(t, `{"model":"gpt-4o","choices":[{"message":{"content":"Read values","tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":%s}}]},"finish_reason":"tool_calls"}]}`, raw)
+	first := make(chan struct{}, 1)
+	first <- struct{}{}
+	requests := make(chan openaiRequest, 3)
+	replayed := make(chan map[string]string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req openaiRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- req
+		w.Header().Set("Content-Type", "application/json")
+		select {
+		case <-first:
+			_, _ = io.WriteString(w, body)
+		default:
+			if len(req.Messages) != 3 || len(req.Messages[1].ToolCalls) != 1 {
+				t.Errorf("follow-up messages = %+v, want user, assistant call, tool result", req.Messages)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			// Decoding into strings rejects replayed JSON numbers, proving OS5.
+			var args map[string]string
+			if err := json.Unmarshal([]byte(req.Messages[1].ToolCalls[0].Function.Arguments), &args); err != nil {
+				t.Errorf("decode replay arguments as strings: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			replayed <- args
+			_, _ = io.WriteString(w, `{"model":"gpt-4o","choices":[{"message":{"content":"All done"},"finish_reason":"stop"}]}`)
+		}
+	}))
+	defer server.Close()
+	o, err := NewOpenAI("test-key", WithOpenAIBaseURL(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+	seed := Message{Role: "user", Content: "Keep this history"}
+	resp, err := o.Send(context.Background(), &Request{Model: "gpt-4o", Messages: []Message{seed}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.ToolCalls) != 1 || !reflect.DeepEqual(resp.ToolCalls[0].Arguments, want) {
+		t.Fatalf("decoded ToolCalls = %+v, want literal arguments %v", resp.ToolCalls, want)
+	}
+	final, err := o.Send(context.Background(), &Request{Model: "gpt-4o", Messages: []Message{
+		seed,
+		{Role: "assistant", Content: resp.Content, ToolCalls: resp.ToolCalls},
+		{Role: "tool", ToolResults: []ToolResult{{CallID: resp.ToolCalls[0].ID, Content: "controlled result"}}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if final.Content != "All done" {
+		t.Errorf("final content = %q, want All done", final.Content)
+	}
+	if len(requests) != 2 || len(replayed) != 1 {
+		t.Fatalf("requests = %d, replay captures = %d, want 2 and 1", len(requests), len(replayed))
+	}
+	if got := <-replayed; !reflect.DeepEqual(got, want) {
+		t.Errorf("replayed arguments = %v, want %v", got, want)
+	}
+	<-requests
+	followup := <-requests
+	call := followup.Messages[1].ToolCalls[0]
+	if call.ID != "call_1" || call.Type != "function" || call.Function.Name != "example" {
+		t.Errorf("replayed call = %+v", call)
+	}
+	toolResult := followup.Messages[2]
+	if toolResult.Role != "tool" || toolResult.ToolCallID != "call_1" || toolResult.Content == nil || *toolResult.Content != "controlled result" {
+		t.Errorf("replayed tool result = %+v", toolResult)
+	}
+	for _, key := range []string{"million", "precise", "exponent", "decimal", "negative", "precise_decimal", "precise_exponent", "beyond", "beyond_decimal", "beyond_exponent"} {
+		if strings.ContainsAny(want[key], "eE") || !strings.Contains(call.Function.Arguments, `"`+key+`":"`+want[key]+`"`) {
+			t.Errorf("replay lacks quoted exact digits for %s: %s", key, call.Function.Arguments)
+		}
 	}
 }

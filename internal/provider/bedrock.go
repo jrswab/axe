@@ -277,7 +277,7 @@ func parseBedrockResponse(resp *bedrockResponse, model string) *Response {
 		if block.ToolUse != nil {
 			args := make(map[string]string, len(block.ToolUse.Input))
 			for k, v := range block.ToolUse.Input {
-				args[k] = fmt.Sprintf("%v", v)
+				args[k] = FormatToolArgument(v)
 			}
 			r.ToolCalls = append(r.ToolCalls, ToolCall{
 				ID: block.ToolUse.ToolUseID, Name: block.ToolUse.Name, Arguments: args,
@@ -345,7 +345,7 @@ func (b *Bedrock) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	var apiResp bedrockResponse
-	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+	if err := DecodeJSON(respBody, &apiResp); err != nil {
 		return nil, &ProviderError{
 			Category: ErrCategoryServer,
 			Message:  fmt.Sprintf("failed to parse response: %s", err),
