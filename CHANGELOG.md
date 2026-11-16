@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `pkg/runner` imports and source builds require Go 1.26.11 (previously 1.25.0). With automatic toolchain switching disabled, an older installed Go version fails to build.
 
+### Changed
+- Gate tagged releases on changelog and ancestry admission, reusable CI checks, and a nonpublishing package smoke check before publication.
+
 ## [1.11.0] - 2026-10-21
 
 ### Added
