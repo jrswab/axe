@@ -133,8 +133,14 @@ func TestRuncrate_ChatCompletionsRequest(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				defer func() { _ = stream.Close() }()
-			} else if _, err := provider.Send(context.Background(), req); err != nil {
-				t.Fatalf("unexpected error: %v", err)
+			} else {
+				resp, err := provider.Send(context.Background(), req)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if resp.Content != "ok" {
+					t.Errorf("content = %q, want ok", resp.Content)
+				}
 			}
 
 			if gotPath != "/v1/chat/completions" {
@@ -149,6 +155,12 @@ func TestRuncrate_ChatCompletionsRequest(t *testing.T) {
 			}
 			if body["model"] != "deepseek-ai/DeepSeek-V4.1-Flash" {
 				t.Errorf("model = %v, want deepseek-ai/DeepSeek-V4.1-Flash", body["model"])
+			}
+			if method.isStream && body["stream"] != true {
+				t.Errorf("stream = %v, want true", body["stream"])
+			}
+			if !method.isStream && body["stream"] == true {
+				t.Error("non-streaming request must not set stream to true")
 			}
 		})
 	}

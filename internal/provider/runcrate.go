@@ -7,7 +7,8 @@ type Runcrate struct {
 	*OpenAI
 }
 
-// NewRuncrate creates a Runcrate provider using its default API endpoint.
+// NewRuncrate creates a Runcrate provider, using its default endpoint when baseURL is empty.
+// @anchor:provider:entry Configure the Runcrate endpoint and require its API key.
 func NewRuncrate(apiKey string, baseURL string) (*Runcrate, error) {
 	if apiKey == "" {
 		return nil, &ProviderError{
