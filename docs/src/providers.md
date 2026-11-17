@@ -12,6 +12,7 @@
 | Ollama | `ollama` | (none required) | `http://localhost:11434` |
 | OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |
 | Runcrate | `runcrate` | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
+| Standard Compute | `standardcompute` | `STANDARDCOMPUTE_API_KEY` | `https://api.stdcmpt.com/v1` |
 | AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |
 
 The "Provider Name" column is the value used in the `model` field of your agent TOML — e.g., `model = "google/gemini-2.0-flash"`.
@@ -47,6 +48,9 @@ api_key = "AIza..."
 [providers.minimax]
 api_key = "..."
 
+[providers.standardcompute]
+api_key = "..."
+
 [providers.openai]
 api_key = "sk-..."
 base_url = "https://your-openai-proxy.example.com"
@@ -65,6 +69,8 @@ Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an
 Eden AI is a gateway, so its model ids carry the upstream vendor as a prefix. For example, set an agent model to `edenai/openai/gpt-4o-mini`, `edenai/anthropic/claude-haiku-4-5` or `edenai/mistral/mistral-small-latest`. Override the endpoint with `AXE_EDENAI_BASE_URL` or `[providers.edenai] base_url`. Custom URLs must be absolute, without credentials, a query, or a fragment. HTTPS is required except for `localhost` and loopback/private IP literals; for an HTTP private proxy, use its private IP rather than a DNS name. These explicit HTTP exceptions send the API key in plaintext, so use only trusted local networks. A trailing slash is optional.
 
 Runcrate serves open-weight models through the OpenAI-compatible Chat Completions API. For example, set an agent model to `runcrate/deepseek-ai/DeepSeek-V4.1-Flash`.
+
+Standard Compute uses the OpenAI-compatible Chat Completions API. Set an agent model to `standardcompute/StandardCompute` to route each request to the cheapest enabled model that can handle it, with automatic fallback, or pin a model with any id from `GET https://api.stdcmpt.com/v1/models` (for example `standardcompute/<model-id>`). See https://standardcompute.com.
 
 ## LiteLLM
 

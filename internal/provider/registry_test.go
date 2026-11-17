@@ -96,6 +96,33 @@ func TestNew_Runcrate(t *testing.T) {
 	}
 }
 
+func TestNew_StandardCompute(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultStandardComputeBaseURL},
+		{name: "custom base URL", input: "http://custom:8080", want: "http://custom:8080"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("standardcompute", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			standardCompute, ok := p.(*StandardCompute)
+			if !ok {
+				t.Fatalf("provider type = %T, want *StandardCompute", p)
+			}
+			if standardCompute.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", standardCompute.baseURL, tt.want)
+			}
+		})
+	}
+}
+
 func TestNew_Bedrock(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKID")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "SECRET")
@@ -193,7 +220,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode", "runcrate", "edenai"} {
+	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode", "runcrate", "edenai", "standardcompute"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
@@ -289,7 +316,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter", "runcrate", "edenai"} {
+	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter", "runcrate", "edenai", "standardcompute"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}

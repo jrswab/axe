@@ -595,6 +595,7 @@ The first directory containing a matching `<name>.toml` wins.
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
 | Runcrate | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
+| Standard Compute | `STANDARDCOMPUTE_API_KEY` | `https://api.stdcmpt.com/v1` |
 | AWS Bedrock | (uses AWS credentials) | Region-based |
 
 **AWS Bedrock Configuration:**
@@ -609,6 +610,8 @@ For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent 
 For Eden AI, model ids carry the upstream vendor as a prefix, such as `edenai/openai/gpt-4o-mini` or `edenai/anthropic/claude-haiku-4-5`. Custom Eden AI base URLs require HTTPS, except for `localhost` and loopback/private IP literals (for local proxies).
 
 For Runcrate, use model names such as `runcrate/deepseek-ai/DeepSeek-V4.1-Flash` in agent TOML.
+
+Standard Compute uses the OpenAI-compatible Chat Completions API. Set an agent model to `standardcompute/StandardCompute` to route each request to the cheapest enabled model that can handle it, with automatic fallback, or pin a model with any id from `GET https://api.stdcmpt.com/v1/models` (for example `standardcompute/<model-id>`). See https://standardcompute.com.
 
 For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `LITELLM_API_KEY` (or `[providers.litellm] api_key`) and optionally `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`). The default URL is `http://localhost:4000/v1`; URLs without `/v1` work too. Use the proxy's model names, e.g. `litellm/claude-sonnet`.
 

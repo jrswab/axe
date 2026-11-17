@@ -251,6 +251,7 @@ func TestAPIKeyEnvVar_KnownProvider(t *testing.T) {
 		{name: "Eden AI", input: "edenai", want: "EDENAI_API_KEY"},
 		{name: "LiteLLM", input: "litellm", want: "LITELLM_API_KEY"},
 		{name: "Runcrate", input: "runcrate", want: "RUNCRATE_API_KEY"},
+		{name: "Standard Compute", input: "standardcompute", want: "STANDARDCOMPUTE_API_KEY"},
 	}
 
 	for _, tt := range tests {

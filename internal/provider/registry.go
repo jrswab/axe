@@ -4,18 +4,19 @@ import "fmt"
 
 // supportedProviders lists all provider names accepted by New.
 var supportedProviders = map[string]bool{
-	"anthropic":  true,
-	"atlascloud": true,
-	"litellm":    true,
-	"openai":     true,
-	"ollama":     true,
-	"opencode":   true,
-	"google":     true,
-	"minimax":    true,
-	"bedrock":    true,
-	"openrouter": true,
-	"edenai":     true,
-	"runcrate":   true,
+	"anthropic":       true,
+	"atlascloud":      true,
+	"litellm":         true,
+	"openai":          true,
+	"ollama":          true,
+	"opencode":        true,
+	"google":          true,
+	"minimax":         true,
+	"bedrock":         true,
+	"openrouter":      true,
+	"edenai":          true,
+	"runcrate":        true,
+	"standardcompute": true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -93,8 +94,11 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 	case "runcrate":
 		return NewRuncrate(apiKey, baseURL)
 
+	case "standardcompute":
+		return NewStandardCompute(apiKey, baseURL)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute", providerName)
 	}
 }
 
