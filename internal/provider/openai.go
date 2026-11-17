@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -45,13 +46,14 @@ type OpenAI struct {
 	client     *http.Client
 }
 
-// responseCost parses the configured cost header; 0 when unset or unparsable.
+// responseCost parses the configured cost header; invalid costs are unavailable.
+// @anchor:provider:policy Reject invalid optional cost metadata before it reaches run results.
 func (o *OpenAI) responseCost(header http.Header) float64 {
 	if o.costHeader == "" {
 		return 0
 	}
 	cost, err := strconv.ParseFloat(strings.TrimSpace(header.Get(o.costHeader)), 64)
-	if err != nil || cost < 0 {
+	if err != nil || cost < 0 || math.IsNaN(cost) || math.IsInf(cost, 0) {
 		return 0
 	}
 	return cost
@@ -259,6 +261,7 @@ func convertToOpenAITools(tools []Tool) []openaiToolDef {
 }
 
 // Send makes a completion request to the OpenAI Chat Completions API.
+// @anchor:provider:integration Map OpenAI-compatible responses and opt-in gateway cost to provider results.
 func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	var messages []Message
 	if req.System != "" {
@@ -429,6 +432,7 @@ func (o *OpenAI) handleErrorResponse(status int, body []byte) *ProviderError {
 }
 
 // SendStream makes a streaming completion request to the OpenAI Chat Completions API.
+// @anchor:provider:integration Preserve text, tool calls, finish reasons, and usage from each compatible SSE chunk.
 func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
 	var messages []Message
 	if req.System != "" {
@@ -516,20 +520,13 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 	// Usage that arrived on a chunk that also carried choices (LiteLLM does
 	// this); reported with the done event at [DONE].
 	var trailingUsage *openaiStreamUsage
-	var pendingToolEvents []StreamEvent
-	var pendingToolEnds []StreamEvent
+	var pendingEvents []StreamEvent
 
 	nextFunc := func() (StreamEvent, error) {
 		for {
-			if len(pendingToolEvents) > 0 {
-				ev := pendingToolEvents[0]
-				pendingToolEvents = pendingToolEvents[1:]
-				return ev, nil
-			}
-
-			if len(pendingToolEnds) > 0 {
-				ev := pendingToolEnds[0]
-				pendingToolEnds = pendingToolEnds[1:]
+			if len(pendingEvents) > 0 {
+				ev := pendingEvents[0]
+				pendingEvents = pendingEvents[1:]
 				return ev, nil
 			}
 
@@ -602,10 +599,10 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 			choice := chunk.Choices[0]
 
 			if choice.Delta.Content != nil && *choice.Delta.Content != "" {
-				return StreamEvent{
+				pendingEvents = append(pendingEvents, StreamEvent{
 					Type: StreamEventText,
 					Text: *choice.Delta.Content,
-				}, nil
+				})
 			}
 
 			if len(choice.Delta.ToolCalls) > 0 {
@@ -624,7 +621,7 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 							name = tc.Function.Name
 						}
 						toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: name}
-						pendingToolEvents = append(pendingToolEvents, StreamEvent{
+						pendingEvents = append(pendingEvents, StreamEvent{
 							Type:       StreamEventToolStart,
 							ToolCallID: tc.ID,
 							ToolName:   name,
@@ -633,14 +630,11 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 							continue
 						}
 					}
-					pendingToolEvents = append(pendingToolEvents, StreamEvent{
+					pendingEvents = append(pendingEvents, StreamEvent{
 						Type:       StreamEventToolDelta,
 						ToolCallID: toolCalls[tc.Index].id,
 						ToolInput:  args,
 					})
-				}
-				if choice.FinishReason == nil {
-					continue
 				}
 			}
 
@@ -655,7 +649,7 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 					sort.Ints(indices)
 					for _, idx := range indices {
 						info := toolCalls[idx]
-						pendingToolEnds = append(pendingToolEnds, StreamEvent{
+						pendingEvents = append(pendingEvents, StreamEvent{
 							Type:       StreamEventToolEnd,
 							ToolCallID: info.id,
 						})
@@ -713,18 +707,25 @@ type openaiStreamUsage struct {
 	PromptTokensDetails struct {
 		CachedTokens int `json:"cached_tokens"`
 	} `json:"prompt_tokens_details"`
-	// Cost is reported in the usage block by gateways such as LiteLLM, whose
-	// cost header cannot be known when a stream starts.
-	Cost float64 `json:"cost"`
+	// Keep optional gateway cost opaque so malformed metadata cannot break
+	// ordinary OpenAI streams or discard otherwise valid token usage.
+	Cost json.RawMessage `json:"cost"`
 }
 
 // streamCost prefers the response header; gateways that report cost fall back
 // to the usage block. Plain OpenAI reports neither.
+// @anchor:provider:policy Decode optional usage cost only for gateways with cost reporting enabled.
 func (o *OpenAI) streamCost(headerCost float64, usage *openaiStreamUsage) float64 {
-	if headerCost > 0 || o.costHeader == "" || usage == nil || usage.Cost < 0 {
+	if headerCost > 0 || o.costHeader == "" || usage == nil {
 		return headerCost
 	}
-	return usage.Cost
+	var cost float64
+	// JSON decoding rejects nonnumeric and overflowing values, including
+	// strings. Missing, null, or invalid cost metadata means unavailable.
+	if err := json.Unmarshal(usage.Cost, &cost); err != nil || cost < 0 {
+		return 0
+	}
+	return cost
 }
 
 // openaiStreamOptions controls streaming behavior in the request.

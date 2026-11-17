@@ -19,6 +19,7 @@ type LiteLLM struct {
 
 // NewLiteLLM creates a LiteLLM provider. baseURL defaults to a local proxy;
 // the /v1 suffix is added when omitted so both URL forms work.
+// @anchor:provider:entry Configure the LiteLLM proxy endpoint and opt-in cost reporting.
 func NewLiteLLM(apiKey string, baseURL string) (*LiteLLM, error) {
 	if apiKey == "" {
 		return nil, &ProviderError{

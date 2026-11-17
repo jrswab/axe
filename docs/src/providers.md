@@ -61,7 +61,16 @@ Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an
 - **Model:** `litellm/<model name on the proxy>`, e.g. `litellm/claude-sonnet` or `litellm/gemini-2.5-flash`. Everything after the first `/` is sent as-is, so aliases containing `/` work too.
 - **Base URL:** `AXE_LITELLM_BASE_URL` or `[providers.litellm] base_url`. Both `http://host:4000` and `http://host:4000/v1` work; the default is `http://localhost:4000/v1`.
 - **Key:** `LITELLM_API_KEY` or `[providers.litellm] api_key`, the proxy's virtual key.
-- **Cost:** the proxy reports each request's cost in the `x-litellm-response-cost` header; axe puts it in the run result's `cost` field (JSON output), for streaming and non-streaming runs.
+- **Cost:** when available, axe reads `x-litellm-response-cost` into the JSON result's `cost` field. This is the **final response's cost**, not the total across earlier requests in a run with tool calls. A positive header value takes precedence; streaming falls back to numeric `usage.cost` when the header is absent, zero, or invalid. Missing, invalid, negative, and non-finite costs are treated as unavailable; zero cost is omitted from JSON output.
+
+For streaming cost reporting, enable cost metadata in the **LiteLLM proxy's YAML configuration** (not Axe's `config.toml`):
+
+```yaml
+litellm_settings:
+  include_cost_in_streaming_usage: true
+```
+
+This enables `usage.cost` on supported proxy streaming paths. Without cost metadata from the proxy, the run still succeeds but the JSON result omits `cost`.
 
 ## Streaming Support
 

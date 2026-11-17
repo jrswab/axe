@@ -22,6 +22,7 @@ func Supported(providerName string) bool {
 }
 
 // New creates a Provider by dispatching to the correct constructor based on providerName.
+// @anchor:provider:entry Select the provider implementation for a configured model prefix.
 func New(providerName, apiKey, baseURL string) (Provider, error) {
 	switch providerName {
 	case "anthropic":

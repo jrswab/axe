@@ -56,6 +56,7 @@ func Load() (*GlobalConfig, error) {
 }
 
 // knownAPIKeyEnvVars maps provider names to their canonical API key environment variables.
+// @anchor:provider:configuration Map provider model prefixes to canonical credential environment variables.
 var knownAPIKeyEnvVars = map[string]string{
 	"anthropic":  "ANTHROPIC_API_KEY",
 	"atlascloud": "ATLASCLOUD_API_KEY",

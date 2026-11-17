@@ -604,7 +604,16 @@ Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
 
-For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`) and use the proxy's model names, e.g. `litellm/claude-sonnet`. The proxy's per-request cost is reported in the run result's `cost` field.
+For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `LITELLM_API_KEY` (or `[providers.litellm] api_key`) and optionally `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`). The default URL is `http://localhost:4000/v1`; URLs without `/v1` work too. Use the proxy's model names, e.g. `litellm/claude-sonnet`.
+
+When available, the run result's JSON `cost` field reports the **final response's cost**, not the total across earlier requests in a run with tool calls. Streaming falls back to `usage.cost` when no positive cost header is available. To enable that metadata, set this in the **LiteLLM proxy's YAML configuration**, not Axe's `config.toml`:
+
+```yaml
+litellm_settings:
+  include_cost_in_streaming_usage: true
+```
+
+If the proxy does not report a valid cost, the JSON `cost` field is omitted.
 
 ## License
 
