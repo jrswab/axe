@@ -80,10 +80,10 @@ type Request struct {
 	Messages    []Message
 	Temperature float64
 	// TemperatureSet is true when the caller explicitly configured temperature, so providers that honor it can send an explicit 0.
-	// Currently only OpenAI, Atlas Cloud, LiteLLM, and Runcrate honor it.
+	// Currently only OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate honor it.
 	TemperatureSet bool
 	MaxTokens      int
-	// ReasoningEffort is passed through unchanged; only OpenAI, Atlas Cloud, LiteLLM, and Runcrate send it. Empty means omit.
+	// ReasoningEffort is passed through unchanged; only OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate send it. Empty means omit.
 	ReasoningEffort string
 	CacheConfig     bool
 	Tools           []Tool         // Tool definitions to send to the LLM. If nil or empty, no tools are sent.

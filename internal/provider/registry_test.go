@@ -193,7 +193,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode", "runcrate"} {
+	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode", "runcrate", "edenai"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
@@ -289,7 +289,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter", "runcrate"} {
+	for _, name := range []string{"anthropic", "atlascloud", "litellm", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter", "runcrate", "edenai"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}
@@ -365,5 +365,48 @@ func TestNew_MiniMaxMissingAPIKey(t *testing.T) {
 func TestSupported_MiniMax(t *testing.T) {
 	if !Supported("minimax") {
 		t.Error("expected 'minimax' to be supported")
+	}
+}
+
+func TestNew_EdenAI(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultEdenAIBaseURL},
+		{name: "custom base URL", input: "http://localhost:8080", want: "http://localhost:8080"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("edenai", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			edenAI, ok := p.(*EdenAI)
+			if !ok {
+				t.Fatalf("provider type = %T, want *EdenAI", p)
+			}
+			if edenAI.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", edenAI.baseURL, tt.want)
+			}
+		})
+	}
+}
+
+func TestNew_EdenAIMissingAPIKey(t *testing.T) {
+	_, err := New("edenai", "", "")
+	if err == nil {
+		t.Fatal("expected error for missing API key")
+	}
+	if !strings.Contains(err.Error(), "API key is required") {
+		t.Errorf("expected 'API key is required', got %q", err.Error())
+	}
+}
+
+func TestSupported_EdenAI(t *testing.T) {
+	if !Supported("edenai") {
+		t.Error("expected 'edenai' to be supported")
 	}
 }

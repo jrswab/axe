@@ -66,6 +66,7 @@ var knownAPIKeyEnvVars = map[string]string{
 	"google":     "GEMINI_API_KEY",
 	"minimax":    "MINIMAX_API_KEY",
 	"openrouter": "OPENROUTER_API_KEY",
+	"edenai":     "EDENAI_API_KEY",
 	"runcrate":   "RUNCRATE_API_KEY",
 }
 
