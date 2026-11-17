@@ -4,19 +4,20 @@ import "fmt"
 
 // supportedProviders lists all provider names accepted by New.
 var supportedProviders = map[string]bool{
-	"anthropic":       true,
-	"atlascloud":      true,
-	"litellm":         true,
-	"openai":          true,
-	"ollama":          true,
-	"opencode":        true,
-	"google":          true,
-	"minimax":         true,
-	"bedrock":         true,
-	"openrouter":      true,
-	"edenai":          true,
-	"runcrate":        true,
-	"standardcompute": true,
+	"anthropic":        true,
+	"atlascloud":       true,
+	"cheaperinference": true,
+	"litellm":          true,
+	"openai":           true,
+	"ollama":           true,
+	"opencode":         true,
+	"google":           true,
+	"minimax":          true,
+	"bedrock":          true,
+	"openrouter":       true,
+	"edenai":           true,
+	"runcrate":         true,
+	"standardcompute":  true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -37,6 +38,9 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 
 	case "atlascloud":
 		return NewAtlasCloud(apiKey, baseURL)
+
+	case "cheaperinference":
+		return NewCheaperInference(apiKey, baseURL)
 
 	case "litellm":
 		return NewLiteLLM(apiKey, baseURL)
@@ -98,7 +102,7 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		return NewStandardCompute(apiKey, baseURL)
 
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, cheaperinference, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute", providerName)
 	}
 }
 

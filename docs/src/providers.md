@@ -4,6 +4,7 @@
 |---|---|---|---|
 | Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `atlascloud` | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| Cheaper Inference | `cheaperinference` | `CHEAPER_INFERENCE_API_KEY` | `https://api.cheaperinference.com/v1` |
 | LiteLLM (proxy) | `litellm` | `LITELLM_API_KEY` | `http://localhost:4000/v1` |
 | OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
@@ -33,6 +34,9 @@ You can store credentials and base URL overrides in `$XDG_CONFIG_HOME/axe/config
 api_key = "sk-ant-..."
 
 [providers.atlascloud]
+api_key = "..."
+
+[providers.cheaperinference]
 api_key = "..."
 
 [providers.edenai]
@@ -65,6 +69,8 @@ region = "us-east-1"
 Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
+
+Cheaper Inference uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `cheaperinference/gpt-5.4-mini`.
 
 Eden AI is a gateway, so its model ids carry the upstream vendor as a prefix. For example, set an agent model to `edenai/openai/gpt-4o-mini`, `edenai/anthropic/claude-haiku-4-5` or `edenai/mistral/mistral-small-latest`. Override the endpoint with `AXE_EDENAI_BASE_URL` or `[providers.edenai] base_url`. Custom URLs must be absolute, without credentials, a query, or a fragment. HTTPS is required except for `localhost` and loopback/private IP literals; for an HTTP private proxy, use its private IP rather than a DNS name. These explicit HTTP exceptions send the API key in plaintext, so use only trusted local networks. A trailing slash is optional.
 
