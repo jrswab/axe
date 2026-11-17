@@ -189,10 +189,10 @@ func TestMessage_ToolResultsField(t *testing.T) {
 
 func TestResponse_CacheTokens(t *testing.T) {
 	cases := []struct {
-		name             string
-		resp             *Response
-		wantReadTokens   int
-		wantWriteTokens  int
+		name            string
+		resp            *Response
+		wantReadTokens  int
+		wantWriteTokens int
 	}{
 		{
 			name:            "both cache tokens populated",

@@ -2,12 +2,12 @@ package provider
 
 type anthropicStreamEvent struct {
 	Type         string                       `json:"type"`
-	Message      *anthropicStreamMessage       `json:"message,omitempty"`
+	Message      *anthropicStreamMessage      `json:"message,omitempty"`
 	Index        int                          `json:"index,omitempty"`
-	ContentBlock *anthropicStreamContentBlock  `json:"content_block,omitempty"`
-	Delta        *anthropicStreamDelta         `json:"delta,omitempty"`
-	Usage        *anthropicStreamUsage         `json:"usage,omitempty"`
-	Error        *anthropicStreamError         `json:"error,omitempty"`
+	ContentBlock *anthropicStreamContentBlock `json:"content_block,omitempty"`
+	Delta        *anthropicStreamDelta        `json:"delta,omitempty"`
+	Usage        *anthropicStreamUsage        `json:"usage,omitempty"`
+	Error        *anthropicStreamError        `json:"error,omitempty"`
 }
 
 type anthropicStreamMessage struct {

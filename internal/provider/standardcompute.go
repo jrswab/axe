@@ -7,7 +7,8 @@ type StandardCompute struct {
 	*OpenAI
 }
 
-// NewStandardCompute creates a Standard Compute provider using its default API endpoint.
+// NewStandardCompute creates a Standard Compute provider, using its default endpoint when baseURL is empty.
+// @anchor:provider:entry Configure the Standard Compute endpoint and require its API key.
 func NewStandardCompute(apiKey string, baseURL string) (*StandardCompute, error) {
 	if apiKey == "" {
 		return nil, &ProviderError{
