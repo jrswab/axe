@@ -213,6 +213,57 @@ func TestAnthropic_Send_OmitsZeroTemperature(t *testing.T) {
 	}
 }
 
+func TestAnthropic_Send_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name        string
+		newProvider func(string, ...AnthropicOption) (*Anthropic, error)
+		model       string
+	}{
+		{"anthropic", NewAnthropic, "claude-sonnet-4-20250514"},
+		{"minimax", NewMiniMax, "MiniMax-M2.5"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]interface{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Errorf("failed to parse request body: %v", err)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(makeAnthropicSuccessResponse("ok", tc.model)))
+			}))
+			defer server.Close()
+
+			a, err := tc.newProvider("test-key", WithBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			resp, err := a.Send(context.Background(), &Request{
+				Model:           tc.model,
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+			})
+			if err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+			if resp.Content != "ok" {
+				t.Errorf("Content = %q, want ok", resp.Content)
+			}
+			if gotBody["model"] != tc.model {
+				t.Errorf("model = %v, want %q", gotBody["model"], tc.model)
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if _, exists := gotBody[key]; exists {
+					t.Errorf("body contains %q: %v", key, gotBody[key])
+				}
+			}
+		})
+	}
+}
+
 func TestAnthropic_Send_DefaultMaxTokens(t *testing.T) {
 	var gotBody map[string]interface{}
 
@@ -1046,5 +1097,237 @@ func TestAnthropic_Send_CacheUsageOmitted(t *testing.T) {
 	}
 	if resp.CacheWriteTokens != 0 {
 		t.Errorf("CacheWriteTokens = %d, want 0", resp.CacheWriteTokens)
+	}
+}
+
+func TestLargeIntegerArgs_Anthropic_Buffered(t *testing.T) {
+	// Build the response by hand: numeric input tokens must not be quoted or
+	// rounded by a fixture encoder before the real provider decodes them.
+	bodyFor := func(input string) string {
+		return `{"content":[{"type":"tool_use","id":"toolu_1","name":"example","input":` + input + `}],"model":"claude-sonnet-4-20250514","stop_reason":"tool_use","usage":{"input_tokens":10,"output_tokens":5}}`
+	}
+	type testCase struct {
+		name    string
+		body    string
+		want    map[string]string
+		wantErr bool
+	}
+	var tests []testCase
+	for _, tt := range []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "million", raw: `1000000`, want: "1000000"},
+		{name: "precise", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "exponent", raw: `1e6`, want: "1000000"},
+		{name: "decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative", raw: `-1e6`, want: "-1000000"},
+		{name: "precise_decimal", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "precise_exponent", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "beyond", raw: `99999999999999999999999`, want: "99999999999999999999999"},
+		{name: "beyond_decimal", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "beyond_exponent", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "small", raw: `999999`, want: "999999"},
+		{name: "negative_small", raw: `-999999`, want: "-999999"},
+		{name: "small_decimal", raw: `999999.0`, want: "999999"},
+		{name: "zero", raw: `0`, want: "0"},
+		{name: "negative_zero", raw: `-0`, want: "-0"},
+		{name: "negative_decimal_zero", raw: `-0.0`, want: "-0"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "rounded_fraction", raw: `1000000.00000000001`, want: "1e+06"},
+		{name: "rounded_threshold", raw: `999999.99999999999`, want: "1e+06"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "string_exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "string_decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "string_precise", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "boolean", raw: `true`, want: "true"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "object_exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "object_integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "array", raw: `[1.50]`, want: "[1.5]"},
+		{name: "recursive", raw: `{"a":[1000000,1.50]}`, want: "map[a:[1e+06 1.5]]"},
+	} {
+		tests = append(tests, testCase{
+			name: tt.name, body: bodyFor(`{"n":` + tt.raw + `}`),
+			want: map[string]string{"n": tt.want},
+		})
+	}
+
+	// These inputs all cross the same buffered response decode boundary.
+	// Even overflow overwritten by a later duplicate remains a server error;
+	// unknown response fields, unlike input values, must be skipped.
+	overflow := "1"
+	for range 399 {
+		overflow += "0"
+	}
+	base := bodyFor(`{"n":"text"}`)
+	tests = append(tests, []testCase{
+		{name: "malformed_response", body: `{"content":`, wantErr: true},
+		{name: "malformed_input", body: bodyFor(`{"n":`), wantErr: true},
+		{name: "trailing_value", body: base + `{}`, wantErr: true},
+		{name: "trailing_junk", body: base + `junk`, wantErr: true},
+		{name: "input_overflow", body: bodyFor(`{"n":1e400}`), wantErr: true},
+		{name: "input_400_digits", body: bodyFor(`{"n":` + overflow + `}`), wantErr: true},
+		{name: "nested_overflow", body: bodyFor(`{"n":[{"bad":1e400}]}`), wantErr: true},
+		{name: "nested_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `}}`), wantErr: true},
+		{name: "overwritten_scalar_overflow", body: bodyFor(`{"n":1e400,"n":1000000}`), wantErr: true},
+		{name: "overwritten_subtree_overflow", body: bodyFor(`{"n":{"bad":1e400},"n":1000000}`), wantErr: true},
+		{name: "successful_scalar_duplicate", body: bodyFor(`{"n":999999,"n":1000000}`), want: map[string]string{"n": "1000000"}},
+		{name: "successful_subtree_duplicate", body: bodyFor(`{"n":{"ok":1},"n":1000000}`), want: map[string]string{"n": "1000000"}},
+		{name: "successful_map_replacement", body: bodyFor(`{"n":{"old":1},"n":{"new":2}}`), want: map[string]string{"n": "map[new:2]"}},
+		{name: "empty_input", body: bodyFor(`{}`), want: map[string]string{}},
+		{name: "null_input", body: bodyFor(`null`), want: map[string]string{}},
+		{name: "array_input_mismatch", body: bodyFor(`[]`), wantErr: true},
+		{name: "scalar_input_mismatch", body: bodyFor(`0`), wantErr: true},
+		{name: "negative_zero_input_mismatch", body: bodyFor(`-0`), wantErr: true},
+		{name: "decimal_zero_input_mismatch", body: bodyFor(`-0.0`), wantErr: true},
+		{name: "boolean_input_mismatch", body: bodyFor(`true`), wantErr: true},
+		{name: "string_input_mismatch", body: bodyFor(`"text"`), wantErr: true},
+		{name: "known_integer_overflow", body: `{"usage":{"input_tokens":1e400},` + base[1:], wantErr: true},
+		{name: "known_400_digit_overflow", body: `{"usage":{"output_tokens":` + overflow + `},` + base[1:], wantErr: true},
+		{name: "known_type_mismatch", body: `{"usage":{"input_tokens":true},` + base[1:], wantErr: true},
+		{name: "overwritten_known_scalar", body: `{"usage":{"input_tokens":1e400,"input_tokens":1},` + base[1:], wantErr: true},
+		{name: "overwritten_known_subtree", body: `{"usage":{"input_tokens":1e400},` + base[1:], wantErr: true},
+		{name: "unknown_scalar_overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_subtree_overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_400_digits", body: `{"unknown":` + overflow + `,` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_content_field_overflow", body: `{"content":[{"type":"tool_use","id":"toolu_1","name":"example","input":{"n":"text"},"unknown":{"bad":1e400}}]}`, want: map[string]string{"n": "text"}},
+	}...)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, tt.body)
+			}))
+			defer server.Close()
+			a, err := NewAnthropic("test-key", WithBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			resp, err := a.Send(context.Background(), &Request{
+				Model:    "claude-sonnet-4-20250514",
+				Messages: []Message{{Role: "user", Content: "Read values"}},
+			})
+
+			if tt.wantErr {
+				var providerErr *ProviderError
+				if !errors.As(err, &providerErr) || providerErr.Category != ErrCategoryServer {
+					t.Fatalf("Send error = %v, want server ProviderError", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Send error = %v, want success", err)
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("ToolCalls = %#v, want one call", resp.ToolCalls)
+			}
+			got := resp.ToolCalls[0].Arguments
+			if len(got) != len(tt.want) {
+				t.Errorf("Arguments = %#v, want %#v", got, tt.want)
+			}
+			for key, want := range tt.want {
+				if value, ok := got[key]; !ok || value != want {
+					t.Errorf("Arguments[%s] = %q (present=%t), want %q", key, value, ok, want)
+				}
+			}
+		})
+	}
+}
+
+func TestLargeIntegerArgs_Anthropic_Replay(t *testing.T) {
+	requests := make(chan []byte, 3)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- body
+		var req struct {
+			Stream bool `json:"stream"`
+		}
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Errorf("decode request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if req.Stream {
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = io.WriteString(w, "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n")
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"content":[{"type":"tool_use","id":"toolu_1","name":"example","input":{"precise":9007199254740993,"beyond":99999999999999999999999,"exponent":1e6}}],"model":"claude-sonnet-4-20250514","stop_reason":"tool_use"}`)
+	}))
+	defer server.Close()
+
+	a, err := NewAnthropic("test-key", WithBaseURL(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := &Request{Model: "claude-sonnet-4-20250514", Messages: []Message{{Role: "user", Content: "Read values"}}}
+	resp, err := a.Send(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.ToolCalls) != 1 {
+		t.Fatalf("decoded tool calls = %+v, want one", resp.ToolCalls)
+	}
+	req.Messages = append(req.Messages, Message{Role: "assistant", ToolCalls: resp.ToolCalls})
+	if _, err := a.Send(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	stream, err := a.SendStream(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := stream.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if len(requests) != 3 {
+		t.Fatalf("requests = %d, want 3", len(requests))
+	}
+	<-requests // initial raw response request
+	for _, mode := range []string{"buffered", "stream"} {
+		// The seed's content is a string, so inspect messages as raw JSON first.
+		var envelope struct {
+			Stream   bool              `json:"stream"`
+			Messages []json.RawMessage `json:"messages"`
+		}
+		if err := json.Unmarshal(<-requests, &envelope); err != nil {
+			t.Fatal(err)
+		}
+		if envelope.Stream != (mode == "stream") || len(envelope.Messages) != 2 {
+			t.Fatalf("%s replay envelope = %+v", mode, envelope)
+		}
+		var assistant struct {
+			Role    string `json:"role"`
+			Content []struct {
+				Type  string            `json:"type"`
+				ID    string            `json:"id"`
+				Name  string            `json:"name"`
+				Input map[string]string `json:"input"`
+			} `json:"content"`
+		}
+		if err := json.Unmarshal(envelope.Messages[1], &assistant); err != nil {
+			t.Fatalf("%s replay input must be strings: %v", mode, err)
+		}
+		if assistant.Role != "assistant" || len(assistant.Content) != 1 || assistant.Content[0].Type != "tool_use" || assistant.Content[0].ID != "toolu_1" || assistant.Content[0].Name != "example" {
+			t.Fatalf("%s replay assistant = %+v", mode, assistant)
+		}
+		input := assistant.Content[0].Input
+		for key, want := range map[string]string{"precise": "9007199254740993", "beyond": "99999999999999999999999", "exponent": "1000000"} {
+			if input[key] != want {
+				t.Errorf("%s replay %s = %q, want %q", mode, key, input[key], want)
+			}
+		}
+		if len(input) != 3 {
+			t.Errorf("%s replay input = %v, want exactly three values", mode, input)
+		}
 	}
 }

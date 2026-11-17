@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project will be documented in this file. The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,8 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- LiteLLM proxy provider (`litellm/<model>`), with the final response's cost reported from the proxy when available (#95).
+- Runcrate provider using the OpenAI-compatible Chat Completions API
+- Eden AI provider (`edenai/<vendor>/<model>`) using the OpenAI-compatible Chat Completions API, with `EDENAI_API_KEY`, streaming, and HTTPS custom endpoints (HTTP is restricted to localhost and loopback/private IP literals).
+
+### Fixed
+- Preserve all tool-call arguments, text, finish reasons, and usage when OpenAI-compatible streaming chunks combine them (#95).
+- Ignore malformed optional gateway cost metadata without breaking OpenAI-compatible streams or JSON results (#95).
+
+## [1.12.0] - 2026-11-16
+
+### Added
+- Scheduled `provider-key-check` workflow. It makes one minimal call per smoke-test provider key (Anthropic, OpenAI, OpenRouter, Tavily) and opens or updates one issue when a key fails with an auth, billing, or missing-secret error.
+- `make check` and CI now run a pinned apidiff check of `pkg/runner` against `v1.11.0`; incompatible changes fail the check.
+- `Options.ToolHook` in `pkg/runner` lets a host allow, deny, or stub each tool call before dispatch. A denied call is not run and returns an error result. A hook with a non-empty `sub_agents` list is a `ConfigError`.
+- `Options.ToolObserver` in `pkg/runner` receives one metadata-only `ToolEvent` per tool call after each turn's calls finish: the call, the effective action, the call ID, whether it failed, the result length, the dispatch duration, and the turn. It never includes result text. A nil observer changes nothing.
+- `Options.MCPServers` in `pkg/runner` adds MCP servers from code, merged after the agent's TOML servers. A duplicate name is a `ConfigError`. Header values are never printed, and a header variable that is unset is a `ConfigError`. A nil or empty list changes nothing.
+- `Options.Tools` in `pkg/runner` replaces the agent's TOML built-in tool list for one run when non-nil. Names are checked like TOML tools, and an unknown or empty name is a `ConfigError`. A nil list keeps the TOML list, and an empty list gives no built-in tools. The list does not limit MCP tools or `call_agent`. A built-in removed by the list no longer shadows a same-named MCP tool, which is now registered.
+- `Options.MaxTurns` in `pkg/runner` overrides the agent's TOML `max_turns` for one run when greater than 0. Zero keeps the TOML value, and a TOML value of 0 or unset means 50. A negative value is a `ConfigError`. Sub-agents do not inherit the value.
+- `Options.APIKey` and `Options.BaseURL` in `pkg/runner` override the provider key and base URL for one run; precedence is Options, then env var, then `config.toml`; an empty value means unset; neither value is printed; both are ignored for `bedrock`.
+
+### Changed
+- `pkg/runner` imports and source builds require Go 1.26.11 (previously 1.25.0). With automatic toolchain switching disabled, an older installed Go version fails to build.
+- Gate tagged releases on changelog and ancestry admission, reusable CI checks, and a nonpublishing package smoke check before publication.
+
+### Fixed
+- Preserve eligible large top-level integer tool arguments without float64 rounding or scientific notation.
+
+## [1.11.0] - 2026-10-21
+
+### Added
 - Atlas Cloud provider using the OpenAI-compatible Chat Completions API
-- Eden AI provider using the OpenAI-compatible Chat Completions API
+- OpenRouter provider support with streaming, configurable app attribution, and `cost` / `cache_status` in `--json` output (#85)
+- `reasoning_effort` in agent TOML `[params]`, passed through unchanged without validation. OpenAI and Atlas Cloud send it as a top-level field when non-empty. Other providers ignore it.
+- Pre-built message history in `pkg/runner` via `Options.Messages`, with updated history returned in `Result.Messages` (#86)
+- Prompt caching for Anthropic and Bedrock (`cache_enabled` in `[params]`, default: true), plus OpenAI cache reporting. Non-zero `cache_read_tokens` and `cache_write_tokens` appear in `--json` output (#87)
+- Configurable `max_turns` in agent TOML (default: 50 when unset or zero) (#88)
+
+### Changed
+- OpenAI and Atlas Cloud send `"temperature": 0` when agent TOML explicitly sets `temperature = 0`. Unset temperature remains omitted, and other providers are unchanged. This changes behavior for agents that set `temperature = 0.0`.
 
 ## [1.10.0] - 2026-05-05
 
@@ -135,7 +172,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - staticcheck/errcheck lint issues
 - Duplicate error silencing, glob validation, and nil ExitError guard
 
-[unreleased]: https://github.com/jrswab/axe/compare/v1.10.0...HEAD
+[unreleased]: https://github.com/jrswab/axe/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/jrswab/axe/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/jrswab/axe/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/jrswab/axe/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/jrswab/axe/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/jrswab/axe/compare/v1.7.1...v1.8.0

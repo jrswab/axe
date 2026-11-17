@@ -1,5 +1,5 @@
 name = "cfg-memory"
-model = "opencode/minimax-m2.5"
+model = "openrouter/minimax/minimax-m2.5"
 description = "Smoke test: memory config section"
 
 [memory]

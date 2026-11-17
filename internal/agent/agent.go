@@ -74,10 +74,13 @@ func (r ResponseFormatConfig) IsSet() bool {
 
 // ParamsConfig holds model parameter overrides for an agent.
 type ParamsConfig struct {
-	Temperature    float64              `toml:"temperature"`
-	MaxTokens      int                  `toml:"max_tokens"`
-	CacheEnabled   *bool                `toml:"cache_enabled"`
-	ResponseFormat ResponseFormatConfig `toml:"response_format"`
+	Temperature float64 `toml:"temperature"`
+	// TemperatureSet reports whether the agent TOML explicitly configured temperature, including zero.
+	TemperatureSet  bool                 `toml:"-"`
+	MaxTokens       int                  `toml:"max_tokens"`
+	ReasoningEffort string               `toml:"reasoning_effort"`
+	CacheEnabled    *bool                `toml:"cache_enabled"`
+	ResponseFormat  ResponseFormatConfig `toml:"response_format"`
 }
 
 // RetryConfig holds retry sub-configuration for an agent.
@@ -177,31 +180,8 @@ func Validate(cfg *AgentConfig) error {
 		}
 	}
 
-	seenMCPNames := make(map[string]struct{}, len(cfg.MCPServers))
-	for i, server := range cfg.MCPServers {
-		if strings.TrimSpace(server.Name) == "" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].name is required", i)}
-		}
-		if strings.TrimSpace(server.URL) == "" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url is required", i)}
-		}
-		parsedURL, err := url.ParseRequestURI(strings.TrimSpace(server.URL))
-		if err != nil {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url is invalid: %v", i, err)}
-		}
-		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url must use http or https scheme, got %q", i, parsedURL.Scheme)}
-		}
-		if parsedURL.Host == "" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].url must include a host", i)}
-		}
-		if server.Transport != "sse" && server.Transport != "streamable-http" {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers[%d].transport must be one of: sse, streamable-http", i)}
-		}
-		if _, exists := seenMCPNames[server.Name]; exists {
-			return &ValidationError{msg: fmt.Sprintf("mcp_servers names must be unique: %q", server.Name)}
-		}
-		seenMCPNames[server.Name] = struct{}{}
+	if err := ValidateMCPServers(cfg.MCPServers, "mcp_servers"); err != nil {
+		return err
 	}
 
 	if cfg.Retry.MaxRetries < 0 {
@@ -248,6 +228,37 @@ func Validate(cfg *AgentConfig) error {
 	return nil
 }
 
+// ValidateMCPServers checks MCP server configuration, using prefix to label errors.
+func ValidateMCPServers(servers []MCPServerConfig, prefix string) error {
+	seenMCPNames := make(map[string]struct{}, len(servers))
+	for i, server := range servers {
+		if strings.TrimSpace(server.Name) == "" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].name is required", prefix, i)}
+		}
+		if strings.TrimSpace(server.URL) == "" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url is required", prefix, i)}
+		}
+		parsedURL, err := url.ParseRequestURI(strings.TrimSpace(server.URL))
+		if err != nil {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url is invalid: %v", prefix, i, err)}
+		}
+		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url must use http or https scheme, got %q", prefix, i, parsedURL.Scheme)}
+		}
+		if parsedURL.Host == "" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].url must include a host", prefix, i)}
+		}
+		if server.Transport != "sse" && server.Transport != "streamable-http" {
+			return &ValidationError{msg: fmt.Sprintf("%s[%d].transport must be one of: sse, streamable-http", prefix, i)}
+		}
+		if _, exists := seenMCPNames[server.Name]; exists {
+			return &ValidationError{msg: fmt.Sprintf("%s names must be unique: %q", prefix, server.Name)}
+		}
+		seenMCPNames[server.Name] = struct{}{}
+	}
+	return nil
+}
+
 // loadFromPath reads and parses an agent TOML configuration file from a specific path.
 // It returns the raw read/parse/validate errors (without any wrapping) so the caller
 // can handle them appropriately.
@@ -258,9 +269,11 @@ func loadFromPath(path string) (*AgentConfig, error) {
 	}
 
 	var cfg AgentConfig
-	if _, err := toml.Decode(string(data), &cfg); err != nil {
+	md, err := toml.Decode(string(data), &cfg)
+	if err != nil {
 		return nil, err
 	}
+	cfg.Params.TemperatureSet = md.IsDefined("params", "temperature")
 
 	if err := Validate(&cfg); err != nil {
 		return nil, err
@@ -438,6 +451,7 @@ model = "provider/model-name"
 # [params]
 # temperature = 0.3
 # max_tokens = 4096
+# reasoning_effort = "low" # Optional, passed through unchanged. Empty means omit.
 # response_format = "json_object"
 # For json_schema with validation, use the table form instead:
 # [params.response_format]

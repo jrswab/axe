@@ -275,6 +275,83 @@ func TestGemini_Send_OmitsZeroTemperature(t *testing.T) {
 	}
 }
 
+func TestGemini_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name   string
+		stream bool
+	}{
+		{"Send", false},
+		{"SendStream", true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody []byte
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var err error
+				gotBody, err = io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("failed to read request body: %v", err)
+				}
+				response := `{"candidates":[{"content":{"role":"model","parts":[{"text":"ok"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":2}}`
+				if tc.stream {
+					w.Header().Set("Content-Type", "text/event-stream")
+					_, _ = fmt.Fprint(w, geminiSSEChunk(response))
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(response))
+			}))
+			defer server.Close()
+
+			g, err := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			req := &Request{
+				Model:           "gemini-2.0-flash",
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+				MaxTokens:       100,
+			}
+			if tc.stream {
+				stream, err := g.SendStream(context.Background(), req)
+				if err != nil {
+					t.Fatalf("unexpected SendStream error: %v", err)
+				}
+				defer func() { _ = stream.Close() }()
+				for {
+					_, err := stream.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						t.Fatalf("unexpected stream error: %v", err)
+					}
+				}
+			} else if _, err := g.Send(context.Background(), req); err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+
+			var body map[string]interface{}
+			if err := json.Unmarshal(gotBody, &body); err != nil {
+				t.Fatalf("failed to parse request body: %v", err)
+			}
+			genCfg, ok := body["generationConfig"].(map[string]interface{})
+			if !ok || genCfg["maxOutputTokens"] != float64(100) {
+				t.Errorf("generationConfig = %v, want maxOutputTokens 100", body["generationConfig"])
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if strings.Contains(string(gotBody), `"`+key+`"`) {
+					t.Errorf("body contains %q: %s", key, gotBody)
+				}
+			}
+		})
+	}
+}
+
 func TestGemini_Send_IncludesMaxTokens(t *testing.T) {
 	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
 		testutil.GeminiResponse("ok"),
@@ -1004,6 +1081,144 @@ func TestGemini_SendStream_ToolCalls(t *testing.T) {
 	}
 }
 
+func TestLargeIntegerArgs_Gemini_NativeToolInput(t *testing.T) {
+	// Arrange a native JSON args object at the HTTP boundary, not string-valued tool inputs.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = fmt.Fprint(w, geminiSSEChunk(`{"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"name":"example","args":{"million":1000000,"precise":9007199254740993,"enabled":true,"disabled":false,"nothing":null,"object":{"a":1000000},"array":[1,true,null,{"a":2}]}}}]},"finishReason":"STOP"}]}`))
+	}))
+	defer server.Close()
+	g, err := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("NewGemini: %v", err)
+	}
+
+	// Act through the real provider and consume its public event stream to EOF.
+	stream, err := g.SendStream(context.Background(), &Request{
+		Model:    "gemini-2.0-flash",
+		Messages: []Message{{Role: "user", Content: "Read values"}},
+	})
+	if err != nil {
+		t.Fatalf("SendStream: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+	var inputs []string
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("stream.Next: %v", err)
+		}
+		if ev.Type == StreamEventToolStart {
+			if ev.ToolName != "example" {
+				t.Errorf("ToolName = %q, want example", ev.ToolName)
+			}
+			inputs = append(inputs, ev.ToolInput)
+		}
+	}
+
+	// Assert raw tokens so neither float64 decoding nor string coercion can hide type/digit loss.
+	if len(inputs) != 1 {
+		t.Fatalf("got %d tool inputs, want 1", len(inputs))
+	}
+	var args map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(inputs[0]), &args); err != nil {
+		t.Fatalf("ToolInput = %q, want JSON object: %v", inputs[0], err)
+	}
+	wants := []struct {
+		key, token string
+	}{
+		{key: "million", token: `1000000`},
+		{key: "precise", token: `9007199254740993`},
+		{key: "enabled", token: `true`},
+		{key: "disabled", token: `false`},
+		{key: "nothing", token: `null`},
+		{key: "object", token: `{"a":1000000}`},
+		{key: "array", token: `[1,true,null,{"a":2}]`},
+	}
+	if len(args) != len(wants) {
+		t.Errorf("ToolInput has %d arguments, want %d: %s", len(args), len(wants), inputs[0])
+	}
+	for _, want := range wants {
+		if got := string(args[want.key]); got != want.token {
+			t.Errorf("ToolInput[%s] = %s, want native JSON token %s (not a quoted/flattened string)", want.key, got, want.token)
+		}
+	}
+}
+
+func TestLargeIntegerArgs_Gemini_StreamErrors(t *testing.T) {
+	bodyFor := func(args string) string {
+		return `{"candidates":[{"content":{"parts":[{"functionCall":{"name":"example","args":` + args + `}}]}}],"usageMetadata":{"promptTokenCount":10}}`
+	}
+	base := bodyFor(`{"n":"text"}`)
+	overflow := "1" + strings.Repeat("0", 399)
+	tests := []struct {
+		name, body, input string
+		wantErr           bool
+	}{
+		{name: "malformed_response", body: `{"candidates":`, wantErr: true},
+		{name: "malformed_args", body: bodyFor(`{"n":`), wantErr: true},
+		{name: "trailing_value", body: base + `{}`, wantErr: true},
+		{name: "trailing_junk", body: base + `junk`, wantErr: true},
+		{name: "overflow", body: bodyFor(`{"n":1e400}`), wantErr: true},
+		{name: "400_digits", body: bodyFor(`{"n":` + overflow + `}`), wantErr: true},
+		{name: "nested_overflow", body: bodyFor(`{"n":[{"bad":1e400}]}`), wantErr: true},
+		{name: "nested_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `}}`), wantErr: true},
+		{name: "overwritten_scalar_overflow", body: bodyFor(`{"n":1e400,"n":1000000}`), wantErr: true},
+		{name: "overwritten_subtree_overflow", body: bodyFor(`{"n":{"bad":1e400},"n":1000000}`), wantErr: true},
+		{name: "overwritten_scalar_400_digits", body: bodyFor(`{"n":` + overflow + `,"n":1000000}`), wantErr: true},
+		{name: "overwritten_subtree_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `},"n":1000000}`), wantErr: true},
+		{name: "scalar_duplicate", body: bodyFor(`{"n":999999,"n":1000000}`), input: `{"n":1000000}`},
+		{name: "subtree_duplicate", body: bodyFor(`{"n":{"ok":1},"n":1000000}`), input: `{"n":1000000}`},
+		{name: "empty_args", body: bodyFor(`{}`), input: `{}`},
+		{name: "null_args", body: bodyFor(`null`), input: `null`},
+		{name: "array_args", body: bodyFor(`[]`), wantErr: true},
+		{name: "number_args", body: bodyFor(`0`), wantErr: true},
+		{name: "negative_zero_args", body: bodyFor(`-0`), wantErr: true},
+		{name: "decimal_zero_args", body: bodyFor(`-0.0`), wantErr: true},
+		{name: "string_args", body: bodyFor(`"text"`), wantErr: true},
+		{name: "bool_args", body: bodyFor(`true`), wantErr: true},
+		{name: "usage_overflow", body: `{"usageMetadata":{"promptTokenCount":1e400},` + base[1:], wantErr: true},
+		{name: "usage_400_digits", body: `{"usageMetadata":{"promptTokenCount":` + overflow + `},` + base[1:], wantErr: true},
+		{name: "usage_duplicate_overflow", body: `{"usageMetadata":{"promptTokenCount":1e400,"promptTokenCount":7},` + base[1:], wantErr: true},
+		{name: "unknown_scalar_overflow", body: `{"unknown":1e400,` + base[1:], input: `{"n":"text"}`},
+		{name: "unknown_nested_overflow", body: `{"unknown":{"bad":1e400},` + base[1:], input: `{"n":"text"}`},
+		{name: "unknown_400_digits", body: `{"unknown":` + overflow + `,` + base[1:], input: `{"n":"text"}`},
+		{name: "unknown_part_overflow", body: `{"candidates":[{"content":{"parts":[{"unknown":{"bad":1e400},"functionCall":{"name":"example","args":{"n":"text"}}}]}}]}`, input: `{"n":"text"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				_, _ = io.WriteString(w, geminiSSEChunk(tt.body))
+			}))
+			defer server.Close()
+			g, err := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			stream, err := g.SendStream(context.Background(), &Request{Model: "gemini-2.0-flash", Messages: []Message{{Role: "user", Content: "Read values"}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = stream.Close() }()
+			event, err := stream.Next()
+			if tt.wantErr {
+				var pe *ProviderError
+				if !errors.As(err, &pe) || pe.Category != ErrCategoryServer || !strings.HasPrefix(pe.Message, "failed to parse streaming chunk: ") {
+					t.Fatalf("Next = %+v, %v; want parse server ProviderError", event, err)
+				}
+				return
+			}
+			if err != nil || event.Type != StreamEventToolStart || event.ToolName != "example" || event.ToolInput != tt.input {
+				t.Fatalf("Next = %+v, %v; want tool start input %s", event, err, tt.input)
+			}
+		})
+	}
+}
+
 func TestGemini_SendStream_MixedTextAndToolCalls(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -1264,6 +1479,197 @@ func TestGemini_SendStream_ContextCancelled(t *testing.T) {
 			t.Errorf("expected ErrCategoryTimeout, got %s", provErr.Category)
 		}
 		break
+	}
+}
+
+func TestLargeIntegerArgs_Gemini_Buffered(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "million", raw: `1000000`, want: "1000000"},
+		{name: "negative_million", raw: `-1000000`, want: "-1000000"},
+		{name: "non_round_integer", raw: `1234567`, want: "1234567"},
+		{name: "negative_non_round_integer", raw: `-1234567`, want: "-1234567"},
+		{name: "precise", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "negative_precise", raw: `-9007199254740993`, want: "-9007199254740993"},
+		{name: "exponent", raw: `1e6`, want: "1000000"},
+		{name: "negative_exponent", raw: `-1e6`, want: "-1000000"},
+		{name: "decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative_decimal", raw: `-1000000.0`, want: "-1000000"},
+		{name: "precise_decimal", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "negative_precise_decimal", raw: `-9007199254740993.0`, want: "-9007199254740993"},
+		{name: "precise_exponent", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "negative_precise_exponent", raw: `-90071992547409930e-1`, want: "-9007199254740993"},
+		{name: "beyond_int64", raw: `99999999999999999999999`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64", raw: `-99999999999999999999999`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_decimal", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_decimal", raw: `-99999999999999999999999.0`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_exponent", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_exponent", raw: `-999999999999999999999990e-1`, want: "-99999999999999999999999"},
+		// 10^308 has 309 digits, is finite, and is inside the approved cap.
+		{name: "eligible_309_digits", raw: `1e308`, want: "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+		{name: "negative_eligible_309_digits", raw: `-1e308`, want: "-100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+		{name: "small", raw: `999999`, want: "999999"},
+		{name: "negative_small", raw: `-999999`, want: "-999999"},
+		{name: "small_decimal", raw: `999999.0`, want: "999999"},
+		{name: "negative_small_decimal", raw: `-999999.0`, want: "-999999"},
+		{name: "zero", raw: `0`, want: "0"},
+		{name: "decimal_zero", raw: `0.0`, want: "0"},
+		{name: "negative_zero", raw: `-0`, want: "-0"},
+		{name: "negative_decimal_zero", raw: `-0.0`, want: "-0"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "negative_fraction", raw: `-1.5`, want: "-1.5"},
+		{name: "rounded_threshold", raw: `999999.99999999999`, want: "1e+06"},
+		{name: "negative_rounded_threshold", raw: `-999999.99999999999`, want: "-1e+06"},
+		{name: "rounded_fraction", raw: `1000000.00000000001`, want: "1e+06"},
+		{name: "negative_rounded_fraction", raw: `-1000000.00000000001`, want: "-1e+06"},
+		{name: "huge_negative_exponent", raw: `1e-1000000000`, want: "0"},
+		{name: "negative_huge_negative_exponent", raw: `-1e-1000000000`, want: "-0"},
+		{name: "zero_huge_exponent", raw: `0e1000000000`, want: "0"},
+		{name: "negative_zero_huge_exponent", raw: `-0e1000000000`, want: "-0"},
+		// Approved exceptional tokens A/B retain legacy text without a token-length limit.
+		{name: "exception_A_parse_equality_guard", raw: "1" + strings.Repeat("0", 100006) + "e-100000", want: "0"},
+		{name: "exception_B_digit_cap_guard", raw: "0." + strings.Repeat("0", 9999) + "1e100000", want: "1"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "string_integer", raw: `"1000000"`, want: "1000000"},
+		{name: "string_exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "string_decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "string_precise", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "boolean_true", raw: `true`, want: "true"},
+		{name: "boolean_false", raw: `false`, want: "false"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "object_exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "object_integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "array", raw: `[1.50]`, want: "[1.5]"},
+		{name: "recursive_collection", raw: `{"a":[1000000,1.50]}`, want: "map[a:[1e+06 1.5]]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Gemini args is a native object, not a JSON-string arguments field.
+			// Preserve numeric tokens on the wire; expectations are independent literals.
+			body := `{"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"name":"example","args":{"n":` + tt.raw + `}}}]},"finishReason":"STOP"}]}`
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != "/v1beta/models/gemini-2.0-flash:generateContent" {
+					t.Errorf("request = %s %s, want POST /v1beta/models/gemini-2.0-flash:generateContent", r.Method, r.URL.Path)
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, body)
+			}))
+			defer server.Close()
+			g, err := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("NewGemini: %v", err)
+			}
+
+			resp, err := g.Send(context.Background(), &Request{
+				Model:    "gemini-2.0-flash",
+				Messages: []Message{{Role: "user", Content: "Read values"}},
+			})
+
+			if err != nil {
+				t.Fatalf("Send: %v", err)
+			}
+			if resp == nil {
+				t.Fatal("Send returned nil response without error")
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+			}
+			if got, ok := resp.ToolCalls[0].Arguments["n"]; !ok || got != tt.want {
+				t.Errorf("Arguments[n] for raw %s = %q (present=%t), want %q", tt.raw, got, ok, tt.want)
+			}
+		})
+	}
+}
+
+func TestLargeIntegerArgs_Gemini_BufferedErrors(t *testing.T) {
+	bodyFor := func(args string) string {
+		return `{"candidates":[{"content":{"parts":[{"functionCall":{"name":"example","args":` + args + `}}]}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5}}`
+	}
+	base := bodyFor(`{"n":"text"}`)
+	overflow := "1" + strings.Repeat("0", 399)
+	tests := []struct {
+		name, body string
+		want       map[string]string
+		wantTokens int
+		wantErr    bool
+	}{
+		{name: "malformed_response", body: `{"candidates":`, wantErr: true},
+		{name: "malformed_args", body: bodyFor(`{"n":`), wantErr: true},
+		{name: "trailing_value", body: base + `{}`, wantErr: true},
+		{name: "trailing_junk", body: base + `junk`, wantErr: true},
+		{name: "args_overflow", body: bodyFor(`{"n":1e400}`), wantErr: true},
+		{name: "args_400_digits", body: bodyFor(`{"n":` + overflow + `}`), wantErr: true},
+		{name: "nested_overflow", body: bodyFor(`{"n":[{"bad":1e400}]}`), wantErr: true},
+		{name: "nested_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `}}`), wantErr: true},
+		{name: "overwritten_scalar_overflow", body: bodyFor(`{"n":1e400,"n":1000000}`), wantErr: true},
+		{name: "overwritten_subtree_overflow", body: bodyFor(`{"n":{"bad":1e400},"n":1000000}`), wantErr: true},
+		{name: "overwritten_scalar_400_digits", body: bodyFor(`{"n":` + overflow + `,"n":1000000}`), wantErr: true},
+		{name: "overwritten_subtree_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `},"n":1000000}`), wantErr: true},
+		{name: "successful_scalar_duplicate", body: bodyFor(`{"n":999999,"n":1000000}`), want: map[string]string{"n": "1000000"}, wantTokens: 10},
+		{name: "successful_subtree_duplicate", body: bodyFor(`{"n":{"ok":1},"n":1000000}`), want: map[string]string{"n": "1000000"}, wantTokens: 10},
+		{name: "empty_args", body: bodyFor(`{}`), want: map[string]string{}, wantTokens: 10},
+		{name: "null_args", body: bodyFor(`null`), want: map[string]string{}, wantTokens: 10},
+		{name: "array_args", body: bodyFor(`[]`), wantErr: true},
+		{name: "number_args", body: bodyFor(`0`), wantErr: true},
+		{name: "string_args", body: bodyFor(`"text"`), wantErr: true},
+		{name: "bool_args", body: bodyFor(`true`), wantErr: true},
+		{name: "usage_exponent_overflow", body: `{"usageMetadata":{"promptTokenCount":1e400},` + base[1:], wantErr: true},
+		{name: "usage_400_digits", body: `{"usageMetadata":{"candidatesTokenCount":` + overflow + `},` + base[1:], wantErr: true},
+		{name: "usage_total_overflow", body: `{"usageMetadata":{"totalTokenCount":1e400},` + base[1:], wantErr: true},
+		{name: "usage_duplicate_overflow", body: `{"usageMetadata":{"promptTokenCount":1e400,"promptTokenCount":7},` + base[1:], wantErr: true},
+		{name: "usage_replaced_overflow", body: `{"usageMetadata":{"promptTokenCount":1e400},` + base[1:], wantErr: true},
+		{name: "usage_duplicate_success", body: `{"usageMetadata":{"promptTokenCount":2,"promptTokenCount":7},"candidates":[{"content":{"parts":[{"functionCall":{"name":"example","args":{}}}]}}]}`, want: map[string]string{}, wantTokens: 7},
+		{name: "usage_subtree_success", body: `{"usageMetadata":{"promptTokenCount":2},"usageMetadata":{"promptTokenCount":7},"candidates":[{"content":{"parts":[{"functionCall":{"name":"example","args":{}}}]}}]}`, want: map[string]string{}, wantTokens: 7},
+		{name: "unknown_scalar_overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "text"}, wantTokens: 10},
+		{name: "unknown_nested_overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "text"}, wantTokens: 10},
+		{name: "unknown_400_digits", body: `{"unknown":` + overflow + `,` + base[1:], want: map[string]string{"n": "text"}, wantTokens: 10},
+		{name: "unknown_part_overflow", body: `{"candidates":[{"content":{"parts":[{"unknown":{"bad":1e400},"functionCall":{"name":"example","args":{"n":"text"}}}]}}]}`, want: map[string]string{"n": "text"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = io.WriteString(w, tt.body)
+			}))
+			defer server.Close()
+			g, err := NewGemini("test-key", WithGeminiBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := g.Send(context.Background(), &Request{Model: "gemini-2.0-flash", Messages: []Message{{Role: "user", Content: "Read values"}}})
+			if tt.wantErr {
+				var pe *ProviderError
+				if resp != nil || !errors.As(err, &pe) || pe.Category != ErrCategoryServer || !strings.HasPrefix(pe.Message, "failed to parse response: ") {
+					t.Fatalf("Send = %+v, %v; want nil response and parse server ProviderError", resp, err)
+				}
+				return
+			}
+			if err != nil || resp == nil {
+				t.Fatalf("Send = %+v, %v", resp, err)
+			}
+			if len(resp.ToolCalls) != 1 || resp.InputTokens != tt.wantTokens {
+				t.Fatalf("response = %+v, want one call and %d input tokens", resp, tt.wantTokens)
+			}
+			got := resp.ToolCalls[0].Arguments
+			if len(got) != len(tt.want) {
+				t.Errorf("arguments = %v, want %v", got, tt.want)
+			}
+			for key, want := range tt.want {
+				if value, ok := got[key]; !ok || value != want {
+					t.Errorf("arguments[%s] = %q (present=%t), want %q", key, value, ok, want)
+				}
+			}
+			for _, value := range got {
+				if strings.Contains(value, "+Inf") {
+					t.Errorf("arguments contain +Inf: %v", got)
+				}
+			}
+		})
 	}
 }
 

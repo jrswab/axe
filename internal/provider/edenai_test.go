@@ -34,6 +34,101 @@ func TestNewEdenAI(t *testing.T) {
 			want:  want{baseURL: "https://example.com/v3"},
 		},
 		{
+			name:  "trailing slash normalized",
+			input: input{apiKey: "test-key", baseURL: "https://example.com/v3/"},
+			want:  want{baseURL: "https://example.com/v3"},
+		},
+		{
+			name:  "localhost HTTP exception",
+			input: input{apiKey: "test-key", baseURL: "http://localhost:8080/v3"},
+			want:  want{baseURL: "http://localhost:8080/v3"},
+		},
+		{
+			name:  "IPv4 loopback HTTP exception",
+			input: input{apiKey: "test-key", baseURL: "http://127.0.0.1:8080/v3"},
+			want:  want{baseURL: "http://127.0.0.1:8080/v3"},
+		},
+		{
+			name:  "IPv6 loopback HTTP exception",
+			input: input{apiKey: "test-key", baseURL: "http://[::1]:8080/v3"},
+			want:  want{baseURL: "http://[::1]:8080/v3"},
+		},
+		{
+			name:  "private IPv4 HTTP exception",
+			input: input{apiKey: "test-key", baseURL: "http://10.0.0.2:8080/v3"},
+			want:  want{baseURL: "http://10.0.0.2:8080/v3"},
+		},
+		{
+			name:  "private IPv6 HTTP exception",
+			input: input{apiKey: "test-key", baseURL: "http://[fd00::2]:8080/v3"},
+			want:  want{baseURL: "http://[fd00::2]:8080/v3"},
+		},
+		{
+			name:  "mapped private IPv4 HTTP exception",
+			input: input{apiKey: "test-key", baseURL: "http://[::ffff:192.168.1.2]:8080/v3"},
+			want:  want{baseURL: "http://[::ffff:192.168.1.2]:8080/v3"},
+		},
+		{
+			name:  "relative URL rejected",
+			input: input{apiKey: "test-key", baseURL: "/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "absolute HTTP(S) URL"},
+		},
+		{
+			name:  "scheme relative URL rejected",
+			input: input{apiKey: "test-key", baseURL: "//example.com/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "absolute HTTP(S) URL"},
+		},
+		{
+			name:  "malformed URL rejected",
+			input: input{apiKey: "test-key", baseURL: "https://[::1/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "absolute HTTP(S) URL"},
+		},
+		{
+			name:  "missing host rejected",
+			input: input{apiKey: "test-key", baseURL: "https:///v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "absolute HTTP(S) URL"},
+		},
+		{
+			name:  "unsupported scheme rejected",
+			input: input{apiKey: "test-key", baseURL: "ftp://example.com/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "absolute HTTP(S) URL"},
+		},
+		{
+			name:  "public HTTP hostname rejected",
+			input: input{apiKey: "test-key", baseURL: "http://api.edenai.run/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "use HTTPS"},
+		},
+		{
+			name:  "public HTTP IP rejected",
+			input: input{apiKey: "test-key", baseURL: "http://8.8.8.8/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "use HTTPS"},
+		},
+		{
+			name:  "localhost lookalike rejected",
+			input: input{apiKey: "test-key", baseURL: "http://localhost.example.com/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "use HTTPS"},
+		},
+		{
+			name:  "userinfo rejected",
+			input: input{apiKey: "test-key", baseURL: "https://user:secret@example.com/v3"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "without credentials, query, or fragment"},
+		},
+		{
+			name:  "query rejected",
+			input: input{apiKey: "test-key", baseURL: "https://example.com/v3?key=secret"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "without credentials, query, or fragment"},
+		},
+		{
+			name:  "fragment rejected",
+			input: input{apiKey: "test-key", baseURL: "https://example.com/v3#fragment"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "without credentials, query, or fragment"},
+		},
+		{
+			name:  "empty fragment rejected",
+			input: input{apiKey: "test-key", baseURL: "https://example.com/v3#"},
+			want:  want{errCategory: ErrCategoryBadRequest, errContains: "without credentials, query, or fragment"},
+		},
+		{
 			name:  "missing API key",
 			input: input{},
 			want: want{

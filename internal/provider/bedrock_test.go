@@ -145,6 +145,189 @@ func TestBedrock_Send_ToolUse(t *testing.T) {
 	}
 }
 
+func TestLargeIntegerArgs_Bedrock_Buffered(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "million", raw: `1000000`, want: "1000000"},
+		{name: "negative_million", raw: `-1000000`, want: "-1000000"},
+		{name: "non_round_integer", raw: `1234567`, want: "1234567"},
+		{name: "negative_non_round_integer", raw: `-1234567`, want: "-1234567"},
+		{name: "precise", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "negative_precise", raw: `-9007199254740993`, want: "-9007199254740993"},
+		{name: "exponent", raw: `1e6`, want: "1000000"},
+		{name: "negative_exponent", raw: `-1e6`, want: "-1000000"},
+		{name: "decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative_decimal", raw: `-1000000.0`, want: "-1000000"},
+		{name: "precise_decimal", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "negative_precise_decimal", raw: `-9007199254740993.0`, want: "-9007199254740993"},
+		{name: "precise_exponent", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "negative_precise_exponent", raw: `-90071992547409930e-1`, want: "-9007199254740993"},
+		{name: "beyond_int64", raw: `99999999999999999999999`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64", raw: `-99999999999999999999999`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_decimal", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_decimal", raw: `-99999999999999999999999.0`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_exponent", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_exponent", raw: `-999999999999999999999990e-1`, want: "-99999999999999999999999"},
+		{name: "small", raw: `999999`, want: "999999"},
+		{name: "negative_small", raw: `-999999`, want: "-999999"},
+		{name: "small_decimal", raw: `999999.0`, want: "999999"},
+		{name: "negative_small_decimal", raw: `-999999.0`, want: "-999999"},
+		{name: "zero", raw: `0`, want: "0"},
+		{name: "decimal_zero", raw: `0.0`, want: "0"},
+		{name: "negative_zero", raw: `-0`, want: "-0"},
+		{name: "negative_decimal_zero", raw: `-0.0`, want: "-0"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "negative_fraction", raw: `-1.5`, want: "-1.5"},
+		{name: "rounded_threshold", raw: `999999.99999999999`, want: "1e+06"},
+		{name: "negative_rounded_threshold", raw: `-999999.99999999999`, want: "-1e+06"},
+		{name: "rounded_fraction", raw: `1000000.00000000001`, want: "1e+06"},
+		{name: "negative_rounded_fraction", raw: `-1000000.00000000001`, want: "-1e+06"},
+		{name: "huge_negative_exponent", raw: `1e-1000000000`, want: "0"},
+		{name: "negative_huge_negative_exponent", raw: `-1e-1000000000`, want: "-0"},
+		{name: "zero_huge_exponent", raw: `0e1000000000`, want: "0"},
+		{name: "negative_zero_huge_exponent", raw: `-0e1000000000`, want: "-0"},
+		// Approved exceptional tokens A/B keep legacy text, without length rejection.
+		{name: "exception_A_parse_equality_guard", raw: "1" + strings.Repeat("0", 100006) + "e-100000", want: "0"},
+		{name: "exception_B_digit_cap_guard", raw: "0." + strings.Repeat("0", 9999) + "1e100000", want: "1"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "string_integer", raw: `"1000000"`, want: "1000000"},
+		{name: "string_exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "string_decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "string_precise", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "boolean_true", raw: `true`, want: "true"},
+		{name: "boolean_false", raw: `false`, want: "false"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "object_exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "object_integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "array", raw: `[1.50]`, want: "[1.5]"},
+		{name: "recursive_collection", raw: `{"a":[1000000,1.50]}`, want: "map[a:[1e+06 1.5]]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Preserve native numeric tokens at the HTTP boundary, not string-only fixtures.
+			body := `{"output":{"message":{"role":"assistant","content":[{"toolUse":{"toolUseId":"call_numeric","name":"example","input":{"n":` + tt.raw + `}}}]}},"stopReason":"tool_use"}`
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != "/model/test-model/converse" {
+					t.Errorf("request = %s %s, want POST /model/test-model/converse", r.Method, r.URL.Path)
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(body))
+			}))
+			defer server.Close()
+			b, err := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
+			if err != nil {
+				t.Fatalf("NewBedrock: %v", err)
+			}
+
+			resp, err := b.Send(context.Background(), &Request{
+				Model:    "test-model",
+				Messages: []Message{{Role: "user", Content: "Read values"}},
+				Tools:    []Tool{{Name: "example", Description: "Read values", Parameters: map[string]ToolParameter{}}},
+			})
+
+			if err != nil {
+				t.Fatalf("Send: %v", err)
+			}
+			if resp == nil {
+				t.Fatal("Send returned nil response without error")
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+			}
+			if got, ok := resp.ToolCalls[0].Arguments["n"]; !ok || got != tt.want {
+				t.Errorf("Arguments[n] for raw %s = %q (present=%t), want %q", tt.raw, got, ok, tt.want)
+			}
+		})
+	}
+}
+
+func TestLargeIntegerArgs_Bedrock_DecodeErrors(t *testing.T) {
+	bodyFor := func(args string) string {
+		return `{"output":{"message":{"role":"assistant","content":[{"toolUse":{"toolUseId":"call_1","name":"example","input":` + args + `}}]}},"stopReason":"tool_use"}`
+	}
+	base := bodyFor(`{"n":"text"}`)
+	overflow := "1" + strings.Repeat("0", 399)
+	tests := []struct {
+		name, body string
+		want       map[string]string
+		wantErr    bool
+	}{
+		{name: "malformed_response", body: `{"output":`, wantErr: true},
+		{name: "malformed_arguments", body: bodyFor(`{"n":`), wantErr: true},
+		{name: "trailing_value", body: base + `{}`, wantErr: true},
+		{name: "trailing_junk", body: base + `junk`, wantErr: true},
+		{name: "scalar_overflow", body: bodyFor(`{"n":1e400}`), wantErr: true},
+		{name: "scalar_400_digits", body: bodyFor(`{"n":` + overflow + `}`), wantErr: true},
+		{name: "nested_overflow", body: bodyFor(`{"n":[{"bad":1e400}]}`), wantErr: true},
+		{name: "nested_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `}}`), wantErr: true},
+		{name: "overwritten_scalar_overflow", body: bodyFor(`{"n":1e400,"n":1000000}`), wantErr: true},
+		{name: "replaced_subtree_overflow", body: bodyFor(`{"n":{"bad":1e400},"n":1000000}`), wantErr: true},
+		{name: "overwritten_scalar_400_digits", body: bodyFor(`{"n":` + overflow + `,"n":1000000}`), wantErr: true},
+		{name: "replaced_subtree_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `},"n":1000000}`), wantErr: true},
+		{name: "successful_scalar_duplicate", body: bodyFor(`{"n":999999,"n":1000000}`), want: map[string]string{"n": "1000000"}},
+		{name: "successful_subtree_duplicate", body: bodyFor(`{"n":{"ok":1},"n":1000000}`), want: map[string]string{"n": "1000000"}},
+		{name: "empty_map", body: bodyFor(`{}`), want: map[string]string{}},
+		{name: "null_map", body: bodyFor(`null`), want: map[string]string{}},
+		{name: "array_map", body: bodyFor(`[]`), wantErr: true},
+		{name: "number_map", body: bodyFor(`0`), wantErr: true},
+		{name: "negative_zero_map", body: bodyFor(`-0`), wantErr: true},
+		{name: "decimal_zero_map", body: bodyFor(`-0.0`), wantErr: true},
+		{name: "string_map", body: bodyFor(`"text"`), wantErr: true},
+		{name: "bool_map", body: bodyFor(`true`), wantErr: true},
+		{name: "known_usage_overflow", body: `{"usage":{"inputTokens":1e400},` + base[1:], wantErr: true},
+		{name: "known_usage_400_digits", body: `{"usage":{"inputTokens":` + overflow + `},` + base[1:], wantErr: true},
+		{name: "overwritten_usage_overflow", body: `{"usage":{"inputTokens":1e400,"inputTokens":10},` + base[1:], wantErr: true},
+		{name: "unknown_scalar_overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_nested_overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_400_digits", body: `{"unknown":` + overflow + `,` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_nested_400_digits", body: `{"unknown":{"bad":` + overflow + `},` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_message_overflow", body: `{"output":{"message":{"unknown":[1e400],"content":[{"toolUse":{"name":"example","input":{"n":"text"}}}]}}}`, want: map[string]string{"n": "text"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+			b, err := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := b.Send(context.Background(), &Request{Model: "test-model", Messages: []Message{{Role: "user", Content: "Read values"}}})
+			if tt.wantErr {
+				var pe *ProviderError
+				if resp != nil || !errors.As(err, &pe) || pe.Category != ErrCategoryServer || !strings.HasPrefix(pe.Message, "failed to parse response: ") {
+					t.Fatalf("Send = %+v, %v; want nil response and parse server ProviderError", resp, err)
+				}
+				return
+			}
+			if err != nil || resp == nil || len(resp.ToolCalls) != 1 {
+				t.Fatalf("Send = %+v, %v; want one call", resp, err)
+			}
+			got := resp.ToolCalls[0].Arguments
+			if len(got) != len(tt.want) {
+				t.Errorf("arguments = %v, want %v", got, tt.want)
+			}
+			for key, want := range tt.want {
+				if value, ok := got[key]; !ok || value != want {
+					t.Errorf("arguments[%s] = %q (present=%t), want %q", key, value, ok, want)
+				}
+			}
+			for _, value := range got {
+				if strings.Contains(value, "+Inf") {
+					t.Errorf("arguments contain +Inf: %v", got)
+				}
+			}
+		})
+	}
+}
+
 func TestBedrock_Send_ToolResult(t *testing.T) {
 	var receivedReq bedrockRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -280,6 +463,67 @@ func TestBedrock_Send_Temperature(t *testing.T) {
 	}
 	if receivedReq.InferenceConfig.MaxTokens == nil || *receivedReq.InferenceConfig.MaxTokens != 100 {
 		t.Error("expected max_tokens 100")
+	}
+}
+
+func TestBedrock_Send_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name      string
+		maxTokens int
+	}{
+		{"without inference config", 0},
+		{"with inference config", 100},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]interface{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Errorf("failed to parse request body: %v", err)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(bedrockResponse{
+					Output:     bedrockOutput{Message: &bedrockMessage{Role: "assistant", Content: []bedrockBlock{{Text: "ok"}}}},
+					StopReason: "end_turn",
+				})
+			}))
+			defer server.Close()
+
+			b, err := NewBedrock("us-east-1", WithBedrockBaseURL(server.URL), withBedrockCreds(testCreds()))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			resp, err := b.Send(context.Background(), &Request{
+				Model:           "test-model",
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+				MaxTokens:       tc.maxTokens,
+			})
+			if err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+			if resp.Content != "ok" {
+				t.Errorf("Content = %q, want ok", resp.Content)
+			}
+			cfg, hasConfig := gotBody["inferenceConfig"].(map[string]interface{})
+			if hasConfig != (tc.maxTokens > 0) {
+				t.Errorf("inferenceConfig present = %v, want %v", hasConfig, tc.maxTokens > 0)
+			}
+			if tc.maxTokens > 0 && cfg["maxTokens"] != float64(tc.maxTokens) {
+				t.Errorf("maxTokens = %v, want %d", cfg["maxTokens"], tc.maxTokens)
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if _, exists := gotBody[key]; exists {
+					t.Errorf("body contains %q: %v", key, gotBody[key])
+				}
+				if _, exists := cfg[key]; exists {
+					t.Errorf("inferenceConfig contains %q: %v", key, cfg[key])
+				}
+			}
+		})
 	}
 }
 

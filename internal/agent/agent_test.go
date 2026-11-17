@@ -169,6 +169,89 @@ max_tokens = 4096
 	}
 }
 
+func TestLoad_ReasoningEffort(t *testing.T) {
+	tests := []struct {
+		name   string
+		params string
+		want   string
+	}{
+		{name: "params omitted"},
+		{name: "field omitted", params: "[params]\nmax_tokens = 4096"},
+		{name: "empty", params: "[params]\nreasoning_effort = \"\""},
+		{name: "low", params: "[params]\nreasoning_effort = \"low\"", want: "low"},
+		{name: "none", params: "[params]\nreasoning_effort = \"none\"", want: "none"},
+		{name: "high", params: "[params]\nreasoning_effort = \"high\"", want: "high"},
+		{name: "max", params: "[params]\nreasoning_effort = \"max\"", want: "max"},
+		{name: "custom", params: "[params]\nreasoning_effort = \"provider-specific\"", want: "provider-specific"},
+		{name: "whitespace and case", params: "[params]\nreasoning_effort = \" LOW \"", want: " LOW "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agentsDir := setupAgentsDir(t)
+			writeAgentFile(t, agentsDir, "test", "name = \"test\"\nmodel = \"openai/gpt-4o\"\n"+tt.params)
+
+			cfg, err := Load("test", nil)
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+			if err := Validate(cfg); err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+			if cfg.Params.ReasoningEffort != tt.want {
+				t.Errorf("Params.ReasoningEffort = %q, want %q", cfg.Params.ReasoningEffort, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoad_TemperaturePresence(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  string
+		want    float64
+		wantSet bool
+	}{
+		{name: "explicit zero", params: "[params]\ntemperature = 0.0", wantSet: true},
+		{name: "nonzero", params: "[params]\ntemperature = 0.7", want: 0.7, wantSet: true},
+		{name: "field omitted", params: "[params]\nmax_tokens = 4096"},
+		{name: "params omitted"},
+	}
+	for _, source := range []string{"global", "local"} {
+		t.Run(source, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					agentsDir := setupAgentsDir(t)
+					var searchDirs []string
+					if source == "local" {
+						agentsDir = t.TempDir()
+						searchDirs = []string{agentsDir}
+					}
+					writeAgentFile(t, agentsDir, "test", "name = \"test\"\nmodel = \"openai/gpt-4o\"\n"+tt.params)
+
+					cfg, err := Load("test", searchDirs)
+					if err != nil {
+						t.Fatalf("Load() error = %v", err)
+					}
+					if cfg.Params.Temperature != tt.want || cfg.Params.TemperatureSet != tt.wantSet {
+						t.Errorf("Load() temperature = %g, set = %t, want %g, %t", cfg.Params.Temperature, cfg.Params.TemperatureSet, tt.want, tt.wantSet)
+					}
+
+					configs, err := List(searchDirs)
+					if err != nil {
+						t.Fatalf("List() error = %v", err)
+					}
+					if len(configs) != 1 {
+						t.Fatalf("List() returned %d agents, want 1", len(configs))
+					}
+					if configs[0].Params.Temperature != tt.want || configs[0].Params.TemperatureSet != tt.wantSet {
+						t.Errorf("List() temperature = %g, set = %t, want %g, %t", configs[0].Params.Temperature, configs[0].Params.TemperatureSet, tt.want, tt.wantSet)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestLoad_MinimalConfig(t *testing.T) {
 	agentsDir := setupAgentsDir(t)
 
@@ -714,29 +797,50 @@ func TestScaffold_ContainsModelPlaceholder(t *testing.T) {
 	}
 }
 
+func TestScaffold_IncludesReasoningEffortConfig(t *testing.T) {
+	out, err := Scaffold("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, `# reasoning_effort = "low"`) {
+		t.Errorf("scaffold output missing reasoning_effort example:\n%s", out)
+	}
+}
+
 func TestScaffold_IsValidTOML(t *testing.T) {
 	out, err := Scaffold("test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Remove comment lines and parse
-	var cleaned strings.Builder
-	for _, line := range strings.Split(out, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-		cleaned.WriteString(line)
-		cleaned.WriteString("\n")
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default", input: out},
+		{
+			name: "reasoning effort enabled",
+			input: strings.NewReplacer(
+				"# [params]", "[params]",
+				`# reasoning_effort = "low"`, `reasoning_effort = "low"`,
+			).Replace(out),
+			want: "low",
+		},
 	}
-
-	// Replace placeholder model with a real value for valid parsing
-	tomlStr := strings.Replace(cleaned.String(), `"provider/model-name"`, `"openai/gpt-4o"`, 1)
-
-	var cfg AgentConfig
-	if _, decodeErr := tomlDecode(tomlStr, &cfg); decodeErr != nil {
-		t.Errorf("scaffold output (cleaned) is not valid TOML: %v\ncleaned:\n%s", decodeErr, tomlStr)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cfg AgentConfig
+			if _, err := tomlDecode(tt.input, &cfg); err != nil {
+				t.Fatalf("scaffold output is not valid TOML: %v\n%s", err, tt.input)
+			}
+			if err := Validate(&cfg); err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+			if cfg.Params.ReasoningEffort != tt.want {
+				t.Errorf("Params.ReasoningEffort = %q, want %q", cfg.Params.ReasoningEffort, tt.want)
+			}
+		})
 	}
 }
 
@@ -2379,5 +2483,79 @@ func TestScaffold_IncludesResponseFormatConfig(t *testing.T) {
 	}
 	if !strings.Contains(out, "# [params.response_format]") {
 		t.Errorf("scaffold output missing table form example\nfull output:\n%s", out)
+	}
+}
+
+func TestValidateMCPServers_SharedRules(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		servers  []MCPServerConfig
+		want     string
+		contains bool
+	}{
+		{
+			name:    "blank_name",
+			servers: []MCPServerConfig{{Name: " \t", URL: "http://localhost:8080/mcp", Transport: "sse"}},
+			want:    "mcp_servers[0].name is required",
+		},
+		{
+			name:    "blank_url",
+			servers: []MCPServerConfig{{Name: "local", URL: " \t", Transport: "sse"}},
+			want:    "mcp_servers[0].url is required",
+		},
+		{
+			name:     "malformed_url",
+			servers:  []MCPServerConfig{{Name: "local", URL: "not a url", Transport: "sse"}},
+			want:     "mcp_servers[0].url is invalid",
+			contains: true,
+		},
+		{
+			name:    "scheme_ftp",
+			servers: []MCPServerConfig{{Name: "local", URL: "ftp://example.com/mcp", Transport: "sse"}},
+			want:    `mcp_servers[0].url must use http or https scheme, got "ftp"`,
+		},
+		{
+			name:    "missing_host",
+			servers: []MCPServerConfig{{Name: "local", URL: "http:///mcp", Transport: "sse"}},
+			want:    "mcp_servers[0].url must include a host",
+		},
+		{
+			name:    "transport_ws",
+			servers: []MCPServerConfig{{Name: "local", URL: "http://localhost:8080/mcp", Transport: "ws"}},
+			want:    "mcp_servers[0].transport must be one of: sse, streamable-http",
+		},
+		{
+			name: "duplicate_name",
+			servers: []MCPServerConfig{
+				{Name: "local", URL: "http://localhost:8080/one", Transport: "sse"},
+				{Name: "local", URL: "http://localhost:8080/two", Transport: "streamable-http"},
+			},
+			want: `mcp_servers names must be unique: "local"`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for i := range tt.servers {
+				tt.servers[i].Headers = map[string]string{"X-Secret": "secret-literal-value"}
+			}
+			for _, prefix := range []string{"mcp_servers", "Options.MCPServers"} {
+				t.Run(prefix, func(t *testing.T) {
+					err := ValidateMCPServers(tt.servers, prefix)
+					if err == nil {
+						t.Fatal("ValidateMCPServers() error = nil, want validation error")
+					}
+					want := strings.ReplaceAll(tt.want, "mcp_servers", prefix)
+					if tt.contains {
+						if !strings.Contains(err.Error(), want) {
+							t.Errorf("ValidateMCPServers() error = %q, want containing %q", err.Error(), want)
+						}
+					} else if got := err.Error(); got != want {
+						t.Errorf("ValidateMCPServers() error = %q, want %q", got, want)
+					}
+					if strings.Contains(err.Error(), "secret-literal-value") {
+						t.Error("validation error contains a literal header secret")
+					}
+				})
+			}
+		})
 	}
 }

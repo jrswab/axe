@@ -4,12 +4,14 @@
 |---|---|---|---|
 | Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `atlascloud` | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| LiteLLM (proxy) | `litellm` | `LITELLM_API_KEY` | `http://localhost:4000/v1` |
 | OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
 | MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |
 | Eden AI | `edenai` | `EDENAI_API_KEY` | `https://api.edenai.run/v3` |
 | Ollama | `ollama` | (none required) | `http://localhost:11434` |
 | OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |
+| Runcrate | `runcrate` | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
 | AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |
 
 The "Provider Name" column is the value used in the `model` field of your agent TOML — e.g., `model = "google/gemini-2.0-flash"`.
@@ -35,6 +37,10 @@ api_key = "..."
 [providers.edenai]
 api_key = "..."
 
+[providers.litellm]
+api_key = "sk-..."          # the proxy's virtual or master key
+base_url = "http://localhost:4000"
+
 [providers.google]
 api_key = "AIza..."
 
@@ -45,6 +51,9 @@ api_key = "..."
 api_key = "sk-..."
 base_url = "https://your-openai-proxy.example.com"
 
+[providers.runcrate]
+api_key = "..."
+
 [providers.bedrock]
 region = "us-east-1"
 ```
@@ -53,7 +62,27 @@ Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment vari
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
 
-Eden AI is a gateway, so its model ids carry the upstream vendor as a prefix. For example, set an agent model to `edenai/openai/gpt-4o-mini`, `edenai/anthropic/claude-haiku-4-5` or `edenai/mistral/mistral-small-latest`. Set `AXE_EDENAI_BASE_URL` to `https://api.eu.edenai.run/v3` to route through the EU endpoint.
+Eden AI is a gateway, so its model ids carry the upstream vendor as a prefix. For example, set an agent model to `edenai/openai/gpt-4o-mini`, `edenai/anthropic/claude-haiku-4-5` or `edenai/mistral/mistral-small-latest`. Override the endpoint with `AXE_EDENAI_BASE_URL` or `[providers.edenai] base_url`. Custom URLs must be absolute, without credentials, a query, or a fragment. HTTPS is required except for `localhost` and loopback/private IP literals; for an HTTP private proxy, use its private IP rather than a DNS name. These explicit HTTP exceptions send the API key in plaintext, so use only trusted local networks. A trailing slash is optional.
+
+Runcrate serves open-weight models through the OpenAI-compatible Chat Completions API. For example, set an agent model to `runcrate/deepseek-ai/DeepSeek-V4.1-Flash`.
+
+## LiteLLM
+
+[LiteLLM](https://github.com/BerriAI/litellm) is a self-hosted AI gateway: one OpenAI-compatible endpoint in front of 100+ providers (Anthropic, Bedrock, Vertex AI, Azure OpenAI, Mistral, and more), with virtual keys, budgets and fallbacks. Point axe at the proxy and use the proxy's model names:
+
+- **Model:** `litellm/<model name on the proxy>`, e.g. `litellm/claude-sonnet` or `litellm/gemini-2.5-flash`. Everything after the first `/` is sent as-is, so aliases containing `/` work too.
+- **Base URL:** `AXE_LITELLM_BASE_URL` or `[providers.litellm] base_url`. Both `http://host:4000` and `http://host:4000/v1` work; the default is `http://localhost:4000/v1`.
+- **Key:** `LITELLM_API_KEY` or `[providers.litellm] api_key`, the proxy's virtual key.
+- **Cost:** when available, axe reads `x-litellm-response-cost` into the JSON result's `cost` field. This is the **final response's cost**, not the total across earlier requests in a run with tool calls. A positive header value takes precedence; streaming falls back to numeric `usage.cost` when the header is absent, zero, or invalid. Missing, invalid, negative, and non-finite costs are treated as unavailable; zero cost is omitted from JSON output.
+
+For streaming cost reporting, enable cost metadata in the **LiteLLM proxy's YAML configuration** (not Axe's `config.toml`):
+
+```yaml
+litellm_settings:
+  include_cost_in_streaming_usage: true
+```
+
+This enables `usage.cost` on supported proxy streaming paths. Without cost metadata from the proxy, the run still succeeds but the JSON result omits `cost`.
 
 ## Streaming Support
 

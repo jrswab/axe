@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -383,6 +385,90 @@ func newMCPTypedArgsServer(t *testing.T) *httptest.Server {
 	ts := httptest.NewServer(h)
 	t.Cleanup(ts.Close)
 	return ts
+}
+
+func TestLargeIntegerArgs_MCPWire(t *testing.T) {
+	captured := make(chan string, 1)
+	s := mcp.NewServer(&mcp.Implementation{Name: "wire-test", Version: "1.0.0"}, nil)
+	s.AddTool(&mcp.Tool{
+		Name: "integer_wire",
+		InputSchema: map[string]any{
+			"type":       "object",
+			"properties": map[string]any{"n": map[string]any{"type": "integer"}},
+		},
+	}, func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		captured <- string(req.Params.Arguments)
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "ok"}}}, nil
+	})
+	s.AddTool(&mcp.Tool{
+		Name: "number_wire",
+		InputSchema: map[string]any{
+			"type":       "object",
+			"properties": map[string]any{"n": map[string]any{"type": "number"}},
+		},
+	}, func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		captured <- string(req.Params.Arguments)
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "ok"}}}, nil
+	})
+	ts := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return s }, nil))
+	t.Cleanup(ts.Close)
+	client := mustConnectTestClient(t, ts.URL)
+	if _, err := client.ListTools(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ input, wire string }{
+		{"1000000", `{"n":1000000}`},
+		{"-1000000", `{"n":-1000000}`},
+		{"1234567", `{"n":1234567}`},
+		{"-1234567", `{"n":-1234567}`},
+		{"9007199254740993", `{"n":9007199254740993}`},
+		{"-9007199254740993", `{"n":-9007199254740993}`},
+		{"99999999999999999999999", `{"n":"99999999999999999999999"}`},
+	} {
+		t.Run(tc.input, func(t *testing.T) {
+			result, err := client.CallTool(context.Background(), provider.ToolCall{
+				ID: "call", Name: "integer_wire", Arguments: map[string]string{"n": tc.input},
+			})
+			if err != nil || result.IsError {
+				t.Fatalf("CallTool = %+v, %v", result, err)
+			}
+			if got := <-captured; got != tc.wire {
+				t.Errorf("raw arguments = %s, want %s", got, tc.wire)
+			}
+		})
+	}
+	for _, tc := range []struct {
+		raw, input, wire string
+		negative         bool
+	}{
+		{"0e1000000000", "0", `{"n":0}`, false},
+		{"-0e1000000000", "-0", `{"n":-0}`, true},
+	} {
+		t.Run(tc.raw, func(t *testing.T) {
+			result, err := client.CallTool(context.Background(), provider.ToolCall{
+				ID: "call", Name: "number_wire", Arguments: map[string]string{"n": tc.input},
+			})
+			if err != nil || result.IsError {
+				t.Fatalf("CallTool = %+v, %v", result, err)
+			}
+			got := <-captured
+			if got != tc.wire {
+				t.Errorf("raw arguments = %s, want %s", got, tc.wire)
+			}
+			legacy, err := strconv.ParseFloat(tc.raw, 64)
+			if err != nil || legacy != 0 || math.Signbit(legacy) != tc.negative {
+				t.Fatalf("legacy original-token parse = %v, sign=%v, err=%v", legacy, math.Signbit(legacy), err)
+			}
+			var object map[string]json.RawMessage
+			if err := json.Unmarshal([]byte(got), &object); err != nil || len(object) != 1 {
+				t.Fatalf("raw arguments = %s, err=%v", got, err)
+			}
+			received, err := strconv.ParseFloat(string(object["n"]), 64)
+			if err != nil || received != legacy || math.Signbit(received) != math.Signbit(legacy) {
+				t.Errorf("MCP number = %v, sign=%v, err=%v; legacy = %v, sign=%v", received, math.Signbit(received), err, legacy, math.Signbit(legacy))
+			}
+		})
+	}
 }
 
 func TestCallTool_CoercesArgTypes(t *testing.T) {

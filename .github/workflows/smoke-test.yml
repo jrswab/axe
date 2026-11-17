@@ -6,17 +6,22 @@ on:
     branches: [ "master" ]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
 
   dry-run:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -38,8 +43,7 @@ jobs:
       run: |
         OUTPUT=$(./axe run --agents-dir .github/smoke-agents dry-skill --skill "$(pwd)/.github/smoke-agents/skills/smoke-skill/SKILL.md" --dry-run -p "ping")
         echo "$OUTPUT"
-        echo "$OUTPUT" | grep -q -- "--- Skill ---" || { echo "FAIL: '--- Skill ---' not found"; exit 1; }
-        echo "$OUTPUT" | grep -A1 -- "--- Skill ---" | grep -q "(none)" && { echo "FAIL: skill section is '(none)'"; exit 1; } || true
+        printf '%s\n' "$OUTPUT" | .agents/scripts/check-dry-skill
 
     - name: dry-memory
       run: |
@@ -60,14 +64,16 @@ jobs:
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -84,9 +90,9 @@ jobs:
         echo "$OUTPUT"
         [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
 
-    - name: provider-opencode
+    - name: provider-openrouter
       run: |
-        OUTPUT=$(./axe run --agents-dir .github/smoke-agents provider-opencode -p "Reply with only the word: pong")
+        OUTPUT=$(./axe run --agents-dir .github/smoke-agents provider-openrouter -p "Reply with only the word: pong")
         echo "$OUTPUT"
         [ -n "$OUTPUT" ] || { echo "FAIL: empty output"; exit 1; }
 
@@ -94,15 +100,17 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -154,14 +162,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .
@@ -202,14 +212,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Build axe
       run: go build -o axe .

@@ -226,6 +226,83 @@ func TestOllama_Send_OmitsZeroTemperature(t *testing.T) {
 	}
 }
 
+func TestOllama_IgnoresReasoningEffortAndExplicitZeroTemperature(t *testing.T) {
+	cases := []struct {
+		name   string
+		stream bool
+	}{
+		{"Send", false},
+		{"SendStream", true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody []byte
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var err error
+				gotBody, err = io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("failed to read request body: %v", err)
+				}
+				if tc.stream {
+					_, _ = fmt.Fprintln(w, `{"message":{"content":"ok"},"done":true,"done_reason":"stop"}`)
+					return
+				}
+				_ = json.NewEncoder(w).Encode(ollamaSuccessResponse())
+			}))
+			defer server.Close()
+
+			o, err := NewOllama(WithOllamaBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("unexpected constructor error: %v", err)
+			}
+			req := &Request{
+				Model:           "llama3",
+				Messages:        []Message{{Role: "user", Content: "Hi"}},
+				ReasoningEffort: "low",
+				TemperatureSet:  true,
+				Temperature:     0,
+				MaxTokens:       100,
+			}
+			if tc.stream {
+				stream, err := o.SendStream(context.Background(), req)
+				if err != nil {
+					t.Fatalf("unexpected SendStream error: %v", err)
+				}
+				defer func() { _ = stream.Close() }()
+				for {
+					_, err := stream.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						t.Fatalf("unexpected stream error: %v", err)
+					}
+				}
+			} else if _, err := o.Send(context.Background(), req); err != nil {
+				t.Fatalf("unexpected Send error: %v", err)
+			}
+
+			var body map[string]interface{}
+			if err := json.Unmarshal(gotBody, &body); err != nil {
+				t.Fatalf("failed to parse request body: %v", err)
+			}
+			if body["stream"] != tc.stream {
+				t.Errorf("stream = %v, want %v", body["stream"], tc.stream)
+			}
+			opts, ok := body["options"].(map[string]interface{})
+			if !ok || opts["num_predict"] != float64(100) {
+				t.Errorf("options = %v, want num_predict 100", body["options"])
+			}
+			for _, key := range []string{"reasoning_effort", "temperature"} {
+				if strings.Contains(string(gotBody), `"`+key+`"`) {
+					t.Errorf("body contains %q: %s", key, gotBody)
+				}
+			}
+		})
+	}
+}
+
 func TestOllama_Send_OmitsZeroMaxTokens(t *testing.T) {
 	var hasNumPredict bool
 
@@ -718,6 +795,111 @@ func TestOllama_Send_ToolCallResponse(t *testing.T) {
 	}
 }
 
+func TestLargeIntegerArgs_Ollama_Buffered(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "million", raw: `1000000`, want: "1000000"},
+		{name: "negative_million", raw: `-1000000`, want: "-1000000"},
+		{name: "non_round_integer", raw: `1234567`, want: "1234567"},
+		{name: "negative_non_round_integer", raw: `-1234567`, want: "-1234567"},
+		{name: "precise", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "negative_precise", raw: `-9007199254740993`, want: "-9007199254740993"},
+		{name: "exponent", raw: `1e6`, want: "1000000"},
+		{name: "negative_exponent", raw: `-1e6`, want: "-1000000"},
+		{name: "decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative_decimal", raw: `-1000000.0`, want: "-1000000"},
+		{name: "precise_decimal", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "negative_precise_decimal", raw: `-9007199254740993.0`, want: "-9007199254740993"},
+		{name: "precise_exponent", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "negative_precise_exponent", raw: `-90071992547409930e-1`, want: "-9007199254740993"},
+		{name: "beyond_int64", raw: `99999999999999999999999`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64", raw: `-99999999999999999999999`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_decimal", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_decimal", raw: `-99999999999999999999999.0`, want: "-99999999999999999999999"},
+		{name: "beyond_int64_exponent", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "negative_beyond_int64_exponent", raw: `-999999999999999999999990e-1`, want: "-99999999999999999999999"},
+		// 10^308 has 309 digits and is finite: an independently specified cap boundary.
+		{name: "eligible_309_digits", raw: `1e308`, want: "1" + strings.Repeat("0", 308)},
+		{name: "negative_eligible_309_digits", raw: `-1e308`, want: "-1" + strings.Repeat("0", 308)},
+		{name: "small", raw: `999999`, want: "999999"},
+		{name: "negative_small", raw: `-999999`, want: "-999999"},
+		{name: "small_decimal", raw: `999999.0`, want: "999999"},
+		{name: "negative_small_decimal", raw: `-999999.0`, want: "-999999"},
+		{name: "zero", raw: `0`, want: "0"},
+		{name: "decimal_zero", raw: `0.0`, want: "0"},
+		{name: "negative_zero", raw: `-0`, want: "-0"},
+		{name: "negative_decimal_zero", raw: `-0.0`, want: "-0"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "negative_fraction", raw: `-1.5`, want: "-1.5"},
+		{name: "rounded_threshold", raw: `999999.99999999999`, want: "1e+06"},
+		{name: "negative_rounded_threshold", raw: `-999999.99999999999`, want: "-1e+06"},
+		{name: "rounded_fraction", raw: `1000000.00000000001`, want: "1e+06"},
+		{name: "negative_rounded_fraction", raw: `-1000000.00000000001`, want: "-1e+06"},
+		{name: "huge_negative_exponent", raw: `1e-1000000000`, want: "0"},
+		{name: "negative_huge_negative_exponent", raw: `-1e-1000000000`, want: "-0"},
+		{name: "zero_huge_exponent", raw: `0e1000000000`, want: "0"},
+		{name: "negative_zero_huge_exponent", raw: `-0e1000000000`, want: "-0"},
+		// Approved exceptional tokens A/B retain legacy text, without length rejection.
+		{name: "exception_A_parse_equality_guard", raw: "1" + strings.Repeat("0", 100006) + "e-100000", want: "0"},
+		{name: "exception_B_digit_cap_guard", raw: "0." + strings.Repeat("0", 9999) + "1e100000", want: "1"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "string_integer", raw: `"1000000"`, want: "1000000"},
+		{name: "string_exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "string_decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "string_precise", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "boolean_true", raw: `true`, want: "true"},
+		{name: "boolean_false", raw: `false`, want: "false"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "object_exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "object_integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "array", raw: `[1.50]`, want: "[1.5]"},
+		{name: "recursive_collection", raw: `{"a":[1000000,1.50]}`, want: "map[a:[1e+06 1.5]]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arguments is a native JSON object: send raw numbers, not quoted helper values.
+			body := `{"model":"llama3","message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"example","arguments":{"n":` + tt.raw + `}}}]},"done":true,"done_reason":"stop"}` + "\n"
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != "/api/chat" {
+					t.Errorf("request = %s %s, want POST /api/chat", r.Method, r.URL.Path)
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, body)
+			}))
+			defer server.Close()
+			o, err := NewOllama(WithOllamaBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("NewOllama: %v", err)
+			}
+
+			resp, err := o.Send(context.Background(), &Request{
+				Model:    "llama3",
+				Messages: []Message{{Role: "user", Content: "Read values"}},
+				Tools:    []Tool{{Name: "example", Description: "Read values", Parameters: map[string]ToolParameter{}}},
+			})
+
+			if err != nil {
+				t.Fatalf("Send: %v", err)
+			}
+			if resp == nil {
+				t.Fatal("Send returned nil response without error")
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+			}
+			if got, ok := resp.ToolCalls[0].Arguments["n"]; !ok || got != tt.want {
+				t.Errorf("Arguments[n] for raw %s = %q (present=%t), want %q", tt.raw, got, ok, tt.want)
+			}
+		})
+	}
+}
+
 func TestOllama_Send_NoToolCallsWithTools(t *testing.T) {
 	// Model ignores tools and returns a normal text response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -978,6 +1160,74 @@ func TestOllama_SendStream_ToolCalls(t *testing.T) {
 	}
 	if events[4].Type != StreamEventDone {
 		t.Errorf("event 4: expected done, got type=%s", events[4].Type)
+	}
+}
+
+func TestLargeIntegerArgs_Ollama_NativeToolInput(t *testing.T) {
+	// Arrange native JSON arguments at the local NDJSON boundary, not string-valued inputs.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		_, _ = fmt.Fprintln(w, `{"message":{"content":"","tool_calls":[{"function":{"name":"example","arguments":{"million":1000000,"precise":9007199254740993,"enabled":true,"disabled":false,"nothing":null,"object":{"a":1000000},"array":[1,true,null,{"a":2}]}}}]},"done":false}`)
+		_, _ = fmt.Fprintln(w, `{"message":{"content":""},"done":true,"done_reason":"stop","prompt_eval_count":8,"eval_count":4}`)
+	}))
+	defer server.Close()
+	o, err := NewOllama(WithOllamaBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("NewOllama: %v", err)
+	}
+
+	// Act through the real provider and consume its public event stream to EOF.
+	stream, err := o.SendStream(context.Background(), &Request{
+		Model:    "llama3",
+		Messages: []Message{{Role: "user", Content: "Read values"}},
+	})
+	if err != nil {
+		t.Fatalf("SendStream: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+	var inputs []string
+	for {
+		ev, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("stream.Next: %v", err)
+		}
+		if ev.Type == StreamEventToolStart {
+			if ev.ToolName != "example" {
+				t.Errorf("ToolName = %q, want example", ev.ToolName)
+			}
+			inputs = append(inputs, ev.ToolInput)
+		}
+	}
+
+	// Assert raw tokens so neither float64 decoding nor string coercion can hide type/digit loss.
+	if len(inputs) != 1 {
+		t.Fatalf("got %d tool inputs, want 1", len(inputs))
+	}
+	var args map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(inputs[0]), &args); err != nil {
+		t.Fatalf("ToolInput = %q, want JSON object: %v", inputs[0], err)
+	}
+	wants := []struct {
+		key, token string
+	}{
+		{key: "million", token: `1000000`},
+		{key: "precise", token: `9007199254740993`},
+		{key: "enabled", token: `true`},
+		{key: "disabled", token: `false`},
+		{key: "nothing", token: `null`},
+		{key: "object", token: `{"a":1000000}`},
+		{key: "array", token: `[1,true,null,{"a":2}]`},
+	}
+	if len(args) != len(wants) {
+		t.Errorf("ToolInput has %d arguments, want %d: %s", len(args), len(wants), inputs[0])
+	}
+	for _, want := range wants {
+		if got := string(args[want.key]); got != want.token {
+			t.Errorf("ToolInput[%s] = %s, want native JSON token %s (not a quoted/flattened string)", want.key, got, want.token)
+		}
 	}
 }
 
@@ -1297,6 +1547,158 @@ func TestOllama_Send_IncludesFormatJsonSchema(t *testing.T) {
 	}
 	if _, hasName := gotFormat["name"]; hasName {
 		t.Error("expected 'name' to be stripped from Ollama schema (it's not part of JSON Schema)")
+	}
+}
+
+func TestLargeIntegerArgs_Ollama_BufferedErrors(t *testing.T) {
+	bodyFor := func(args string) string {
+		return `{"model":"llama3","message":{"tool_calls":[{"function":{"name":"example","arguments":` + args + `}}]},"prompt_eval_count":10}`
+	}
+	base := bodyFor(`{"n":"text"}`)
+	overflow := "1" + strings.Repeat("0", 399)
+	tests := []struct {
+		name, body string
+		want       map[string]string
+		wantErr    bool
+	}{
+		{name: "malformed_response", body: `{"message":`, wantErr: true},
+		{name: "malformed_arguments", body: bodyFor(`{"n":`), wantErr: true},
+		{name: "trailing_value", body: base + `{}`, wantErr: true},
+		{name: "trailing_junk", body: base + `junk`, wantErr: true},
+		{name: "scalar_overflow", body: bodyFor(`{"n":1e400}`), wantErr: true},
+		{name: "scalar_400_digits", body: bodyFor(`{"n":` + overflow + `}`), wantErr: true},
+		{name: "nested_overflow", body: bodyFor(`{"n":[{"bad":1e400}]}`), wantErr: true},
+		{name: "nested_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `}}`), wantErr: true},
+		{name: "overwritten_scalar_overflow", body: bodyFor(`{"n":1e400,"n":1000000}`), wantErr: true},
+		{name: "replaced_subtree_overflow", body: bodyFor(`{"n":{"bad":1e400},"n":1000000}`), wantErr: true},
+		{name: "overwritten_scalar_400_digits", body: bodyFor(`{"n":` + overflow + `,"n":1000000}`), wantErr: true},
+		{name: "replaced_subtree_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `},"n":1000000}`), wantErr: true},
+		{name: "successful_scalar_duplicate", body: bodyFor(`{"n":999999,"n":1000000}`), want: map[string]string{"n": "1000000"}},
+		{name: "successful_subtree_duplicate", body: bodyFor(`{"n":{"ok":1},"n":1000000}`), want: map[string]string{"n": "1000000"}},
+		{name: "empty_map", body: bodyFor(`{}`), want: map[string]string{}},
+		{name: "null_map", body: bodyFor(`null`), want: map[string]string{}},
+		{name: "array_map", body: bodyFor(`[]`), wantErr: true},
+		{name: "number_map", body: bodyFor(`0`), wantErr: true},
+		{name: "negative_zero_map", body: bodyFor(`-0`), wantErr: true},
+		{name: "decimal_zero_map", body: bodyFor(`-0.0`), wantErr: true},
+		{name: "string_map", body: bodyFor(`"text"`), wantErr: true},
+		{name: "bool_map", body: bodyFor(`true`), wantErr: true},
+		{name: "known_count_overflow", body: `{"eval_count":1e400,` + base[1:], wantErr: true},
+		{name: "known_count_400_digits", body: `{"eval_count":` + overflow + `,` + base[1:], wantErr: true},
+		{name: "overwritten_count_overflow", body: `{"prompt_eval_count":1e400,` + base[1:], wantErr: true},
+		{name: "unknown_scalar_overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_nested_overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_400_digits", body: `{"unknown":` + overflow + `,` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_nested_400_digits", body: `{"unknown":{"bad":` + overflow + `},` + base[1:], want: map[string]string{"n": "text"}},
+		{name: "unknown_message_overflow", body: `{"message":{"unknown":[1e400],"tool_calls":[{"function":{"name":"example","arguments":{"n":"text"}}}]}}`, want: map[string]string{"n": "text"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = io.WriteString(w, tt.body)
+			}))
+			defer server.Close()
+			o, err := NewOllama(WithOllamaBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := o.Send(context.Background(), &Request{Model: "llama3", Messages: []Message{{Role: "user", Content: "Read values"}}})
+			if tt.wantErr {
+				var pe *ProviderError
+				if resp != nil || !errors.As(err, &pe) || pe.Category != ErrCategoryServer || !strings.HasPrefix(pe.Message, "failed to parse response: ") {
+					t.Fatalf("Send = %+v, %v; want nil response and parse server ProviderError", resp, err)
+				}
+				return
+			}
+			if err != nil || resp == nil || len(resp.ToolCalls) != 1 {
+				t.Fatalf("Send = %+v, %v; want one call", resp, err)
+			}
+			got := resp.ToolCalls[0].Arguments
+			if len(got) != len(tt.want) {
+				t.Errorf("arguments = %v, want %v", got, tt.want)
+			}
+			for key, want := range tt.want {
+				if value, ok := got[key]; !ok || value != want {
+					t.Errorf("arguments[%s] = %q (present=%t), want %q", key, value, ok, want)
+				}
+			}
+			for _, value := range got {
+				if strings.Contains(value, "+Inf") {
+					t.Errorf("arguments contain +Inf: %v", got)
+				}
+			}
+		})
+	}
+}
+
+func TestLargeIntegerArgs_Ollama_StreamErrors(t *testing.T) {
+	bodyFor := func(args string) string {
+		return `{"message":{"tool_calls":[{"function":{"name":"example","arguments":` + args + `}}]},"done":false}`
+	}
+	base := bodyFor(`{"n":"text"}`)
+	overflow := "1" + strings.Repeat("0", 399)
+	tests := []struct {
+		name, body, want string
+		wantErr          bool
+	}{
+		{name: "malformed_response", body: `{"message":`, wantErr: true},
+		{name: "malformed_arguments", body: bodyFor(`{"n":`), wantErr: true},
+		{name: "trailing_value", body: base + `{}`, wantErr: true},
+		{name: "trailing_junk", body: base + `junk`, wantErr: true},
+		{name: "scalar_overflow", body: bodyFor(`{"n":1e400}`), wantErr: true},
+		{name: "scalar_400_digits", body: bodyFor(`{"n":` + overflow + `}`), wantErr: true},
+		{name: "nested_overflow", body: bodyFor(`{"n":[{"bad":1e400}]}`), wantErr: true},
+		{name: "nested_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `}}`), wantErr: true},
+		{name: "overwritten_scalar_overflow", body: bodyFor(`{"n":1e400,"n":1000000}`), wantErr: true},
+		{name: "replaced_subtree_overflow", body: bodyFor(`{"n":{"bad":1e400},"n":1000000}`), wantErr: true},
+		{name: "overwritten_scalar_400_digits", body: bodyFor(`{"n":` + overflow + `,"n":1000000}`), wantErr: true},
+		{name: "replaced_subtree_400_digits", body: bodyFor(`{"n":{"bad":` + overflow + `},"n":1000000}`), wantErr: true},
+		{name: "successful_scalar_duplicate", body: bodyFor(`{"n":999999,"n":1000000}`), want: `{"n":1000000}`},
+		{name: "successful_subtree_duplicate", body: bodyFor(`{"n":{"ok":1},"n":1000000}`), want: `{"n":1000000}`},
+		{name: "empty_map", body: bodyFor(`{}`), want: `{}`},
+		{name: "null_map", body: bodyFor(`null`), want: `null`},
+		{name: "array_map", body: bodyFor(`[]`), wantErr: true},
+		{name: "number_map", body: bodyFor(`0`), wantErr: true},
+		{name: "negative_zero_map", body: bodyFor(`-0`), wantErr: true},
+		{name: "decimal_zero_map", body: bodyFor(`-0.0`), wantErr: true},
+		{name: "string_map", body: bodyFor(`"text"`), wantErr: true},
+		{name: "bool_map", body: bodyFor(`true`), wantErr: true},
+		{name: "known_count_overflow", body: `{"eval_count":1e400,` + base[1:], wantErr: true},
+		{name: "known_count_400_digits", body: `{"eval_count":` + overflow + `,` + base[1:], wantErr: true},
+		{name: "overwritten_count_overflow", body: `{"prompt_eval_count":1e400,"prompt_eval_count":7,` + base[1:], wantErr: true},
+		{name: "unknown_scalar_overflow", body: `{"unknown":1e400,` + base[1:], want: `{"n":"text"}`},
+		{name: "unknown_nested_overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: `{"n":"text"}`},
+		{name: "unknown_400_digits", body: `{"unknown":` + overflow + `,` + base[1:], want: `{"n":"text"}`},
+		{name: "unknown_nested_400_digits", body: `{"unknown":{"bad":` + overflow + `},` + base[1:], want: `{"n":"text"}`},
+		{name: "unknown_message_overflow", body: `{"message":{"unknown":[1e400],"tool_calls":[{"function":{"name":"example","arguments":{"n":"text"}}}]}}`, want: `{"n":"text"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = fmt.Fprintln(w, tt.body)
+			}))
+			defer server.Close()
+			o, err := NewOllama(WithOllamaBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			stream, err := o.SendStream(context.Background(), &Request{Model: "llama3", Messages: []Message{{Role: "user", Content: "Read values"}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = stream.Close() }()
+			ev, err := stream.Next()
+			if tt.wantErr {
+				var pe *ProviderError
+				if !errors.As(err, &pe) || pe.Category != ErrCategoryServer || !strings.HasPrefix(pe.Message, "failed to parse streaming chunk: ") {
+					t.Fatalf("Next = %+v, %v; want parse server ProviderError", ev, err)
+				}
+				return
+			}
+			if err != nil || ev.Type != StreamEventToolStart || ev.ToolCallID != "ollama_0" || ev.ToolName != "example" || ev.ToolInput != tt.want {
+				t.Fatalf("Next = %+v, %v; want native input %s", ev, err, tt.want)
+			}
+		})
 	}
 }
 
