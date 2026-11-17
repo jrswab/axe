@@ -36,6 +36,8 @@ When an existing record covers a persistent change to behavior, architecture, co
 
 Use `// @anchor:<surface>:<role> [context]` in the file's native comment syntax for entry, policy, configuration, or integration boundaries introduced or changed by the task. Derive descriptive surface and role identifiers from existing tags and the boundary purpose; reuse identifiers when they fit. The one-line context states the boundary's purpose. Find existing tags with `grep -rn "@anchor:<surface>"`.
 
+When locating or changing tagged boundaries, surfaces, or roles, read [TAGS.md](TAGS.md).
+
 ## Change-triggered references
 
 - **Public Go API, CLI, TOML, JSON, or defaults:** read [COMPATIBILITY.md](COMPATIBILITY.md).
