@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - LiteLLM proxy provider (`litellm/<model>`), with the final response's cost reported from the proxy when available (#95).
+- Runcrate provider using the OpenAI-compatible Chat Completions API
 
 ### Fixed
 - Preserve all tool-call arguments, text, finish reasons, and usage when OpenAI-compatible streaming chunks combine them (#95).

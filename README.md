@@ -343,7 +343,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 
 [params]
 temperature = 0.3
-reasoning_effort = "low"           # optional; OpenAI, Atlas Cloud, and LiteLLM only
+reasoning_effort = "low"           # optional; OpenAI, Atlas Cloud, LiteLLM, and Runcrate only
 max_tokens = 4096
 # response_format = "json_object"   # text, json_object, or json_schema
 
@@ -367,9 +367,9 @@ All fields except `name` and `model` are optional.
 
 ### Parameters
 
-`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, and LiteLLM send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, LiteLLM, and Runcrate send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
-OpenAI, Atlas Cloud, and LiteLLM send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
+OpenAI, Atlas Cloud, LiteLLM, and Runcrate send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
 ### Retry
 
@@ -427,7 +427,7 @@ With `--verbose`, each turn logs cumulative usage to stderr. With `--json`, the 
 
 ### Response Format
 
-Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, LiteLLM, Ollama, and OpenRouter providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
+Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, LiteLLM, Ollama, OpenRouter, and Runcrate providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
 
 ```toml
 # String shorthand
@@ -593,6 +593,7 @@ The first directory containing a matching `<name>.toml` wins.
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
+| Runcrate | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
 | AWS Bedrock | (uses AWS credentials) | Region-based |
 
 **AWS Bedrock Configuration:**
@@ -603,6 +604,8 @@ The first directory containing a matching `<name>.toml` wins.
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
+
+For Runcrate, use model names such as `runcrate/deepseek-ai/DeepSeek-V4.1-Flash` in agent TOML.
 
 For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `LITELLM_API_KEY` (or `[providers.litellm] api_key`) and optionally `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`). The default URL is `http://localhost:4000/v1`; URLs without `/v1` work too. Use the proxy's model names, e.g. `litellm/claude-sonnet`.
 

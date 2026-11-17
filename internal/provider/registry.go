@@ -14,6 +14,7 @@ var supportedProviders = map[string]bool{
 	"minimax":    true,
 	"bedrock":    true,
 	"openrouter": true,
+	"runcrate":   true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -85,8 +86,11 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		}
 		return NewOpenRouter(apiKey, opts...)
 
+	case "runcrate":
+		return NewRuncrate(apiKey, baseURL)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate", providerName)
 	}
 }
 
