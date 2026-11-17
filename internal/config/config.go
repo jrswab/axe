@@ -56,15 +56,20 @@ func Load() (*GlobalConfig, error) {
 }
 
 // knownAPIKeyEnvVars maps provider names to their canonical API key environment variables.
+// @anchor:provider:configuration Map provider model prefixes to canonical credential environment variables.
 var knownAPIKeyEnvVars = map[string]string{
 	"anthropic":        "ANTHROPIC_API_KEY",
 	"atlascloud":       "ATLASCLOUD_API_KEY",
 	"cheaperinference": "CHEAPER_INFERENCE_API_KEY",
+	"litellm":          "LITELLM_API_KEY",
 	"openai":           "OPENAI_API_KEY",
 	"opencode":         "OPENCODE_API_KEY",
 	"google":           "GEMINI_API_KEY",
 	"minimax":          "MINIMAX_API_KEY",
 	"openrouter":       "OPENROUTER_API_KEY",
+	"edenai":           "EDENAI_API_KEY",
+	"runcrate":         "RUNCRATE_API_KEY",
+	"standardcompute":  "STANDARDCOMPUTE_API_KEY",
 }
 
 // APIKeyEnvVar returns the environment variable name used to resolve the API key

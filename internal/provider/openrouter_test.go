@@ -600,3 +600,179 @@ func TestOpenRouter_SendStream_ToolCall(t *testing.T) {
 		t.Fatal("expected StreamEventDone")
 	}
 }
+
+func TestLargeIntegerArgs_OpenRouter_Buffered(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "threshold integer", raw: `1000000`, want: "1000000"},
+		{name: "integer beyond float64 precision", raw: `9007199254740993`, want: "9007199254740993"},
+		{name: "integral exponent", raw: `1e6`, want: "1000000"},
+		{name: "integral decimal", raw: `1000000.0`, want: "1000000"},
+		{name: "negative integral exponent", raw: `-1e6`, want: "-1000000"},
+		{name: "exact decimal beyond float64 precision", raw: `9007199254740993.0`, want: "9007199254740993"},
+		{name: "exact exponent beyond float64 precision", raw: `90071992547409930e-1`, want: "9007199254740993"},
+		{name: "negative threshold integer", raw: `-1000000`, want: "-1000000"},
+		{name: "integer beyond int64", raw: `99999999999999999999999`, want: "99999999999999999999999"},
+		{name: "integral decimal beyond int64", raw: `99999999999999999999999.0`, want: "99999999999999999999999"},
+		{name: "integral exponent beyond int64", raw: `999999999999999999999990e-1`, want: "99999999999999999999999"},
+		{name: "below threshold", raw: `999999`, want: "999999"},
+		{name: "negative below threshold", raw: `-999999`, want: "-999999"},
+		{name: "below threshold decimal", raw: `999999.0`, want: "999999"},
+		{name: "zero", raw: `0`, want: "0"},
+		{name: "negative zero", raw: `-0`, want: "-0"},
+		{name: "negative decimal zero", raw: `-0.0`, want: "-0"},
+		{name: "fraction", raw: `1.5`, want: "1.5"},
+		{name: "fraction rounded to threshold", raw: `999999.99999999999`, want: "1e+06"},
+		{name: "fraction rounded above threshold", raw: `1000000.00000000001`, want: "1e+06"},
+		{name: "text", raw: `"text"`, want: "text"},
+		{name: "quoted exponent", raw: `"1e6"`, want: "1e6"},
+		{name: "quoted decimal", raw: `"1000000.0"`, want: "1000000.0"},
+		{name: "quoted large integer", raw: `"9007199254740993"`, want: "9007199254740993"},
+		{name: "boolean true", raw: `true`, want: "true"},
+		{name: "boolean false", raw: `false`, want: "false"},
+		{name: "null", raw: `null`, want: "<nil>"},
+		{name: "nested exponent", raw: `{"a":1e6}`, want: "map[a:1e+06]"},
+		{name: "nested integer", raw: `{"a":1000000}`, want: "map[a:1e+06]"},
+		{name: "nested array", raw: `[1.50]`, want: "[1.5]"},
+		{name: "recursive collection", raw: `{"a":[1000000,1.50]}`, want: "map[a:[1e+06 1.5]]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Quote only the outer arguments string; keep the inner numeric
+			// tokens raw so the fixture cannot round them before Send does.
+			arguments, err := json.Marshal(`{"n":` + tt.raw + `}`)
+			if err != nil {
+				t.Fatalf("encode arguments string: %v", err)
+			}
+			body := `{"model":"openai/gpt-5","choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":` + string(arguments) + `}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":10,"completion_tokens":5}}`
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, body)
+			}))
+			defer server.Close()
+			o, err := NewOpenRouter("test-key", WithOpenRouterBaseURL(server.URL))
+			if err != nil {
+				t.Fatalf("NewOpenRouter: %v", err)
+			}
+
+			resp, err := o.Send(context.Background(), &Request{
+				Model:    "openai/gpt-5",
+				Messages: []Message{{Role: "user", Content: "Read values"}},
+			})
+
+			if err != nil {
+				t.Fatalf("Send: %v", err)
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("len(ToolCalls) = %d, want 1", len(resp.ToolCalls))
+			}
+			if got, ok := resp.ToolCalls[0].Arguments["n"]; !ok || got != tt.want {
+				t.Errorf("Arguments[n] for raw %s = %q (present=%t), want %q", tt.raw, got, ok, tt.want)
+			}
+		})
+	}
+}
+
+func TestLargeIntegerArgs_OpenRouter_DecodeErrors(t *testing.T) {
+	const envelope = `{"model":"openai/gpt-5","choices":[{"message":{"tool_calls":[{"id":"call_1","type":"function","function":{"name":"example","arguments":%s}}]},"finish_reason":"tool_calls"}]}`
+	bodyFor := func(raw string) string { return openAIRawArgumentBody(t, envelope, raw) }
+	base := bodyFor(`{"n":1000000}`)
+	overflow := strings.Repeat("9", 400)
+	type testCase struct {
+		name, body string
+		wantErr    bool
+		want       map[string]string
+		wantCost   float64
+	}
+	tests := []testCase{
+		{name: "outer malformed", body: `{"choices":`, wantErr: true},
+		{name: "outer trailing value", body: base + `{}`, wantErr: true},
+		{name: "outer trailing junk", body: base + `junk`, wantErr: true},
+		{name: "cost overflow", body: `{"usage":{"cost":1e400},` + base[1:], wantErr: true},
+		{name: "cost 400 digits", body: `{"usage":{"cost":` + overflow + `},` + base[1:], wantErr: true},
+		{name: "integer overflow", body: `{"usage":{"prompt_tokens":1e400},` + base[1:], wantErr: true},
+		{name: "integer 400 digits", body: `{"usage":{"completion_tokens":` + overflow + `},` + base[1:], wantErr: true},
+		{name: "overwritten cost", body: `{"usage":{"cost":1e400,"cost":0.1},` + base[1:], wantErr: true},
+		{name: "overwritten usage", body: `{"usage":{"cost":1e400},"usage":{"cost":0.1},` + base[1:], wantErr: true},
+		{name: "overwritten integer", body: `{"usage":{"prompt_tokens":1e400,"prompt_tokens":1},` + base[1:], wantErr: true},
+		{name: "outer type mismatch", body: `{"usage":{"cost":true},` + base[1:], wantErr: true},
+		{name: "unknown scalar overflow", body: `{"unknown":1e400,` + base[1:], want: map[string]string{"n": "1000000"}},
+		{name: "unknown subtree overflow", body: `{"unknown":{"bad":1e400},` + base[1:], want: map[string]string{"n": "1000000"}},
+		{name: "unknown 400 digits", body: `{"unknown":` + overflow + `,` + base[1:], want: map[string]string{"n": "1000000"}},
+		{name: "successful typed duplicate", body: `{"usage":{"cost":0.1,"cost":0.2},` + base[1:], want: map[string]string{"n": "1000000"}, wantCost: 0.2},
+		{name: "successful typed subtree duplicate", body: `{"usage":{"cost":0.1},"usage":{"cost":0.2},` + base[1:], want: map[string]string{"n": "1000000"}, wantCost: 0.2},
+	}
+	for _, tt := range []struct {
+		name, raw string
+		want      map[string]string
+	}{
+		{name: "inner malformed", raw: `{"n":`},
+		{name: "inner trailing value", raw: `{"n":1} {}`},
+		{name: "inner trailing junk", raw: `{"n":1} junk`},
+		{name: "inner overflow", raw: `{"n":1e400}`},
+		{name: "inner 400 digits", raw: `{"n":` + overflow + `}`},
+		{name: "inner nested overflow", raw: `{"n":[{"bad":1e400}]}`},
+		{name: "inner nested 400 digits", raw: `{"n":{"bad":` + overflow + `}}`},
+		{name: "inner overwritten scalar", raw: `{"n":1e400,"n":1000000}`},
+		{name: "inner overwritten subtree", raw: `{"n":{"bad":1e400},"n":1000000}`},
+		{name: "inner duplicate scalar", raw: `{"n":999999,"n":1000000}`, want: map[string]string{"n": "1000000"}},
+		{name: "inner duplicate subtree", raw: `{"n":{"ok":1},"n":1000000}`, want: map[string]string{"n": "1000000"}},
+		{name: "inner map replacement", raw: `{"n":{"old":1},"n":{"new":2}}`, want: map[string]string{"n": "map[new:2]"}},
+		{name: "inner empty", raw: `{}`},
+		{name: "inner null", raw: `null`},
+		{name: "inner array", raw: `[]`},
+		{name: "inner scalar", raw: `0`},
+		{name: "inner negative zero", raw: `-0`},
+		{name: "inner decimal zero", raw: `-0.0`},
+		{name: "inner string", raw: `"text"`},
+		{name: "inner boolean", raw: `true`},
+	} {
+		tests = append(tests, testCase{name: tt.name, body: bodyFor(tt.raw), want: tt.want})
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = io.WriteString(w, tt.body)
+			}))
+			defer server.Close()
+			o, err := NewOpenRouter("test-key", WithOpenRouterBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := o.Send(context.Background(), &Request{Model: "openai/gpt-5"})
+			if tt.wantErr {
+				providerErr, ok := err.(*ProviderError)
+				if !ok || providerErr.Category != ErrCategoryServer {
+					t.Fatalf("Send error = %v, want server ProviderError", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Send error = %v, want successful response", err)
+			}
+			if len(resp.ToolCalls) != 1 {
+				t.Fatalf("ToolCalls = %#v, want one call", resp.ToolCalls)
+			}
+			want := tt.want
+			if want == nil {
+				want = map[string]string{}
+			}
+			if resp.Cost != tt.wantCost {
+				t.Errorf("Cost = %v, want %v", resp.Cost, tt.wantCost)
+			}
+			got := resp.ToolCalls[0].Arguments
+			if len(got) != len(want) {
+				t.Errorf("Arguments = %#v, want %#v (no +Inf)", got, want)
+			}
+			for key, value := range want {
+				if gotValue, ok := got[key]; !ok || gotValue != value {
+					t.Errorf("Arguments[%s] = %q (present=%t), want %q", key, gotValue, ok, value)
+				}
+			}
+		})
+	}
+}

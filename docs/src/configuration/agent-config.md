@@ -36,7 +36,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 
 [params]
 temperature = 0.3
-reasoning_effort = "low"           # optional; OpenAI and Atlas Cloud only
+reasoning_effort = "low"           # optional; OpenAI, Atlas Cloud, Eden AI, LiteLLM, Runcrate, and Standard Compute only
 max_tokens = 4096
 # response_format = "json_object"   # text, json_object, or json_schema
 
@@ -58,13 +58,13 @@ args = ["--root", "/home/user/projects"]
 
 ### Parameters
 
-`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI and Atlas Cloud send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Eden AI, LiteLLM, Runcrate, and Standard Compute send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
-OpenAI and Atlas Cloud send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures. This changes behavior for OpenAI and Atlas Cloud agents that set `temperature = 0.0`.
+OpenAI, Atlas Cloud, Eden AI, LiteLLM, Runcrate, and Standard Compute send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
 ### Response Format
 
-Constrain LLM output to a specific format via the `[params]` section. Supported by OpenAI and Ollama providers; other providers ignore this setting.
+Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Eden AI, LiteLLM, Ollama, OpenRouter, Runcrate, and Standard Compute providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
 
 ```toml
 # String shorthand

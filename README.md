@@ -16,6 +16,8 @@ Axe orchestrates LLM-powered agents defined via TOML configuration files. Each a
 
 Axe is the executor, not the scheduler. It is designed to be composed with standard Unix tools — cron, git hooks, pipes, file watchers — rather than reinventing scheduling or workflow orchestration.
 
+The compatibility promise for v1 releases is in [COMPATIBILITY.md](COMPATIBILITY.md).
+
 ## Features
 
 - **Multi-provider support** — Anthropic, OpenAI, Ollama (local models), OpenCode, and AWS Bedrock
@@ -37,7 +39,7 @@ Axe is the executor, not the scheduler. It is designed to be composed with stand
 
 ## Installation
 
-Requires Go 1.25+.
+Source builds and `pkg/runner` imports require Go 1.26.11 or later.
 
 **Pre-built binaries** (no Go required) are available for Linux, macOS, and Windows on the [GitHub Releases page](https://github.com/jrswab/axe/releases/latest).
 
@@ -47,7 +49,7 @@ Install via Go:
 go install github.com/jrswab/axe@latest
 ```
 
-> If this fails with `invalid go version`, your Go toolchain is older than 1.25. Upgrade from [go.dev/dl](https://go.dev/dl/) or download a pre-built binary instead.
+> For a checkout, Go's default automatic toolchain selection may use an available `go1.26.11` on `PATH` or download it if the installed toolchain is older. A blocked or unverifiable download can fail even with cached dependencies. `GOTOOLCHAIN=local` disables switching and requires an installed Go version at least 1.26.11. Versioned `go install` uses the target module's minimum but not its toolchain suggestion. If installation fails, check the Go version and toolchain availability, upgrade from [go.dev/dl](https://go.dev/dl/), or use a pre-built binary.
 
 Or build from source:
 
@@ -341,7 +343,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 
 [params]
 temperature = 0.3
-reasoning_effort = "low"           # optional; OpenAI and Atlas Cloud only
+reasoning_effort = "low"           # optional; OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate only
 max_tokens = 4096
 # response_format = "json_object"   # text, json_object, or json_schema
 
@@ -365,9 +367,9 @@ All fields except `name` and `model` are optional.
 
 ### Parameters
 
-`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI and Atlas Cloud send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
-OpenAI and Atlas Cloud send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures. This changes behavior for OpenAI and Atlas Cloud agents that set `temperature = 0.0`.
+OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
 ### Retry
 
@@ -425,7 +427,7 @@ With `--verbose`, each turn logs cumulative usage to stderr. With `--json`, the 
 
 ### Response Format
 
-Constrain LLM output to a specific format via the `[params]` section. Supported by OpenAI and Ollama providers; other providers ignore this setting.
+Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Eden AI, LiteLLM, Ollama, OpenRouter, and Runcrate providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
 
 ```toml
 # String shorthand
@@ -588,9 +590,13 @@ The first directory containing a matching `<name>.toml` wins.
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
 | Cheaper Inference | `CHEAPER_INFERENCE_API_KEY` | `https://api.cheaperinference.com/v1` |
+| Eden AI | `EDENAI_API_KEY` | `https://api.edenai.run/v3` |
+| LiteLLM (proxy) | `LITELLM_API_KEY` | `http://localhost:4000/v1` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
+| Runcrate | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
+| Standard Compute | `STANDARDCOMPUTE_API_KEY` | `https://api.stdcmpt.com/v1` |
 | AWS Bedrock | (uses AWS credentials) | Region-based |
 
 **AWS Bedrock Configuration:**
@@ -603,6 +609,23 @@ Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
 
 For Cheaper Inference, use model names such as `cheaperinference/gpt-5.4-mini` in agent TOML.
+
+For Eden AI, model ids carry the upstream vendor as a prefix, such as `edenai/openai/gpt-4o-mini` or `edenai/anthropic/claude-haiku-4-5`. Custom Eden AI base URLs require HTTPS, except for `localhost` and loopback/private IP literals (for local proxies).
+
+For Runcrate, use model names such as `runcrate/deepseek-ai/DeepSeek-V4.1-Flash` in agent TOML.
+
+Standard Compute uses the OpenAI-compatible Chat Completions API. Set an agent model to `standardcompute/StandardCompute` to route each request to the cheapest enabled model that can handle it, with automatic fallback, or pin a model with any id from `GET https://api.stdcmpt.com/v1/models` (for example `standardcompute/<model-id>`). See https://standardcompute.com.
+
+For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `LITELLM_API_KEY` (or `[providers.litellm] api_key`) and optionally `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`). The default URL is `http://localhost:4000/v1`; URLs without `/v1` work too. Use the proxy's model names, e.g. `litellm/claude-sonnet`.
+
+When available, the run result's JSON `cost` field reports the **final response's cost**, not the total across earlier requests in a run with tool calls. Streaming falls back to `usage.cost` when no positive cost header is available. To enable that metadata, set this in the **LiteLLM proxy's YAML configuration**, not Axe's `config.toml`:
+
+```yaml
+litellm_settings:
+  include_cost_in_streaming_usage: true
+```
+
+If the proxy does not report a valid cost, the JSON `cost` field is omitted.
 
 ## License
 

@@ -7,6 +7,7 @@ var supportedProviders = map[string]bool{
 	"anthropic":        true,
 	"atlascloud":       true,
 	"cheaperinference": true,
+	"litellm":          true,
 	"openai":           true,
 	"ollama":           true,
 	"opencode":         true,
@@ -14,6 +15,9 @@ var supportedProviders = map[string]bool{
 	"minimax":          true,
 	"bedrock":          true,
 	"openrouter":       true,
+	"edenai":           true,
+	"runcrate":         true,
+	"standardcompute":  true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -22,6 +26,7 @@ func Supported(providerName string) bool {
 }
 
 // New creates a Provider by dispatching to the correct constructor based on providerName.
+// @anchor:provider:entry Select the provider implementation for a configured model prefix.
 func New(providerName, apiKey, baseURL string) (Provider, error) {
 	switch providerName {
 	case "anthropic":
@@ -36,6 +41,9 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 
 	case "cheaperinference":
 		return NewCheaperInference(apiKey, baseURL)
+
+	case "litellm":
+		return NewLiteLLM(apiKey, baseURL)
 
 	case "openai":
 		var opts []OpenAIOption
@@ -84,8 +92,17 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		}
 		return NewOpenRouter(apiKey, opts...)
 
+	case "edenai":
+		return NewEdenAI(apiKey, baseURL)
+
+	case "runcrate":
+		return NewRuncrate(apiKey, baseURL)
+
+	case "standardcompute":
+		return NewStandardCompute(apiKey, baseURL)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, cheaperinference, openai, ollama, opencode, google, minimax, bedrock, openrouter", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, cheaperinference, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute", providerName)
 	}
 }
 

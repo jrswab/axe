@@ -15,6 +15,33 @@ func TestNew_Anthropic(t *testing.T) {
 	}
 }
 
+func TestNew_LiteLLM(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultLiteLLMBaseURL},
+		{name: "proxy root", input: "http://litellm:4000", want: "http://litellm:4000/v1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("litellm", "sk-virtual", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			liteLLM, ok := p.(*LiteLLM)
+			if !ok {
+				t.Fatalf("provider type = %T, want *LiteLLM", p)
+			}
+			if liteLLM.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", liteLLM.baseURL, tt.want)
+			}
+		})
+	}
+}
+
 func TestNew_AtlasCloud(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -64,6 +91,60 @@ func TestNew_CheaperInference(t *testing.T) {
 			}
 			if cheaperInference.baseURL != tt.want {
 				t.Errorf("baseURL = %q, want %q", cheaperInference.baseURL, tt.want)
+			}
+		})
+	}
+}
+
+func TestNew_Runcrate(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultRuncrateBaseURL},
+		{name: "custom base URL", input: "http://custom:8080", want: "http://custom:8080"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("runcrate", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			runcrate, ok := p.(*Runcrate)
+			if !ok {
+				t.Fatalf("provider type = %T, want *Runcrate", p)
+			}
+			if runcrate.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", runcrate.baseURL, tt.want)
+			}
+		})
+	}
+}
+
+func TestNew_StandardCompute(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultStandardComputeBaseURL},
+		{name: "custom base URL", input: "http://custom:8080", want: "http://custom:8080"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("standardcompute", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			standardCompute, ok := p.(*StandardCompute)
+			if !ok {
+				t.Fatalf("provider type = %T, want *StandardCompute", p)
+			}
+			if standardCompute.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", standardCompute.baseURL, tt.want)
 			}
 		})
 	}
@@ -123,7 +204,7 @@ func TestNew_UnsupportedProvider(t *testing.T) {
 	if !strings.Contains(err.Error(), `unsupported provider "groq"`) {
 		t.Errorf("expected error to mention 'unsupported provider \"groq\"', got %q", err.Error())
 	}
-	if !strings.Contains(err.Error(), "anthropic, atlascloud, cheaperinference, openai, ollama, opencode, google, minimax, bedrock") {
+	if !strings.Contains(err.Error(), "anthropic, atlascloud, cheaperinference, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute") {
 		t.Errorf("expected error to list supported providers, got %q", err.Error())
 	}
 }
@@ -166,7 +247,7 @@ func TestNew_MissingAPIKeyOpenAI(t *testing.T) {
 }
 
 func TestSupported_KnownProviders(t *testing.T) {
-	for _, name := range []string{"anthropic", "atlascloud", "cheaperinference", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode"} {
+	for _, name := range []string{"anthropic", "atlascloud", "cheaperinference", "litellm", "openai", "ollama", "google", "minimax", "bedrock", "openrouter", "opencode", "runcrate", "edenai", "standardcompute"} {
 		if !Supported(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
@@ -262,7 +343,7 @@ func TestNew_UnsupportedProvider_ErrorMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported provider")
 	}
-	for _, name := range []string{"anthropic", "atlascloud", "cheaperinference", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter"} {
+	for _, name := range []string{"anthropic", "atlascloud", "cheaperinference", "litellm", "openai", "ollama", "opencode", "google", "minimax", "bedrock", "openrouter", "runcrate", "edenai", "standardcompute"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("expected error to mention %q, got %q", name, err.Error())
 		}
@@ -338,5 +419,48 @@ func TestNew_MiniMaxMissingAPIKey(t *testing.T) {
 func TestSupported_MiniMax(t *testing.T) {
 	if !Supported("minimax") {
 		t.Error("expected 'minimax' to be supported")
+	}
+}
+
+func TestNew_EdenAI(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "default base URL", want: defaultEdenAIBaseURL},
+		{name: "custom base URL", input: "http://localhost:8080", want: "http://localhost:8080"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New("edenai", "test-key", tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			edenAI, ok := p.(*EdenAI)
+			if !ok {
+				t.Fatalf("provider type = %T, want *EdenAI", p)
+			}
+			if edenAI.baseURL != tt.want {
+				t.Errorf("baseURL = %q, want %q", edenAI.baseURL, tt.want)
+			}
+		})
+	}
+}
+
+func TestNew_EdenAIMissingAPIKey(t *testing.T) {
+	_, err := New("edenai", "", "")
+	if err == nil {
+		t.Fatal("expected error for missing API key")
+	}
+	if !strings.Contains(err.Error(), "API key is required") {
+		t.Errorf("expected 'API key is required', got %q", err.Error())
+	}
+}
+
+func TestSupported_EdenAI(t *testing.T) {
+	if !Supported("edenai") {
+		t.Error("expected 'edenai' to be supported")
 	}
 }
