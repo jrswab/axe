@@ -8,6 +8,7 @@
 | OpenAI | `openai` | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Google Gemini | `google` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
 | MiniMax | `minimax` | `MINIMAX_API_KEY` | `https://api.minimax.io/anthropic` |
+| Eden AI | `edenai` | `EDENAI_API_KEY` | `https://api.edenai.run/v3` |
 | Ollama | `ollama` | (none required) | `http://localhost:11434` |
 | OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |
 | Runcrate | `runcrate` | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
@@ -32,6 +33,9 @@ You can store credentials and base URL overrides in `$XDG_CONFIG_HOME/axe/config
 api_key = "sk-ant-..."
 
 [providers.atlascloud]
+api_key = "..."
+
+[providers.edenai]
 api_key = "..."
 
 [providers.litellm]
@@ -61,6 +65,8 @@ region = "us-east-1"
 Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
+
+Eden AI is a gateway, so its model ids carry the upstream vendor as a prefix. For example, set an agent model to `edenai/openai/gpt-4o-mini`, `edenai/anthropic/claude-haiku-4-5` or `edenai/mistral/mistral-small-latest`. Override the endpoint with `AXE_EDENAI_BASE_URL` or `[providers.edenai] base_url`. Custom URLs must be absolute, without credentials, a query, or a fragment. HTTPS is required except for `localhost` and loopback/private IP literals; for an HTTP private proxy, use its private IP rather than a DNS name. These explicit HTTP exceptions send the API key in plaintext, so use only trusted local networks. A trailing slash is optional.
 
 Runcrate serves open-weight models through the OpenAI-compatible Chat Completions API. For example, set an agent model to `runcrate/deepseek-ai/DeepSeek-V4.1-Flash`.
 

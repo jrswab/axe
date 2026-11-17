@@ -343,7 +343,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 
 [params]
 temperature = 0.3
-reasoning_effort = "low"           # optional; OpenAI, Atlas Cloud, LiteLLM, and Runcrate only
+reasoning_effort = "low"           # optional; OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate only
 max_tokens = 4096
 # response_format = "json_object"   # text, json_object, or json_schema
 
@@ -367,9 +367,9 @@ All fields except `name` and `model` are optional.
 
 ### Parameters
 
-`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, LiteLLM, and Runcrate send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
-OpenAI, Atlas Cloud, LiteLLM, and Runcrate send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
+OpenAI, Atlas Cloud, Eden AI, LiteLLM, and Runcrate send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
 ### Retry
 
@@ -427,7 +427,7 @@ With `--verbose`, each turn logs cumulative usage to stderr. With `--json`, the 
 
 ### Response Format
 
-Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, LiteLLM, Ollama, OpenRouter, and Runcrate providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
+Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Eden AI, LiteLLM, Ollama, OpenRouter, and Runcrate providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
 
 ```toml
 # String shorthand
@@ -589,6 +589,7 @@ The first directory containing a matching `<name>.toml` wins.
 |---|---|---|
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| Eden AI | `EDENAI_API_KEY` | `https://api.edenai.run/v3` |
 | LiteLLM (proxy) | `LITELLM_API_KEY` | `http://localhost:4000/v1` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
@@ -605,6 +606,8 @@ The first directory containing a matching `<name>.toml` wins.
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
+
+For Eden AI, model ids carry the upstream vendor as a prefix, such as `edenai/openai/gpt-4o-mini` or `edenai/anthropic/claude-haiku-4-5`. Custom Eden AI base URLs require HTTPS, except for `localhost` and loopback/private IP literals (for local proxies).
 
 For Runcrate, use model names such as `runcrate/deepseek-ai/DeepSeek-V4.1-Flash` in agent TOML.
 
