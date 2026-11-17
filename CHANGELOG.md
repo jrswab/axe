@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-16
+
 ### Added
 - Scheduled `provider-key-check` workflow. It makes one minimal call per smoke-test provider key (Anthropic, OpenAI, OpenRouter, Tavily) and opens or updates one issue when a key fails with an auth, billing, or missing-secret error.
 - `make check` and CI now run a pinned apidiff check of `pkg/runner` against `v1.11.0`; incompatible changes fail the check.
@@ -20,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `pkg/runner` imports and source builds require Go 1.26.11 (previously 1.25.0). With automatic toolchain switching disabled, an older installed Go version fails to build.
 - Gate tagged releases on changelog and ancestry admission, reusable CI checks, and a nonpublishing package smoke check before publication.
+
+### Fixed
+- Preserve eligible large top-level integer tool arguments without float64 rounding or scientific notation.
 
 ## [1.11.0] - 2026-10-21
 
@@ -158,7 +163,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - staticcheck/errcheck lint issues
 - Duplicate error silencing, glob validation, and nil ExitError guard
 
-[unreleased]: https://github.com/jrswab/axe/compare/v1.11.0...HEAD
+[unreleased]: https://github.com/jrswab/axe/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/jrswab/axe/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/jrswab/axe/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/jrswab/axe/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/jrswab/axe/compare/v1.8.0...v1.9.0
