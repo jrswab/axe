@@ -343,7 +343,7 @@ headers = { Authorization = "Bearer ${MY_TOKEN}" }
 
 [params]
 temperature = 0.3
-reasoning_effort = "low"           # optional; OpenAI and Atlas Cloud only
+reasoning_effort = "low"           # optional; OpenAI, Atlas Cloud, and LiteLLM only
 max_tokens = 4096
 # response_format = "json_object"   # text, json_object, or json_schema
 
@@ -367,9 +367,9 @@ All fields except `name` and `model` are optional.
 
 ### Parameters
 
-`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI and Atlas Cloud send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, and LiteLLM send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
-OpenAI and Atlas Cloud send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures. This changes behavior for OpenAI and Atlas Cloud agents that set `temperature = 0.0`.
+OpenAI, Atlas Cloud, and LiteLLM send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
 ### Retry
 
@@ -427,7 +427,7 @@ With `--verbose`, each turn logs cumulative usage to stderr. With `--json`, the 
 
 ### Response Format
 
-Constrain LLM output to a specific format via the `[params]` section. Supported by OpenAI and Ollama providers; other providers ignore this setting.
+Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, LiteLLM, Ollama, and OpenRouter providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
 
 ```toml
 # String shorthand
@@ -589,6 +589,7 @@ The first directory containing a matching `<name>.toml` wins.
 |---|---|---|
 | Anthropic | `ANTHROPIC_API_KEY` | `https://api.anthropic.com` |
 | Atlas Cloud | `ATLASCLOUD_API_KEY` | `https://api.atlascloud.ai/v1` |
+| LiteLLM (proxy) | `LITELLM_API_KEY` | `http://localhost:4000/v1` |
 | OpenAI | `OPENAI_API_KEY` | `https://api.openai.com` |
 | Ollama | (none required) | `http://localhost:11434` |
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
@@ -602,6 +603,17 @@ The first directory containing a matching `<name>.toml` wins.
 Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
+
+For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `LITELLM_API_KEY` (or `[providers.litellm] api_key`) and optionally `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`). The default URL is `http://localhost:4000/v1`; URLs without `/v1` work too. Use the proxy's model names, e.g. `litellm/claude-sonnet`.
+
+When available, the run result's JSON `cost` field reports the **final response's cost**, not the total across earlier requests in a run with tool calls. Streaming falls back to `usage.cost` when no positive cost header is available. To enable that metadata, set this in the **LiteLLM proxy's YAML configuration**, not Axe's `config.toml`:
+
+```yaml
+litellm_settings:
+  include_cost_in_streaming_usage: true
+```
+
+If the proxy does not report a valid cost, the JSON `cost` field is omitted.
 
 ## License
 

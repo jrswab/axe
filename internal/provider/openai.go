@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -27,11 +30,33 @@ func WithOpenAIBaseURL(url string) OpenAIOption {
 	}
 }
 
+// withOpenAICostHeader makes the provider read the request cost (USD) from a
+// response header, for OpenAI-compatible gateways that report it.
+func withOpenAICostHeader(header string) OpenAIOption {
+	return func(o *OpenAI) {
+		o.costHeader = header
+	}
+}
+
 // OpenAI implements the Provider interface for the OpenAI Chat Completions API.
 type OpenAI struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey     string
+	baseURL    string
+	costHeader string
+	client     *http.Client
+}
+
+// responseCost parses the configured cost header; invalid costs are unavailable.
+// @anchor:provider:policy Reject invalid optional cost metadata before it reaches run results.
+func (o *OpenAI) responseCost(header http.Header) float64 {
+	if o.costHeader == "" {
+		return 0
+	}
+	cost, err := strconv.ParseFloat(strings.TrimSpace(header.Get(o.costHeader)), 64)
+	if err != nil || cost < 0 || math.IsNaN(cost) || math.IsInf(cost, 0) {
+		return 0
+	}
+	return cost
 }
 
 // NewOpenAI creates a new OpenAI provider. Returns an error if apiKey is empty.
@@ -236,6 +261,7 @@ func convertToOpenAITools(tools []Tool) []openaiToolDef {
 }
 
 // Send makes a completion request to the OpenAI Chat Completions API.
+// @anchor:provider:integration Map OpenAI-compatible responses and opt-in gateway cost to provider results.
 func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	var messages []Message
 	if req.System != "" {
@@ -355,6 +381,7 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 		InputTokens:     apiResp.Usage.PromptTokens,
 		OutputTokens:    apiResp.Usage.CompletionTokens,
 		CacheReadTokens: apiResp.Usage.PromptTokensDetails.CachedTokens,
+		Cost:            o.responseCost(httpResp.Header),
 		StopReason:      apiResp.Choices[0].FinishReason,
 		ToolCalls:       toolCalls,
 	}, nil
@@ -405,6 +432,7 @@ func (o *OpenAI) handleErrorResponse(status int, body []byte) *ProviderError {
 }
 
 // SendStream makes a streaming completion request to the OpenAI Chat Completions API.
+// @anchor:provider:integration Preserve text, tool calls, finish reasons, and usage from each compatible SSE chunk.
 func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, error) {
 	var messages []Message
 	if req.System != "" {
@@ -484,17 +512,21 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 		return nil, o.handleErrorResponse(httpResp.StatusCode, respBody)
 	}
 
+	cost := o.responseCost(httpResp.Header)
 	parser := NewSSEParser(httpResp.Body)
 	toolCalls := make(map[int]struct{ id, name string })
 	var finishReason string
 	var gotUsage bool
-	var pendingToolEnds []StreamEvent
+	// Usage that arrived on a chunk that also carried choices (LiteLLM does
+	// this); reported with the done event at [DONE].
+	var trailingUsage *openaiStreamUsage
+	var pendingEvents []StreamEvent
 
 	nextFunc := func() (StreamEvent, error) {
 		for {
-			if len(pendingToolEnds) > 0 {
-				ev := pendingToolEnds[0]
-				pendingToolEnds = pendingToolEnds[1:]
+			if len(pendingEvents) > 0 {
+				ev := pendingEvents[0]
+				pendingEvents = pendingEvents[1:]
 				return ev, nil
 			}
 
@@ -519,10 +551,18 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 
 			if sseEvent.Data == "[DONE]" {
 				if !gotUsage {
-					return StreamEvent{
+					gotUsage = true
+					done := StreamEvent{
 						Type:       StreamEventDone,
 						StopReason: finishReason,
-					}, nil
+						Cost:       o.streamCost(cost, trailingUsage),
+					}
+					if trailingUsage != nil {
+						done.InputTokens = trailingUsage.PromptTokens
+						done.OutputTokens = trailingUsage.CompletionTokens
+						done.CacheReadTokens = trailingUsage.PromptTokensDetails.CachedTokens
+					}
+					return done, nil
 				}
 				return StreamEvent{}, io.EOF
 			}
@@ -544,41 +584,58 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 						InputTokens:     chunk.Usage.PromptTokens,
 						OutputTokens:    chunk.Usage.CompletionTokens,
 						CacheReadTokens: chunk.Usage.PromptTokensDetails.CachedTokens,
+						Cost:            o.streamCost(cost, chunk.Usage),
 						StopReason:      finishReason,
 					}, nil
 				}
 				continue
 			}
 
+			if chunk.Usage != nil {
+				usage := *chunk.Usage
+				trailingUsage = &usage
+			}
+
 			choice := chunk.Choices[0]
 
 			if choice.Delta.Content != nil && *choice.Delta.Content != "" {
-				return StreamEvent{
+				pendingEvents = append(pendingEvents, StreamEvent{
 					Type: StreamEventText,
 					Text: *choice.Delta.Content,
-				}, nil
+				})
 			}
 
 			if len(choice.Delta.ToolCalls) > 0 {
-				tc := choice.Delta.ToolCalls[0]
-				if tc.ID != "" {
-					toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: tc.Function.Name}
-					return StreamEvent{
-						Type:       StreamEventToolStart,
-						ToolCallID: tc.ID,
-						ToolName:   tc.Function.Name,
-					}, nil
+				// Some backends (Gemini through LiteLLM, among others) send a
+				// whole call, id and arguments, in one delta, and may send
+				// several calls per chunk; queue every event instead of only
+				// the first.
+				for _, tc := range choice.Delta.ToolCalls {
+					args := ""
+					if tc.Function != nil {
+						args = tc.Function.Arguments
+					}
+					if tc.ID != "" {
+						name := ""
+						if tc.Function != nil {
+							name = tc.Function.Name
+						}
+						toolCalls[tc.Index] = struct{ id, name string }{id: tc.ID, name: name}
+						pendingEvents = append(pendingEvents, StreamEvent{
+							Type:       StreamEventToolStart,
+							ToolCallID: tc.ID,
+							ToolName:   name,
+						})
+						if args == "" {
+							continue
+						}
+					}
+					pendingEvents = append(pendingEvents, StreamEvent{
+						Type:       StreamEventToolDelta,
+						ToolCallID: toolCalls[tc.Index].id,
+						ToolInput:  args,
+					})
 				}
-				info := toolCalls[tc.Index]
-				args := ""
-				if tc.Function != nil {
-					args = tc.Function.Arguments
-				}
-				return StreamEvent{
-					Type:       StreamEventToolDelta,
-					ToolCallID: info.id,
-					ToolInput:  args,
-				}, nil
 			}
 
 			if choice.FinishReason != nil {
@@ -592,7 +649,7 @@ func (o *OpenAI) SendStream(ctx context.Context, req *Request) (*EventStream, er
 					sort.Ints(indices)
 					for _, idx := range indices {
 						info := toolCalls[idx]
-						pendingToolEnds = append(pendingToolEnds, StreamEvent{
+						pendingEvents = append(pendingEvents, StreamEvent{
 							Type:       StreamEventToolEnd,
 							ToolCallID: info.id,
 						})
@@ -650,6 +707,25 @@ type openaiStreamUsage struct {
 	PromptTokensDetails struct {
 		CachedTokens int `json:"cached_tokens"`
 	} `json:"prompt_tokens_details"`
+	// Keep optional gateway cost opaque so malformed metadata cannot break
+	// ordinary OpenAI streams or discard otherwise valid token usage.
+	Cost json.RawMessage `json:"cost"`
+}
+
+// streamCost prefers the response header; gateways that report cost fall back
+// to the usage block. Plain OpenAI reports neither.
+// @anchor:provider:policy Decode optional usage cost only for gateways with cost reporting enabled.
+func (o *OpenAI) streamCost(headerCost float64, usage *openaiStreamUsage) float64 {
+	if headerCost > 0 || o.costHeader == "" || usage == nil {
+		return headerCost
+	}
+	var cost float64
+	// JSON decoding rejects nonnumeric and overflowing values, including
+	// strings. Missing, null, or invalid cost metadata means unavailable.
+	if err := json.Unmarshal(usage.Cost, &cost); err != nil || cost < 0 {
+		return 0
+	}
+	return cost
 }
 
 // openaiStreamOptions controls streaming behavior in the request.

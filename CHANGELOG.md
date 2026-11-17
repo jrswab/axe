@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- LiteLLM proxy provider (`litellm/<model>`), with the final response's cost reported from the proxy when available (#95).
+
+### Fixed
+- Preserve all tool-call arguments, text, finish reasons, and usage when OpenAI-compatible streaming chunks combine them (#95).
+- Ignore malformed optional gateway cost metadata without breaking OpenAI-compatible streams or JSON results (#95).
+
 ## [1.12.0] - 2026-11-16
 
 ### Added
