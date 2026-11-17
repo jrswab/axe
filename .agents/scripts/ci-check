@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/../.."
+
+case "${1:-}" in
+  test)
+    go test -race -v ./...
+    ;;
+  build)
+    go build -v ./...
+    ;;
+  vet)
+    go vet ./...
+    ;;
+  integrity)
+    status=0
+    unformatted=$(git ls-files -z -- '*.go' | xargs -0 gofmt -l)
+    if [[ -n "$unformatted" ]]; then
+      printf 'Unformatted Go files (run gofmt):\n%s\n' "$unformatted" >&2
+      status=1
+    fi
+    go mod verify || status=1
+    go mod tidy -diff || status=1
+    exit "$status"
+    ;;
+  *)
+    echo "Usage: $0 {test|build|vet|integrity}" >&2
+    exit 2
+    ;;
+esac

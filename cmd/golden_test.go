@@ -428,7 +428,7 @@ func TestMaskJSONOutput(t *testing.T) {
 		},
 		{
 			name:  "masks tool_call_details duration_ms",
-			input: `{"model":"gpt-4o","duration_ms":1,"tool_call_details":[{"name":"read_file","input":{"path":"a.txt"},"output":"text","is_error":false,"turn":0,"duration_ms":42}]}` ,
+			input: `{"model":"gpt-4o","duration_ms":1,"tool_call_details":[{"name":"read_file","input":{"path":"a.txt"},"output":"text","is_error":false,"turn":0,"duration_ms":42}]}`,
 			check: func(t *testing.T, got string) {
 				if !strings.Contains(got, `"duration_ms": "{{TOOL_DURATION_MS}}"`) {
 					t.Errorf("expected tool_call_details duration_ms to be masked, got:\n%s", got)

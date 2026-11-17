@@ -334,7 +334,7 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	var apiResp openaiResponse
-	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+	if err := DecodeJSON(respBody, &apiResp); err != nil {
 		return nil, &ProviderError{
 			Category: ErrCategoryServer,
 			Message:  fmt.Sprintf("failed to parse response: %s", err),
@@ -360,9 +360,9 @@ func (o *OpenAI) Send(ctx context.Context, req *Request) (*Response, error) {
 	for _, tc := range apiResp.Choices[0].Message.ToolCalls {
 		args := make(map[string]string)
 		var rawArgs map[string]interface{}
-		if err := json.Unmarshal([]byte(tc.Function.Arguments), &rawArgs); err == nil {
+		if err := DecodeJSON([]byte(tc.Function.Arguments), &rawArgs); err == nil {
 			for k, v := range rawArgs {
-				args[k] = fmt.Sprintf("%v", v)
+				args[k] = FormatToolArgument(v)
 			}
 		}
 		toolCalls = append(toolCalls, ToolCall{

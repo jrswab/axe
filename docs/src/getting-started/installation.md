@@ -1,6 +1,6 @@
 # Installation
 
-Requires **Go 1.25+**.
+Source builds and `pkg/runner` imports require **Go 1.26.11 or later**.
 
 ## Pre-built Binaries (No Go Required)
 
@@ -29,7 +29,7 @@ sudo mv axe /usr/local/bin/
 go install github.com/jrswab/axe@latest
 ```
 
-> **Note:** If this fails with `invalid go version`, your Go toolchain is older than 1.25. Either upgrade Go from [go.dev/dl](https://go.dev/dl/) or use a pre-built binary above.
+> **Note:** For a checkout, Go's default automatic toolchain selection may use an available `go1.26.11` on `PATH` or download it if the installed toolchain is older. A blocked or unverifiable download can fail even with cached dependencies. `GOTOOLCHAIN=local` disables switching and requires an installed Go version at least 1.26.11. Versioned `go install` uses the target module's minimum but not its toolchain suggestion. If installation fails, check the Go version and toolchain availability, upgrade from [go.dev/dl](https://go.dev/dl/), or use a pre-built binary above.
 
 ## Docker
 
