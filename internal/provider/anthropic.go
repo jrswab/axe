@@ -302,7 +302,7 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 
 	// Parse success response
 	var apiResp anthropicResponse
-	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+	if err := DecodeJSON(respBody, &apiResp); err != nil {
 		return nil, &ProviderError{
 			Category: ErrCategoryServer,
 			Message:  fmt.Sprintf("failed to parse response: %s", err),
@@ -328,7 +328,7 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 		case "tool_use":
 			args := make(map[string]string)
 			for k, v := range block.Input {
-				args[k] = fmt.Sprintf("%v", v)
+				args[k] = FormatToolArgument(v)
 			}
 			toolCalls = append(toolCalls, ToolCall{
 				ID:        block.ID,

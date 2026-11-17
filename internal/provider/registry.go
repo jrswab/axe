@@ -6,6 +6,7 @@ import "fmt"
 var supportedProviders = map[string]bool{
 	"anthropic":  true,
 	"atlascloud": true,
+	"litellm":    true,
 	"openai":     true,
 	"ollama":     true,
 	"opencode":   true,
@@ -22,6 +23,7 @@ func Supported(providerName string) bool {
 }
 
 // New creates a Provider by dispatching to the correct constructor based on providerName.
+// @anchor:provider:entry Select the provider implementation for a configured model prefix.
 func New(providerName, apiKey, baseURL string) (Provider, error) {
 	switch providerName {
 	case "anthropic":
@@ -33,6 +35,9 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 
 	case "atlascloud":
 		return NewAtlasCloud(apiKey, baseURL)
+
+	case "litellm":
+		return NewLiteLLM(apiKey, baseURL)
 
 	case "openai":
 		var opts []OpenAIOption
@@ -85,7 +90,7 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 		return NewRuncrate(apiKey, baseURL)
 
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate", providerName)
 	}
 }
 

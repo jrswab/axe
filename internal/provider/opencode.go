@@ -283,7 +283,7 @@ func (o *OpenCode) sendClaude(ctx context.Context, req *Request) (*Response, err
 	}
 
 	var parsed ocAnthropicResponse
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
+	if err := DecodeJSON(respBody, &parsed); err != nil {
 		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse response: %s", err)}
 	}
 
@@ -305,7 +305,7 @@ func (o *OpenCode) sendClaude(ctx context.Context, req *Request) (*Response, err
 		case "tool_use":
 			args := make(map[string]string, len(block.Input))
 			for k, v := range block.Input {
-				args[k] = fmt.Sprintf("%v", v)
+				args[k] = FormatToolArgument(v)
 			}
 			result.ToolCalls = append(result.ToolCalls, ToolCall{
 				ID:        block.ID,
@@ -502,10 +502,10 @@ type ocResponsesStreamRequest struct {
 }
 
 type ocRespStreamEvent struct {
-	Type   string          `json:"type"`
-	ItemID string          `json:"item_id,omitempty"`
-	Item   json.RawMessage `json:"item,omitempty"`
-	Delta  string          `json:"delta,omitempty"`
+	Type     string          `json:"type"`
+	ItemID   string          `json:"item_id,omitempty"`
+	Item     json.RawMessage `json:"item,omitempty"`
+	Delta    string          `json:"delta,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
 }
 
@@ -649,13 +649,13 @@ func (o *OpenCode) streamGPT(ctx context.Context, req *Request) (*EventStream, e
 // --- Chat Completions streaming ---
 
 type ocChatStreamRequest struct {
-	Model         string             `json:"model"`
-	Messages      []ocChatMessage    `json:"messages"`
-	Temperature   *float64           `json:"temperature,omitempty"`
-	MaxTokens     *int               `json:"max_tokens,omitempty"`
-	Tools         []ocOpenAIToolDef  `json:"tools,omitempty"`
-	Stream        bool               `json:"stream"`
-	StreamOptions *ocStreamOptions   `json:"stream_options,omitempty"`
+	Model         string            `json:"model"`
+	Messages      []ocChatMessage   `json:"messages"`
+	Temperature   *float64          `json:"temperature,omitempty"`
+	MaxTokens     *int              `json:"max_tokens,omitempty"`
+	Tools         []ocOpenAIToolDef `json:"tools,omitempty"`
+	Stream        bool              `json:"stream"`
+	StreamOptions *ocStreamOptions  `json:"stream_options,omitempty"`
 }
 
 type ocStreamOptions struct {
@@ -1012,7 +1012,7 @@ func (o *OpenCode) sendGPT(ctx context.Context, req *Request) (*Response, error)
 	}
 
 	var parsed ocResponsesResponse
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
+	if err := DecodeJSON(respBody, &parsed); err != nil {
 		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse response: %s", err)}
 	}
 
@@ -1037,12 +1037,12 @@ func (o *OpenCode) sendGPT(ctx context.Context, req *Request) (*Response, error)
 			}
 		case "function_call":
 			var argsMap map[string]interface{}
-			if err := json.Unmarshal([]byte(out.Arguments), &argsMap); err != nil {
+			if err := DecodeJSON([]byte(out.Arguments), &argsMap); err != nil {
 				return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse tool call arguments: %s", err)}
 			}
 			args := make(map[string]string, len(argsMap))
 			for k, v := range argsMap {
-				args[k] = fmt.Sprintf("%v", v)
+				args[k] = FormatToolArgument(v)
 			}
 			result.ToolCalls = append(result.ToolCalls, ToolCall{
 				ID:        out.ID,
@@ -1181,7 +1181,7 @@ func (o *OpenCode) sendChatCompletions(ctx context.Context, req *Request) (*Resp
 	}
 
 	var parsed ocChatResponse
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
+	if err := DecodeJSON(respBody, &parsed); err != nil {
 		return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse response: %s", err)}
 	}
 
@@ -1203,12 +1203,12 @@ func (o *OpenCode) sendChatCompletions(ctx context.Context, req *Request) (*Resp
 
 	for _, tc := range choice.Message.ToolCalls {
 		var argsMap map[string]interface{}
-		if err := json.Unmarshal([]byte(tc.Function.Arguments), &argsMap); err != nil {
+		if err := DecodeJSON([]byte(tc.Function.Arguments), &argsMap); err != nil {
 			return nil, &ProviderError{Category: ErrCategoryServer, Message: fmt.Sprintf("failed to parse tool call arguments: %s", err)}
 		}
 		args := make(map[string]string, len(argsMap))
 		for k, v := range argsMap {
-			args[k] = fmt.Sprintf("%v", v)
+			args[k] = FormatToolArgument(v)
 		}
 		result.ToolCalls = append(result.ToolCalls, ToolCall{
 			ID:        tc.ID,

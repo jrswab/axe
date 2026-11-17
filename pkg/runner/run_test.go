@@ -3,12 +3,16 @@ package runner
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/jrswab/axe/internal/provider"
 	"github.com/jrswab/axe/internal/testutil"
@@ -1455,5 +1459,1218 @@ func TestMapProviderError_NonProviderError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "provider call failed") {
 		t.Errorf("expected generic provider failure message, got: %v", err)
+	}
+}
+
+func hookTestToolResult(t *testing.T, mock *testutil.MockLLMServer) ToolResult {
+	t.Helper()
+	if got := mock.RequestCount(); got != 2 {
+		t.Fatalf("RequestCount = %d, want 2", got)
+	}
+	var req struct {
+		Messages []struct {
+			Role    string          `json:"role"`
+			Content json.RawMessage `json:"content"`
+		} `json:"messages"`
+	}
+	if err := json.Unmarshal([]byte(mock.Requests[1].Body), &req); err != nil {
+		t.Fatalf("decode second request: %v", err)
+	}
+	if len(req.Messages) == 0 {
+		t.Fatal("second request has no messages")
+	}
+	msg := req.Messages[len(req.Messages)-1]
+	if msg.Role != "user" {
+		t.Fatalf("tool result message role = %q, want user", msg.Role)
+	}
+	var blocks []struct {
+		Type    string `json:"type"`
+		CallID  string `json:"tool_use_id"`
+		Content string `json:"content"`
+		IsError *bool  `json:"is_error"`
+	}
+	if err := json.Unmarshal(msg.Content, &blocks); err != nil {
+		t.Fatalf("decode tool result blocks: %v", err)
+	}
+	if len(blocks) != 1 || blocks[0].Type != "tool_result" || blocks[0].IsError == nil {
+		t.Fatalf("expected one tool_result with is_error, got %+v", blocks)
+	}
+	return ToolResult{CallID: blocks[0].CallID, Content: blocks[0].Content, IsError: *blocks[0].IsError}
+}
+
+func TestToolHookNilHookUnchanged(t *testing.T) {
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "a.txt"), []byte("hi"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(workdir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("List directory", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+		}),
+		testutil.AnthropicResponse("Done listing"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"list_directory\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Content != "Done listing" {
+		t.Errorf("Content = %q, want Done listing", result.Content)
+	}
+	if result.ToolCalls != 1 {
+		t.Errorf("ToolCalls = %d, want 1", result.ToolCalls)
+	}
+	tr := hookTestToolResult(t, mock)
+	if tr.CallID != "tool_1" || tr.IsError || tr.Content != "a.txt\nsub/" {
+		t.Errorf("tool result = %+v, want tool_1, IsError false, Content %q", tr, "a.txt\nsub/")
+	}
+}
+
+func TestToolHookDenyWriteFile(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{name: "empty content", want: "tool call denied by host policy"},
+		{name: "custom content", content: "no writes", want: "no writes"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			workdir := t.TempDir()
+			mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+				testutil.AnthropicToolUseResponse("Write file", []testutil.MockToolCall{
+					{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "out.txt", "content": "hi"}},
+				}),
+				testutil.AnthropicResponse("Done"),
+			})
+			setupTestEnv(t,
+				"[providers.anthropic]\napi_key = \"fake-key\"\n",
+				"test-agent",
+				"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+			)
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+			stdout, stderr := newMockStdoutStderr()
+			_, err := Run(context.Background(), Options{
+				AgentName: "test-agent",
+				Workdir:   workdir,
+				Stdin:     strings.NewReader(""),
+				Stdout:    stdout,
+				Stderr:    stderr,
+				ToolHook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+					return ToolDecision{Action: ToolDeny, Content: tt.content}, nil
+				},
+			})
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(workdir, "out.txt")); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("denied write_file created out.txt: Stat error = %v, want ErrNotExist", err)
+			}
+			tr := hookTestToolResult(t, mock)
+			if !tr.IsError {
+				t.Error("denied tool result IsError = false, want true")
+			}
+			if tr.Content != tt.want {
+				t.Errorf("denied tool result Content = %q, want %q", tr.Content, tt.want)
+			}
+		})
+	}
+}
+
+func TestToolHookArgumentsAsParsed(t *testing.T) {
+	workdir := t.TempDir()
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Write file", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "a.txt", "content": "one"}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	var recorded map[string]string
+	stdout, stderr := newMockStdoutStderr()
+	_, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			recorded = make(map[string]string, len(call.Arguments))
+			for key, value := range call.Arguments {
+				recorded[key] = value
+			}
+			call.Arguments["path"] = "evil.txt"
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if len(recorded) != 2 || recorded["path"] != "a.txt" || recorded["content"] != "one" {
+		t.Errorf("hook arguments = %v, want map[path:a.txt content:one]", recorded)
+	}
+	data, err := os.ReadFile(filepath.Join(workdir, "a.txt"))
+	if err != nil {
+		t.Errorf("read a.txt: %v", err)
+	} else if string(data) != "one" {
+		t.Errorf("a.txt content = %q, want one", data)
+	}
+	if _, err := os.Stat(filepath.Join(workdir, "evil.txt")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("hook mutation created evil.txt: Stat error = %v, want ErrNotExist", err)
+	}
+}
+
+func TestToolHookUnknownAction(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		decision ToolDecision
+	}{
+		{name: "empty action", decision: ToolDecision{Action: ToolAction("")}},
+		{name: "bogus action", decision: ToolDecision{Action: ToolAction("bogus"), Content: "host text"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			workdir := t.TempDir()
+			mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+				testutil.AnthropicToolUseResponse("Write file", []testutil.MockToolCall{
+					{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "out.txt", "content": "hi"}},
+				}),
+				testutil.AnthropicResponse("Done"),
+			})
+			setupTestEnv(t,
+				"[providers.anthropic]\napi_key = \"fake-key\"\n",
+				"test-agent",
+				"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+			)
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+			stdout, stderr := newMockStdoutStderr()
+			_, err := Run(context.Background(), Options{
+				AgentName: "test-agent",
+				Workdir:   workdir,
+				Stdin:     strings.NewReader(""),
+				Stdout:    stdout,
+				Stderr:    stderr,
+				ToolHook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+					return tt.decision, nil
+				},
+			})
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(workdir, "out.txt")); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("unknown action created out.txt: Stat error = %v, want ErrNotExist", err)
+			}
+			tr := hookTestToolResult(t, mock)
+			if !tr.IsError {
+				t.Error("unknown action tool result IsError = false, want true")
+			}
+			if tr.Content != "tool call denied by host policy" {
+				t.Errorf("unknown action tool result Content = %q, want tool call denied by host policy", tr.Content)
+			}
+			if tt.decision.Content != "" && strings.Contains(mock.Requests[1].Body, tt.decision.Content) {
+				t.Errorf("unknown action leaked %q in second request", tt.decision.Content)
+			}
+		})
+	}
+}
+
+func TestToolHookErrorDenies(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		json bool
+	}{
+		{name: "text"},
+		{name: "JSON", json: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+				testutil.AnthropicToolUseResponse("List directory", []testutil.MockToolCall{
+					{ID: "tool_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+				}),
+				testutil.AnthropicResponse("Done"),
+			})
+			setupTestEnv(t,
+				"[providers.anthropic]\napi_key = \"fake-key\"\n",
+				"test-agent",
+				"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"list_directory\"]\n",
+			)
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+			stdout, stderr := newMockStdoutStderr()
+			result, err := Run(context.Background(), Options{
+				AgentName: "test-agent",
+				Workdir:   t.TempDir(),
+				Stdin:     strings.NewReader(""),
+				Stdout:    stdout,
+				Stderr:    stderr,
+				JSON:      tt.json,
+				ToolHook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+					return ToolDecision{}, errors.New("secret-hook-detail-123")
+				},
+			})
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			tr := hookTestToolResult(t, mock)
+			if !tr.IsError {
+				t.Error("hook error tool result IsError = false, want true")
+			}
+			if tr.Content != "tool call denied by host policy" {
+				t.Errorf("hook error tool result Content = %q, want tool call denied by host policy", tr.Content)
+			}
+			if strings.Contains(mock.Requests[1].Body, "secret-hook-detail-123") {
+				t.Error("hook error leaked secret-hook-detail-123 in second request")
+			}
+			if strings.Contains(result.Content, "secret-hook-detail-123") {
+				t.Error("hook error leaked secret-hook-detail-123 in result.Content")
+			}
+			if tt.json {
+				if len(result.ToolCallDetails) != 1 {
+					t.Fatalf("ToolCallDetails len = %d, want 1", len(result.ToolCallDetails))
+				}
+				if strings.Contains(result.ToolCallDetails[0].Output, "secret-hook-detail-123") {
+					t.Error("hook error leaked secret-hook-detail-123 in ToolCallDetails output")
+				}
+			}
+		})
+	}
+}
+
+func TestToolHookPanicDenies(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("List directory", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"list_directory\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   t.TempDir(),
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolHook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+			panic("secret-panic-456")
+		},
+	})
+	if err != nil || result == nil {
+		t.Fatalf("Run() result = %v, error = %v, want non-nil Result and nil error", result, err)
+	}
+	tr := hookTestToolResult(t, mock)
+	if !tr.IsError {
+		t.Error("hook panic tool result IsError = false, want true")
+	}
+	if tr.Content != "tool call denied by host policy" {
+		t.Errorf("hook panic tool result Content = %q, want tool call denied by host policy", tr.Content)
+	}
+	if strings.Contains(mock.Requests[1].Body, "secret-panic-456") {
+		t.Error("hook panic leaked secret-panic-456 in second request")
+	}
+	if strings.Contains(result.Content, "secret-panic-456") {
+		t.Error("hook panic leaked secret-panic-456 in result.Content")
+	}
+}
+
+func TestToolHookParallelTurn(t *testing.T) {
+	workdir := t.TempDir()
+	paths := []string{"a.txt", "b.txt", "c.txt"}
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Write three files", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "a.txt", "content": "x"}},
+			{ID: "tool_2", Name: "write_file", Input: map[string]string{"path": "b.txt", "content": "x"}},
+			{ID: "tool_3", Name: "write_file", Input: map[string]string{"path": "c.txt", "content": "x"}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	var mu sync.Mutex
+	var hookLog []string
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			hookLog = append(hookLog, call.ID)
+			for _, path := range paths {
+				if _, err := os.Stat(filepath.Join(workdir, path)); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("hook %s observed %s before decision pass finished: Stat error = %v, want ErrNotExist", call.ID, path, err)
+				}
+			}
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	mu.Lock()
+	if got := strings.Join(hookLog, ","); got != "tool_1,tool_2,tool_3" {
+		t.Errorf("hook log = %q, want tool_1,tool_2,tool_3", got)
+	}
+	mu.Unlock()
+	for _, path := range paths {
+		data, err := os.ReadFile(filepath.Join(workdir, path))
+		if err != nil {
+			t.Errorf("read %s: %v", path, err)
+		} else if string(data) != "x" {
+			t.Errorf("%s content = %q, want x", path, data)
+		}
+	}
+	if result.ToolCalls != 3 {
+		t.Errorf("ToolCalls = %d, want 3", result.ToolCalls)
+	}
+}
+
+func TestToolHookSubAgentConfigError(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"parent-agent",
+		"name = \"parent-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\nsub_agents = [\"child-agent\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	stdout, stderr := newMockStdoutStderr()
+	_, err := Run(context.Background(), Options{
+		AgentName: "parent-agent",
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolHook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+	})
+	if err == nil {
+		t.Error("Run() error = nil, want ConfigError for ToolHook with sub_agents")
+	}
+	if !IsConfigError(err) {
+		t.Errorf("Run() error = %T: %v, want unwrapped ConfigError", err, err)
+	}
+	if got := mock.RequestCount(); got != 0 {
+		t.Errorf("RequestCount = %d, want 0 for rejected ToolHook with sub_agents", got)
+	}
+}
+
+func TestToolObserverOrderAndArguments(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		sequential bool
+		postJoin   bool
+		arguments  bool
+		mutate     bool
+	}{
+		{name: "1a", sequential: true},
+		{name: "1b", postJoin: true},
+		{name: "1c", arguments: true},
+		{name: "1d", mutate: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			workdir := t.TempDir()
+			calls := []testutil.MockToolCall{
+				{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "a.txt", "content": "x"}},
+				{ID: "tool_2", Name: "write_file", Input: map[string]string{"path": "b.txt", "content": "x"}},
+				{ID: "tool_3", Name: "write_file", Input: map[string]string{"path": "c.txt", "content": "x"}},
+			}
+			mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+				testutil.AnthropicToolUseResponse("Write three files", calls),
+				testutil.AnthropicResponse("Done"),
+			})
+			agentTOML := "name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n"
+			if tt.sequential {
+				agentTOML += "\n[sub_agents_config]\nparallel = false\n"
+			}
+			setupTestEnv(t, "[providers.anthropic]\napi_key = \"fake-key\"\n", "test-agent", agentTOML)
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+			var events []ToolEvent
+			stdout, stderr := newMockStdoutStderr()
+			_, err := Run(context.Background(), Options{
+				AgentName: "test-agent",
+				Workdir:   workdir,
+				Stdin:     strings.NewReader(""),
+				Stdout:    stdout,
+				Stderr:    stderr,
+				ToolObserver: func(_ context.Context, ev ToolEvent) {
+					events = append(events, ev)
+					if tt.postJoin {
+						for _, call := range calls {
+							if _, err := os.Stat(filepath.Join(workdir, call.Input["path"])); err != nil {
+								t.Errorf("observer %s called before all files exist: %v", ev.CallID, err)
+							}
+						}
+					}
+					if tt.mutate {
+						ev.Call.Arguments["injected"] = "observer mutation"
+					}
+				},
+			})
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			if tt.mutate {
+				if got := mock.RequestCount(); got != 2 {
+					t.Fatalf("RequestCount = %d, want 2", got)
+				}
+				var req struct {
+					Messages []struct {
+						Role    string          `json:"role"`
+						Content json.RawMessage `json:"content"`
+					} `json:"messages"`
+				}
+				if err := json.Unmarshal([]byte(mock.Requests[1].Body), &req); err != nil {
+					t.Fatalf("decode second request: %v", err)
+				}
+				var seen int
+				for _, msg := range req.Messages {
+					if msg.Role != "assistant" {
+						continue
+					}
+					var blocks []struct {
+						Type  string            `json:"type"`
+						ID    string            `json:"id"`
+						Input map[string]string `json:"input"`
+					}
+					if err := json.Unmarshal(msg.Content, &blocks); err != nil {
+						t.Fatalf("decode assistant content: %v", err)
+					}
+					for _, block := range blocks {
+						if block.Type != "tool_use" {
+							continue
+						}
+						if seen >= len(calls) {
+							t.Fatal("second request has extra tool_use blocks")
+						}
+						want := calls[seen]
+						if block.ID != want.ID || !maps.Equal(block.Input, want.Input) {
+							t.Errorf("history tool_use = %s %v, want %s %v", block.ID, block.Input, want.ID, want.Input)
+						}
+						seen++
+					}
+				}
+				if seen != len(calls) {
+					t.Errorf("history tool_use count = %d, want %d", seen, len(calls))
+				}
+				return
+			}
+			if len(events) != len(calls) {
+				t.Fatalf("observer events = %d, want %d", len(events), len(calls))
+			}
+			for i, ev := range events {
+				want := calls[i]
+				if ev.CallID != want.ID || ev.Call.ID != want.ID || ev.Call.Name != want.Name {
+					t.Errorf("event %d call = %+v, CallID = %q, want %s %s", i, ev.Call, ev.CallID, want.ID, want.Name)
+				}
+				if ev.Turn != 0 || ev.Action != ToolAllow || ev.IsError || ev.Duration < 0 {
+					t.Errorf("event %d = %+v, want turn 0, allow, no error, non-negative duration", i, ev)
+				}
+				if tt.arguments && !maps.Equal(ev.Call.Arguments, want.Input) {
+					t.Errorf("event %d arguments = %v, want %v", i, ev.Call.Arguments, want.Input)
+				}
+			}
+		})
+	}
+}
+
+func TestToolObserverFullContentLength(t *testing.T) {
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "big.txt"), []byte(strings.Repeat("a", 4096)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "read_file", Input: map[string]string{"path": "big.txt"}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"read_file\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolObserver: func(_ context.Context, ev ToolEvent) {
+			events = append(events, ev)
+		},
+	})
+	if err != nil || result == nil {
+		t.Fatalf("Run() result = %v, error = %v, want non-nil Result and nil error", result, err)
+	}
+	if result.ToolCallDetails != nil {
+		t.Errorf("ToolCallDetails = %+v, want nil with JSON off", result.ToolCallDetails)
+	}
+	wantLength := len(hookTestToolResult(t, mock).Content)
+	if len(events) != 1 {
+		t.Fatalf("observer events = %d, want 1", len(events))
+	}
+	if events[0].ContentLength <= 1024 {
+		t.Errorf("ContentLength = %d, want > 1024", events[0].ContentLength)
+	}
+	if events[0].ContentLength != wantLength {
+		t.Errorf("ContentLength = %d, want full tool result length %d", events[0].ContentLength, wantLength)
+	}
+}
+
+func TestToolObserverNilUnchanged(t *testing.T) {
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "a.txt"), []byte("hi"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(workdir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("List directory", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+		}),
+		testutil.AnthropicResponse("Done listing"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"list_directory\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+	})
+	if err != nil || result == nil {
+		t.Fatalf("Run() result = %v, error = %v, want non-nil Result and nil error", result, err)
+	}
+	if result.Content != "Done listing" || result.ToolCalls != 1 {
+		t.Errorf("Result Content = %q, ToolCalls = %d, want Done listing, 1", result.Content, result.ToolCalls)
+	}
+	tr := hookTestToolResult(t, mock)
+	if tr.CallID != "tool_1" || tr.IsError || tr.Content != "a.txt\nsub/" {
+		t.Errorf("tool result = %+v, want tool_1, IsError false, Content %q", tr, "a.txt\nsub/")
+	}
+	if result.ToolCallDetails != nil {
+		t.Errorf("ToolCallDetails = %+v, want nil with JSON off", result.ToolCallDetails)
+	}
+}
+
+func TestToolObserverActionDecisions(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		hook    ToolHook
+		action  ToolAction
+		isError bool
+		content string
+	}{
+		{
+			name: "a deny", action: ToolDeny, isError: true, content: "tool call denied by host policy",
+			hook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+				return ToolDecision{Action: ToolDeny}, nil
+			},
+		},
+		{
+			name: "b stub", action: ToolStub, content: "stub text",
+			hook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+				return ToolDecision{Action: ToolStub, Content: "stub text"}, nil
+			},
+		},
+		{
+			name: "c error", action: ToolDeny, isError: true, content: "tool call denied by host policy",
+			hook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+				return ToolDecision{}, errors.New("secret-hook-detail-123")
+			},
+		},
+		{
+			name: "d bogus", action: ToolDeny, isError: true, content: "tool call denied by host policy",
+			hook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+				return ToolDecision{Action: ToolAction("bogus"), Content: "host text"}, nil
+			},
+		},
+		{
+			name: "e panic", action: ToolDeny, isError: true, content: "tool call denied by host policy",
+			hook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+				panic("secret-panic-456")
+			},
+		},
+		{
+			name: "f allow", action: ToolAllow,
+			hook: func(_ context.Context, _ ToolCall) (ToolDecision, error) {
+				return ToolDecision{Action: ToolAllow}, nil
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			workdir := t.TempDir()
+			mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+				testutil.AnthropicToolUseResponse("Write file", []testutil.MockToolCall{
+					{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "out.txt", "content": "hi"}},
+				}),
+				testutil.AnthropicResponse("Done"),
+			})
+			setupTestEnv(t,
+				"[providers.anthropic]\napi_key = \"fake-key\"\n",
+				"test-agent",
+				"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+			)
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+			var events []ToolEvent
+			stdout, stderr := newMockStdoutStderr()
+			_, err := Run(context.Background(), Options{
+				AgentName: "test-agent",
+				Workdir:   workdir,
+				Stdin:     strings.NewReader(""),
+				Stdout:    stdout,
+				Stderr:    stderr,
+				ToolHook:  tt.hook,
+				ToolObserver: func(_ context.Context, ev ToolEvent) {
+					events = append(events, ev)
+				},
+			})
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			tr := hookTestToolResult(t, mock)
+			if tr.IsError != tt.isError {
+				t.Errorf("tool result IsError = %v, want %v", tr.IsError, tt.isError)
+			}
+			if tt.action == ToolAllow {
+				data, err := os.ReadFile(filepath.Join(workdir, "out.txt"))
+				if err != nil || string(data) != "hi" {
+					t.Errorf("out.txt = %q, error = %v, want hi and nil error", data, err)
+				}
+			} else {
+				if _, err := os.Stat(filepath.Join(workdir, "out.txt")); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("non-dispatched write created out.txt: Stat error = %v, want ErrNotExist", err)
+				}
+				if tr.Content != tt.content {
+					t.Errorf("tool result Content = %q, want %q", tr.Content, tt.content)
+				}
+			}
+			for _, secret := range []string{"secret-hook-detail-123", "secret-panic-456", "host text"} {
+				if strings.Contains(fmt.Sprintf("%+v", events), secret) {
+					t.Errorf("observer events leaked %q", secret)
+				}
+			}
+			if len(events) != 1 {
+				t.Fatalf("observer events = %d, want 1", len(events))
+			}
+			ev := events[0]
+			if ev.Action != tt.action || ev.IsError != tt.isError {
+				t.Errorf("event Action = %q, IsError = %v, want %q, %v", ev.Action, ev.IsError, tt.action, tt.isError)
+			}
+			if ev.CallID != "tool_1" || ev.Call.ID != "tool_1" || ev.Turn != 0 {
+				t.Errorf("event = %+v, want tool_1 identity and turn 0", ev)
+			}
+			if ev.ContentLength != len(tr.Content) {
+				t.Errorf("ContentLength = %d, want %d", ev.ContentLength, len(tr.Content))
+			}
+			if tt.action != ToolAllow && ev.Duration != 0 {
+				t.Errorf("non-dispatched Duration = %v, want 0", ev.Duration)
+			}
+			if tt.action == ToolAllow && ev.Duration < 0 {
+				t.Errorf("dispatched Duration = %v, want non-negative", ev.Duration)
+			}
+		})
+	}
+}
+
+func TestToolObserverPanicLine(t *testing.T) {
+	workdir := t.TempDir()
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("List twice", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+			{ID: "tool_2", Name: "list_directory", Input: map[string]string{"path": "."}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"list_directory\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	var observed int
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolObserver: func(_ context.Context, _ ToolEvent) {
+			observed++
+			if observed == 1 {
+				panic("secret-observer-789")
+			}
+		},
+	})
+	if err != nil || result == nil {
+		t.Fatalf("Run() result = %v, error = %v, want non-nil Result and nil error", result, err)
+	}
+	if observed != 2 {
+		t.Errorf("observer calls = %d, want 2 even after panic", observed)
+	}
+	lines := strings.Split(stderr.String(), "\n")
+	if len(lines) != 2 || lines[0] != "Warning: tool observer panicked" || lines[1] != "" {
+		t.Errorf("stderr = %q, want exactly Warning: tool observer panicked followed by newline", stderr.String())
+	}
+	for _, secret := range []string{"secret-observer-789", "tool_1", "list_directory", ".", workdir} {
+		if strings.Contains(stderr.String(), secret) {
+			t.Errorf("observer panic stderr leaked %q", secret)
+		}
+	}
+	if got := mock.RequestCount(); got != 2 {
+		t.Fatalf("RequestCount = %d, want 2", got)
+	}
+	var req struct {
+		Messages []struct {
+			Role    string          `json:"role"`
+			Content json.RawMessage `json:"content"`
+		} `json:"messages"`
+	}
+	if err := json.Unmarshal([]byte(mock.Requests[1].Body), &req); err != nil {
+		t.Fatalf("decode second request: %v", err)
+	}
+	if len(req.Messages) == 0 || req.Messages[len(req.Messages)-1].Role != "user" {
+		t.Fatal("second request missing tool result message")
+	}
+	var blocks []struct {
+		Type    string `json:"type"`
+		CallID  string `json:"tool_use_id"`
+		IsError *bool  `json:"is_error"`
+	}
+	if err := json.Unmarshal(req.Messages[len(req.Messages)-1].Content, &blocks); err != nil {
+		t.Fatalf("decode tool result blocks: %v", err)
+	}
+	if len(blocks) != 2 {
+		t.Fatalf("tool results = %d, want 2", len(blocks))
+	}
+	for i, block := range blocks {
+		if block.Type != "tool_result" || block.CallID != fmt.Sprintf("tool_%d", i+1) || block.IsError == nil || *block.IsError {
+			t.Errorf("tool result %d = %+v, want original identity and IsError false", i, block)
+		}
+	}
+}
+
+func TestToolObserverNilHookAllow(t *testing.T) {
+	workdir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workdir, "small.txt"), []byte("hi"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Read file", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "read_file", Input: map[string]string{"path": "small.txt"}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"read_file\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	_, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolObserver: func(_ context.Context, ev ToolEvent) {
+			events = append(events, ev)
+		},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("observer events = %d, want 1", len(events))
+	}
+	if events[0].Action != ToolAllow || events[0].IsError {
+		t.Errorf("event = %+v, want ToolAllow and IsError false with nil hook", events[0])
+	}
+}
+
+func TestToolObserverCancelDuringDecision(t *testing.T) {
+	workdir := t.TempDir()
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Write two files", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "a.txt", "content": "x"}},
+			{ID: "tool_2", Name: "write_file", Input: map[string]string{"path": "b.txt", "content": "x"}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var hookLog []string
+	var observed int
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(ctx, Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			hookLog = append(hookLog, call.ID)
+			if call.ID == "tool_1" {
+				cancel()
+			} else {
+				t.Errorf("hook called for %s after cancellation", call.ID)
+			}
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+		ToolObserver: func(_ context.Context, _ ToolEvent) {
+			observed++
+		},
+	})
+	if !IsRuntimeError(err) || !errors.Is(err, context.Canceled) {
+		t.Errorf("Run() error = %T: %v, want cancellation RuntimeError", err, err)
+	}
+	if result != nil {
+		t.Errorf("Run() returned a Result after cancellation, want nil")
+	}
+	if len(hookLog) != 1 || hookLog[0] != "tool_1" {
+		t.Errorf("hook log = %v, want [tool_1]", hookLog)
+	}
+	if observed != 0 {
+		t.Errorf("observer calls = %d, want 0 for canceled decision pass", observed)
+	}
+	for _, path := range []string{"a.txt", "b.txt"} {
+		if _, err := os.Stat(filepath.Join(workdir, path)); !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("canceled decision created %s: Stat error = %v, want ErrNotExist", path, err)
+		}
+	}
+}
+
+func TestToolObserverDryRunAndBudget(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		dryRun bool
+	}{
+		{name: "dry run", dryRun: true},
+		{name: "budget exceeded before dispatch"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+				testutil.AnthropicToolUseResponseWithTokens("Over", []testutil.MockToolCall{
+					{ID: "tool_1", Name: "list_directory", Input: map[string]string{"path": "."}},
+				}, 8, 7),
+			})
+			agentTOML := "name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"list_directory\"]\n"
+			if !tt.dryRun {
+				agentTOML += "\n[budget]\nmax_tokens = 10\n"
+			}
+			setupTestEnv(t, "[providers.anthropic]\napi_key = \"fake-key\"\n", "test-agent", agentTOML)
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+			var observed int
+			stdout, stderr := newMockStdoutStderr()
+			result, err := Run(context.Background(), Options{
+				AgentName: "test-agent",
+				Workdir:   t.TempDir(),
+				Stdin:     strings.NewReader(""),
+				Stdout:    stdout,
+				Stderr:    stderr,
+				DryRun:    tt.dryRun,
+				JSON:      !tt.dryRun,
+				ToolObserver: func(_ context.Context, _ ToolEvent) {
+					observed++
+				},
+			})
+			if observed != 0 {
+				t.Errorf("observer calls = %d, want 0 without dispatch", observed)
+			}
+			if tt.dryRun {
+				if err != nil || result == nil || !result.DryRun || result.DryRunInfo == nil {
+					t.Fatalf("Run() result = %v, error = %v, want dry-run Result and nil error", result, err)
+				}
+				if result.DryRunInfo.Model != "anthropic/claude-sonnet-4-20250514" {
+					t.Errorf("dry-run Model = %q, want configured model", result.DryRunInfo.Model)
+				}
+				if got := mock.RequestCount(); got != 0 {
+					t.Errorf("RequestCount = %d, want 0 for dry run", got)
+				}
+				return
+			}
+			if !IsBudgetExceededError(err) || result != nil {
+				t.Fatalf("Run() result = %v, error = %v, want nil Result and BudgetExceededError", result, err)
+			}
+			// Budget failures return nil, but JSON contains the completed budget state.
+			var output struct {
+				Exceeded        bool             `json:"budget_exceeded"`
+				ToolCalls       int              `json:"tool_calls"`
+				ToolCallDetails []ToolCallDetail `json:"tool_call_details"`
+			}
+			if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+				t.Fatalf("decode budget result: %v", err)
+			}
+			if !output.Exceeded || output.ToolCalls != 0 || len(output.ToolCallDetails) != 0 {
+				t.Errorf("budget result = %+v, want exceeded with no executed tools", output)
+			}
+			if got := mock.RequestCount(); got != 1 {
+				t.Errorf("RequestCount = %d, want 1 before budget break", got)
+			}
+		})
+	}
+}
+
+func TestToolObserverDispatchCancel(t *testing.T) {
+	workdir := t.TempDir()
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Run two commands", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "run_command", Input: map[string]string{"command": "touch m1 && exec sleep 30"}},
+			{ID: "tool_2", Name: "run_command", Input: map[string]string{"command": "touch m2 && exec sleep 30"}},
+		}),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"run_command\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	markerWait := make(chan error, 1)
+	go func() {
+		defer cancel()
+		timer := time.NewTimer(10 * time.Second)
+		defer timer.Stop()
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			_, err1 := os.Stat(filepath.Join(workdir, "m1"))
+			_, err2 := os.Stat(filepath.Join(workdir, "m2"))
+			if err1 == nil && err2 == nil {
+				markerWait <- nil
+				return
+			}
+			select {
+			case <-timer.C:
+				markerWait <- fmt.Errorf("markers did not both appear within 10s: m1: %v, m2: %v", err1, err2)
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	_, _ = Run(ctx, Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolObserver: func(_ context.Context, ev ToolEvent) {
+			events = append(events, ev)
+		},
+	})
+	if err := <-markerWait; err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 2 {
+		t.Fatalf("observer events = %d, want 2 for dispatch cancellation", len(events))
+	}
+	for i, ev := range events {
+		wantID := fmt.Sprintf("tool_%d", i+1)
+		if ev.CallID != wantID || ev.Call.ID != wantID || ev.Action != ToolAllow || ev.Turn != 0 || !ev.IsError {
+			t.Errorf("event %d = %+v, want %s, ToolAllow, turn 0, IsError true", i, ev, wantID)
+		}
+	}
+}
+
+func TestToolObserverDispatchError(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Unknown tool", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "no_such_tool", Input: map[string]string{}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	_, err := Run(context.Background(), Options{
+		AgentName: "test-agent",
+		Workdir:   t.TempDir(),
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolObserver: func(_ context.Context, ev ToolEvent) {
+			events = append(events, ev)
+		},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	tr := hookTestToolResult(t, mock)
+	if !tr.IsError || tr.Content != `unknown tool "no_such_tool"` {
+		t.Errorf("tool result = %+v, want unknown-tool error", tr)
+	}
+	if len(events) != 1 {
+		t.Fatalf("observer events = %d, want 1 for dispatch error", len(events))
+	}
+	ev := events[0]
+	if ev.Action != ToolAllow || !ev.IsError || ev.CallID != "tool_1" || ev.Call.ID != "tool_1" || ev.Call.Name != "no_such_tool" || ev.Turn != 0 {
+		t.Errorf("event = %+v, want ToolAllow, IsError true, tool_1/no_such_tool, turn 0", ev)
+	}
+	if ev.ContentLength != len(tr.Content) {
+		t.Errorf("ContentLength = %d, want error content length %d", ev.ContentLength, len(tr.Content))
+	}
+}
+
+func TestToolObserverSubAgentNoHook(t *testing.T) {
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Delegating to child", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "call_agent", Input: map[string]string{"agent": "child-agent", "task": "say hello"}},
+		}),
+		testutil.AnthropicResponse("hello from child"),
+		testutil.AnthropicResponse("Child said hello from child"),
+	})
+	tmpDir := setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"parent-agent",
+		"name = \"parent-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\nsub_agents = [\"child-agent\"]\n",
+	)
+	childPath := filepath.Join(tmpDir, "axe", "agents", "child-agent.toml")
+	if err := os.WriteFile(childPath, []byte("name = \"child-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\n"), 0644); err != nil {
+		t.Fatalf("failed to write child agent: %v", err)
+	}
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	var events []ToolEvent
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(context.Background(), Options{
+		AgentName: "parent-agent",
+		Workdir:   t.TempDir(),
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolObserver: func(_ context.Context, ev ToolEvent) {
+			events = append(events, ev)
+		},
+	})
+	if err != nil || result == nil {
+		t.Fatalf("Run() result = %v, error = %v, want non-nil Result and nil error", result, err)
+	}
+	if result.Content != "Child said hello from child" || result.ToolCalls != 1 {
+		t.Errorf("Result Content = %q, ToolCalls = %d, want child result and 1", result.Content, result.ToolCalls)
+	}
+	if got := mock.RequestCount(); got != 3 {
+		t.Errorf("RequestCount = %d, want parent, child, parent requests", got)
+	}
+	if len(events) != 1 {
+		t.Fatalf("observer events = %d, want 1 for call_agent", len(events))
+	}
+	ev := events[0]
+	if ev.Call.Name != "call_agent" || ev.CallID != "tool_1" || ev.Call.ID != "tool_1" || ev.Action != ToolAllow || ev.IsError || ev.Turn != 0 {
+		t.Errorf("event = %+v, want call_agent/tool_1, ToolAllow, IsError false, turn 0", ev)
+	}
+}
+
+func TestToolHookCancelDuringDecision(t *testing.T) {
+	workdir := t.TempDir()
+	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+		testutil.AnthropicToolUseResponse("Write two files", []testutil.MockToolCall{
+			{ID: "tool_1", Name: "write_file", Input: map[string]string{"path": "a.txt", "content": "x"}},
+			{ID: "tool_2", Name: "write_file", Input: map[string]string{"path": "b.txt", "content": "x"}},
+		}),
+		testutil.AnthropicResponse("Done"),
+	})
+	setupTestEnv(t,
+		"[providers.anthropic]\napi_key = \"fake-key\"\n",
+		"test-agent",
+		"name = \"test-agent\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\ntools = [\"write_file\"]\n",
+	)
+	t.Setenv("AXE_ANTHROPIC_BASE_URL", mock.URL())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var hookLog []string
+	stdout, stderr := newMockStdoutStderr()
+	result, err := Run(ctx, Options{
+		AgentName: "test-agent",
+		Workdir:   workdir,
+		Stdin:     strings.NewReader(""),
+		Stdout:    stdout,
+		Stderr:    stderr,
+		ToolHook: func(_ context.Context, call ToolCall) (ToolDecision, error) {
+			hookLog = append(hookLog, call.ID)
+			if call.ID == "tool_1" {
+				cancel()
+			} else {
+				t.Errorf("hook called for %s after cancellation", call.ID)
+			}
+			return ToolDecision{Action: ToolAllow}, nil
+		},
+	})
+	if err == nil {
+		t.Error("Run() error = nil, want cancellation RuntimeError")
+	}
+	if !IsRuntimeError(err) {
+		t.Errorf("Run() error = %T: %v, want unwrapped RuntimeError", err, err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("Run() error = %v, want errors.Is(context.Canceled)", err)
+	}
+	if len(hookLog) != 1 || hookLog[0] != "tool_1" {
+		t.Errorf("hook log = %v, want [tool_1]", hookLog)
+	}
+	for _, path := range []string{"a.txt", "b.txt"} {
+		if _, err := os.Stat(filepath.Join(workdir, path)); !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("canceled decision created %s: Stat error = %v, want ErrNotExist", path, err)
+		}
+	}
+	if result != nil {
+		t.Errorf("Run() returned a Result after cancellation, want nil")
 	}
 }

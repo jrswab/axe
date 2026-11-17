@@ -67,9 +67,9 @@ func NewBedrock(region string, opts ...BedrockOption) (*Bedrock, error) {
 // bedrockRequest is the JSON body sent to the Bedrock Converse API.
 type bedrockRequest struct {
 	Messages        []bedrockMessage        `json:"messages"`
-	System          []bedrockSystemBlock     `json:"system,omitempty"`
-	InferenceConfig *bedrockInferenceConfig  `json:"inferenceConfig,omitempty"`
-	ToolConfig      *bedrockToolConfig       `json:"toolConfig,omitempty"`
+	System          []bedrockSystemBlock    `json:"system,omitempty"`
+	InferenceConfig *bedrockInferenceConfig `json:"inferenceConfig,omitempty"`
+	ToolConfig      *bedrockToolConfig      `json:"toolConfig,omitempty"`
 }
 
 // bedrockMessage is the wire format for a message in the Bedrock API.
@@ -80,9 +80,9 @@ type bedrockMessage struct {
 
 // bedrockBlock is a content block in a Bedrock message.
 type bedrockBlock struct {
-	Text       string              `json:"text,omitempty"`
-	ToolUse    *bedrockToolUse     `json:"toolUse,omitempty"`
-	ToolResult *bedrockToolResult  `json:"toolResult,omitempty"`
+	Text       string             `json:"text,omitempty"`
+	ToolUse    *bedrockToolUse    `json:"toolUse,omitempty"`
+	ToolResult *bedrockToolResult `json:"toolResult,omitempty"`
 }
 
 // bedrockToolUse represents a tool invocation in a Bedrock response.
@@ -94,9 +94,9 @@ type bedrockToolUse struct {
 
 // bedrockToolResult represents a tool result sent back to Bedrock.
 type bedrockToolResult struct {
-	ToolUseID string                    `json:"toolUseId"`
+	ToolUseID string                     `json:"toolUseId"`
 	Content   []bedrockToolResultContent `json:"content"`
-	Status    string                    `json:"status"`
+	Status    string                     `json:"status"`
 }
 
 // bedrockToolResultContent is the text content inside a tool result.
@@ -111,7 +111,7 @@ type bedrockCachePoint struct {
 
 // bedrockSystemBlock is a system prompt block in the Bedrock API.
 type bedrockSystemBlock struct {
-	Text       string               `json:"text"`
+	Text       string             `json:"text"`
 	CachePoint *bedrockCachePoint `json:"cachePoint,omitempty"`
 }
 
@@ -153,10 +153,10 @@ type bedrockOutput struct {
 
 // bedrockUsage contains token usage information from the Bedrock response.
 type bedrockUsage struct {
-	InputTokens            int `json:"inputTokens"`
-	OutputTokens           int `json:"outputTokens"`
-	CacheReadInputTokens   int `json:"cacheReadInputTokens"`
-	CacheWriteInputTokens  int `json:"cacheWriteInputTokens"`
+	InputTokens           int `json:"inputTokens"`
+	OutputTokens          int `json:"outputTokens"`
+	CacheReadInputTokens  int `json:"cacheReadInputTokens"`
+	CacheWriteInputTokens int `json:"cacheWriteInputTokens"`
 }
 
 // bedrockErrorResponse represents a Bedrock API error response.
@@ -277,7 +277,7 @@ func parseBedrockResponse(resp *bedrockResponse, model string) *Response {
 		if block.ToolUse != nil {
 			args := make(map[string]string, len(block.ToolUse.Input))
 			for k, v := range block.ToolUse.Input {
-				args[k] = fmt.Sprintf("%v", v)
+				args[k] = FormatToolArgument(v)
 			}
 			r.ToolCalls = append(r.ToolCalls, ToolCall{
 				ID: block.ToolUse.ToolUseID, Name: block.ToolUse.Name, Arguments: args,
@@ -345,7 +345,7 @@ func (b *Bedrock) Send(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	var apiResp bedrockResponse
-	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+	if err := DecodeJSON(respBody, &apiResp); err != nil {
 		return nil, &ProviderError{
 			Category: ErrCategoryServer,
 			Message:  fmt.Sprintf("failed to parse response: %s", err),
