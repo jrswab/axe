@@ -7,7 +7,8 @@ type CheaperInference struct {
 	*OpenAI
 }
 
-// NewCheaperInference creates a Cheaper Inference provider using its default API endpoint.
+// NewCheaperInference creates a Cheaper Inference provider with an optional base URL override.
+// @anchor:provider:configuration Require Cheaper Inference credentials and select its compatible API endpoint.
 func NewCheaperInference(apiKey string, baseURL string) (*CheaperInference, error) {
 	if apiKey == "" {
 		return nil, &ProviderError{
