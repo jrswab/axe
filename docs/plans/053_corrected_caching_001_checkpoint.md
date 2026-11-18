@@ -27,8 +27,8 @@
 - T3: `unchecked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect exact T2 files and commit G002 intent for clean gate launch
-- Last completed phase/task/gate and timestamp: T2b GREEN; G002 whole-suite intent, 2026-11-18T22:58:22.113098+00:00
+- Next safe action: Complete mechanical assertion/fixture preservation check before nit commit
+- Last completed phase/task/gate and timestamp: N002 inspection partial; mechanical comparison intent, 2026-11-18T23:17:36.050050+00:00
 
 ## Milestone acceptance
 
@@ -1222,8 +1222,140 @@ T2b independent GREEN passed full-file comparison to RED stash d3bdafd2e252ea91b
 
 - Next action: Inspect exact T2 files and commit G002 intent for clean gate launch
 
+### G002 running; R002 record-check intent
+
+- Gate: G002 running; R002 record-check intent
+- Commands/results:
+T2 full index/pending inspection passed exactly nine files, 811 insertions19 deletions, empty cached diff and no foreign/untracked content. All three test files identical to snapshots. factory-commit exit0 at 0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb remaining_changes[]. G002 factory-gate run --gate test exit0, name gate-test-0e5aac98d426-20261118T225853Z, sha same, base origin/master, log /tmp/factory-gate-1001/gate-test-0e5aac98d426-20261118T225853Z.log, no superseded runs; first poll exit4 running. Poll existing run only. R002 in flight: docs-lint since original milestone base and records-stale-check T2 fixedpoint75d3aebd9551f6403c9cba699da25422b2bc5a89. No HEAD change before evidence review. T2 axes round1 not launched; caps unchanged.
+- HEAD commit SHA: `0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Poll G002 and run R002 records checks
+
+### G002 PASS; T2 axes round1 intent
+
+- Gate: G002 PASS; T2 axes round1 intent
+- Commands/results:
+G002 final poll exit0 state exited0; matching whole-suite log /tmp/factory-gate-1001/gate-test-0e5aac98d426-20261118T225853Z.log at reviewed0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb. R002 actual docs-lint --since original base exit0 docs-lint1 52 files0 findings; records-stale-check75d3aebd9551f6403c9cba699da25422b2bc5a89 exit0 no removed/renamed names. Earlier malformed empty tool arguments were rejected before commands launched, no substantive outcome unknown. T2-Standards, T2-Spec and T2-DesignRisk round1 in flight one parallel batch. Original each-axis scope all nine changed files in range75d3aebd9551f6403c9cba699da25422b2bc5a89..0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb, no slices/prior findings. No writer rationale/other-axis outcomes supplied. Reviewed HEAD unchanged, checkpoint-only bookkeeping dirty. Incomplete counts0 and failing axis rounds0. T1 checked; T2-T4 unchecked; historical planning failures2.
+- HEAD commit SHA: `0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb`
+- Relevant work: `committed` — stash ref `966e818d5b1f02956c0b70fd8e0bd4f20bd28d3d` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch three independent T2 review axes
+
+### T2 axes PASS with nit; N002 inspection intent
+
+- Gate: T2 axes PASS with nit; N002 inspection intent
+- Commands/results:
+T2-Standards round1 APPROVED WITH NITS, all nine files complete; T2-Spec round1 APPROVED complete no findings; T2-DesignRisk round1 APPROVED complete no findings. Combined review PASS WITH NIT, no blocker/incomplete/retry. Sole nit verbatim: 'nit — Duplicated Code: internal/provider/anthropic_test.go:949-1136 and internal/provider/anthropic_stream_test.go:24-227 duplicate the fixture matrix, literal expectations, and most assertion logic. Both add: for _, field := range []struct{ name, want string }{ {"system", wantSystem}, {"tools", wantTools}, {"messages", turn.want}, } { This creates two large blocks that must stay synchronized. Fix: extract test-only fixtures/assertion helpers while retaining separate transport execution and stream cleanup; keep literal expectations independent of production serializers. Source: Standards’ Duplicated Code criterion, /home/jaron/.agents/skills/factory/REVIEW-CRITERIA.md:10.' N002 in flight: read-only inspect safe extraction of shared fixtures/assertion helper WITHOUT rewriting any assertion, expected value or case. Moving unchanged assertion statements into a helper is permitted only if statements/expectations preserved byte-for-byte; do not change assertions to satisfy lint. If actual assertion rewrite needed, stop for Jaron. No re-review for nit; lint and affected tests replace it. T2 unchecked until nit gates; T1 checked, T3/T4 unchecked. Axis failed rounds0, incomplete0; planning failures2.
+- HEAD commit SHA: `0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb`
+- Relevant work: `committed` — stash ref `ed1f127e7eaaa33caa192b4d5528fa38ffed6754` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect nit extraction boundaries without assertion rewrites
+
+### N002 scope established; nit extraction intent
+
+- Gate: N002 scope established; nit extraction intent
+- Commands/results:
+N002 read-only inspection found duplication fix can move identical literal fixture data, row/turn types, fresh request constructors and exact decode/field-assertion block into shared test-only helper, retaining source assertions/expected JSON unchanged and execution count32. Transport-specific Send/SendStream drain/close, mutation/prefix/metadata assertions stay in place (stream metadata differs). No assertion rewrite/deletion/weakening authorized; shared helper retains same assertions on every original case. N002 code in flight scoped exactly to two Anthropic test files and optional test-only helper file; no production/docs change. Preserve original subtest names and counts; verify normalized assertion text and case equivalence. Rerun focused32 leaves, package race/vet/lint. No further review per nit protocol. If exact assertions cannot be preserved stop before edits requiring Jaron. Caps unchanged.
+- HEAD commit SHA: `0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb`
+- Relevant work: `committed` — stash ref `f8f610657f76016c177f8ebf11b4382523328c2a` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Extract only duplicated unchanged T2 test fixtures/assertion block and verify
+
+### N002 lint and tests PASS; nit commit inspection intent
+
+- Gate: N002 lint and tests PASS; nit commit inspection intent
+- Commands/results:
+N002 extracted shared test fixtures/request construction/decode/field assertions into internal/provider/anthropic_static_prefix_test.go:26-147 and transport callers in normal:949-1010 stream:24-102. Normalized source comparison matches both original fixture/assertion blocks/inventories, 32 leaf names unchanged. Fixed-string normalized old passage zero remaining per transport, one identical shared occurrence. Focused32 PASS, go test -race ./internal/provider PASS18.268s, vet/gofmt/golangci-lint0issues/diff-check all exit0; overlay first-tool mutation fails and reverted without production edits. Extra git diff --no-index --check /dev/null helper returned1 with no diagnostics due differing files, not a gate failure. HEAD0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb. N002 inspection in flight: independent read-only grep and preservation verification plus complete index/pending content including untracked helper, then exact nit/checkpoint commit. After commit lint/affected tests required; no re-review. Cap state unchanged.
+- HEAD commit SHA: `0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb`
+- Relevant work: `uncommitted` — stash ref `64e314b9207d65d277c8245b97d01ee43896745e` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+?? internal/provider/anthropic_static_prefix_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+1bb3e2e76ec68d44fa103a6a4229a21e9b988ce9  "internal/provider/anthropic_static_prefix_test.go"
+```
+
+- Next action: Independently inspect nit relocation and exact commit content
+
+### N002 inspection partial; mechanical comparison intent
+
+- Gate: N002 inspection partial; mechanical comparison intent
+- Commands/results:
+N002 explore found manual relocation consistent, complete index stage0/cached diff empty and only intended4 files; full helper read and transport-specific code unchanged outside hunks. Independent grep -F marker each once in helper, no markers in callers. Full-passage and mechanical assertion/fixture inventory comparison not completed, so commit held. No assertion violation found and no review retry (this is inspection plumbing). N002 mechanical completion in flight: general agent read-only checkout, /tmp-only comparison artifacts allowed, reconstruct original exact blocks/fixtures from HEAD and verify normalized moved content plus case coverage and whole full-passage grep. No tests or code review. Reinspect complete index/pending intended contents before commit. Caps unchanged.
+- HEAD commit SHA: `0e5aac98d426a063e8ecb37b8e2b8d5dde214cbb`
+- Relevant work: `uncommitted` — stash ref `fd3176255777e99f2d29488cb64f1a6ed810a829` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+?? internal/provider/anthropic_static_prefix_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+1bb3e2e76ec68d44fa103a6a4229a21e9b988ce9  "internal/provider/anthropic_static_prefix_test.go"
+```
+
+- Next action: Complete mechanical assertion/fixture preservation check before nit commit
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect exact T2 files and commit G002 intent for clean gate launch
+- Next action: Complete mechanical assertion/fixture preservation check before nit commit
