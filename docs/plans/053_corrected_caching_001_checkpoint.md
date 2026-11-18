@@ -20,15 +20,15 @@
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
 - Current phase: `implement`
-- Current task: none
+- Current task: Restart sync clean launch
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - T3: `unchecked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Correct stale annotation and prepare current checklist for commit
-- Last completed phase/task/gate and timestamp: P002 staging inspection outcome; I003 annotation correction intent, 2026-11-18T21:53:42.513899+00:00
+- Next safe action: Inspect full index/pending exact files, commit them, then launch Y002 factory-sync
+- Last completed phase/task/gate and timestamp: L008 PASS; Y002 restart sync intent, 2026-11-18T22:15:25.578470+00:00
 
 ## Milestone acceptance
 
@@ -552,8 +552,222 @@ Preparation agent stopped without staging due stale checklist '(not yet created)
 
 - Next action: Correct stale annotation and prepare current checklist for commit
 
+### I003 outcome; P002 checklist review in flight
+
+- Gate: I003 outcome; P002 checklist review in flight
+- Commands/results:
+I003 completed only stale annotation fix; full current checklist inspected against spec R1-R5/Q1; no discrepancy, index clean266 entries before exact force staging, cached/worktree diff checks pass. Historical ignored versions not independently compared; no claim otherwise. factory-commit exit0 HEAD411a870365f792461d5b39719fc5811a44dea355 remaining_changes[],2artifact paths only. P002 in flight: independent complete checklist planning review round1 against approved spec. L007 passed unchanged checklist/spec content; docs-lint1 header/pass52files0findings recorded. Original checklist scope all4tasks and execution/completion rules, no slices, active incomplete0. Shared planning failures1 retained from P001. P001 approved, Q2 extra review consumed. Test evidence not applicable planning. No source/test implementation begun.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await P002 checklist planning review
+
+### P002 CHANGES REQUESTED; I004 finding fix intent
+
+- Gate: P002 CHANGES REQUESTED; I004 finding fix intent
+- Commands/results:
+P002 complete Verdict: CHANGES REQUESTED, Coverage: complete. Sole blocker checklist:33 quoted offending text 'the default-on Nested and opposite-choice cases are expected RED before the Nested fix.' Current parent true/Nested false and omitted parent/Nested false already pass. Reviewer concrete fix: 'Main settings and explicit-false Nested rows: verification-only GREEN. Omitted/true Nested rows: expected RED, including parent false / Nested true and parent false / Nested omitted. Keep all required contradictory/defaulting rows; do not modify assertions to manufacture RED.' No nits or other findings. Shared planning failing rounds now2 (P001round1 + P002round1), active incomplete0. I004 in flight: replace only quoted inaccurate expected-RED classification with exact reviewer distinction, preserve every row/requirement/assertion. Required grep-F zero old text and path:line changed passage. Next gates independent explore verifies grep/source, spec-lint/docs-lint then P002round2. No acceptance change.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `committed` — stash ref `76d9966a72b42491bdebb308836e6ec75bd47ff8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Correct checklist expected RED versus existing-GREEN classification
+
+### I004 writer outcome; user interruption and H001 handoff intent
+
+- Gate: I004 writer outcome; user interruption and H001 handoff intent
+- Commands/results:
+I004 writer completed sole requested checklist:33 factual correction. Before: 'Main-only rows are existing-GREEN verification because Main already resolves the choice; the default-on Nested and opposite-choice cases are expected RED before the Nested fix.' After: 'Main settings and explicit-false Nested rows: verification-only GREEN. Omitted/true Nested rows: expected RED, including parent false / Nested true and parent false / Nested omitted.' Writer reports grep-F offending text0hits, git diff --check exit0, source support spec:28, pkg/runner/run.go:438-452, internal/tool/tool.go:247-255. Only checklist edited by writer; checkpoint prior changes preserved. HEAD411a870365f792461d5b39719fc5811a44dea355; checkpoint/checklist modified. Independent explore verification of quoted-text removal and source correctness NOT YET RUN. Rerun spec-lint/docs-lint, inspected commit, and P002 round2 NOT YET RUN. No source/test implementation or assertions changed.
+User requested handoff, an external interruption terminal condition for current run. All milestone001 tasks T1-T4 and milestones001-003 remain unchecked. Shared planning failing rounds2 (P001round1 partial blocker and P002round1 sole factual blocker), active incomplete0; P001 specification combined APPROVED; P002 round1 complete CHANGES REQUESTED; its sole blocker fix written but not independently accepted. No next planning review dispatched. If P002round2 fails it is third shared planning failure: stop planning reviews, apply Factory planning-cap post-fix explore protocol and spec-lint0 before execution, not another review loop. Q1 future assertion scope and Q2 consumed one-extra-review approval remain unchanged. No code/per-task/milestone reviews begun, round4 not applicable. H001 in flight: general writes/redacts/publishes handoff only, includes actual handoff.py state --checkpoint ... --since original milestone base. Do not run tests/reviews/lint/sync or commit during handoff. Handoff next safe action is read-only restart reconciliation then independent verification of I004 before lints/commit/P002round2. Relevant pending checklist change is captured by this bookkeeping snapshot; checkpoint writes require accounting on restart.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `uncommitted` — stash ref `ad0ecd8d3c75f34fd95596e57eab200b4e6a3d9c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume with restart validation and independently verify I004 before lint, commit and P002 round2
+
+### H001 handoff publication complete; run interrupted
+
+- Gate: H001 handoff publication complete; run interrupted
+- Commands/results:
+H001 completed user-requested handoff only. Published /tmp/handoff-axe-iss83.20261118T221031273108Z.md and latest symlink /tmp/handoff-axe-iss83.latest.md. First line correct absolute milestone path. handoff.py state --checkpoint this checkpoint --since 3e178147775f5c002e7b967995c8823d72472a57 exit0 exact JSON included; redact exit0 no changes/manual no secrets or emails; publication verified mode0444/latest symlink. No repository edits by handoff writer, no tests/gates/review/sync/commit/I004verification. HEAD411a870365f792461d5b39719fc5811a44dea355, checkpoint/checklist modified. This entry is expected post-publication checkpoint-only delta stated by handoff. User interruption terminal condition, all milestones/tasks unchecked. P002round2 pending, shared planning failures2 active incomplete0; I004 writer fix pending independent explore, lints and commit. H001 no longer in flight. Resume command /skill:factory --handoff /tmp/handoff-axe-iss83.latest.md.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `uncommitted` — stash ref `a20425b15e1ca3068609c1244c1c19090fbf527b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume from published handoff, reconcile checkpoint, then independently verify I004
+
+### RX001 read-only restart recovery established
+
+- Gate: RX001 read-only restart recovery established
+- Commands/results:
+RX001 read-only explore recovery completed. Identity: worktree /home/jaron/dev/axe/iss-83-finish-caching, branch iss-83-finish-caching, HEAD 411a870365f792461d5b39719fc5811a44dea355, original milestone base 3e178147775f5c002e7b967995c8823d72472a57. Full lane 001 and T1-T4 remain unchecked. Index 267 entries, cached diff empty; only checkpoint and checklist modified. Pending checklist is exactly I004 correction; checkpoint differences are recorded I003/P002/I004/H001 outcomes and state writes. No foreign changes found. All 18 recorded stash objects exist and were inspected; latest two full diffs match recorded I004/H001 progression. Untracked inventories empty. Historical ignored I001/I002 versions are unavailable but explicitly historical, not required current-work evidence. H001 outcome already recorded and published handoff confirmed. Y001 last sync passed at 78c0cc9, ahead 2 behind 0, no later sync launched. Bootstrap preflight Go 1.26.11 and govulncheck no vulnerabilities established from checkpoint. Current environment remains to be read before later gates. Ledger: P001 combined approved after Q2-authorized P001c; exception consumed. P002 round 1 complete CHANGES REQUESTED, sole blocker retained. Shared planning failing rounds 2. Active consecutive incomplete 0. No code/task/milestone reviews, tests, or completion gates launched; round four not applicable. I004 writer completed; independent verification, current lints, commit, and P002 round 2 remain pending. Recovery added no tests, review, fix, sync, or retry.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `uncommitted` — stash ref `e6b5a58b41fe93e3a5a8ccb3783ad06022f72fb1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record independent I004 verification intent and local step-order decision
+
+### V004 independent I004 verification intent
+
+- Gate: V004 independent I004 verification intent
+- Commands/results:
+Decision D7 (reported): verify and commit the existing I004 correction and required planning lint/bookkeeping before restart sync. This is a reversible local order exception within 001 planning. It preserves acceptance and every test assertion, bypasses no gate or independent review, crosses no human-only boundary or cap. Evidence: RX001 found only accounted-for checkpoint/checklist changes and empty index; factory-sync refuses tracked changes. Intended next gates: independent V004, spec-lint and docs-lint, exact-path verified commit, then restart factory-sync clean launch before P002 round 2. Failed prerequisites stop the action. V004 in flight: read-only explore checks fixed-string absence of exact prior blocker text, verifies corrected checklist T1 row classification and required rows against current source/spec, reads current environment and phase guidance, and prepares exact-path commit inspection. This is not another planning review or retry. Cap snapshot unchanged: shared planning failures 2; P002 round 2 not launched; active incomplete 0; P001 Q2 exception consumed; no implementation/round-four gates.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `uncommitted` — stash ref `f05eaab02ad294bf9ed5e911272b9ac5355f7d37` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch V004 independent read-only correction verification
+
+### V004 outcome; RX002 original finding recovery intent
+
+- Gate: V004 outcome; RX002 original finding recovery intent
+- Commands/results:
+V004 completed read-only: grep -nF of offending sentence in checklist exited 1 with zero matches. Current first two correction sentences at implement.md:33 classify Main/explicit-false Nested as existing GREEN, omitted/true Nested as expected RED; source run.go:438-452 and tool.go:247-255 supports this. All contradictory/defaulting rows remain; no assertion or requirement changed. The reviewer's third imperative sentence is not reproduced verbatim, although implement.md:10 already prohibits manufacturing RED/assertion weakening. V004 flagged this exact-text discrepancy; no new exact-content requirement is established by recovery. Do not declare overall planning pass. V004 also found the checkpoint preserves a summary plus quoted proposed correction, not the full original P002 finding. RX002 in flight: read-only inspect original P002 dispatch/session records and artifact snippets to recover the actual prior finding verbatim and determine whether any exact-sentence requirement exists. No review retry, code/test gate, fix, or sync authorized. HEAD remains 411a870; only accounted-for checkpoint/checklist pending, cached diff empty. Current PATH/GOTOOLCHAIN shell inspection blocked by read-only guard; defer environment observation to authorized writer checks before testing. Cap snapshot unchanged: planning failures 2; P002 round 2 unlaunched; incomplete 0; P001 exception consumed; no implementation reviews/round four.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `uncommitted` — stash ref `0daa859b8f1dd9b7ec3312d292779f7bca4ee5e8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Recover original P002 reviewer finding and establish exact correction scope
+
+### RX002 original finding recovered; L008 lint intent
+
+- Gate: RX002 original finding recovered; L008 lint intent
+- Commands/results:
+RX002 recovered original P002 round-1 result from /home/jaron/.pi/agent/sessions/--home-jaron-dev-axe-iss-83-finish-caching--/2026-11-18T19-59-39-411Z_01a1f03e-5591-748d-88b3-336907b6b349.jsonl:149, message 4001284f; dispatch at :148 call_GOVLzxYh5Ir0a7AT61Zdifoq. Verdict CHANGES REQUESTED, Coverage: complete, sole blocker follows verbatim:
+### Blocking — Incorrect RED classification for contradictory cache choices
+
+**`docs/plans/053_corrected_caching_001_implement.md:33`**
+
+> “the default-on Nested and opposite-choice cases are expected RED before the Nested fix.”
+
+One required opposite-choice case—**parent true / Nested false**—already produces the specified behavior. Main resolves explicit true correctly at `pkg/runner/run.go:438-452`; the Nested request omits `CacheConfig` at `internal/tool/tool.go:247-255`, so its current value is false. Likewise, parent omitted / Nested false should already pass.
+
+The checklist therefore incorrectly classifies existing-correct cases as expected failures, despite its instruction at line 10 to investigate failures outside the planned RED. This is a factual error in the test-first execution instructions, not a requested acceptance change.
+
+**Fix:** distinguish expectations explicitly:
+- Main settings and explicit-false Nested rows: verification-only GREEN.
+- Omitted/true Nested rows: expected RED, including parent false / Nested true and parent false / Nested omitted.
+
+Keep all required contradictory/defaulting rows; do not modify assertions to manufacture RED.
+
+RX002 established final imperative preserves cases/assertions, not an exact replacement requirement. V004 independently verified old text absent, both classification sentences supported by source, all rows preserved and protections at implement.md:10. V004 correction verification now established PASS, not a planning-review outcome. L008 in flight: spec-lint both spec and checklist; docs-lint --since 3e178147775f5c002e7b967995c8823d72472a57, record actual outputs before commit. Caps remain planning failures 2, P002 round 2 not launched, active incomplete 0, no code gates or round-four progress.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `uncommitted` — stash ref `d508de47ac94a7cf67d54dff8067f76fd8b6f795` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run L008 spec-lint and docs-lint on current artifacts
+
+### L008 PASS; Y002 restart sync intent
+
+- Gate: L008 PASS; Y002 restart sync intent
+- Commands/results:
+L008 actual commands at HEAD 411a870365f792461d5b39719fc5811a44dea355: spec-lint --root /home/jaron/dev/axe/iss-83-finish-caching docs/plans/053_corrected_caching_001_spec.md docs/plans/053_corrected_caching_001_implement.md exited 0; spec 26 citations and checklist 4 citations, 0 findings. docs-lint --since 3e178147775f5c002e7b967995c8823d72472a57 exited 0; header docs-lint 1, 52 Markdown files, 0 findings, 0 outside scope. V004 source/grep verification established by RX002; no assertion/acceptance changes. Y002 in flight: perform mandatory current-run factory-sync on origin/master after full index/pending content inspection and exact-path commit of checkpoint/checklist bookkeeping plus verified I004. No push authorized by this action. Actual launch SHA comes from commit/repo-state, not predicted. Previous Y001 actual outcome established; this is required restart sync, not blind retry. Stop on unsafe index/content, refusal, fetch failure or conflicts. Caps unchanged: shared planning failures 2, P002 round 2 unlaunched, active incomplete 0, P001 exception consumed, no implementation/round-four gates.
+- HEAD commit SHA: `411a870365f792461d5b39719fc5811a44dea355`
+- Relevant work: `uncommitted` — stash ref `4b557f2fa4a1809d8c17e9ef7b46b83c83d7c672` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect full index/pending exact files, commit them, then launch Y002 factory-sync
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Correct stale annotation and prepare current checklist for commit
+- Next action: Inspect full index/pending exact files, commit them, then launch Y002 factory-sync
