@@ -19,16 +19,16 @@
 ## State
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
-- Current phase: `implement`
-- Current task: Restart sync clean launch
+- Current phase: `execute`
+- Current task: T1
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - T3: `unchecked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect full index/pending exact files, commit them, then launch Y002 factory-sync
-- Last completed phase/task/gate and timestamp: L008 PASS; Y002 restart sync intent, 2026-11-18T22:15:25.578470+00:00
+- Next safe action: Inspect and commit T1 with G001 intent, then launch whole-suite test gate
+- Last completed phase/task/gate and timestamp: T1b GREEN; G001 whole-suite gate intent, 2026-11-18T22:32:28.584920+00:00
 
 ## Milestone acceptance
 
@@ -766,8 +766,220 @@ L008 actual commands at HEAD 411a870365f792461d5b39719fc5811a44dea355: spec-lint
 
 - Next action: Inspect full index/pending exact files, commit them, then launch Y002 factory-sync
 
+### Y002 PASS; P002 round 2 intent
+
+- Gate: Y002 PASS; P002 round 2 intent
+- Commands/results:
+Verified precommit inspection found full stage-0 index with empty cached diff, no untracked content, and only approved I004/checkpoint writes. factory-commit exited 0, commit 6fcd55bee81f4ce26f5ad992f6eae6890875071a, remaining_changes []. Y002 actual run_script factory-sync args [] exited 0 at launch HEAD 6fcd55bee81f4ce26f5ad992f6eae6890875071a; JSON branch iss-83-finish-caching, base origin/master, head_before same, ahead 4, behind 0, shared_files [], conflicts [], synced true. No HEAD change. L008 passing artifact checks remain current after no-op sync; this append is bookkeeping only. P002 round 2 in flight: independent read-only planning review of entire checklist versus complete approved spec, with original sole round-1 blocker verbatim and test evidence not applicable. Shared planning failures before dispatch 2; active incomplete 0; P001 exception consumed. Any failing round 2 reaches shared planning cap 3, with no further planning-review loop. No implementation or round-four gates.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch P002 full checklist planning review round 2
+
+### P002 round 2 APPROVED; E001 T1 execution discovery intent
+
+- Gate: P002 round 2 APPROVED; E001 T1 execution discovery intent
+- Commands/results:
+P002 round 2 returned Verdict: APPROVED, no findings or nits, no Review incomplete marker. Reviewer resolved sole prior blocker against run.go:438-452, tool.go:247-255 and :379-390. Full artifact and source spec read; correction and directly affected evidence complete. P002 combined checklist planning gate passed; spec P001 remains approved. Shared planning failures remain 2, active incomplete 0, no planning-cap transition or further planning review needed. Phase 3 begins. E001 in flight: read-only execution discovery of T1 and phase exec requirements, required test interfaces/harness and fixture approval boundary; no writing, tests, gates or implementation authorized by discovery. All T1-T4 remain unchecked. Original milestone base unchanged. Per-task axes not launched and no round-four state.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `committed` — stash ref `a3238736f7fee3754f89999306b8cae8dc0d7a02` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T1
+
+### E001 complete; T1a RED intent
+
+- Gate: E001 complete; T1a RED intent
+- Commands/results:
+E001 read-only execution discovery completed, no changes/tests. T1 design-bearing, fixed point 6fcd55bee81f4ce26f5ad992f6eae6890875071a. Nested request omits CacheConfig at internal/tool/tool.go:247-255; Main resolves omitted to true at pkg/runner/run.go:438-452. Test harness internal/testutil mockserver captures raw local Anthropic requests. T1a in flight: test agent adds only TestExecuteCallAgent_CacheChoicePerTurn in internal/tool/tool_test.go, tests omitted/true/false over repeated local HTTP turns with task/context kept dynamic. Focused RED only, fail specifically for missing default-on/explicit-true Nested hints. Existing assertions untouched; Q1 fixture change reserved for implementation. Then separate T1b agent writes runner independent-choice test before production fix. No paid/live probes. Cap snapshot unchanged: planning failures 2, incomplete 0; task axes/milestone reviews not begun; round four not applicable.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `uncommitted` — stash ref `1774c0816692ffa0caff932de4982539f61d3ef3` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write T1a Nested cache-choice behavioral RED test
+
+### T1a RED established; T1b RED intent
+
+- Gate: T1a RED established; T1b RED intent
+- Commands/results:
+T1a test agent added TestExecuteCallAgent_CacheChoicePerTurn at internal/tool/tool_test.go:360-477 plus testutil import, existing assertions unchanged. Actual command go test ./internal/tool -run '^TestExecuteCallAgent_CacheChoicePerTurn$' exit 1: omitted and true fail at :451 on both turns because system remains string rather than ephemeral text block; false passes. No unrelated failure. git diff --check exit 0. HEAD 6fcd55bee81f4ce26f5ad992f6eae6890875071a, status checkpoint and tool_test.go modified. Writer confirmed PATH matches checkpoint and GOTOOLCHAIN unset. RED gate established for missing Nested request CacheConfig. T1b in flight: separate test author adds exactly TestRun_IndependentCacheChoices to pkg/runner/run_test.go before production fix, covers independent Main/Nested omitted/true/false, both contradictory choices and omitted versus opposite explicit, repeated turns, opacity. Focused RED only; do not change existing assertions. No implementation or review axes launched; caps unchanged planning failures 2, active incomplete 0.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `uncommitted` — stash ref `8ee3cdd882487184412b22503b233b25fea939d0` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M internal/tool/tool_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write T1b Main/Nested independent-choice RED test
+
+### T1b RED established; T1 implementation intent
+
+- Gate: T1b RED established; T1 implementation intent
+- Commands/results:
+T1b added TestRun_IndependentCacheChoices at pkg/runner/run_test.go:829-970 with reflect import. go test ./pkg/runner -run '^TestRun_IndependentCacheChoices$' exited 1 as expected: all six Nested omitted/true rows lack ephemeral system hint on both turns, three Nested false rows pass. Main choices, dynamic content, opacity and final response assertions did not fail. git diff --check exit 0. HEAD 6fcd55bee81f4ce26f5ad992f6eae6890875071a, status checkpoint/tool_test.go/run_test.go modified; PATH preserved, Go 1.26.11, GOTOOLCHAIN unset. T1 implementation in flight: code resolves Nested own Params.CacheEnabled nil to true, retains explicit false, adds anchors/minimal assigned docs, and applies ONLY Q1 authorized existing-memory extraction correction while preserving three content checks byte-for-byte. Both new RED tests must remain unchanged. Run touched-package race tests and configured lint, no task-level full suite. Then independent test author verifies GREEN unchanged. T1 design-bearing task fixed point 6fcd55bee81f4ce26f5ad992f6eae6890875071a. Caps unchanged; no axes launched.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `uncommitted` — stash ref `3a1259d4b650b973175833c2c0c95dacce39a606` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M internal/tool/tool_test.go
+ M pkg/runner/run_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T1 independently resolved Nested caching and assigned docs
+
+### T1 implementation outcome; T1 lint repair intent
+
+- Gate: T1 implementation outcome; T1 lint repair intent
+- Commands/results:
+T1 implementation added Nested own CacheEnabled nil=>true resolution at tool.go:247-261, Q1-only one Anthropic system block fixture extraction at tool_test.go:857-867, independent-choice docs README.md:374 and docs/src/configuration/agent-config.md:65. Three preserved memory checks hash cb2ba36ca4e09f644db7d28cab43ee78071e0161244d532296f0abc2860b4230. Both new RED tests unchanged by code agent. Focused tests GREEN, mutation check temporarily false default produced expected failure and was reverted; go test -race ./internal/tool ./pkg/runner, go vet, gofmt, diff-check, docs-lint passed. golangci-lint run exit 1 QF1003 at pkg/runner/run_test.go:923:6 (could use tagged switch on i). No gate pass claimed. D8 (reported): permit only lint-requested control-flow simplification in new runner test, preserving every assertion and expectation byte-for-byte. This is a reversible mechanical lint repair within T1, no acceptance/assertion change, suppression, bypassed review, human-only decision or cap exception. Intended next gates: package race/lint and independent unchanged behavioral-test GREEN verification. T1 lint repair in flight; all task states unchecked, no reviews launched; cap state unchanged.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `uncommitted` — stash ref `d7234b859c589bd5f0b7c5e9368d498c519cd69c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/src/configuration/agent-config.md
+ M internal/tool/tool.go
+ M internal/tool/tool_test.go
+ M pkg/runner/run_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Fix only QF1003 test control flow, preserve assertions and rerun package checks
+
+### T1 lint PASS; T1a independent GREEN intent
+
+- Gate: T1 lint PASS; T1a independent GREEN intent
+- Commands/results:
+T1 QF1003 repair completed: only if i==1||i==2 / else if i==3 changed to switch i case 1,2/case 3 in runner test. Whole-file normalized comparison proves all assertion/assignment bodies and expectations unchanged; five other dirty files preserved by hash. Derived touched packages internal/tool and pkg/runner. gofmt check, go vet ./internal/tool ./pkg/runner, golangci-lint run (0 issues), git diff --check and go test -race ./internal/tool ./pkg/runner all exit 0 at HEAD 6fcd55bee81f4ce26f5ad992f6eae6890875071a. T1a independent test-author GREEN verification in flight: rerun unchanged TestExecuteCallAgent_CacheChoicePerTurn then touched-package tests. No full suite or reviews yet. All tasks unchecked; planning failures 2, active incomplete 0.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `uncommitted` — stash ref `0d28b5e161e9b1e3e8b83bca7aabe3a294515752` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/src/configuration/agent-config.md
+ M internal/tool/tool.go
+ M internal/tool/tool_test.go
+ M pkg/runner/run_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Independently verify T1a unchanged Nested behavioral test GREEN
+
+### T1a GREEN; T1b independent GREEN intent
+
+- Gate: T1a GREEN; T1b independent GREEN intent
+- Commands/results:
+T1a independent test author confirmed TestExecuteCallAgent_CacheChoicePerTurn byte-identical to original RED stash 8ee3cdd882487184412b22503b233b25fea939d0 (SHA256 6f4c835a681c8b9b67d56c6cb9823620bec94b64be8b1b2051b8aa80b457f1df). Q1 extraction only later tool test change; three content checks unchanged. Focused test, go test -race ./internal/tool ./pkg/runner (cached passing), go vet, gofmt and diff-check all exit 0 at HEAD 6fcd55bee81f4ce26f5ad992f6eae6890875071a, six accounted-for modified files. T1b independent GREEN in flight: verify nine Main/Nested rows and assertions unchanged except recorded equivalent lint switch, rerun focused test and touched package checks. No assertions or expected values may change. Caps unchanged; reviews unlaunched.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `uncommitted` — stash ref `86b12f7f41acc0cc3eb1405d77b74de8fbdd936f` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/src/configuration/agent-config.md
+ M internal/tool/tool.go
+ M internal/tool/tool_test.go
+ M pkg/runner/run_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Independently verify T1b independent-choice behavioral test GREEN
+
+### T1b GREEN; G001 whole-suite gate intent
+
+- Gate: T1b GREEN; G001 whole-suite gate intent
+- Commands/results:
+T1b independent GREEN completed. Whole runner test file versus RED stash 3a1259d4b650b973175833c2c0c95dacce39a606 differs only by recorded equivalent tagged switch; assertions/expectations unchanged. Focused and verbose focused runner tests pass all nine Main/Nested choices and opacity checks; touched-package race (cached), go vet, tracked Go gofmt and diff-check exit 0. HEAD 6fcd55bee81f4ce26f5ad992f6eae6890875071a, six accounted-for modified files. T1 implementation and independent behavioral gates passed; task checkbox awaits three independent review axes. G001 in flight: after full index/pending content inspection, commit exactly T1 implementation/docs/tests and checkpoint, then factory-gate run --gate test at actual resulting HEAD. Passing whole-suite evidence must match reviewed HEAD. No full-suite task-level run substitutes. On final gate outcome record actual log before review dispatch. Planned pre-review records checks use fixed point 6fcd55bee81f4ce26f5ad992f6eae6890875071a. Caps unchanged planning failures 2, axis/milestone rounds 0, active incomplete 0.
+- HEAD commit SHA: `6fcd55bee81f4ce26f5ad992f6eae6890875071a`
+- Relevant work: `uncommitted` — stash ref `d8b70ecc57385d64b89f34a08442b32a52ed98fb` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/src/configuration/agent-config.md
+ M internal/tool/tool.go
+ M internal/tool/tool_test.go
+ M pkg/runner/run_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect and commit T1 with G001 intent, then launch whole-suite test gate
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect full index/pending exact files, commit them, then launch Y002 factory-sync
+- Next action: Inspect and commit T1 with G001 intent, then launch whole-suite test gate

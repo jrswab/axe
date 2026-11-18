@@ -9,6 +9,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -822,6 +823,150 @@ model = "anthropic/claude-sonnet-4-20250514"
 	}
 	if mock.RequestCount() != 3 {
 		t.Errorf("RequestCount = %d, want 3", mock.RequestCount())
+	}
+}
+
+func TestRun_IndependentCacheChoices(t *testing.T) {
+	// R1/T1: choices belong to each Run, not to its parent. Literal wire intent
+	// follows https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+	// (retrieved 2026-11-18): an ephemeral system breakpoint covers static tools,
+	// never dynamic messages. Local fixtures establish neither hits nor savings.
+	choices := []struct {
+		name       string
+		params     string
+		wantMain   string
+		wantNested string
+	}{
+		{"omitted", "", `[{"type":"text","text":"Main static instructions.","cache_control":{"type":"ephemeral"}}]`, `[{"type":"text","text":"Nested static instructions.","cache_control":{"type":"ephemeral"}}]`},
+		{"true", "[params]\ncache_enabled = true\n", `[{"type":"text","text":"Main static instructions.","cache_control":{"type":"ephemeral"}}]`, `[{"type":"text","text":"Nested static instructions.","cache_control":{"type":"ephemeral"}}]`},
+		{"false", "[params]\ncache_enabled = false\n", `"Main static instructions."`, `"Nested static instructions."`},
+	}
+	for _, main := range choices {
+		for _, nested := range choices {
+			t.Run("main_"+main.name+"/nested_"+nested.name, func(t *testing.T) {
+				// Arrange: all agent definitions, I/O and builtin access are isolated.
+				configDir, _ := testutil.SetupXDGDirs(t)
+				t.Setenv("XDG_CACHE_HOME", t.TempDir())
+				workdir := t.TempDir()
+				if err := os.WriteFile(filepath.Join(workdir, "nested-private.txt"), []byte("fixture"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				writeAgent := func(name, definition string) {
+					t.Helper()
+					if err := os.WriteFile(filepath.Join(configDir, "agents", name+".toml"), []byte(definition), 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				writeAgent("cache-main", fmt.Sprintf(`name = "cache-main"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "Main static instructions."
+workdir = %q
+sub_agents = ["cache-nested"]
+max_turns = 2
+%s`, workdir, main.params))
+				writeAgent("cache-nested", fmt.Sprintf(`name = "cache-nested"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "Nested static instructions."
+workdir = %q
+tools = ["list_directory"]
+max_turns = 2
+%s`, workdir, nested.params))
+				server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+					testutil.AnthropicToolUseResponse("Delegating.", []testutil.MockToolCall{
+						{ID: "delegate-1", Name: "call_agent", Input: map[string]string{
+							"agent": "cache-nested", "task": "Inspect the isolated directory and summarize without modifying files.",
+							"context": "Nested dynamic context: inspect only the supplied fixture, not the Main conversation.",
+						}},
+					}),
+					testutil.AnthropicToolUseResponse("Nested private inspection.", []testutil.MockToolCall{
+						{ID: "nested-list-1", Name: "list_directory", Input: map[string]string{"path": "."}},
+					}),
+					testutil.AnthropicResponseWithCacheTokens("Nested summary.", 700, 800, 900, 1000),
+					testutil.AnthropicResponse("Main finished."),
+				})
+				t.Setenv("ANTHROPIC_API_KEY", "local-test-key")
+				t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+				stdout, stderr := newMockStdoutStderr()
+
+				// Act through the public Main entry; call_agent enters Nested normally.
+				result, err := Run(context.Background(), Options{
+					AgentName: "cache-main", Workdir: workdir,
+					Prompt: "Main task: delegate the inspection.\nMain dynamic context: return only the final summary.",
+					Stdin:  strings.NewReader(""), Stdout: stdout, Stderr: stderr, JSON: true,
+				})
+				if err != nil {
+					t.Fatalf("Run() error = %v; stderr = %s", err, stderr)
+				}
+
+				// Assert both turns of each Run, including full dynamic conversation.
+				if got := server.RequestCount(); got != 4 {
+					t.Fatalf("request count = %d, want Main/Nested/Nested/Main (4)", got)
+				}
+				decode := func(raw string) interface{} {
+					t.Helper()
+					var value interface{}
+					if err := json.Unmarshal([]byte(raw), &value); err != nil {
+						t.Fatalf("invalid wire JSON %q: %v", raw, err)
+					}
+					return value
+				}
+				const mainUser = `{"role":"user","content":"Main task: delegate the inspection.\nMain dynamic context: return only the final summary."}`
+				const nestedUser = `{"role":"user","content":"Task: Inspect the isolated directory and summarize without modifying files.\n\nContext:\nNested dynamic context: inspect only the supplied fixture, not the Main conversation."}`
+				wantMessages := []string{
+					`[` + mainUser + `]`,
+					`[` + nestedUser + `]`,
+					`[` + nestedUser + `,{"role":"assistant","content":[{"type":"text","text":"Nested private inspection."},{"type":"tool_use","id":"nested-list-1","name":"list_directory","input":{"path":"."}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"nested-list-1","content":"nested-private.txt","is_error":false}]}]`,
+					`[` + mainUser + `,{"role":"assistant","content":[{"type":"text","text":"Delegating."},{"type":"tool_use","id":"delegate-1","name":"call_agent","input":{"agent":"cache-nested","task":"Inspect the isolated directory and summarize without modifying files.","context":"Nested dynamic context: inspect only the supplied fixture, not the Main conversation."}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"delegate-1","content":"Nested summary.","is_error":false}]}]`,
+				}
+				for i, request := range server.Requests {
+					who, turn, wantSystem, wantTool := "Main", 1, main.wantMain, `"call_agent"`
+					switch i {
+					case 1, 2:
+						who, turn, wantSystem, wantTool = "Nested", i, nested.wantNested, `"list_directory"`
+					case 3:
+						turn = 2
+					}
+					var body map[string]json.RawMessage
+					if err := json.Unmarshal([]byte(request.Body), &body); err != nil {
+						t.Fatalf("%s turn %d: decode request: %v", who, turn, err)
+					}
+					if !reflect.DeepEqual(decode(string(body["system"])), decode(wantSystem)) {
+						t.Errorf("%s turn %d: own cache choice: system = %s, want %s", who, turn, body["system"], wantSystem)
+					}
+					if !reflect.DeepEqual(decode(string(body["messages"])), decode(wantMessages[i])) {
+						t.Errorf("%s turn %d: conversation / opaque Outcome = %s, want %s", who, turn, body["messages"], wantMessages[i])
+					}
+					var tools []map[string]json.RawMessage
+					if err := json.Unmarshal(body["tools"], &tools); err != nil {
+						t.Fatalf("%s turn %d: decode tools: %v", who, turn, err)
+					}
+					if len(tools) != 1 || string(tools[0]["name"]) != wantTool {
+						t.Errorf("%s turn %d: tools = %s, want only %s", who, turn, body["tools"], wantTool)
+					}
+					if strings.Contains(string(body["messages"]), `"cache_control"`) || strings.Contains(string(body["tools"]), `"cache_control"`) {
+						t.Errorf("%s turn %d: cache hint outside system: %s", who, turn, request.Body)
+					}
+				}
+				// Only the Nested final text crosses into Main, not its tool, file,
+				// private assistant turn, counters or artifacts.
+				if result.Content != "Main finished." || result.ToolCalls != 1 || len(result.ToolCallDetails) != 1 || len(result.Artifacts) != 0 {
+					t.Errorf("Main result / Nested opacity = %+v", result)
+				} else if detail := result.ToolCallDetails[0]; detail.Name != "call_agent" || detail.Output != "Nested summary." || detail.IsError {
+					t.Errorf("Nested Outcome = %+v, want successful final text only", detail)
+				}
+				if result.InputTokens != 20 || result.OutputTokens != 25 || result.CacheReadTokens != 0 || result.CacheWriteTokens != 0 {
+					t.Errorf("Main own-run counters include Nested internals: %+v", result)
+				}
+				for _, private := range []string{"Nested private inspection.", "nested-list-1", "nested-private.txt", "list_directory", "Nested static instructions."} {
+					if strings.Contains(stdout.String(), private) {
+						t.Errorf("Nested internal %q exposed in Main JSON: %s", private, stdout)
+					}
+				}
+				if !t.Failed() {
+					t.Log("both Main and Nested turns honor independent choices; Nested Outcome stays opaque")
+				}
+			})
+		}
 	}
 }
 

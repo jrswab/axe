@@ -371,6 +371,8 @@ All fields except `name` and `model` are optional.
 
 OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
+`params.cache_enabled` defaults to `true` when omitted; set it to `true` or `false` explicitly to choose whether Axe uses applicable cache hints. Each run uses its own agent definition, so a sub-agent does not inherit its parent's choice. OpenAI Chat caching is provider-managed and automatic; setting this to `false` does not disable it.
+
 ### Retry
 
 Agents can retry on transient LLM provider errors — rate limits (429), server

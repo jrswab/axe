@@ -244,6 +244,12 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 	}
 
 	// Step 12: Build request
+	// @anchor:provider:policy Resolve each Nested Run's own cache choice, defaulting to enabled.
+	cacheEnabled := true
+	if cfg.Params.CacheEnabled != nil {
+		cacheEnabled = *cfg.Params.CacheEnabled
+	}
+
 	req := &provider.Request{
 		Model:           modelName,
 		System:          systemPrompt,
@@ -252,6 +258,7 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		TemperatureSet:  cfg.Params.TemperatureSet,
 		MaxTokens:       cfg.Params.MaxTokens,
 		ReasoningEffort: cfg.Params.ReasoningEffort,
+		CacheConfig:     cacheEnabled,
 	}
 
 	// Inject tools if sub-agent has sub_agents and depth allows

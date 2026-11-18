@@ -18,6 +18,7 @@ import (
 	"github.com/jrswab/axe/internal/config"
 	"github.com/jrswab/axe/internal/memory"
 	"github.com/jrswab/axe/internal/provider"
+	"github.com/jrswab/axe/internal/testutil"
 )
 
 // helper: set up a temp XDG config dir with an agents/ subdirectory
@@ -351,6 +352,125 @@ func TestExecuteCallAgent_ParamsPresence(t *testing.T) {
 			}
 			if got := string(body["reasoning_effort"]); got != tt.wantEffortRaw {
 				t.Errorf("reasoning_effort = %q, want %q", got, tt.wantEffortRaw)
+			}
+		})
+	}
+}
+
+func TestExecuteCallAgent_CacheChoicePerTurn(t *testing.T) {
+	// R1/T1: each Nested Run resolves its own choice on every turn. Wire intent
+	// follows https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+	// (retrieved 2026-11-18): a system breakpoint covers preceding static tools,
+	// not dynamic messages. These local requests do not establish cache hits.
+	tests := []struct {
+		name       string
+		params     string
+		wantSystem string
+	}{
+		{
+			name:       "omitted",
+			wantSystem: `[{"type":"text","text":"You are a cache-choice helper.","cache_control":{"type":"ephemeral"}}]`,
+		},
+		{
+			name:       "true",
+			params:     "[params]\ncache_enabled = true\n",
+			wantSystem: `[{"type":"text","text":"You are a cache-choice helper.","cache_control":{"type":"ephemeral"}}]`,
+		},
+		{
+			name:       "false",
+			params:     "[params]\ncache_enabled = false\n",
+			wantSystem: `"You are a cache-choice helper."`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange: a real, read-only builtin lists only an isolated fixture.
+			agentsDir := setupToolTestAgentsDir(t)
+			workdir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(workdir, "entry.txt"), []byte("fixture"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			writeToolTestAgent(t, agentsDir, "cache-helper", fmt.Sprintf(`name = "cache-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "You are a cache-choice helper."
+workdir = %q
+max_turns = 2
+tools = ["list_directory"]
+%s`, workdir, tt.params))
+			server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+				testutil.AnthropicToolUseResponse("Inspecting the fixture.", []testutil.MockToolCall{
+					{ID: "list-1", Name: "list_directory", Input: map[string]string{"path": "."}},
+				}),
+				testutil.AnthropicResponse("Inspection complete."),
+			})
+			t.Setenv("ANTHROPIC_API_KEY", "test-key")
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+			// Act through the Nested Run entry, allowing its normal two-turn loop.
+			result := ExecuteCallAgent(context.Background(), provider.ToolCall{
+				ID:   "cache-choice",
+				Name: CallAgentToolName,
+				Arguments: map[string]string{
+					"agent":   "cache-helper",
+					"task":    "List the isolated fixture and summarize its contents without modifying any files or reading outside the fixture directory.",
+					"context": "This is dynamic Nested context, not a static instruction. Preserve it in the conversation throughout the tool turn.",
+				},
+			}, ExecuteOptions{
+				AllowedAgents: []string{"cache-helper"},
+				AgentsDir:     agentsDir,
+				MaxDepth:      3,
+				GlobalConfig:  &config.GlobalConfig{},
+			})
+
+			// Assert literal JSON contracts, independently of production wire types.
+			if result.IsError || result.Content != "Inspection complete." {
+				t.Fatalf("ExecuteCallAgent() = %+v, want successful final text", result)
+			}
+			if got := server.RequestCount(); got != 2 {
+				t.Fatalf("request count = %d, want 2", got)
+			}
+			decode := func(raw string) interface{} {
+				t.Helper()
+				var value interface{}
+				if err := json.Unmarshal([]byte(raw), &value); err != nil {
+					t.Fatalf("invalid JSON %q: %v", raw, err)
+				}
+				return value
+			}
+			wantMessages := []string{
+				`[{"role":"user","content":"Task: List the isolated fixture and summarize its contents without modifying any files or reading outside the fixture directory.\n\nContext:\nThis is dynamic Nested context, not a static instruction. Preserve it in the conversation throughout the tool turn."}]`,
+				`[{"role":"user","content":"Task: List the isolated fixture and summarize its contents without modifying any files or reading outside the fixture directory.\n\nContext:\nThis is dynamic Nested context, not a static instruction. Preserve it in the conversation throughout the tool turn."},{"role":"assistant","content":[{"type":"text","text":"Inspecting the fixture."},{"type":"tool_use","id":"list-1","name":"list_directory","input":{"path":"."}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"list-1","content":"entry.txt","is_error":false}]}]`,
+			}
+			var firstTools interface{}
+			for turn, request := range server.Requests {
+				var body map[string]json.RawMessage
+				if err := json.Unmarshal([]byte(request.Body), &body); err != nil {
+					t.Fatalf("turn %d: decode request: %v", turn+1, err)
+				}
+				if !reflect.DeepEqual(decode(string(body["system"])), decode(tt.wantSystem)) {
+					t.Errorf("turn %d: system = %s, want %s", turn+1, body["system"], tt.wantSystem)
+				}
+				if !reflect.DeepEqual(decode(string(body["messages"])), decode(wantMessages[turn])) {
+					t.Errorf("turn %d: dynamic messages = %s, want %s", turn+1, body["messages"], wantMessages[turn])
+				}
+				var tools []map[string]json.RawMessage
+				if err := json.Unmarshal(body["tools"], &tools); err != nil {
+					t.Fatalf("turn %d: decode tools: %v", turn+1, err)
+				}
+				if len(tools) != 1 || string(tools[0]["name"]) != `"list_directory"` {
+					t.Errorf("turn %d: tools = %s, want only list_directory", turn+1, body["tools"])
+				}
+				if strings.Contains(string(body["tools"]), `"cache_control"`) || strings.Contains(string(body["tools"]), "dynamic Nested context") || strings.Contains(string(body["tools"]), "List the isolated fixture") {
+					t.Errorf("turn %d: tools contain a redundant cache hint or dynamic content: %s", turn+1, body["tools"])
+				}
+				if turn == 0 {
+					firstTools = decode(string(body["tools"]))
+				} else if !reflect.DeepEqual(decode(string(body["tools"])), firstTools) {
+					t.Errorf("turn %d: static tools changed: %s", turn+1, body["tools"])
+				}
+			}
+			if !t.Failed() {
+				t.Logf("%s: both turns preserve the cache choice and dynamic conversation", tt.name)
 			}
 		})
 	}
@@ -734,9 +854,17 @@ enabled = true
 	}
 
 	// Verify system prompt contains the memory section
-	system, ok := receivedBody["system"].(string)
+	blocks, ok := receivedBody["system"].([]interface{})
+	if !ok || len(blocks) != 1 {
+		t.Fatalf("system = %#v, want exactly one text block", receivedBody["system"])
+	}
+	block, ok := blocks[0].(map[string]interface{})
+	if !ok || block["type"] != "text" {
+		t.Fatalf("system block = %#v, want text block", blocks[0])
+	}
+	system, ok := block["text"].(string)
 	if !ok {
-		t.Fatal("no 'system' field in request body")
+		t.Fatalf("system block text = %#v, want string", block["text"])
 	}
 	if !strings.Contains(system, "## Memory") {
 		t.Errorf("system prompt missing '## Memory' section: %q", system)

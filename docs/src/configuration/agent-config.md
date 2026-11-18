@@ -62,6 +62,8 @@ args = ["--root", "/home/user/projects"]
 
 OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
+`params.cache_enabled` defaults to `true` when omitted; set it to `true` or `false` explicitly to choose whether Axe uses applicable cache hints. Each run uses its own agent definition, so a sub-agent does not inherit its parent's choice. OpenAI Chat caching is provider-managed and automatic; setting this to `false` does not disable it.
+
 ### Response Format
 
 Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Ollama, OpenRouter, Runcrate, and Standard Compute providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
