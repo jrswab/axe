@@ -225,6 +225,7 @@ func convertToOpenAIMessages(msgs []Message) []openaiMessage {
 }
 
 // convertToOpenAITools converts provider Tools to the OpenAI wire format.
+// @anchor:provider:integration Keep generated required names stable in OpenAI-compatible tool schemas.
 func convertToOpenAITools(tools []Tool) []openaiToolDef {
 	var result []openaiToolDef
 	for _, tool := range tools {
@@ -245,6 +246,7 @@ func convertToOpenAITools(tools []Tool) []openaiToolDef {
 			"properties": properties,
 		}
 		if len(required) > 0 {
+			sort.Strings(required)
 			params["required"] = required
 		}
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 )
 
 const (
@@ -182,6 +183,7 @@ func convertToAnthropicMessages(msgs []Message) []anthropicMessage {
 }
 
 // convertToAnthropicTools converts provider Tools to the Anthropic wire format.
+// @anchor:provider:integration Keep generated required names stable in Anthropic tool schemas.
 func convertToAnthropicTools(tools []Tool) []anthropicToolDef {
 	var result []anthropicToolDef
 	for _, tool := range tools {
@@ -202,6 +204,7 @@ func convertToAnthropicTools(tools []Tool) []anthropicToolDef {
 			"properties": properties,
 		}
 		if len(required) > 0 {
+			sort.Strings(required)
 			schema["required"] = required
 		}
 

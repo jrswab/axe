@@ -20,15 +20,15 @@
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
 - Current phase: `execute`
-- Current task: T2
+- Current task: T3
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
-- T2: `unchecked`
+- T2: `checked`
 - T3: `unchecked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Complete mechanical assertion/fixture preservation check before nit commit
-- Last completed phase/task/gate and timestamp: N002 inspection partial; mechanical comparison intent, 2026-11-18T23:17:36.050050+00:00
+- Next safe action: Inspect/commit T3 then run whole-suite evidence gate
+- Last completed phase/task/gate and timestamp: T3c GREEN; G003 intent, 2026-11-18T23:31:45.861596+00:00
 
 ## Milestone acceptance
 
@@ -1354,8 +1354,259 @@ N002 explore found manual relocation consistent, complete index stage0/cached di
 
 - Next action: Complete mechanical assertion/fixture preservation check before nit commit
 
+### N002 preservation PASS; postcommit checks intent
+
+- Gate: N002 preservation PASS; postcommit checks intent
+- Commands/results:
+N002 independent general comparison passed exact original fixtures/request/decode/26line field-assertion block normalized only indentation, all rows/turns/modes and transport before/after sections preserved. Full normalized fixed-string passage count0 per caller and1 helper, unchanged32 leaves. Complete index no unmerged/cached diff empty; only four approved paths; helper blob1bb3e2e76ec68d44fa103a6a4229a21e9b988ce9. Initial awk quoting error exit2 corrected and comparison exit0. factory-commit exact4 paths exit0 at cfa5c1754f5b81a535e8fe45be10ef65b5412b44 remaining_changes[]. N002 postcommit in flight: lint/vet/gofmt and affected provider race tests at this commit; no re-review permitted for approved nit. Once passed T2 checked and start T3. Caps unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run postcommit nit lint and affected-package tests
+
+### T2 complete; E003 T3 discovery intent
+
+- Gate: T2 complete; E003 T3 discovery intent
+- Commands/results:
+N002 postcommit checks at cfa5c1754f5b81a535e8fe45be10ef65b5412b44 passed focused32 leaves cached, provider race cached, vet, golangci-lint0issues, tracked gofmt and diff-check all exit0. Only checkpoint modified, no staged content. T2 task PASS after all axes and nit protocol; render T2 checked. T1/T2 checked T3/T4 unchecked. E003 in flight: read-only T3 exact deterministic schema test discovery, separate normal Anthropic/OpenAI and OpenRouter adapter test contracts; no tests/fixes/gates. T3 fixedpoint cfa5c1754f5b81a535e8fe45be10ef65b5412b44. Shared planning failures2, all task-axis incomplete0, no failed task-axis rounds. Final milestone review/completion pending.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `committed` — stash ref `0d73d424347d21de8fff0526213d062879b06ac2` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect T3 stable schema requirements and test harness
+
+### E003 complete; T3a RED intent
+
+- Gate: E003 complete; T3a RED intent
+- Commands/results:
+E003 identified required slice map iteration in Anthropic:185-211/OpenAI:228-259; sort generated required names only, caller tool order unchanged. T3a in flight: TestAnthropic_StableToolSchemas normal+stream raw literal schema evidence with multiple tools/required/optional/type/description, equivalent forward/reversed maps, repeated construction+turns, caller nonmutation and dynamic conversation. Fixedpoint cfa5c1754f5b81a535e8fe45be10ef65b5412b44. A finite randomized test may unexpectedly pass; report actual, do not fabricate RED. count1 allowed solely to expose order instability. Optional shared test-only fixture helper minimizes duplicated subsequent OpenAI/OpenRouter tests while independent literal per-provider wire expectations remain. No production/assertion changes or full suite; caps unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `committed` — stash ref `18025f527b4e616bdab0dbb3523d7ac0e3a77c10` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write T3a Anthropic deterministic schema behavioral RED
+
+### T3a RED; T3b RED intent
+
+- Gate: T3a RED; T3b RED intent
+- Commands/results:
+T3a added TestAnthropic_StableToolSchemas anthropic_test.go:1037 and shared input fixture stable_tool_schemas_test.go. go test ./internal/provider -run '^TestAnthropic_StableToolSchemas$' -count=1 exit1 with actual unsorted arrays: record,target,format instead of format,record,target; region,account,key instead of account,key,region.512 local requests normal/stream x system/no-system x cache modes x insertion orders x16constructions x2turns.421 literal-schema and466 static-byte mismatches only, no caller/conversation/cache regressions. gofmt/diff-check0, HEADcfa5c1754f5b81a535e8fe45be10ef65b5412b44. T3b in flight: exactly TestOpenAI_StableToolSchemas same stable input fixture, independent literal Chat wire expected required order over normal/stream. Do not change T3a assertions. Caps unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `uncommitted` — stash ref `a5ca3f021dc5831b32886d23fef1960c6560293a` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic_test.go
+?? internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+2db3b80001156b6ca455fad7c4467609a5c2fdfa  "internal/provider/stable_tool_schemas_test.go"
+```
+
+- Next action: Write T3b OpenAI stable-schema RED
+
+### T3b RED; T3c adapter RED intent
+
+- Gate: T3b RED; T3c adapter RED intent
+- Commands/results:
+T3b added TestOpenAI_StableToolSchemas openai_test.go:18-219. Focused -count=1 exit1,384 local requests normal/stream x forward/reversed x16constructions x cache choices x3conversations. Actual required region,account,key and record,target,format versus sorted account,key,region and format,record,target, static bytes change. Caller and conversation preserved; no explicit controls added. gofmt/diff-check pass, T3a/fixture unchanged. T3c in flight: exactly TestOpenRouter_StableToolSchemaConversation with independent literal Chat expectations over both modes, changing call/result content and map construction, reuse existing input fixtures, don't change prior tests. Caps unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `uncommitted` — stash ref `9fa8e58315af4686217886bde5fe772da8394975` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic_test.go
+ M internal/provider/openai_test.go
+?? internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+2db3b80001156b6ca455fad7c4467609a5c2fdfa  "internal/provider/stable_tool_schemas_test.go"
+```
+
+- Next action: Write T3c OpenRouter schema-and-conversation RED
+
+### T3c RED; T3 implementation intent
+
+- Gate: T3c RED; T3 implementation intent
+- Commands/results:
+T3c TestOpenRouter_StableToolSchemaConversation openrouter_test.go:21 added,384 local normal/stream requests. Focused -count1 exit1 actual record,target,format and region,key,account arrays versus sorted expected; literal and static byte mismatch only. Conversation/nonmutation/cache absence preserved. All three declared T3 behavioral tests now actual RED before production change. T3 implementation in flight: sort only generated required-name slices in Anthropic/OpenAI conversion, preserve caller tool order/maps and T2 hints. New tests immutable. Docs providers check only update if mismatch; no new dependency/public API. Run derived provider package race/vet/lint, then separate author GREEN for each named test. Fixedpoint cfa5c1754f5b81a535e8fe45be10ef65b5412b44. Caps unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `uncommitted` — stash ref `8ddfaa1f16be0f61de7f7b40402eddd2f21317f5` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic_test.go
+ M internal/provider/openai_test.go
+ M internal/provider/openrouter_test.go
+?? internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+2db3b80001156b6ca455fad7c4467609a5c2fdfa  "internal/provider/stable_tool_schemas_test.go"
+```
+
+- Next action: Implement deterministic required-name serialization in both converters
+
+### T3 implementation PASS; T3a GREEN intent
+
+- Gate: T3 implementation PASS; T3a GREEN intent
+- Commands/results:
+T3 code sorts only newly generated nonempty required-name slices using sort.Strings in Anthropic/OpenAI, anchors added, no dependency/API/docs drift. Four test files SHA256 unchanged. Focused3 tests normal/stream pass, derived provider race pass, vet/gofmt/golangci-lint0issues/diff-check exit0. HEADcfa5c1754f5b81a535e8fe45be10ef65b5412b44. T3a independent GREEN in flight, compare original Anthropic test and fixture to RED snapshot a5ca3f021dc5831b32886d23fef1960c6560293a, rerun focused and touched provider checks. No full suite/reviews yet; caps unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `uncommitted` — stash ref `efb08451674c57eaca36c35d018f0486626ff362` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic.go
+ M internal/provider/anthropic_test.go
+ M internal/provider/openai.go
+ M internal/provider/openai_test.go
+ M internal/provider/openrouter_test.go
+?? internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+2db3b80001156b6ca455fad7c4467609a5c2fdfa  "internal/provider/stable_tool_schemas_test.go"
+```
+
+- Next action: Independently verify T3a Anthropic stable schema GREEN
+
+### T3a GREEN; T3b GREEN intent
+
+- Gate: T3a GREEN; T3b GREEN intent
+- Commands/results:
+T3a independent unchanged full-file comparison to RED stash and shared fixture SHA passed; focused Anthropic stable schema, provider race cached, vet/gofmt/diff-check exit0. T3b in flight: independent test author verifies unchanged OpenAI test versus RED stash9fa8e58315af4686217886bde5fe772da8394975, focused and provider checks. HEADcfa5c1754f5b81a535e8fe45be10ef65b5412b44; all task/cap states unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `uncommitted` — stash ref `2d53e5a0c96c7c9935bf9813362eb4118e6168e9` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic.go
+ M internal/provider/anthropic_test.go
+ M internal/provider/openai.go
+ M internal/provider/openai_test.go
+ M internal/provider/openrouter_test.go
+?? internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+2db3b80001156b6ca455fad7c4467609a5c2fdfa  "internal/provider/stable_tool_schemas_test.go"
+```
+
+- Next action: Independently verify T3b OpenAI stable schema GREEN
+
+### T3b GREEN; T3c GREEN intent
+
+- Gate: T3b GREEN; T3c GREEN intent
+- Commands/results:
+T3b independent whole-file comparison to RED stash and shared fixture hash passed. Focused OpenAI stable schema0.175s, provider race cached, vet/gofmt/diff-check all exit0. T3c in flight: independently compare OpenRouter test to RED stash8ddfaa1f16be0f61de7f7b40402eddd2f21317f5 and rerun unchanged focused+provider checks. HEADcfa5c1754f5b81a535e8fe45be10ef65b5412b44; task/cap states unchanged.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `uncommitted` — stash ref `669aef2ffe5d4e2ec6a7a265ae69507c138d254c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic.go
+ M internal/provider/anthropic_test.go
+ M internal/provider/openai.go
+ M internal/provider/openai_test.go
+ M internal/provider/openrouter_test.go
+?? internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+2db3b80001156b6ca455fad7c4467609a5c2fdfa  "internal/provider/stable_tool_schemas_test.go"
+```
+
+- Next action: Independently verify T3c OpenRouter schema conversation GREEN
+
+### T3c GREEN; G003 intent
+
+- Gate: T3c GREEN; G003 intent
+- Commands/results:
+T3c independent entire-file comparison to RED stash and shared fixture hash passed; focused OpenRouter0.171s, provider race cached, vet/gofmt/diff-check exit0. All three declared T3 tests now independently GREEN unchanged. G003 in flight: full index/pending-content inspection then exact8-path commit (two production,three tests,shared fixture,checkpoint,rendered checklist), clean whole-suite factory-gate test at actual HEAD. Fixedpointcfa5c1754f5b81a535e8fe45be10ef65b5412b44. No T3 axes launched, all review caps unchanged, no final milestone/completion gate yet.
+- HEAD commit SHA: `cfa5c1754f5b81a535e8fe45be10ef65b5412b44`
+- Relevant work: `uncommitted` — stash ref `d8d960ebf21212341949fa87ebaebfa74c96790d` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic.go
+ M internal/provider/anthropic_test.go
+ M internal/provider/openai.go
+ M internal/provider/openai_test.go
+ M internal/provider/openrouter_test.go
+?? internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+2db3b80001156b6ca455fad7c4467609a5c2fdfa  "internal/provider/stable_tool_schemas_test.go"
+```
+
+- Next action: Inspect/commit T3 then run whole-suite evidence gate
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Complete mechanical assertion/fixture preservation check before nit commit
+- Next action: Inspect/commit T3 then run whole-suite evidence gate

@@ -1,14 +1,234 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+// TestOpenRouter_StableToolSchemaConversation protects R3/R5 and checklist T3
+// (docs/plans/053_corrected_caching_001_spec.md). The literal Chat shapes follow
+// https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create.md
+// retrieved 2026-11-18 as recorded in the spec. Lexicographic required names are
+// Axe's stability policy, not a provider requirement. This compatible-adapter
+// regression proves no OpenRouter automatic-caching contract, acceptance or hit.
+func TestOpenRouter_StableToolSchemaConversation(t *testing.T) {
+	const repetitions = 16
+	const toolsWire = `[
+		{"type":"function","function":{"name":"z_lookup","description":"Look up a record","parameters":{"type":"object","properties":{
+			"account":{"type":"string","description":"Account identifier"},
+			"key":{"type":"string","description":"Record key"},
+			"limit":{"type":"integer","description":"Maximum records"},
+			"region":{"type":"string","description":"Lookup region"},
+			"verbose":{"type":"boolean","description":"Include details"}
+		},"required":["account","key","region"]}}},
+		{"type":"function","function":{"name":"a_report","description":"Report a record","parameters":{"type":"object","properties":{
+			"format":{"type":"string","description":"Report format"},
+			"ratio":{"type":"number","description":"Sampling ratio"},
+			"record":{"type":"string","description":"Record to report"},
+			"target":{"type":"string","description":"Report destination"},
+			"title":{"type":"string","description":"Optional title"}
+		},"required":["format","record","target"]}}}
+	]`
+	decode := func(t *testing.T, raw []byte) any {
+		t.Helper()
+		var value any
+		if err := json.Unmarshal(raw, &value); err != nil {
+			t.Fatalf("decode literal/request: %v; body %s", err, raw)
+		}
+		return value
+	}
+	wantTools := decode(t, []byte(toolsWire))
+	turns := []struct {
+		name     string
+		messages []Message
+		wire     string
+	}{
+		{
+			name:     "initial-user",
+			messages: []Message{{Role: "user", Content: "Task one; context one."}},
+			wire:     `[{"role":"system","content":"Static instructions only."},{"role":"user","content":"Task one; context one."}]`,
+		},
+		{
+			name: "assistant-content-and-result",
+			messages: []Message{
+				{Role: "user", Content: "Task one; context one."},
+				{Role: "assistant", Content: "Looking up.", ToolCalls: []ToolCall{
+					{ID: "lookup-1", Name: "z_lookup", Arguments: map[string]string{"account": "acct-1", "key": "key-1", "region": "west"}},
+				}},
+				{Role: "tool", ToolResults: []ToolResult{{CallID: "lookup-1", Content: "record one"}}},
+				{Role: "user", Content: "Report it; context two."},
+			},
+			wire: `[{"role":"system","content":"Static instructions only."},{"role":"user","content":"Task one; context one."},
+				{"role":"assistant","content":"Looking up.","tool_calls":[{"id":"lookup-1","type":"function","function":{"name":"z_lookup","arguments":"{\"account\":\"acct-1\",\"key\":\"key-1\",\"region\":\"west\"}"}}]},
+				{"role":"tool","tool_call_id":"lookup-1","content":"record one"},{"role":"user","content":"Report it; context two."}]`,
+		},
+		{
+			name: "changed-history-null-assistant-and-multiple-results",
+			messages: []Message{
+				{Role: "user", Content: "Task three; context three."},
+				{Role: "assistant", Content: "Earlier answer."},
+				{Role: "user", Content: "Now report and look up."},
+				{Role: "assistant", ToolCalls: []ToolCall{
+					{ID: "report-3", Name: "a_report", Arguments: map[string]string{"format": "csv", "record": "record three", "target": "archive"}},
+					{ID: "lookup-3", Name: "z_lookup", Arguments: map[string]string{"account": "acct-3", "key": "key-3", "region": "east"}},
+				}},
+				{Role: "tool", ToolResults: []ToolResult{
+					{CallID: "report-3", Content: "report stored"},
+					{CallID: "lookup-3", Content: "lookup failed", IsError: true},
+				}},
+				{Role: "user", Content: "Summarize both."},
+			},
+			wire: `[{"role":"system","content":"Static instructions only."},{"role":"user","content":"Task three; context three."},
+				{"role":"assistant","content":"Earlier answer."},{"role":"user","content":"Now report and look up."},
+				{"role":"assistant","content":null,"tool_calls":[
+					{"id":"report-3","type":"function","function":{"name":"a_report","arguments":"{\"format\":\"csv\",\"record\":\"record three\",\"target\":\"archive\"}"}},
+					{"id":"lookup-3","type":"function","function":{"name":"z_lookup","arguments":"{\"account\":\"acct-3\",\"key\":\"key-3\",\"region\":\"east\"}"}}]},
+				{"role":"tool","tool_call_id":"report-3","content":"report stored"},{"role":"tool","tool_call_id":"lookup-3","content":"lookup failed"},
+				{"role":"user","content":"Summarize both."}]`,
+		},
+	}
+	requests := make(chan []byte, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read local request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		var envelope struct {
+			Stream bool `json:"stream"`
+		}
+		if err := json.Unmarshal(body, &envelope); err != nil {
+			t.Errorf("decode local request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		requests <- body
+		if envelope.Stream {
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = io.WriteString(w, "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"model":"openai/gpt-5","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}`)
+	}))
+	defer server.Close()
+	o, err := NewOpenRouter("local-test-key", WithOpenRouterBaseURL(server.URL))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var firstTools json.RawMessage
+	for _, streaming := range []bool{false, true} {
+		for _, reverse := range []bool{false, true} {
+			for construction := range repetitions {
+				req := &Request{Model: "openai/gpt-5", System: "Static instructions only.", Tools: stableToolSchemaFixture(reverse)}
+				for _, cacheEnabled := range []bool{true, false} {
+					req.CacheConfig = cacheEnabled
+					for _, turn := range turns {
+						name := fmt.Sprintf("stream=%t/reverse=%t/construction=%02d/cache=%t/%s", streaming, reverse, construction, cacheEnabled, turn.name)
+						t.Run(name, func(t *testing.T) {
+							req.Messages = turn.messages
+							before, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+
+							if streaming {
+								stream, err := o.SendStream(context.Background(), req)
+								if err != nil {
+									t.Fatalf("SendStream: %v", err)
+								}
+								var text string
+								for {
+									var event StreamEvent
+									event, err = stream.Next()
+									if err != nil {
+										break
+									}
+									if event.Type == StreamEventText {
+										text += event.Text
+									}
+								}
+								closeErr := stream.Close()
+								if err != io.EOF || closeErr != nil {
+									t.Fatalf("drain/close stream: %v / %v", err, closeErr)
+								}
+								if text != "ok" {
+									t.Errorf("stream text = %q, want ok", text)
+								}
+							} else {
+								response, err := o.Send(context.Background(), req)
+								if err != nil {
+									t.Fatalf("Send: %v", err)
+								}
+								if response.Content != "ok" {
+									t.Errorf("response content = %q, want ok", response.Content)
+								}
+							}
+
+							after, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !bytes.Equal(before, after) {
+								t.Errorf("mutated caller tools/history: before %s; after %s", before, after)
+							}
+							var got map[string]json.RawMessage
+							if err := json.Unmarshal(<-requests, &got); err != nil {
+								t.Fatal(err)
+							}
+							var schemas []struct {
+								Function struct {
+									Name       string `json:"name"`
+									Parameters struct {
+										Required []string `json:"required"`
+									} `json:"parameters"`
+								} `json:"function"`
+							}
+							if err := json.Unmarshal(got["tools"], &schemas); err != nil {
+								t.Fatal(err)
+							}
+							if !reflect.DeepEqual(decode(t, got["tools"]), wantTools) {
+								t.Errorf("Chat schemas differ from literal: actual names/required=%+v; want z_lookup=[account key region], a_report=[format record target], exactly once/no optional, with literal types/descriptions and caller order", schemas)
+							}
+							if firstTools == nil {
+								firstTools = append(json.RawMessage(nil), got["tools"]...)
+							} else if !bytes.Equal(firstTools, got["tools"]) {
+								t.Errorf("serialized tools changed across transports/cache choices/turns/constructions/insertion order: actual names/required=%+v", schemas)
+							}
+							if !reflect.DeepEqual(decode(t, got["messages"]), decode(t, []byte(turn.wire))) {
+								t.Errorf("conversation changed: got %s; want %s", got["messages"], turn.wire)
+							}
+							delete(got, "tools")
+							delete(got, "messages")
+							metadata, err := json.Marshal(got)
+							if err != nil {
+								t.Fatal(err)
+							}
+							wantMetadata := `{"model":"openai/gpt-5"}`
+							if streaming {
+								wantMetadata = `{"model":"openai/gpt-5","stream":true,"stream_options":{"include_usage":true}}`
+							}
+							if !reflect.DeepEqual(decode(t, metadata), decode(t, []byte(wantMetadata))) {
+								t.Errorf("unexpected adapter metadata/cache controls: got %s; want %s", metadata, wantMetadata)
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+	t.Logf("exercised 2 transports x 2 insertion orders x %d constructions x 2 cache choices x %d dynamic rows = %d local requests; streams drained and closed", repetitions, len(turns), 2*2*repetitions*2*len(turns))
+}
 
 // --- Constructor tests ---
 
