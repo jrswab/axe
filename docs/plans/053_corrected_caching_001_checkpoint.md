@@ -4,7 +4,7 @@
 
 - Milestone ID: `001`
 - Milestone source: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_milestones.md`
-- Milestone source SHA-256: `f3c110aa91d9c290544f6df41d8dcdc739bbff295541ac4237973a80f00ade6e` (ignored, not tracked).
+- Milestone source SHA-256: `f3c110aa91d9c290544f6df41d8dcdc739bbff295541ac4237973a80f00ade6e` (tracked; matches an ignore pattern).
 - Repository root: `/home/jaron/dev/axe/iss-83-finish-caching`
 - Branch: `iss-83-finish-caching`
 - Baseline / pre-existing changes: `git status --porcelain` empty at setup; ignored plan artifacts are not represented by ordinary status.
@@ -12,7 +12,7 @@
 
 ## Artifacts
 
-- Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_spec.md` (not yet created)
+- Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_spec.md` (exists)
 - Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_implement.md` (not yet created)
 - Checkpoint: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md`
 
@@ -24,8 +24,8 @@
 - Task states — checklist checkboxes render from this list:
 none
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect and commit specification artifacts before P001 review
-- Last completed phase/task/gate and timestamp: L002 PASS; P001 planning-review intent, 2026-11-18T20:10:57.336789+00:00
+- Next safe action: Inspect and commit restart approval and sync intent
+- Last completed phase/task/gate and timestamp: L003 PASS; Y001 restart sync intent, 2026-11-18T20:33:42.540597+00:00
 
 ## Milestone acceptance
 
@@ -184,8 +184,141 @@ L002 passed: spec-lint --root /home/jaron/dev/axe/iss-83-finish-caching docs/pla
 
 - Next action: Inspect and commit specification artifacts before P001 review
 
+### P001 independent planning review in flight
+
+- Gate: P001 independent planning review in flight
+- Commands/results:
+Pre-review inspection completed: complete original index 263 entries, no foreign staged/pending content; full artifact contents accounted against bootstrap/spec/ledger history; source hash matched. Explicit staging only approved three artifacts, cached diff check exit 0. factory-commit exit 0, commit 2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6, 3 planning artifacts, remaining changes []. P001 now in flight: independent review complete milestone-001 spec against milestone 001 and referenced source, round 1. Original scope full spec; no slices; consecutive incomplete 0; shared planning failing rounds 0; no prior findings. Test evidence not applicable: planning review. Applicable L002 lint passed at unchanged artifact content. Relevant implementation not started; only checkpoint bookkeeping dirty after this entry.
+- HEAD commit SHA: `2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await P001 specification planning review
+
+### P001 partial outcome; E002 source recovery intent
+
+- Gate: P001 partial outcome; E002 source recovery intent
+- Commands/results:
+P001 round 1 partial: Verdict CHANGES REQUESTED. Review incomplete: GitHub issue #83 and PR #87 cited milestone:7; surrounding Nested-memory fixture internal/tool/tool_test.go:688-749. Blocking finding verbatim: 'Blocking — source verification incomplete. The GitHub source reads failed for missing authentication. sandbox credential limit: orchestrator must use factory-gh. Supply those source snapshots or authenticated read results so the review can finish.' Implementation prerequisite observed: spec:28 default Nested true may change wire system from string to array, conflicting existing string assertion at internal/tool/tool_test.go:737-739; separate assertion-change approval required, surrounding fixture not yet reviewed. Original gate complete spec planning round 1, reviewed all except named sources/fixture; carried blocker source verification; consecutive incomplete count 1; shared planning failing rounds 1 (round 1 counts once). No other rounds or review gates. E002 in flight: orchestrator authenticated issue/PR reads plus read-only explore fixture/current source to establish exact human decision and source snapshots. Do not rerun completed review coverage or alter assertions.
+- HEAD commit SHA: `2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6`
+- Relevant work: `committed` — stash ref `e913e02f7256eb885e8fb1ba03f6eb9391227b06` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Recover missing review sources and inspect existing memory assertion
+
+### E002 outcome; assertion approval required
+
+- Gate: E002 outcome; assertion approval required
+- Commands/results:
+E002 completed read-only. Existing TestExecuteCallAgent_MemoryEnabled_LoadsIntoPrompt at internal/tool/tool_test.go:672-749 omits cache_enabled and asserts receivedBody["system"].(string) at :737-740 before three strings.Contains checks at :741-749 (Memory heading, previous task, previous result). Correct default-on Nested behavior serializes one Anthropic system text block via internal/provider/anthropic.go:218-236. Search found no other Nested system-string assertion. Recommended exact scope: replace only string-wire extraction with assertions for one system text block and its text string; preserve all three existing memory-content assertions unchanged. Independent new tests still must verify ephemeral hint, omitted/true/false, parent/Nested contradictions and request boundaries. No assertion or fixture edits made. Earlier E001 conclusion no human decision needed is superseded by this discovered assertion conflict. Q1 pending Jaron: approve this narrow assertion replacement. Alternative explicit cache_enabled=false changes fixture coverage and is not selected to evade approval. No acceptance change proposed.
+External source recovery succeeded: factory-gh gh issue view 83 --json number,title,body,url,comments,state exit0; issue OPEN at https://github.com/jrswab/axe/issues/83, title Implement prompt caching across LLM providers; historical goal static-prefix caching, automatic OpenAI read counts, Anthropic/Bedrock hints, cumulative verbose/JSON counts, graceful unsupported behavior and tests. factory-gh gh pr view 87 --json number,title,body,url,comments,reviews,state exit0; PR MERGED at https://github.com/jrswab/axe/pull/87, title ISS-83: Add Prompt Caching Read/Write Tokens; body default-enabled opt-out, Anthropic system arrays, Bedrock points, OpenAI reads, cumulative counters and zero-omitted JSON. Complete authenticated outputs retained in parent transcript. Historical comments do not broaden selected corrected milestone. Local .scratch/issue-83 contains no external issue/PR snapshot; later reviewer needs authenticated read data supplied explicitly, never credentials.
+Cap snapshot: P001 original complete specification scope, round1, partial CHANGES REQUESTED; reviewed all except issue83/PR87 source verification and fixture internal/tool/tool_test.go:688-749. Existing blocking finding source verification incomplete remains unclosed until reviewer completes its scope. Reviewer not retried. Consecutive incomplete1, shared planning failing rounds1 counted once; no checklist/code/per-task/milestone reviews, round4 not applicable. E002 is inspection only, not a review outcome. Terminal condition user decision required; 001/002/003 unchecked. On approval, record exact scope, update artifact with approved exception, inspect/commit, rerun applicable lint, then finish only P001 unreviewed coverage at same round within retry cap. No implementation/tests beyond bootstrap preflight. Preserve this checkpoint and spec.
+- HEAD commit SHA: `2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6`
+- Relevant work: `committed` — stash ref `dc12c6fdb242d9527a8f447bd69fa05f628f2cf5` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await Q1 approval for narrowly scoped Nested-memory assertion replacement
+
+### Q1 approval; S003 source and specification reconciliation intent
+
+- Gate: Q1 approval; S003 source and specification reconciliation intent
+- Commands/results:
+User approval verbatim: 'Q1 yes'. Scope: replace only TestExecuteCallAgent_MemoryEnabled_LoadsIntoPrompt's string-wire system extraction/assertion at internal/tool/tool_test.go:737-740 with assertions for one Anthropic system text block and extraction of its text. Preserve all three memory-content checks at :741-749 unchanged. This authorizes no other assertion or acceptance changes. Approval will be applied during implementation, not this planning edit.
+Restart inspection R002 completed: identity/boxes/artifacts/index match; only known checkpoint bookkeeping modified, no foreign staged changes. Recorded e913e02 and dc12c6 stash objects exist and were inspected read-only; inventories empty, so no hash comparisons required. Read-only guard refused optional direct git hash-object verification of unchanged tracked artifacts; clean index/worktree status and diffs corroborate content. No unknown dispatch/outcome. P001 round1 remains incomplete1/shared failures1, missing source verification and fixture coverage only. S003 in flight: narrow spec approval exception plus stale checkpoint artifact annotations. Authenticated source recovery reads also in flight: retrieve exact issue83 and PR87 source fields for durable checkpoint evidence and reviewer use. Next gates: lints, clean-launch sync, complete only original P001 unreviewed scope at round1. No implementation or assertion edits now.
+- HEAD commit SHA: `2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6`
+- Relevant work: `committed` — stash ref `2c08f61d370a3fa17c8e726c96eec0504fe9c196` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record narrow approval in specification and recover exact external source evidence
+
+### S003 outcome; L003 lint intent
+
+- Gate: S003 outcome; L003 lint intent
+- Commands/results:
+S003 completed narrow spec approval exception at spec:22,57 and current checkpoint source/spec annotations at :7,16. Requirements unchanged, no source/tests/assertions edited. git diff --check and exact fixture-line checks exit0; HEAD 2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6; only checkpoint/spec modified. L003 in flight: spec-lint spec and docs-lint --since milestone base 3e178147775f5c002e7b967995c8823d72472a57. Original pre-review lint gate; P001 round1 incomplete1/shared failing rounds1 unchanged.
+Authenticated external source evidence (orchestrator factory-gh, both exit0, stderr empty): issue view83 --json number,title,body,url,state: https://github.com/jrswab/axe/issues/83, OPEN, Implement prompt caching across LLM providers. Historical body states full system/skill/files/memory/tools/history retransmitted, aims static provider caching and verbose/JSON usage; provider table Anthropic explicit ephemeral cache_control and creation/read fields, OpenAI automatic no request change and prompt_tokens_details.cached_tokens, Bedrock cachePoint and cacheRead/cacheWrite, Gemini context API out of scope, Ollama none, OpenCode pass-through. Links docs/plans/049_prompt_caching_spec.md; acceptance annotations and response metrics, Anthropic system hints and usage, OpenAI cached reads, Bedrock points and usage, runner default-on without TOML changes, cumulative counts, verbose/JSON counts, graceful unsupported behavior, request/parsing tests. Historical claims do not override corrected milestone/current source.
+PR view87 --json number,title,body,url,state,mergedAt,mergeCommit: https://github.com/jrswab/axe/pull/87, MERGED, ISS-83: Add Prompt Caching Read/Write Tokens; mergedAt 2026-09-16T14:34:12Z, mergeCommit 937b509f1ff28e3610586c8891140ee15d87ad57. Complete substantive body: Summary adds caching across Anthropic Bedrock OpenAI, propagates read/write counts through providers streaming run results JSON, adds cache/turn config. Added prompt caching, cache fields on responses/events/results, cache_enabled/max_turns, provider/runner/streaming/JSON tests. Changed default-enabled opt-out, Anthropic system content-block arrays, Bedrock system/tool points, OpenAI cached reads, cumulative runner counts, zero-valued cache JSON omitted, max_turns defaults50. Body ends satisfies #83. Auto-generated release-note comments/blank lines surround these sections. Source remains historical, not independent proof of correctness. Reviewer gets exact authenticated JSON bodies in brief.
+- HEAD commit SHA: `2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6`
+- Relevant work: `uncommitted` — stash ref `e058f76a59b89a059a5127cc50c6d29173b75a7c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_spec.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Lint approved specification before restart sync and remaining P001 scope
+
+### L003 PASS; Y001 restart sync intent
+
+- Gate: L003 PASS; Y001 restart sync intent
+- Commands/results:
+L003 exit0 both gates: spec-lint 26 citations, 0/0 complexity, 0 findings; docs-lint 1 header checks task-id, stale-milestone, broken-mem-link, stale-citation; --since 3e178147775f5c002e7b967995c8823d72472a57 PASS 51 Markdown files, 0 findings, 0 outside scope. Y001 in flight preparation: inspect complete index and all intended pending checkpoint/spec content, commit only approved S003+bookkeeping writes, then factory-sync origin/master; actual launch HEAD to be recorded after commit. No reviewer launched on restart yet. P001 original scope/round1 incomplete1/shared failures1 and carried source blocker unchanged. D4: preserve original milestone review base across restart sync so all changes retain coverage; no counter reset. Next gate sync then remaining P001 scope.
+- HEAD commit SHA: `2c78e4cd1b454cc5d3531ee36994e39a33f1e8b6`
+- Relevant work: `uncommitted` — stash ref `73cfdec1a54e6e3ab8fbec9367e20d3ef60d328b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_spec.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect and commit restart approval and sync intent
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect and commit specification artifacts before P001 review
+- Next action: Inspect and commit restart approval and sync intent
