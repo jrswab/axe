@@ -20,15 +20,15 @@
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
 - Current phase: `execute`
-- Current task: T1
+- Current task: T2
 - Task states — checklist checkboxes render from this list:
-- T1: `unchecked`
+- T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect and commit T1 with G001 intent, then launch whole-suite test gate
-- Last completed phase/task/gate and timestamp: T1b GREEN; G001 whole-suite gate intent, 2026-11-18T22:32:28.584920+00:00
+- Next safe action: Inspect exact T2 files and commit G002 intent for clean gate launch
+- Last completed phase/task/gate and timestamp: T2b GREEN; G002 whole-suite intent, 2026-11-18T22:58:22.113098+00:00
 
 ## Milestone acceptance
 
@@ -978,8 +978,252 @@ T1b independent GREEN completed. Whole runner test file versus RED stash 3a1259d
 
 - Next action: Inspect and commit T1 with G001 intent, then launch whole-suite test gate
 
+### G001 running; R001 pre-review record checks intent
+
+- Gate: G001 running; R001 pre-review record checks intent
+- Commands/results:
+factory-commit T1 exit 0, HEAD 75d3aebd9551f6403c9cba699da25422b2bc5a89, remaining_changes []. Full index/pending inspection accounted exactly six files, 503 insertions 7 deletions, no foreign content. G001 actual factory-gate run --gate test exit 0 launched name gate-test-75d3aebd9551-20261118T223306Z at same SHA, base origin/master, log /tmp/factory-gate-1001/gate-test-75d3aebd9551-20261118T223306Z.log, no superseded runs. First poll exit 4 running, no pass claimed. Poll existing run, do not relaunch. R001 in flight: docs-lint --since 3e178147775f5c002e7b967995c8823d72472a57 and records-stale-check 6fcd55bee81f4ce26f5ad992f6eae6890875071a before three T1 axes using same task fixed-point range. No HEAD change permitted before review evidence used. Caps unchanged; T1 axes round 1 not launched, all tasks unchecked.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Finish G001 by polling and run R001 record checks
+
+### G001 PASS; T1 independent axes round 1 intent
+
+- Gate: G001 PASS; T1 independent axes round 1 intent
+- Commands/results:
+G001 second poll exit 0, state exited 0, passing whole-suite go test -race ./... log /tmp/factory-gate-1001/gate-test-75d3aebd9551-20261118T223306Z.log at reviewed HEAD 75d3aebd9551f6403c9cba699da25422b2bc5a89. R001 docs-lint --since original milestone base exit 0; docs-lint 1, 52 files, 0 findings. records-stale-check 6fcd55bee81f4ce26f5ad992f6eae6890875071a exit 0, no record mentions 1 removed/renamed term. T1 review axes in flight in one parallel batch: T1-Standards round1, T1-Spec round1, T1-DesignRisk round1, each full T1 six-file range 6fcd55bee81f4ce26f5ad992f6eae6890875071a..75d3aebd9551f6403c9cba699da25422b2bc5a89. Original axis scopes independent; no slices or prior findings. No rationale/other-axis results supplied. Reviewed HEAD unchanged; uncommitted checkpoint writes only track launch/outcome/review intent. Axis incomplete counts initially 0 and no failing axis rounds. Planning failures 2 remain historical. All tasks unchecked pending axes.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `committed` — stash ref `313b7768378f7faee5d1de2ddb4385316a7769f0` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch independent Standards, Spec and Design-risk T1 reviews
+
+### T1 axes APPROVED; E002 T2 discovery intent
+
+- Gate: T1 axes APPROVED; E002 T2 discovery intent
+- Commands/results:
+T1-Standards round1 Verdict APPROVED, complete all six files, no findings/nits. T1-Spec round1 Verdict APPROVED, complete all six files, no findings/nits. T1-DesignRisk round1 Verdict APPROVED, complete all six files and affected boundaries, no findings/nits. All independently read matching G001 log at 75d3aebd9551f6403c9cba699da25422b2bc5a89. Combined T1 task gate PASS. Render T1 checked, T2-T4 remain unchecked. Original axis scopes fully covered, ordered single dispatch per axis, no slices/retries/incompletes/carried findings; failed rounds 0 each. Shared planning failures 2 unchanged. E002 in flight: read-only T2 exact test/production discovery, no tests or fixes. T2 fixed point 75d3aebd9551f6403c9cba699da25422b2bc5a89. No independent milestone review or completion gate yet.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `committed` — stash ref `4fa3ae4a46adb89b907fb0558b79a69099124821` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect T2 static-prefix test interfaces and exact acceptance
+
+### E002 complete; T2a RED intent
+
+- Gate: E002 complete; T2a RED intent
+- Commands/results:
+E002 identified T2 matrix enabled/disabled x system+tools/system-only/tools-only/neither, normal and stream. Enabled tools-only missing breakpoint is expected RED; other rows preserve behavior. Send and SendStream duplicate construction; anthropicToolDef lacks cache-control. Convert creates fresh wire tools, preserving caller order; sort-required remains T3. T2a in flight: add only TestAnthropic_StaticPrefixWire in internal/provider/anthropic_test.go; independent literal wire matrix, repeated changing dynamic messages and reused caller tools to catch mutation. Focused RED only. T2b stream and T2c existing-GREEN dynamic test follow separately. Fixed point 75d3aebd9551f6403c9cba699da25422b2bc5a89. Caps unchanged; T1 approved all axes, T2 no reviews.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `committed` — stash ref `153dae400e3f26dc3cfee09731b7c0204b871064` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write T2a normal static-prefix wire RED
+
+### T2a RED; T2b stream RED intent
+
+- Gate: T2a RED; T2b stream RED intent
+- Commands/results:
+T2a TestAnthropic_StaticPrefixWire added at anthropic_test.go:949-1136. Focused go test ./internal/provider -run '^TestAnthropic_StaticPrefixWire$' exit 1, only enabled tools-only first/second lack last-tool ephemeral hint; all seven other matrix rows pass. 16 raw requests check static prefix, changing dynamic content, tool order and caller nonmutation. diff-check exit 0. HEAD 75d3aebd9551f6403c9cba699da25422b2bc5a89. T2b in flight: separately add only TestAnthropic_StreamStaticPrefixWire in anthropic_stream_test.go and capture same matrix using SendStream with drained local SSE. No production/assertion changes; focused RED only. Caps unchanged.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `uncommitted` — stash ref `196a9de6cb4ff3deb6b3f5bbcd2c6b187d3e3388` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write T2b stream static-prefix RED
+
+### T2b RED; T2c existing-GREEN verification intent
+
+- Gate: T2b RED; T2c existing-GREEN verification intent
+- Commands/results:
+T2b TestAnthropic_StreamStaticPrefixWire added at anthropic_stream_test.go:24-227. Focused command exit 1, only enabled tools-only first/second missing last ordered a_report ephemeral hint; other seven matrix cases pass. gofmt/diff-check exit 0. T2c in flight: add TestExecuteCallAgent_DynamicContextOutsideStaticPrefix as verification-only existing-GREEN. Standing procedure condition established: new test covers unchanged behavior with reason recorded at E002 (tool.go:239-256 places task/context in dynamic user messages, :414-457 appends assistant/results), unchanged assertions in other tests, no behavior change/test bypass or review waived. If it passes, record GREEN honestly; never manufacture RED. Independent T2 provider REDs already established. T2c writer must run focused check and touched packages, but current provider package contains two intentional RED tests: use tool package verification only until implementation, report remaining REDs. Caps unchanged; no T2 reviews.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `uncommitted` — stash ref `d3bdafd2e252ea91b460a7e2e2b79f6ad8471d7f` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Add T2c dynamic-context verification test for existing behavior
+
+### T2c GREEN; T2 implementation intent
+
+- Gate: T2c GREEN; T2 implementation intent
+- Commands/results:
+T2c added TestExecuteCallAgent_DynamicContextOutsideStaticPrefix at tool_test.go:479-607, unchanged existing behavior passes enabled/disabled x changing task/optional context over real two-turn builtin invocations. Focused and full tool tests, race tool tests, vet, golangci-lint (0 issues), gofmt and diff-check passed. Overlay mutations of moving dynamic content into system and duplicated assistant turn fail as expected, no production changes. Uses scripted assistant plus real builtin because ExecuteCallAgent has no prebuilt-history input. Caller history covered at provider seam in T2a/b. T2 implementation in flight: minimal shared Anthropic normal/stream static-prefix construction; add last fresh wire tool ephemeral breakpoint only if caching enabled and system empty, preserve system preference/no synthetic breakpoint, caller nonmutation/order, no T3 sorting. Assigned docs README/config/providers. All three new test functions immutable. Run touched-package race/lint then independent GREEN calls. T2 fixed point 75d3aebd9551f6403c9cba699da25422b2bc5a89. Caps unchanged.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `uncommitted` — stash ref `e2604a454d346f7d7ccbd9bbe8ed2cd0517e8cc8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+ M internal/tool/tool_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T2 shared static-prefix policy and assigned docs
+
+### T2 implementation PASS; T2a GREEN verification intent
+
+- Gate: T2 implementation PASS; T2a GREEN verification intent
+- Commands/results:
+T2 code completed anthropic.go optional wire-tool cache metadata and shared static-prefix construction normal/stream; only enabled empty-system nonempty-tools adds last fresh converted tool ephemeral hint. System preference, disabled and neither preserved; no caller mutation or T3 sorting. README/config/providers docs updated. Three test files SHA256 unchanged. Focused provider tests now GREEN, Nested preservation GREEN; touched-package go test -race ./internal/provider ./internal/tool, go vet, golangci-lint, gofmt, diff-check and docs-lint --since HEAD passed. Exploratory PATH docs-lint help and printf errors did not affect gates; direct lint passed. HEAD remains 75d3aebd9551f6403c9cba699da25422b2bc5a89. T2a independent test author GREEN in flight: compare original normal wire test, rerun unchanged focused test and package race/vet/format checks. All tasks except T1 unchecked, no T2 review axes yet; cap state unchanged.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `uncommitted` — stash ref `6e59f9e2574deb0abf1aa1fabb7088bc2562fda8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M docs/src/configuration/agent-config.md
+ M docs/src/providers.md
+ M internal/provider/anthropic.go
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+ M internal/tool/tool_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Independently verify T2a normal static-prefix test GREEN
+
+### T2a GREEN; T2b independent GREEN intent
+
+- Gate: T2a GREEN; T2b independent GREEN intent
+- Commands/results:
+T2a independent VERIFY passed unchanged whole-file comparison to RED stash 196a9de6cb4ff3deb6b3f5bbcd2c6b187d3e3388, blob e5d8843c3df461777f98a0a6243b06b8dc7a1ebe. Focused normal test (all16 leaf cases incl prior tools-only failures), touched-package race, vet, tracked gofmt and diff-check exit0. HEAD 75d3aebd9551f6403c9cba699da25422b2bc5a89. T2b in flight: independent author verifies unchanged stream wire test versus RED stash d3bdafd2e252ea91b460a7e2e2b79f6ad8471d7f then focused and touched-package checks. T2c was declared verification-only existing GREEN with code-author checks already passed; no false RED claim. All T2 test assertions unchanged; caps unchanged.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `uncommitted` — stash ref `86b8fb97431965d195b1cd5a2bb5c24ef44e4981` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M docs/src/configuration/agent-config.md
+ M docs/src/providers.md
+ M internal/provider/anthropic.go
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+ M internal/tool/tool_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Independently verify T2b stream static-prefix GREEN
+
+### T2b GREEN; G002 whole-suite intent
+
+- Gate: T2b GREEN; G002 whole-suite intent
+- Commands/results:
+T2b independent GREEN passed full-file comparison to RED stash d3bdafd2e252ea91b460a7e2e2b79f6ad8471d7f, blob 50d89ff4c92cc440cd5be3677aa90b78d930e584. Focused/verbose stream test all16 leaf cases pass, package race cached pass, vet/gofmt/diff-check exit0. No test assertions changed. T2c existing-GREEN checks passed earlier; T2 implementation verification complete pending review. G002 in flight: inspect full index/pending content then commit exactly nine T2 implementation/docs/test/checkpoint/rendered paths, factory-gate test at actual commit HEAD, poll existing run to final. T2 fixed point75d3aebd9551f6403c9cba699da25422b2bc5a89; all review axes unlaunched, caps unchanged. No paid/live probes or completion claim.
+- HEAD commit SHA: `75d3aebd9551f6403c9cba699da25422b2bc5a89`
+- Relevant work: `uncommitted` — stash ref `26ed25a934e1061f02652ffca40bda2aa5aaf578` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M docs/src/configuration/agent-config.md
+ M docs/src/providers.md
+ M internal/provider/anthropic.go
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+ M internal/tool/tool_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect exact T2 files and commit G002 intent for clean gate launch
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect and commit T1 with G001 intent, then launch whole-suite test gate
+- Next action: Inspect exact T2 files and commit G002 intent for clean gate launch

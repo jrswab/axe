@@ -95,9 +95,10 @@ type anthropicContentBlock struct {
 
 // anthropicToolDef is the wire format for a tool definition in the Anthropic API.
 type anthropicToolDef struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	InputSchema map[string]interface{} `json:"input_schema"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description"`
+	InputSchema  map[string]interface{} `json:"input_schema"`
+	CacheControl map[string]interface{} `json:"cache_control,omitempty"`
 }
 
 // anthropicResponse represents the JSON response from the Anthropic Messages API.
@@ -235,6 +236,16 @@ func buildAnthropicSystem(system string, cacheEnabled bool) interface{} {
 	}
 }
 
+// @anchor:provider:policy Place the Anthropic cache breakpoint after the last static prefix element.
+func buildAnthropicStaticPrefix(req *Request) (interface{}, []anthropicToolDef) {
+	system := buildAnthropicSystem(req.System, req.CacheConfig)
+	tools := convertToAnthropicTools(req.Tools)
+	if req.CacheConfig && req.System == "" && len(tools) > 0 {
+		tools[len(tools)-1].CacheControl = map[string]interface{}{"type": "ephemeral"}
+	}
+	return system, tools
+}
+
 // Send makes a completion request to the Anthropic Messages API.
 func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 	maxTokens := req.MaxTokens
@@ -242,20 +253,18 @@ func (a *Anthropic) Send(ctx context.Context, req *Request) (*Response, error) {
 		maxTokens = defaultMaxTokens
 	}
 
+	system, tools := buildAnthropicStaticPrefix(req)
 	body := anthropicRequest{
 		Model:     req.Model,
 		MaxTokens: maxTokens,
 		Messages:  convertToAnthropicMessages(req.Messages),
-		System:    buildAnthropicSystem(req.System, req.CacheConfig),
+		System:    system,
+		Tools:     tools,
 	}
 
 	if req.Temperature != 0 {
 		temp := req.Temperature
 		body.Temperature = &temp
-	}
-
-	if len(req.Tools) > 0 {
-		body.Tools = convertToAnthropicTools(req.Tools)
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -380,21 +389,19 @@ func (a *Anthropic) SendStream(ctx context.Context, req *Request) (*EventStream,
 		maxTokens = defaultMaxTokens
 	}
 
+	system, tools := buildAnthropicStaticPrefix(req)
 	body := anthropicRequest{
 		Model:     req.Model,
 		MaxTokens: maxTokens,
 		Messages:  convertToAnthropicMessages(req.Messages),
-		System:    buildAnthropicSystem(req.System, req.CacheConfig),
+		System:    system,
+		Tools:     tools,
 		Stream:    true,
 	}
 
 	if req.Temperature != 0 {
 		temp := req.Temperature
 		body.Temperature = &temp
-	}
-
-	if len(req.Tools) > 0 {
-		body.Tools = convertToAnthropicTools(req.Tools)
 	}
 
 	jsonBody, err := json.Marshal(body)

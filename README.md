@@ -373,6 +373,8 @@ OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard
 
 `params.cache_enabled` defaults to `true` when omitted; set it to `true` or `false` explicitly to choose whether Axe uses applicable cache hints. Each run uses its own agent definition, so a sub-agent does not inherit its parent's choice. OpenAI Chat caching is provider-managed and automatic; setting this to `false` does not disable it.
 
+For Anthropic Messages, an enabled hint marks the system prompt and preceding ordered tools as the static prefix. If the system is empty, it marks the last tool instead; if both are empty, Axe adds no breakpoint. Conversation messages, including tasks and sub-agent context, remain outside that breakpoint. Eligibility depends on provider and model constraints and cache availability; a hint does not guarantee a hit or savings.
+
 ### Retry
 
 Agents can retry on transient LLM provider errors — rate limits (429), server

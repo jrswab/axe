@@ -1,12 +1,14 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -943,6 +945,196 @@ func TestAnthropic_Send_AssistantToolCallMessage(t *testing.T) {
 }
 
 // --- Prompt Caching Tests ---
+
+func TestAnthropic_StaticPrefixWire(t *testing.T) {
+	// R2/R5, docs/plans/053_corrected_caching_001_spec.md: the approved
+	// https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+	// contract orders the prefix tools -> system -> messages. These literal
+	// wire expectations do not use production serialization types or helpers.
+	const plainTools = `[
+		{"name":"z_lookup","description":"Look up a record","input_schema":{"type":"object","properties":{"key":{"type":"string","description":"Record key"},"verbose":{"type":"boolean","description":"Include details"}},"required":["key"]}},
+		{"name":"a_report","description":"Report a record","input_schema":{"type":"object","properties":{"record":{"type":"string","description":"Record to report"}},"required":["record"]}}
+	]`
+	const cachedTools = `[
+		{"name":"z_lookup","description":"Look up a record","input_schema":{"type":"object","properties":{"key":{"type":"string","description":"Record key"},"verbose":{"type":"boolean","description":"Include details"}},"required":["key"]}},
+		{"name":"a_report","description":"Report a record","input_schema":{"type":"object","properties":{"record":{"type":"string","description":"Record to report"}},"required":["record"]},"cache_control":{"type":"ephemeral"}}
+	]`
+	turns := []struct {
+		name     string
+		messages []Message
+		want     string
+	}{
+		{
+			name: "first",
+			messages: []Message{
+				{Role: "user", Content: "History: first record"},
+				{Role: "assistant", Content: "First history acknowledged"},
+				{Role: "assistant", Content: "Looking up first", ToolCalls: []ToolCall{{ID: "call_first", Name: "z_lookup", Arguments: map[string]string{"key": "first"}}}},
+				{Role: "tool", ToolResults: []ToolResult{{CallID: "call_first", Content: "First lookup result"}}},
+				{Role: "user", Content: "Task: report first\nContext: first private context"},
+			},
+			want: `[
+				{"role":"user","content":"History: first record"},
+				{"role":"assistant","content":"First history acknowledged"},
+				{"role":"assistant","content":[{"type":"text","text":"Looking up first"},{"type":"tool_use","id":"call_first","name":"z_lookup","input":{"key":"first"}}]},
+				{"role":"user","content":[{"type":"tool_result","tool_use_id":"call_first","content":"First lookup result","is_error":false}]},
+				{"role":"user","content":"Task: report first\nContext: first private context"}
+			]`,
+		},
+		{
+			name: "second",
+			messages: []Message{
+				{Role: "user", Content: "History: second record"},
+				{Role: "assistant", Content: "Second history acknowledged"},
+				{Role: "assistant", Content: "Reporting second", ToolCalls: []ToolCall{{ID: "call_second", Name: "a_report", Arguments: map[string]string{"record": "second"}}}},
+				{Role: "tool", ToolResults: []ToolResult{{CallID: "call_second", Content: "Second report failed", IsError: true}}},
+				{Role: "user", Content: "Task: retry second\nContext: second private context"},
+			},
+			want: `[
+				{"role":"user","content":"History: second record"},
+				{"role":"assistant","content":"Second history acknowledged"},
+				{"role":"assistant","content":[{"type":"text","text":"Reporting second"},{"type":"tool_use","id":"call_second","name":"a_report","input":{"record":"second"}}]},
+				{"role":"user","content":[{"type":"tool_result","tool_use_id":"call_second","content":"Second report failed","is_error":true}]},
+				{"role":"user","content":"Task: retry second\nContext: second private context"}
+			]`,
+		},
+	}
+	decode := func(t *testing.T, raw []byte) interface{} {
+		t.Helper()
+		var value interface{}
+		if err := json.Unmarshal(raw, &value); err != nil {
+			t.Fatalf("invalid JSON %s: %v", raw, err)
+		}
+		return value
+	}
+	report := func(row, mode string, passed bool) {
+		t.Logf("%s/%s: pass=%t (two turns, literal wire + static stability + caller nonmutation)", row, mode, passed)
+	}
+	for _, row := range []struct {
+		name   string
+		system string
+		tools  bool
+	}{
+		{name: "system_and_tools", system: "Static instructions only.", tools: true},
+		{name: "system_only", system: "Static instructions only."},
+		{name: "tools_only", tools: true},
+		{name: "neither"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			// Deliberately nonalphabetical caller order; one required property per
+			// tool keeps schema-map ordering (T3) outside this breakpoint slice.
+			req := &Request{Model: "claude-sonnet-4-20250514", MaxTokens: 128, System: row.system}
+			if row.tools {
+				req.Tools = []Tool{
+					{Name: "z_lookup", Description: "Look up a record", Parameters: map[string]ToolParameter{
+						"key":     {Type: "string", Description: "Record key", Required: true},
+						"verbose": {Type: "boolean", Description: "Include details"},
+					}},
+					{Name: "a_report", Description: "Report a record", Parameters: map[string]ToolParameter{
+						"record": {Type: "string", Description: "Record to report", Required: true},
+					}},
+				}
+			}
+			requests := make(chan []byte, 1)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("read local request: %v", err)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				requests <- body
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, `{"content":[{"type":"text","text":"ok"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
+			}))
+			defer server.Close()
+			a, err := NewAnthropic("local-test-key", WithBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Reuse the same request, tool slice and parameter maps: enabled
+			// first, then disabled, so a leaked hint cannot hide in a fresh copy.
+			for _, mode := range []struct {
+				name    string
+				enabled bool
+			}{{name: "enabled", enabled: true}, {name: "disabled"}} {
+				passed := t.Run(mode.name, func(t *testing.T) {
+					req.CacheConfig = mode.enabled
+					var firstSystem, firstTools json.RawMessage
+					for i, turn := range turns {
+						t.Run(turn.name, func(t *testing.T) {
+							req.Messages = turn.messages
+							before, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+
+							_, err = a.Send(context.Background(), req)
+							if err != nil {
+								t.Fatalf("Send: %v", err)
+							}
+
+							after, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !bytes.Equal(before, after) {
+								t.Errorf("Send mutated caller request/tools/schema/history:\nbefore %s\nafter  %s", before, after)
+							}
+							var got map[string]json.RawMessage
+							if err := json.Unmarshal(<-requests, &got); err != nil {
+								t.Fatal(err)
+							}
+							if i == 0 {
+								firstSystem, firstTools = got["system"], got["tools"]
+							} else if !bytes.Equal(firstSystem, got["system"]) || !bytes.Equal(firstTools, got["tools"]) {
+								t.Error("static system/tool prefix changed when only dynamic conversation changed")
+							}
+							wantSystem, wantTools := "", ""
+							if row.system != "" {
+								wantSystem = `"Static instructions only."`
+								if mode.enabled {
+									wantSystem = `[{"type":"text","text":"Static instructions only.","cache_control":{"type":"ephemeral"}}]`
+								}
+							}
+							if row.tools {
+								wantTools = plainTools
+								if mode.enabled && row.system == "" {
+									wantTools = cachedTools
+								}
+							}
+							for _, field := range []struct{ name, want string }{
+								{"system", wantSystem}, {"tools", wantTools}, {"messages", turn.want},
+							} {
+								raw, present := got[field.name]
+								if field.want == "" {
+									if present {
+										t.Errorf("%s must be omitted, got %s", field.name, raw)
+									}
+								} else if !present || !reflect.DeepEqual(decode(t, raw), decode(t, []byte(field.want))) {
+									t.Errorf("%s wire mismatch (only the last caller-ordered tool gets a hint for enabled tools-only):\ngot  %s\nwant %s", field.name, raw, field.want)
+								}
+								delete(got, field.name)
+							}
+							// Reject top-level/synthetic controls as well as any controls
+							// hidden in messages, schemas or earlier tools above.
+							metadata, err := json.Marshal(got)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !reflect.DeepEqual(decode(t, metadata), decode(t, []byte(`{"model":"claude-sonnet-4-20250514","max_tokens":128}`))) {
+								t.Errorf("unexpected request metadata: %s", metadata)
+							}
+						})
+					}
+				})
+				// These parent logs remain visible in the exact non-verbose RED
+				// command, providing evidence for the verification-only rows too.
+				report(row.name, mode.name, passed)
+			}
+		})
+	}
+}
 
 func TestAnthropic_Send_CachedSystemPrompt_EmitsContentBlocks(t *testing.T) {
 	var gotBody map[string]interface{}

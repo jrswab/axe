@@ -18,6 +18,14 @@
 
 The "Provider Name" column is the value used in the `model` field of your agent TOML — e.g., `model = "google/gemini-2.0-flash"`.
 
+## Prompt Caching
+
+Each run resolves `params.cache_enabled` from its own agent definition: omitted or `true` enables applicable Axe hints; `false` disables them. A sub-agent does not inherit its parent's choice.
+
+For Anthropic Messages, an enabled ephemeral breakpoint marks the system prompt and preceding ordered tools. With an empty system and tools present, the breakpoint instead marks the last tool; with neither, Axe adds no breakpoint. Conversation messages remain outside that static prefix. Model and provider constraints and cache availability determine eligibility; a hint does not guarantee a hit or savings. See [Anthropic's prompt caching guide](https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
+
+OpenAI Chat caching is provider-managed and automatic; `cache_enabled = false` does not disable it. Compatible adapters share request code but are not guaranteed to support first-party caching behavior.
+
 ## Configuring Credentials
 
 API keys are resolved in this order for each provider:

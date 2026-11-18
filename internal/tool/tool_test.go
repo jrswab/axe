@@ -476,6 +476,136 @@ tools = ["list_directory"]
 	}
 }
 
+func TestExecuteCallAgent_DynamicContextOutsideStaticPrefix(t *testing.T) {
+	// Anthropic's documented prefix order is tools, system, then messages:
+	// https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+	// (retrieved 2026-11-18). These local wire checks do not prove a cache hit.
+	cases := []struct {
+		name, task, taskContext, assistant, callID, path, result, final string
+	}{
+		{
+			name:        "long task and context",
+			task:        "First task: " + strings.Repeat("inspect the alpha fixture carefully; ", 6),
+			taskContext: "First context: " + strings.Repeat("alpha detail remains dynamic; ", 6),
+			assistant:   "Private alpha inspection.",
+			callID:      "alpha-call",
+			path:        "alpha",
+			result:      "alpha-entry.txt",
+			final:       "Alpha outcome.",
+		},
+		{
+			name:      "different task without context",
+			task:      "Second task: inspect the beta fixture instead.",
+			assistant: "Private beta inspection.",
+			callID:    "beta-call",
+			path:      "beta",
+			result:    "beta-entry.txt",
+			final:     "Beta outcome.",
+		},
+	}
+	for _, cacheEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("cache_enabled=%t", cacheEnabled), func(t *testing.T) {
+			agentsDir := setupToolTestAgentsDir(t)
+			workdir := t.TempDir()
+			var responses []testutil.MockLLMResponse
+			for _, tc := range cases {
+				if err := os.Mkdir(filepath.Join(workdir, tc.path), 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(workdir, tc.path, tc.result), []byte("private fixture"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				responses = append(responses,
+					testutil.AnthropicToolUseResponse(tc.assistant, []testutil.MockToolCall{
+						{ID: tc.callID, Name: "list_directory", Input: map[string]string{"path": tc.path}},
+					}),
+					testutil.AnthropicResponseWithCacheTokens(tc.final, 10, 5, 3, 4),
+				)
+			}
+			writeToolTestAgent(t, agentsDir, "prefix-helper", fmt.Sprintf(`name = "prefix-helper"
+model = "anthropic/claude-sonnet-4-20250514"
+system_prompt = "Static helper instructions."
+workdir = %q
+max_turns = 2
+tools = ["list_directory"]
+[params]
+cache_enabled = %t
+`, workdir, cacheEnabled))
+			server := testutil.NewMockLLMServer(t, responses)
+			t.Setenv("ANTHROPIC_API_KEY", "test-key")
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+
+			for _, tc := range cases {
+				args := map[string]string{"agent": "prefix-helper", "task": tc.task}
+				if tc.taskContext != "" {
+					args["context"] = tc.taskContext
+				}
+				outcome := ExecuteCallAgent(context.Background(), provider.ToolCall{
+					ID: "parent-" + tc.callID, Name: CallAgentToolName, Arguments: args,
+				}, ExecuteOptions{AllowedAgents: []string{"prefix-helper"}, AgentsDir: agentsDir, MaxDepth: 3, GlobalConfig: &config.GlobalConfig{}})
+				want := provider.ToolResult{CallID: "parent-" + tc.callID, Content: tc.final}
+				if outcome != want {
+					t.Errorf("%s: Nested Outcome = %+v, want final text only %+v", tc.name, outcome, want)
+				}
+			}
+			if got := server.RequestCount(); got != 2*len(cases) {
+				t.Fatalf("request count = %d, want %d", got, 2*len(cases))
+			}
+
+			decode := func(raw string) interface{} {
+				t.Helper()
+				var value interface{}
+				if err := json.Unmarshal([]byte(raw), &value); err != nil {
+					t.Fatalf("invalid JSON %q: %v", raw, err)
+				}
+				return value
+			}
+			wantSystem := `"Static helper instructions."`
+			if cacheEnabled {
+				wantSystem = `[{"type":"text","text":"Static helper instructions.","cache_control":{"type":"ephemeral"}}]`
+			}
+			wantTools := `[{"name":"list_directory","description":"List the contents of a directory relative to the working directory. Returns one entry per line; subdirectories are suffixed with /.","input_schema":{"type":"object","properties":{"path":{"type":"string","description":"Relative path to the directory to list. Use \".\" to list the working directory root."},"artifact":{"type":"string","description":"When \"true\", list the artifact directory instead of the working directory."}},"required":["path"]}}]`
+			var firstSystem, firstTools interface{}
+			for i, request := range server.Requests {
+				tc := cases[i/2]
+				var body map[string]json.RawMessage
+				if err := json.Unmarshal([]byte(request.Body), &body); err != nil {
+					t.Fatalf("request %d: decode: %v", i+1, err)
+				}
+				system, tools := decode(string(body["system"])), decode(string(body["tools"]))
+				if !reflect.DeepEqual(system, decode(wantSystem)) || !reflect.DeepEqual(tools, decode(wantTools)) {
+					t.Errorf("request %d: static system/tools = %s / %s", i+1, body["system"], body["tools"])
+				}
+				if i == 0 {
+					firstSystem, firstTools = system, tools
+				} else if !reflect.DeepEqual(system, firstSystem) || !reflect.DeepEqual(tools, firstTools) {
+					t.Errorf("request %d: static prefix changed across turns or Nested Runs", i+1)
+				}
+
+				user := "Task: " + tc.task
+				if tc.taskContext != "" {
+					user += "\n\nContext:\n" + tc.taskContext
+				}
+				messages := []interface{}{map[string]interface{}{"role": "user", "content": user}}
+				if i%2 == 1 {
+					messages = append(messages,
+						map[string]interface{}{"role": "assistant", "content": []interface{}{
+							map[string]interface{}{"type": "text", "text": tc.assistant},
+							map[string]interface{}{"type": "tool_use", "id": tc.callID, "name": "list_directory", "input": map[string]interface{}{"path": tc.path}},
+						}},
+						map[string]interface{}{"role": "user", "content": []interface{}{
+							map[string]interface{}{"type": "tool_result", "tool_use_id": tc.callID, "content": tc.result, "is_error": false},
+						}},
+					)
+				}
+				if got := decode(string(body["messages"])); !reflect.DeepEqual(got, messages) {
+					t.Errorf("%s turn %d: messages = %s, want %#v", tc.name, i%2+1, body["messages"], messages)
+				}
+			}
+		})
+	}
+}
+
 func TestExecuteCallAgent_WithContext(t *testing.T) {
 	agentsDir := setupToolTestAgentsDir(t)
 
