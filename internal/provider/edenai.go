@@ -13,9 +13,10 @@ const defaultEdenAIBaseURL = "https://api.edenai.run/v3"
 
 // EdenAI is an OpenAI-compatible provider configured for Eden AI, an EU-based
 // gateway that fronts several upstream vendors behind one key. Model ids are
-// vendor-prefixed, for example edenai/openai/gpt-4o-mini: parseModel splits on
-// the first slash, so edenai selects the provider and the remaining
-// vendor/model is sent through unchanged.
+// plain model names, for example edenai/mistral-large-4: parseModel splits on
+// the first slash, so edenai selects the provider and everything after it is
+// sent through unchanged. Older vendor-prefixed ids such as
+// edenai/openai/gpt-4o-mini still reach the gateway through the same path.
 type EdenAI struct {
 	*OpenAI
 }
