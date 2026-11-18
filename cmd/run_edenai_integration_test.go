@@ -18,7 +18,7 @@ import (
 )
 
 func TestIntegration_EdenAI(t *testing.T) {
-	const model = "openai/gpt-4o-mini"
+	const model = "mistral-large-4"
 
 	for _, tt := range []struct {
 		name      string
