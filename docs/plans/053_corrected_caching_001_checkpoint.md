@@ -13,19 +13,22 @@
 ## Artifacts
 
 - Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_spec.md` (exists)
-- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_implement.md` (not yet created)
+- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_implement.md` (exists)
 - Checkpoint: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md`
 
 ## State
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
-- Current phase: `spec`
+- Current phase: `implement`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T1: `unchecked`
+- T2: `unchecked`
+- T3: `unchecked`
+- T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect and commit restart approval and sync intent
-- Last completed phase/task/gate and timestamp: L003 PASS; Y001 restart sync intent, 2026-11-18T20:33:42.540597+00:00
+- Next safe action: Correct stale annotation and prepare current checklist for commit
+- Last completed phase/task/gate and timestamp: P002 staging inspection outcome; I003 annotation correction intent, 2026-11-18T21:53:42.513899+00:00
 
 ## Milestone acceptance
 
@@ -317,8 +320,240 @@ L003 exit0 both gates: spec-lint 26 citations, 0/0 complexity, 0 findings; docs-
 
 - Next action: Inspect and commit restart approval and sync intent
 
+### Y001 PASS; L004 pre-review lint intent
+
+- Gate: Y001 PASS; L004 pre-review lint intent
+- Commands/results:
+Y001 clean-launch inspection completed complete index and pending checkpoint/spec content; no foreign staged/mixed baseline; original milestone unchanged. factory-commit exit0 new HEAD 78c0cc903668a7a08c551dd978ed5432c481739d remaining_changes []. factory-sync args[] exit0, launch/result HEAD 78c0cc903668a7a08c551dd978ed5432c481739d, JSON {"branch":"iss-83-finish-caching","base":"origin/master","head_before":"78c0cc903668a7a08c551dd978ed5432c481739d","ahead":2,"behind":0,"shared_files":[],"conflicts":[],"synced":true}; stderr empty. L004 in flight: spec-lint/docs-lint immediately before completing P001 unreviewed scope, same original gate round1. P001 counts unchanged incomplete1/shared failures1, carried source-verification blocker. Historical state Blockers:none in summary is superseded by carried reviewer blocker until complete result. No human decision pending after Q1.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Lint then finish P001 unreviewed source and fixture scope
+
+### L004 PASS; P001 remaining-scope review in flight
+
+- Gate: L004 PASS; P001 remaining-scope review in flight
+- Commands/results:
+L004 spec-lint exit0 26 citations 0 findings; docs-lint --since milestone base exit0; docs-lint 1 checks task-id, stale-milestone, broken-mem-link, stale-citation; PASS 51 Markdown files 0 findings 0 outside scope. P001 retry dispatch P001b in flight, original full-spec planning scope round1, retry only unreviewed issue83/PR87 authenticated sources and internal/tool/tool_test.go:688-749 fixture, plus changed spec approval passages :22,:57. Prior reviewed coverage remains attached. Prior finding verbatim supplied; same original gate, not a new round. Consecutive incomplete before dispatch1; shared failing rounds1 counted once. Any second consecutive incomplete stops, no further retry. User Q1 narrow approval recorded. Authenticated source bodies supplied in reviewer Source field; no credential/network access delegated. Planning review test evidence not applicable.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `committed` — stash ref `f42633828e0228ba1c7c73cb4843586de132e0d7` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await P001b remaining-scope planning review
+
+### P001b result-format failure; consecutive incomplete cap reached
+
+- Gate: P001b result-format failure; consecutive incomplete cap reached
+- Commands/results:
+P001b returned first line 'Verdict: APPROVED', with no substantive findings and affirmative completion of assigned source/fixture/approval scope. It explicitly resolved prior source blocker and Q1 prerequisite. However its output also included the line '**Review incomplete:** none within the assigned completion scope. Prior completed coverage was retained, not restarted.' Applicable review contract requires no Review incomplete: line for a passing result. This syntactically nonconforming result cannot pass despite its stated complete coverage. Preserve this exact discrepancy, not an invented unreviewed file. No substantive unreviewed files were identified by P001b; accepted gate remains incomplete due solely to prohibited completion marker.
+Original P001 complete-spec gate round1, partial source/fixture completion slice P001b; ordered outcomes P001 partial CHANGES REQUESTED then P001b APPROVED but invalid completion marker. Consecutive incomplete count now2 under strict result-format rule. Shared planning failing rounds remains1, counted once for original round1, no additional substantive blocker. Combined gate NOT PASSED. No further reviewer retry authorized under existing cap. Round4 not applicable. Q1 approval remains recorded and valid only for specified future assertion change. Milestone001 remains unchecked, no checklist, implementation not started. Terminal condition user direction required at cap. Q2 requested: authorize exactly one replacement review of unchanged P001 remaining source/fixture/approval scope with conforming completion output, without resetting history/counters or acceptance/assertion scope. Recommended yes because reviewer reported all coverage complete and no findings, but orchestrator cannot waive result contract or cap. Do not dispatch further review until Jaron directs.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `committed` — stash ref `465da846be136683119a3f85c37bbe5934aee7ee` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await Q2 direction for one conforming review result beyond incomplete retry cap
+
+### Q2 approval; L005 replacement-review lint intent
+
+- Gate: Q2 approval; L005 replacement-review lint intent
+- Commands/results:
+User approval verbatim: 'q2 yes'. It authorizes exactly one replacement review beyond P001's consecutive incomplete-result cap, limited to the same authenticated issue83/PR87 sources, Nested-memory fixture and changed spec approval passages. It does not broaden scope, reset history or authorize other assertion/acceptance changes. Original scope complete 001 spec, round1; ordered P001 partial CHANGES REQUESTED, P001b APPROVED with invalid incomplete marker. Prior consecutive incomplete2 retained. Shared planning failing rounds1 retained. P001c is the one expressly user-authorized replacement, not a new allowance. If replacement remains incomplete or fails, stop under existing rules rather than invent another retry. Q1 narrow future assertion replacement remains valid. repo-state confirms unchanged HEAD 78c0cc903668a7a08c551dd978ed5432c481739d, only checkpoint modified, no operation, origin/master ahead2 behind0. Last established Y001 sync passed at this HEAD; this is continuation of same run, no unknown sync launch or outcome. L005 in flight: spec-lint on unchanged spec and docs-lint --since original milestone base immediately before P001c. No implementation yet.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `committed` — stash ref `72a51ef1dbf7b03108fefa32f03caa03715592c7` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Lint then dispatch the one Q2-authorized replacement review
+
+### L005 PASS; P001c replacement review in flight
+
+- Gate: L005 PASS; P001c replacement review in flight
+- Commands/results:
+L005 spec-lint exit0 26 citations 0 findings. docs-lint exit0 header docs-lint 1 checks task-id, stale-milestone, broken-mem-link, stale-citation; PASS 51 Markdown files 0 findings 0 outside --since original base. P001c in flight: exactly one Q2-authorized replacement of P001 remaining-scope result, same round1, unchanged scope/source/spec and no new acceptance. Prior consecutive incomplete2 and shared planning failures1 preserved. User 'q2 yes' authorizes only this extra dispatch. Reviewer receives prior findings verbatim and explicit output rule: use no incomplete marker when every assigned file is reviewed. Planning test evidence not applicable, HEAD unchanged and relevant spec committed.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `committed` — stash ref `a49fc6d0db1f72da72cda313b5d17720d2fbd7fc` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Await P001c replacement result
+
+### P001 combined APPROVED; I001 checklist intent
+
+- Gate: P001 combined APPROVED; I001 checklist intent
+- Commands/results:
+P001c replacement result first line Verdict: APPROVED, Coverage: complete, no incomplete marker, no blockers or nits. Source-verification blocker resolved using authenticated reads; complete fixture and approval passages verified. Combine original completed full-spec coverage with completed remaining slice: P001 specification gate APPROVED. Prior ordered outcomes and historical consecutive incomplete2 retained; latest complete result resets active consecutive incomplete to0 for scope/round1. Shared planning failing rounds1 retained, counted once. Q2 one extra dispatch consumed; no further exception remains. Spec approved, checklist absent, phase checklist-pending as required. I001 in flight: load implement skill and create only milestone001 implementation checklist from approved spec, preserving acceptance, exact Q1 scope, TDD and independent axis gates. Original milestone review base 3e178147775f5c002e7b967995c8823d72472a57. No implementation/test assertions changed. Next gate lint checklist/spec then independent checklist review.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `committed` — stash ref `fc808ebd38291f86e39d227f6d02d2378fcd0b61` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write milestone-001 implementation checklist
+
+### I001 outcome; L006 planning lint intent
+
+- Gate: I001 outcome; L006 planning lint intent
+- Commands/results:
+I001 completed checklist only, T1 each Run choice design-bearing R1/R5; T2 Anthropic last static boundary design-bearing R2/R5; T3 stable tool definitions design-bearing R3/R5; T4 compatibility/documentation standard R3/R4/R5. All four unchecked. Mechanical task-ID/path/coverage checks pass, no audit helper found; no tests/gates executed. New checklist ignored until explicitly staged, checkpoint preexisting edits preserved. L006 in flight: spec-lint spec plus checklist and docs-lint --since original base. Shared planning failures1, active incomplete0. Planning checklist review round1 not launched. No code/axis/milestone review yet.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `uncommitted` — stash ref `2570236abb22ad7b52bdb82e764f869cee99a1f1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Lint implementation checklist and approved specification
+
+### L006 outcome; I002 command correction intent
+
+- Gate: L006 outcome; I002 command correction intent
+- Commands/results:
+L006 spec-lint exit1: approved spec passed26 citations; checklist8 future -run patterns select no tests in current files (lines32,33,40,41,48,49,56 twice). docs-lint exit0, docs-lint1 header, 52 Markdown files0 findings. spec-lint --help confirms future tests cannot satisfy current-test command checks. I002 in flight: mechanical checklist command correction, preserve every future declared test and assertion requirement but replace executable future-only -run commands with existing valid package-wide go test commands, explicitly run those gates after creating declared tests. Actual RED agent gets focused command once new test exists. D5 procedure exception: reversible command-document lint repair, same full test coverage (package-wide is broader), no acceptance/assertion change, bypasses no gate/cap; next spec-lint then checklist review. Shared planning failures1 unchanged, checklist reviews0.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `uncommitted` — stash ref `b98ae24da856d3b19dca7f64e5565d05c7499f46` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Correct checklist commands without reducing test coverage
+
+### I002 outcome; L007 lint intent
+
+- Gate: I002 outcome; L007 lint intent
+- Commands/results:
+I002 completed checklist-only command correction: future test names and RED behavior retained, package-wide go test commands replace8 future-only selectors; no -count=1 default. Direct whitespace/source-path and git diff --check exit0 (ignored new checklist checked separately). L007 in flight: spec-lint spec/checklist and docs-lint --since original base. Shared planning failures1; no checklist review yet. No acceptance/assertion/source changes.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `uncommitted` — stash ref `7fddd5bbb4d8ecb99d9b434dd93a37e4f91fd00e` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Rerun planning lints
+
+### L007 PASS; P002 checklist review preparation
+
+- Gate: L007 PASS; P002 checklist review preparation
+- Commands/results:
+L007 exit0 spec-lint spec26citations/checklist4citations,0findings. docs-lint exit0 header docs-lint1 checks task-id, stale-milestone, broken-mem-link, stale-citation; PASS52Markdown files0findings0outside since scope. P002 preparation in flight, independent checklist planning review round1 not yet launched. First inspect full index/pending checkpoint and full ignored checklist content, then force-stage only new checklist and factory-commit these2 approved artifact paths. P001 combined APPROVED and Q2 replacement consumed, shared planning failures1, active incomplete0. No code/tests yet.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `uncommitted` — stash ref `8c1ac23f3aa49b6e7cec9feb4ca4f4bb81ce5166` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect and commit checklist before P002
+
+### P002 staging inspection outcome; I003 annotation correction intent
+
+- Gate: P002 staging inspection outcome; I003 annotation correction intent
+- Commands/results:
+Preparation agent stopped without staging due stale checklist '(not yet created)' annotation and absent ignored historical I001/I002 versions. No foreign changes found: full266-entry stage0 index empty diff; only checkpoint modified, ignored checklist fully read, all4task boxes unchecked, spec/milestone unchanged, Q1 preserved, whitespace checks pass. P002 reviewer NOT launched; preparation is not review/incomplete outcome and changes no cap. I001 and I002 actual completion outputs are established in parent transcript; no unknown dispatch result exists. Ignored historical versions were never snapshot-backed, as explicitly recorded. D6: commit and independently review current complete checklist against approved spec, not infer historical content from absent snapshots. This preserves full acceptance and review coverage and makes no claim that missing ignored versions were captured. Current full checklist will be verified and committed; original history remains. I003 in flight: correct only stale checklist-existence annotation, inspect actual current checklist against all R1-R5 and exact Q1 scope, full index, then stage exact approved new checklist if no unaccounted changes. Any substantive requirement discrepancy stops before edit/staging for targeted repair. No acceptance/assertion edits authorized. Next gate independent P002.
+- HEAD commit SHA: `78c0cc903668a7a08c551dd978ed5432c481739d`
+- Relevant work: `uncommitted` — stash ref `240ceac0767e1bad974065a93709e27015fbe3dd` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Correct stale annotation and prepare current checklist for commit
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect and commit restart approval and sync intent
+- Next action: Correct stale annotation and prepare current checklist for commit
