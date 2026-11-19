@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect complete index and checkpoint pending changes, commit exact bookkeeping, launch Y005 factory-sync
-- Last completed phase/task/gate and timestamp: REC004 recovery PASS; Y005 new-run sync intent in flight, 2026-11-19T01:32:20.552509+00:00
+- Next safe action: Inspect and commit bookkeeping, launch G008 test and lint gates at same clean HEAD, poll both to final
+- Last completed phase/task/gate and timestamp: B003 preflight PASS; G008 completion test/lint batch intent in flight, 2026-11-19T01:35:13.916707+00:00
 
 ## Milestone acceptance
 
@@ -2315,8 +2315,50 @@ REC004 read-only restart recovery completed for this new Factory invocation. mil
 
 - Next action: Inspect complete index and checkpoint pending changes, commit exact bookkeeping, launch Y005 factory-sync
 
+### Y005 sync PASS; B003 fresh Go preflight intent in flight
+
+- Gate: Y005 sync PASS; B003 fresh Go preflight intent in flight
+- Commands/results:
+Y005 actual command factory-sync (args[]) launch HEAD641a1b9fba49cc8faa0783d9e48d864d42773c0f with clean status after checkpoint-only commit641a1b9. Exit0 stderr empty JSON {branch:iss-83-finish-caching,base:origin/master,head_before:641a1b9fba49cc8faa0783d9e48d864d42773c0f,ahead:16,behind:0,shared_files:[],conflicts:[],synced:true}. No merge or HEAD move; resulting HEAD641a1b9fba49cc8faa0783d9e48d864d42773c0f. Y005 complete. B003 original scope fresh-run root-module Go preflight; intended action env -u GOTOOLCHAIN PATH=<exact B001 checkpointline59 PATH> /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching; in flight,no prior launch. Run applicable exec context reading only, environment/tool availability checks, no source/test assertions or acceptance changes. Verify module files unchanged and report actual command/output/exit/HEAD/status. Caps preserved planningfail2 milestonefail1 activeincomplete0 no round4,Q2consumed; all tasks checked,001unchecked. Root preflight may populate user Go caches; no live provider calls/deploy/push. After B003 PASS record refreshed completion test/lint/gates intent and clean-launch sequence.
+- HEAD commit SHA: `641a1b9fba49cc8faa0783d9e48d864d42773c0f`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B003 fresh root Go preflight and inspect completion commands/environment
+
+### B003 preflight PASS; G008 completion test/lint batch intent in flight
+
+- Gate: B003 preflight PASS; G008 completion test/lint batch intent in flight
+- Commands/results:
+B003 PASS exit0 at641a1b9fba49cc8faa0783d9e48d864d42773c0f, only checkpoint dirty before/after. Actual env -u GOTOOLCHAIN PATH=<exact B001line59> /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching. Current process matched requested env. Output Go1.26.11 toolchaininstalled/downloadablePASS; repositorygo1.26.11PASS; moduleloadsreadonly github.com/jrswab/axePASS; govulncheck ./... No vulnerabilities found PASS; Go preflightPASS. No warnings. Detached runner combined stdout/stderr; separate stderr emptiness not established. Module sha256 unchanged go.mod5cdf52caaa1cd1c27da160e1317484e7b36c62f12026c0dd1a16854c67920cb2 go.sumd38cb7800f4a9f1ad581a0aaf741376864b6e98b4207fe4202b63471ca377b6a. v1.11.0 baseline20e6ada179b08cef050c4b436a2497182efcf2ee; pinned make apidiff module cached,standaloneapidiffabsent not required; golangci-lint2.14.0/actionlint1.7.12/go1.26.11/govulncheck1.9.0 available. No repo edits. G008 original scope completion whole-suite test plus configured lint, independent mechanical batch with both launch identities G008test and G008lint recorded in flight now. Intended dispatches factory-gate run --gate test and factory-gate run --gate lint at same actual clean-launch HEAD after checkpoint-only commit, then poll each to final. No HEAD changes between launches or polls. Both gates required; aggregate passes only both exit0 logs match launchSHA. Preserve exact B001PATH/GOTOOLCHAINunset. Commit only inspected bookkeeping. Paid/live providers and Docker not included. Completion still requires make check/API diff, ci-check integrity/vet/build/test, Python helper tests, actionlint, every-criterion comparison and full Git accounting; those need separately recorded intentions after G008 outcome. Y005 already syncPASS before completion tests. Decision/cap summary unchanged: D1-D10 preserved, planningfail2 activeincomplete0 Q2consumed, R005fail1 activeincomplete0 no round4 all findingsclosed,001unchecked. No assertion/acceptance changes authorized.
+- HEAD commit SHA: `641a1b9fba49cc8faa0783d9e48d864d42773c0f`
+- Relevant work: `committed` — stash ref `08b8c9dadcaa6787b569739022d83facd78a98d6` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect and commit bookkeeping, launch G008 test and lint gates at same clean HEAD, poll both to final
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect complete index and checkpoint pending changes, commit exact bookkeeping, launch Y005 factory-sync
+- Next action: Inspect and commit bookkeeping, launch G008 test and lint gates at same clean HEAD, poll both to final
