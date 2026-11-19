@@ -19,16 +19,16 @@
 ## State
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
-- Current phase: `execute`
+- Current phase: `complete`
 - Current task: T4
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
 - T4: `checked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Inspect complete index and pending checkpoint diff, commit bookkeeping, inspect actual clean HEAD, then launch G010 trusted test and lint gates
-- Last completed phase/task/gate and timestamp: B006 preflight PASS; G010 completion test and lint intents IN FLIGHT, 2026-11-19T16:03:16.229246+00:00
+- Milestone checkbox: `checked`
+- Next safe action: Inspect final C001 outcome delta/full index, commit checkpoint+001 milestone tick, inspect actual clean HEAD, run Y009 pre-selection sync
+- Last completed phase/task/gate and timestamp: C001 completion handoff validation PASS; Y009 pre-selection sync pending launch, 2026-11-19T16:20:26.519322+00:00
 
 ## Milestone acceptance
 
@@ -2804,8 +2804,167 @@ Cap snapshot D1-D13 unchanged, planning failures2/incomplete0/Q2 consumed; all t
 
 - Next action: Inspect complete index and pending checkpoint diff, commit bookkeeping, inspect actual clean HEAD, then launch G010 trusted test and lint gates
 
+### G010 completion test and lint PASS; A002 final acceptance and Git accounting intent IN FLIGHT
+
+- Gate: G010 completion test and lint PASS; A002 final acceptance and Git accounting intent IN FLIGHT
+- Commands/results:
+G010 actual clean launch HEAD aff44548d9656d2e9b8296169905a7a77567a07b, status clean confirmed repo-state after checkpoint-only commit aff4454. run_script factory-gate run --gate test exit0 created gate-test-aff44548d965-20261119T160524Z, trusted origin/master command go test -race ./..., log /tmp/factory-gate-1001/gate-test-aff44548d965-20261119T160524Z.log; poll exit0 state exited0. factory-gate run --gate lint exit0 created gate-lint-aff44548d965-20261119T160528Z, trusted origin/master command golangci-lint run, log /tmp/factory-gate-1001/gate-lint-aff44548d965-20261119T160528Z.log; first poll exit4 running, second poll exit0 state exited0. Both network online,matching SHA, no superseded runs. G010 aggregate PASS for actual aff4454 launch SHA only. No source/test assertions changed. Y008 synced before completion tests, no merge.
+A002 intent IN FLIGHT. Original scope final Factory completion checks2/3 and applicability accounting: independent read-only explore compares ALL R1-R5/spec/milestone001 acceptance to current source/tests/docs, inspects entire Git index/status and full milestone range (base3e178147775f5c002e7b967995c8823d72472a57), verifies G010 logs, and accounts for every required CONTRIBUTING/checklist local gate. Verify V007 make check(API diff)/integrity/vet/build and V009 ci-check test/Python/actionlint log commands/results and exact validated inputs unchanged at aff4454; do not relabel old logs as current SHA. Identify exact unrun required gate if not applicable. This is not another code-review round or test rerun. All source since3f76578 unchanged must be verified, not assumed. Account baseline6 ignored research files from original committed milestone source note, preserve unchanged; ignored files excluded by snapshot contract and ordinary gate clean-tree guard. Only expected current pending changes are this checkpoint outcome/intent. No completion tick until A002 passes and all checks satisfied. No substantive source change, assertion replacement or consequential action authorized.
+Ledger D1-D13 unchanged; cap planning failures2/incomplete0/Q2 consumed; all task axes passed; milestone failures1/incomplete0/R005 passed/no round4/no findings. T1-T4 checked,001unchecked,002/003 unselected.
+- HEAD commit SHA: `aff44548d9656d2e9b8296169905a7a77567a07b`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run A002 final acceptance and Git/gate accounting against current aff4454 source, then render001 only if all completion checks pass
+
+### A002 partial inspection recorded; A002 scoped continuation and V010 local checks intents IN FLIGHT
+
+- Gate: A002 partial inspection recorded; A002 scoped continuation and V010 local checks intents IN FLIGHT
+- Commands/results:
+A002 first read-only inspection returned incomplete acceptance coverage, NOT an acceptance failure or code review. It established current HEAD aff44548d9656d2e9b8296169905a7a77567a07b, empty staged diff/stage0 index, only expected checkpoint G010/A002 bookkeeping pending,21 changed milestone paths/22 commits, .mem absent, all source/config/docs except checkpoint unchanged since3f76578,879475c,8bc3309. G010 logs independently read matching actual HEAD, test all packages ok/no test files,exit0 and lint0 issues/exit0. It read historical V007/V009 logs/exits but did not finish every R1-R5 clause or external API baseline applicability. No PASS claimed; no tests/reviews/writes launched by A002. Continue the SAME A002 acceptance gate in bounded read-only slices, not a new review or counter reset. Slices: A002a R1/R2 matrix and acceptance; A002b R3/R4/R5 matrix and acceptance plus task/review evidence. REC007 already established all original identities/outcomes/caps; no need to re-prove six ignored research files' historic bytes, as original committed milestone identifies them local-only and Factory excludes ignored artifacts. They remain preserved and outside implementation, no unknown resource/acceptance effect identified.
+V010 intent IN FLIGHT: run fresh remaining deterministic local checks at actual unchanged aff4454 source to avoid relying on unverifiable external-input applicability of historical logs. General agent only, no repository edits. Commands from repository guidance: make check (includes lint,go test ./...,make apidiff), .agents/scripts/ci-check integrity,vet,build; python3 -B -m unittest discover -s .agents/scripts/tests -v; actionlint -shellcheck= -pyflakes=. Verify .agents/scripts/ci-check test's exact command equivalent to G010 go test -race ./...; do not rerun equivalent suite if proven, otherwise report exact missing requirement before action. Use same B001 PATH,GOTOOLCHAIN unset,XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN,existing detached logging as needed. No -count/-p or wrapper bypass. Capture actual API-diff baseline tag/tool metadata; do not move tags or mutate repository. Report every command/result and HEAD/status before/after. No paid/live/LLM probes,Docker,deploy,push,assertion or acceptance changes. If any gate fails or cannot run safely, stop and report, milestone stays unchecked. These checks plus A002 slices retain original full coverage, no required gate or review bypassed; this is validation batching only, acceptance/assertions unchanged. Existing D1-D13/caps unchanged: planning failures2/incomplete0/Q2 consumed; task axes passed; milestone failures1/incomplete0/R005 passed/no round4/no findings. T1-T4 checked,001unchecked.
+- HEAD commit SHA: `aff44548d9656d2e9b8296169905a7a77567a07b`
+- Relevant work: `committed` — stash ref `2d2c087dbd04229ffbbab285717c2c3f8c4da32f` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Finish A002a/A002b acceptance evidence and V010 fresh remaining local checks, combine results before any completion tick
+
+### V010 discovery complete, checks unlaunched; V010 exact remaining checks intent IN FLIGHT
+
+- Gate: V010 discovery complete, checks unlaunched; V010 exact remaining checks intent IN FLIGHT
+- Commands/results:
+V010 first general call stopped after discovery as instructed: ci-check test at script lines6-8 is go test -race -v ./..., while G010 is go test -race ./.... No listed verification command or detached run launched, no unknown outcome. All make check/ci-check integrity/vet/build/test/Python/actionlint remain unrun in V010. Existing G010 passed. API baseline v1.11.0 resolved20e6ada179b08cef050c4b436a2497182efcf2ee, tool pinned golang.org/x/exp/cmd/apidiff@v0.0.0-20261106192419-47ce03d25ef0. Metadata Go1.26.11,golangci-lint2.14.0,actionlint1.7.12,Python3.12.3,Make4.3; disk7.8GiB and memory11GiB available. HEAD/source/module/status unchanged, checkpoint only dirty. No failed gate or launch to retry.
+V010 continuation intent IN FLIGHT: run all originally listed local checks PLUS exact `.agents/scripts/ci-check test` go test -race -v ./..., retaining full coverage/output rather than rely on command equivalence. This is additional verification only, no acceptance/assertion change. Commands make check;ci-check integrity;ci-check vet;ci-check build;ci-check test;python3 -B -m unittest discover -s .agents/scripts/tests -v;actionlint -shellcheck= -pyflakes=. Same B001 PATH/unset GOTOOLCHAIN/retained XDG_CACHE_HOME and existing detached logging. No -count/-p or guard bypass. Stop for failed/unsafe gate. A002a/b read-only acceptance slices remain pending, no review count change. D1-D13 and all cap state unchanged: planning failures2/incomplete0/Q2 consumed,milestone failures1/incomplete0/R005 passed/no round4/no open findings. T1-T4 checked,001unchecked.
+- HEAD commit SHA: `aff44548d9656d2e9b8296169905a7a77567a07b`
+- Relevant work: `committed` — stash ref `348d750f4d4717c4a644e3bec7dab3e95bb30015` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run V010 exact remaining local checks and finish bounded A002a/A002b acceptance slices, then combine results
+
+### V010 all seven checks PASS; A002a and A002b acceptance slices IN FLIGHT
+
+- Gate: V010 all seven checks PASS; A002a and A002b acceptance slices IN FLIGHT
+- Commands/results:
+V010 exact remaining local checks all PASS at HEAD aff44548d9656d2e9b8296169905a7a77567a07b, each launch and final poll exit0. Commands/identities/logs: make check general-v010-make-c49e /tmp/run-detached-1001/general-v010-make-c49e/output.log; .agents/scripts/ci-check integrity general-v010-integrity-c49e /tmp/run-detached-1001/general-v010-integrity-c49e/output.log; ci-check vet general-v010-vet-c49e /tmp/run-detached-1001/general-v010-vet-c49e/output.log; ci-check build general-v010-build-c49e /tmp/run-detached-1001/general-v010-build-c49e/output.log; ci-check test(go test -race -v ./...) general-v010-test-c49e /tmp/run-detached-1001/general-v010-test-c49e/output.log; python3 -B -m unittest discover -s .agents/scripts/tests -v general-v010-python-c49e /tmp/run-detached-1001/general-v010-python-c49e/output.log (22tests PASS); actionlint -shellcheck= -pyflakes= general-v010-actionlint-c49e /tmp/run-detached-1001/general-v010-actionlint-c49e/output.log. Combined stdout/stderr logs, no separate child streams claimed. Go tests cached; normal valid cache use, no -count/-p or wrapper bypass. make check includes lint,go test ./...,API diff. Exact B001 PATH/unset GOTOOLCHAIN/retained XDG_CACHE_HOME,HOME/config/data unchanged. No repository files changed, HEAD/status remained current aff4454 and only preceding checkpoint bookkeeping. Module/source hashes same as B006; checkpoint hash before/after4e359a419d5a7bfcc5803d8afc3ca832bad7ca8f64020d3af91ad571a8610bb9. API baseline v1.11.0=20e6ada179b08cef050c4b436a2497182efcf2ee,tag object unchanged. Tool golang.org/x/exp/cmd/apidiff@v0.0.0-20261106192419-47ce03d25ef0,parent module sum h1:1GO4fJiyGakz0Liu2Ve1qPAwQYPkKlG1Q8iO2CYjtFA=. Initial metadata package-as-module lookup failed mechanically; corrected parent module lookup succeeded, no gate failure or source change. All required deterministic local checks now actual PASS; no need to rely on older V007/V009 applicability for completion. Docker smoke not runnable locally(no declared smoke gate),paid/live/LLM probes excluded.
+A002a and A002b continuation intents IN FLIGHT within SAME original A002 acceptance/Git gate, not code reviews/round changes. A002a scope all R1/R2 plus milestone cache-choice/Anthropic clauses with exact source/test/docs and each matrix row. A002b scope all R3/R4/R5 plus remaining milestone compatibility/determinism/docs clauses and original task/review evidence. Both read-only, no tests/gates/writes. Combine their results with established Git/index accounting and G010/V010 logs before completion tick. Failed/unsafe or missing clause stops unchecked. Acceptance/assertions unchanged, no substantive source changes.
+Ledger D1-D13 preserved; planning failures2/incomplete0/Q2 consumed; task axes all passed; milestone failures1/incomplete0/R005 passed/no round4/no open findings. T1-T4 checked,001unchecked,002/003 unselected.
+- HEAD commit SHA: `aff44548d9656d2e9b8296169905a7a77567a07b`
+- Relevant work: `committed` — stash ref `b1d5570506e4361c0144cf67ba80e037ce7d39da` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Finish read-only A002a/R1-R2 and A002b/R3-R5 acceptance comparisons, combine with G010/V010 and Git accounting before completion
+
+### A002 all acceptance and Git accounting PASS; milestone001 completion PASS
+
+- Gate: A002 all acceptance and Git accounting PASS; milestone001 completion PASS
+- Commands/results:
+A002a and A002b complete PASS, no missing acceptance clause. Same original A002 gate split, not code review rounds. R1 full9 Main/Nested omitted/true/false combinations,contradictory choices,two turns,dynamic task/context and opaque Outcomes verified at pkg/runner/run_test.go1040-1175,internal/tool/tool_test.go360-610,runner/run.go432-452,tool.go150-261/333-402. R2 all4static rows x enabled/disabled x2changing turns on normal+existing streams,independent literal wire oracles,nonmutation,dynamic messages verified anthropic_static_prefix_test.go26-146,anthropic_test.go950-1041,anthropic_stream_test.go24-132,anthropic.go221-264/389-400. Main omission resolution independently covered R1;docs disclaim hit guarantee. R3 stable properties/required names/tool order/metadata across16 constructions/normal+streams,OpenRouter shared converter and Chat automatic requests/read-only usage verified anthropic.go186-207,openai.go228-249,stable_tool_schemas_test.go23-55,openai_test.go18-221,openrouter_test.go17-105. R4 original errors/status/message/wrappedEOF,unchanged transient retries,no cache-off replay,interrupted streams,no invented usage and shared adapters/LiteLLM cost verified cache_compatibility_test.go27-88/132-198/260-558,retry.go50-145. R5 contract-backed literals,cumulative own-run normal/stream usage,input/output28/14 and reads/writes180/60,budget42of43 excludes cache,zero-key omission and partial counters verified runner/run_test.go263-455/587-591,result.go127-131,result_test.go270-284. Docs README374-376,agent-config65-67,providers23-27,json-output17-29,CHANGELOG18-24 and TAGS14-16 agree. Q1 only prior approved assertion extraction,three content checks preserved,no other acceptance/assertion change. .mem absent.
+All per-task gates/axes complete,nits fixed; R005 full independent milestone review PASS at original source,no open blocker/nit. A002 comparisons introduced no source change and are not extra review rounds. Actual HEADaff44548d9656d2e9b8296169905a7a77567a07b; all source/tests/docs/config since3f76578 unchanged except checkpoint. G010 trusted full go test -race ./... and golangci-lint run at clean aff4454 PASS (matching logs recorded above), V010 all7 required local checks at same actual source PASS including make check/API diff,ci-check integrity/vet/build/test,Python22/actionlint. Y008 sync exit0 before completion tests,no merge. No older gate relabeled. Completion4checks:1full relevant suite/lint/localchecks PASS;2every R1-R5 and milestone001 acceptance PASS;3complete index/status/full range accounted (21paths,22commits before completion render;only pending checkpoint bookkeeping,index empty,no ordinary untracked;6ignored baseline research files explicitly original local context,preserved,outside snapshot contract);4render milestone001 checked ONLY now. No other pending baseline/source change.
+Validation batching decision recorded before action in A002 partial/V010 intent entries, now stable ledger alias D14: reversible local coverage-preserving split into A002a/R1-R2 and A002b/R3-R5 plus fresh V010 verification, reason first unbounded comparison incomplete and historical external applicability not fully verified, acceptance/assertions unchanged,no gate or independent review bypass,no cap/human boundary crossed. Evidence A002a/b PASS and G010/V010 PASS. Intended next gate was combined completion, now passed. Reported to Jaron under Decided for you before this entry. D1-D13 preserved.
+Ledger/cap snapshot planning failures2/active incomplete0/Q2 consumed;all task axes passed,nits fixed;milestone failing rounds1/active incomplete0,R005 passed,no round4,no open findings. T1-T4 checked,001checked now.002/003 unchecked/unselected. Docker smoke CI-only,no declared local smoke gate and not run locally;paid/live provider probes excluded. No production/deploy/push/PR merge performed. Next preserve completion evidence,validate checkpoint for handoff,commit rendered tick and checkpoint,then pre-selection sync before choosing002.
+- HEAD commit SHA: `aff44548d9656d2e9b8296169905a7a77567a07b`
+- Relevant work: `committed` — stash ref `9d81ad82617ab27ce71a311e6c7ec93f5bd13b6f` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Validate completed001 checkpoint and rendered tick, record pre-selection sync intent, inspect full index/pending paths, commit completion bookkeeping, then sync before selecting002
+
+### C001 completion checkpoint validation and Y009 pre-selection sync intents IN FLIGHT
+
+- Gate: C001 completion checkpoint validation and Y009 pre-selection sync intents IN FLIGHT
+- Commands/results:
+C001 intent IN FLIGHT, original scope001 completion handoff/restart consistency and precommit bookkeeping inspection,round not applicable. Read-only explore validates identities/paths/checkboxes, all new evidence since REC007/current known ledger and caps,matching current aff4454 verification logs and source unchanged,all new snapshot refs recorded since REC007 parent/path/inventory correspondence,full current index and full pending checkpoint+milestone diffs. No rerun of already reconciled89ref history needed while unchanged; account appended snapshots and bookkeeping separately. Spec/checklist unchanged,T1-T4 checked,001 now checked only after completion4checks passed. Stop for any unknown count/identity/outcome or unaccounted change.
+Y009 intent IN FLIGHT, original scope pre-selection sync with origin/master AFTER C001 establishes handoff-ready completion. Before sync commit only approved checkpoint/milestone rendered bookkeeping after C001 full-index/pending-content inspection. Inspect actual resulting clean HEAD,then factory-sync args[],record actual JSON/launch/result HEAD/exit before selecting next sequential unchecked milestone. No predicted launch SHA,no blind retry. If C001 fails do not commit/sync/select.001 completion PASS evidence remains actual aff4454 test/lint/V010 source evidence,not relabeled for bookkeeping commit. Ledger D1-D14 preserved;D14 reported. Caps unchanged planning failures2/incomplete0/Q2 consumed,milestone failures1/incomplete0/R005 passed/no round4/no findings. No code/assertion/acceptance changes. No paid/live,Docker,deploy,push or PR merge authorized.002/003 still unselected.
+- HEAD commit SHA: `aff44548d9656d2e9b8296169905a7a77567a07b`
+- Relevant work: `committed` — stash ref `717f01d77a2a90bb0903ce02f5003f1662c0df13` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_milestones.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run C001 read-only completion checkpoint/precommit validation, commit only approved rendered001 tick and checkpoint, inspect clean HEAD, then run Y009 pre-selection sync
+
+### C001 completion handoff validation PASS; Y009 pre-selection sync pending launch
+
+- Gate: C001 completion handoff validation PASS; Y009 pre-selection sync pending launch
+- Commands/results:
+C001 read-only validation outcome PASS at aff44548d9656d2e9b8296169905a7a77567a07b. Identities/absolute artifact paths/root/branch/checkboxes agree,T1-T4 checked,001checked,002/003unchecked. All current appended dispatch outcomes established; only Y009 intentionally awaiting launch after commit. Complete index stage0/cached diff empty,ordinary untracked none. Full pending checkpoint diff only approved G010/V010/A002/D14/completion/C001/Y009 bookkeeping; milestone diff exactly001 unchecked->checked. Spec/checklist/assertions/source unchanged since reviewed3f76578,except checkpoint history. Original89refs/12inventories REC007 remains valid; new actual snapshot refs11f9b734,ece2c65,fc7e3f5,2d2c087,348d750,b1d5570,9d81ad8,717f01d inspected parent/path/status/empty inventories. All checkpoint-only except717f01d includes rendered milestone001 tick,matching evidence. G010 matching actual aff4454 test/lint logs exit0; V010 all7 exitfiles0/logs support results; verbose test log checked package outcomes not every test line. No unaccounted state. Latest D1-D14/caps reconciled,early bootstrap zero retained as historical only: planning failures2/incomplete0/Q2 consumed,milestone failures1/incomplete0/R005 passed/no round4/no open findings.6ignored baseline research files preserved outside ordinary inventory. Safe exact commit paths checkpoint and milestone document only. No tests/gates/reviews/polls/sync/writes by C001. Y009 original pre-selection-sync intent remains in flight/not launched; after fresh inspection of this additional outcome and listed pending paths,commit completion tick/evidence,inspect actual clean HEAD then factory-sync args[],record JSON/result before selecting002.001 completion passed on actual unchanged tested source ataff4454,not relabeled to bookkeeping SHA.
+- HEAD commit SHA: `aff44548d9656d2e9b8296169905a7a77567a07b`
+- Relevant work: `committed` — stash ref `1db6ad64645f5d579a114f845626318208543701` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_milestones.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect final C001 outcome delta/full index, commit checkpoint+001 milestone tick, inspect actual clean HEAD, run Y009 pre-selection sync
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect complete index and pending checkpoint diff, commit bookkeeping, inspect actual clean HEAD, then launch G010 trusted test and lint gates
+- Next action: Inspect final C001 outcome delta/full index, commit checkpoint+001 milestone tick, inspect actual clean HEAD, run Y009 pre-selection sync

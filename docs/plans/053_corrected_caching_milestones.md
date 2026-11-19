@@ -38,7 +38,7 @@ For Go changes run focused touched-package race tests, `go test -race ./...` and
 
 ## Milestones
 
-- [ ] 001: Repeated Messages and Chat Agent Runs preserve stable static prefixes and each agent's cache choice.
+- [x] 001: Repeated Messages and Chat Agent Runs preserve stable static prefixes and each agent's cache choice.
   - **Dependencies:** none.
   - **Acceptance:** Main and Nested Runs independently honor omitted/true/false, including contradictory parent/Nested choices. Anthropic system plus tools, tools only, and neither-static cases follow the documented prefix contract on normal and existing stream paths; task/context and conversation remain dynamic. Multi-required schemas serialize stably while preserving tool order. OpenAI retains automatic request and read scope. Original errors, existing transient retries, shared-adapter behavior, deterministic contract-backed evidence and matching documentation are preserved in this complete working slice.
 - [ ] 002: Bedrock main and Nested Runs send contract-valid static-prefix caching requests.
