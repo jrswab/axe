@@ -235,7 +235,13 @@ func cacheCompatibilitySSE(a cacheCompatibilityAdapter, variant string) string {
 		if usage != "" {
 			end += "," + usage
 		}
-		return "data: " + start + "\n\n" + cacheCompatibilityPrefix(a, false) + cacheCompatibilityPrefix(a, true) + "data: " + `{"type":"content_block_stop","index":0}` + "\n\ndata: " + end + "}\n\ndata: {\"type\":\"message_stop\"}\n\n"
+		return "data: " + start + "\n\ndata: " +
+			`{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}` + "\n\ndata: " +
+			`{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"hello"}}` + "\n\ndata: " +
+			`{"type":"content_block_stop","index":0}` + "\n\ndata: " +
+			`{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call_1","name":"lookup"}}` + "\n\ndata: " +
+			`{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"query\":\"value\"}"}}` + "\n\ndata: " +
+			`{"type":"content_block_stop","index":1}` + "\n\ndata: " + end + "}\n\ndata: {\"type\":\"message_stop\"}\n\n"
 	}
 	body := cacheCompatibilityPrefix(a, false) + cacheCompatibilityPrefix(a, true) + "data: " + `{"choices":[{"delta":{},"finish_reason":"tool_calls"}]}` + "\n\n"
 	if usage != "" {

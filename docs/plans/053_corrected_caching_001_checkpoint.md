@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect/commit G005 intent, run fresh full-suite evidence and records checks, then final milestone review
-- Last completed phase/task/gate and timestamp: V004 PASS; T4 checked; G005 milestone review gate intent, 2026-11-19T00:42:11.047716+00:00
+- Next safe action: Inspect exact W005 changes/greps, commit4paths, run fresh G006 evidence and records checks
+- Last completed phase/task/gate and timestamp: W005 fixes verified; C005/G006 clean launch intent, 2026-11-19T01:05:46.165569+00:00
 
 ## Milestone acceptance
 
@@ -1775,7 +1775,7 @@ B002 intent IN FLIGHT: general setup-only agent runs /home/jaron/.agents/scripts
 
 - Gate: B002 PASS; N003 T3 nit batch intent
 - Commands/results:
-B002 outcome PASS exit0: env -u GOTOOLCHAIN PATH=<exact recorded checkpoint line58 PATH> /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching. Output: go1.26.11 installed/downloadable PASS; repository Go version PASS; module loads read-only github.com/jrswab/axe PASS; govulncheck ./... No vulnerabilities found PASS; Go pre-flight checks PASS. stderr empty. Go binary /home/jaron/.local/share/../bin/go, govulncheck /home/jaron/go/bin/govulncheck, single root module. Module hashes unchanged. HEAD before/after6bc30a7a17567e21cc0608e12cf6aeb99b2651b1; status only checkpoint modified by prior Y003 outcome/B002 intent. No repository edits.
+B002 outcome PASS exit0: env -u GOTOOLCHAIN PATH=<B001 environment PATH recorded at line59> /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching. Output: go1.26.11 installed/downloadable PASS; repository Go version PASS; module loads read-only github.com/jrswab/axe PASS; govulncheck ./... No vulnerabilities found PASS; Go pre-flight checks PASS. stderr empty. Go binary /home/jaron/.local/share/../bin/go, govulncheck /home/jaron/go/bin/govulncheck, single root module. Module hashes unchanged. HEAD before/after6bc30a7a17567e21cc0608e12cf6aeb99b2651b1; status only checkpoint modified by prior Y003 outcome/B002 intent. No repository edits.
 N003 intent IN FLIGHT: one code batch limited to exactly the two T3 round1 nits quoted verbatim above (duplicate stream drain/close mechanics and failure-prone shared capture channels/unbounded contexts). Inspect first, then test-only extraction/capture/context mechanics, preserve every assertion, case and literal wire oracle unchanged. Allowed surfaces three provider test files and shared test-only helper. No source behavior or acceptance change. Existing passing review remains, no nit re-review. Run focused tests, touched-package race and repository lint, inspect exact diff/index, then orchestrator commit and postcommit affected tests/lint before T3 checked. Caps unchanged: planning failures2/active incomplete0/Q2 consumed; task axes failures0/incompletes0; no milestone review/round4. Next safe action code N003 only.
 - HEAD commit SHA: `6bc30a7a17567e21cc0608e12cf6aeb99b2651b1`
 - Relevant work: `committed` — stash ref `de6e1d4451447448c18d903a4ac429fa21a583c9` (tracked files except intent-to-add; never applied)
@@ -2087,8 +2087,105 @@ G005 intent IN FLIGHT: after exact clean-launch bookkeeping-only inspection/comm
 
 - Next action: Inspect/commit G005 intent, run fresh full-suite evidence and records checks, then final milestone review
 
+### G005 PASS; R005 final milestone round1 intent
+
+- Gate: G005 PASS; R005 final milestone round1 intent
+- Commands/results:
+G005 outcome PASS: complete-index/pending inspection PASS; bookkeeping commitb116412a16630b9aa7a530b150daa9ac0f4cfd9e exactly checkpoint+checklist, clean repo-state launch. factory-gate run --gate test exit0 namegate-test-b116412a1663-20261119T004257Z sha b116412a16630b9aa7a530b150daa9ac0f4cfd9e; final poll0/exited0. Matching whole-suite log /tmp/factory-gate-1001/gate-test-b116412a1663-20261119T004257Z.log. docs-lint1 --since3e178147775f5c002e7b967995c8823d72472a57 exit0 52md0findings0outside; records-stale-check samebase exit0 No removed or renamed names. Docker confirmed CI-only per CONTRIBUTING22,91-106 and workflow107-126; default gates test/lint only, no host smoke gate; report Docker unrun locally, not missing mandatory local gate.
+D10 procedure split decision before review: full milestone13commits21files >2000changed lines. Local/reversible/in-scope; no acceptance/assertion/gate/cap/human boundary change; full original coverage and independent combined category outcomes retained. Original final-review scopes backend15files and spec/records6files, UIempty. Backend split providers9files1606changedlines and integration6files641changedlines. Records checkpoint1-980+other5files1184lines and checkpoint981-through-pinned-end remainder. Each changed file assigned once by category; checkpoint nonoverlapping content slices. Reported earlier under Decided for you. Intended next gate R005 combined milestone round1.
+R005 intent IN FLIGHT: one parallel batch4 independent review slices at pinnedb116412a16630b9aa7a530b150daa9ac0f4cfd9e, full range3e178147775f5c002e7b967995c8823d72472a57..b116412a16630b9aa7a530b150daa9ac0f4cfd9e, round1. Original scopes backend(B1providers,B2integration), spec-records(S1checkpoint1-980+5files,S2checkpoint981-end). No carried findings, dispatch1 for each, consecutive incomplete0 per original scope/round, failing rounds0, no round4. Review artifacts/source/standards/criteria, not per-task outcomes or writer rationale. No tests by reviewers. All tasks checked, milestone unchecked.
+- HEAD commit SHA: `b116412a16630b9aa7a530b150daa9ac0f4cfd9e`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch R005 full independent milestone review4slices, combine original-scope outcomes
+
+### R005 round1 CHANGES REQUESTED; F005 scoped fixes intent
+
+- Gate: R005 round1 CHANGES REQUESTED; F005 scoped fixes intent
+- Commands/results:
+R005 round1 outcome COMPLETE4/4 valid Verdict lines, no Review incomplete. B1providers APPROVED WITH NITS; B2integration APPROVED; combined original backend APPROVED WITH NITS. S1records APPROVED; S2records CHANGES REQUESTED; combined original records CHANGES REQUESTED. Overall CHANGES REQUESTED with exactly1blocking record contradiction plus3nits. Original scopes and slices retained. Failed milestone rounds1, consecutive incomplete0 both original scopes; no round4. All tasks remain checked, milestone unchecked.
+Findings verbatim:
+S2 B1 — Current limitations incorrectly exclude tracked planning artifacts from snapshots. checkpoint.md:2092 offending text: "Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`;". Minimal fix: "Qualify the exclusion as applying to untracked ignored artifacts before initial force-staging. State that these planning artifacts are now tracked and captured normally; retain the force-staging warning only for new, untracked ignored files. Do not rewrite historical append entries."
+S2 nit — checkpoint.md:1778 "PATH=<exact recorded checkpoint line58 PATH>" points to wrong line; "change line58 to line59, preferably identifying the environment entry by name as well."
+B1 N1 — Standards/design risk: request capture can deadlock on a replay regression. Locations anthropic_test.go959-1003, anthropic_stream_test.go34-94. Added text `requests := make(chan []byte, 1)` and `requests <- body`; provider context.Background and unconditional capture read. "Will these tests terminate diagnostically if a regression sends an additional request or bypasses HTTP entirely?" Minimal fix: "use nonblocking, synchronized capture—such as the existing cacheCompatibilityCapture pattern—and bounded provider contexts/capture observation. Preserve all current assertions."
+B1 N2 — Spec/evidence fidelity: Anthropic success fixture leaves its text block open. cache_compatibility_test.go218-220,248 cacheCompatibilityPrefix/cacheCompatibilitySSE; starts text index1 without stop before success, tool index0 stop only. "Does this success fixture establish preservation against a representative complete Messages stream?" Minimal fix: "make the success builder emit text index 0 and its stop, followed by tool index 1 and its stop. Keep deliberately interrupted fixtures open and preserve expected outward events."
+F005 intent IN FLIGHT: read-only discovery of factory-checkpoint interface for current limitations summary and narrow record correction (no historical rewrite except requested PATH citation repair); inspect exact3nit code surfaces and assertion-preserving mechanics. Then1batch code test-only nit fixes and narrow record fixes, usual lint/race, commit; rerun only blocking records review gate within cap. No re-review of passed backend nits. No new behavior/acceptance/assertion change. Stop on human decision. Planning failures2/incomplete0/Q2 consumed unchanged.
+- HEAD commit SHA: `b116412a16630b9aa7a530b150daa9ac0f4cfd9e`
+- Relevant work: `committed` — stash ref `7135cfb387d1634fe256366acd7871f41c789b75` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Discover checkpoint summary correction interface and exact assertion-preserving3nit fix scope
+
+### F005 discovery PASS; W005 exact fix batch intent
+
+- Gate: F005 discovery PASS; W005 exact fix batch intent
+- Commands/results:
+F005 discovery outcome: factory-checkpoint has no limitations flag and preserves existing footer, so direct narrow summary edit required. All4planning files tracked via git ls-files; footer wrong. Historical snapshot/inventory exclusion applies only before initial force-staging while files untracked/ignored. PATH environment atline59, not58. Test capture and canonical success SSE fix can preserve every assertion and outward event expectation; deliberately interrupted fixtures remain open.
+W005 intent IN FLIGHT: code agent changes exactly checkpoint footer limitations sentence, requested historical PATH citation at1778 (not quote in findings), anthropic normal/stream StaticPrefixWire capture setup only, and cache_compatibility_test.go successful SSE builder canonical block order/stops only. Preserve every assertion/case/literal expected oracle and interrupted fixture behavior. Test fixture wire changes are not assertion rewrites, outward expectations byte-identical. All changes exactly reviewer-requested blockers/nits, no added rules. Required greps target actual corrected passages excluding verbatim historical finding quotes that must remain. Run focused tests, provider package race and lint/docs checks, return full index/content evidence. No re-review for backend nits, only records blocking gate round2 afterward. R005 failedrounds1, original-scope incomplete0, no cap exception.
+- HEAD commit SHA: `b116412a16630b9aa7a530b150daa9ac0f4cfd9e`
+- Relevant work: `committed` — stash ref `20c9a0fd93e4e8de18d81aa75192864baf811ed0` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Apply W005 exact reviewer-requested batch then verify and commit
+
+### W005 fixes verified; C005/G006 clean launch intent
+
+- Gate: W005 fixes verified; C005/G006 clean launch intent
+- Commands/results:
+W005 outcome: code agent changed exactly4approved files, current limitations footer now correctly distinguishes formerly untracked ignored artifacts vs tracked snapshots, requested B001 PATH citation fixed; normal/stream static-prefix tests use synchronized nonblocking capture and5scontexts; success SSE emits text0/stop then tool1/stop, interrupted fixtures unchanged. Reported comparison no removed assertion/case/oracle or outward expected event; additive capture count diagnostic only, compatibility file unchanged outside success builder. Reported focused tests, derived provider race, golangci-lint, formatting/diff checks PASS. Temporary Go overlays confirmed missing/replayed requests fail diagnostically and missing tool-end detected; initial stream bypass overlay compile failure corrected then expected diagnostic RED, unmodified focused tests passed afterward. No source file edit. Agent report omitted detailed command timings/HEAD, so independent postcommit checks will capture actual outputs before completion. Reported index empty/exact4modified/no untracked.
+C005/G006 intent IN FLIGHT: explore independently verifies required fixed-string greps, byte-identical assertions and interrupted fixtures, complete index and pending content for exact4path commit. Orchestrator commits then checks actual clean resulting HEAD and launches factory-gate run --gate test, polls final. Record fresh SHA-matched evidence before blocking records re-review round2; backend passed with nits, no backend re-review. Need postcommit lint/affected tests. R005 failing rounds1, original scopes backend passed/records blockingB1+nit, active incompletes0, no round4. All task boxeschecked milestoneunchecked. No new acceptance/assertion/behavior change.
+- HEAD commit SHA: `b116412a16630b9aa7a530b150daa9ac0f4cfd9e`
+- Relevant work: `uncommitted` — stash ref `8944322865d4e4a69a5984ac202247f9912c9df4` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M internal/provider/anthropic_stream_test.go
+ M internal/provider/anthropic_test.go
+ M internal/provider/cache_compatibility_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect exact W005 changes/greps, commit4paths, run fresh G006 evidence and records checks
+
 ## Limitations & blockers
 
-- Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
+- Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect/commit G005 intent, run fresh full-suite evidence and records checks, then final milestone review
+- Next action: Inspect exact W005 changes/greps, commit4paths, run fresh G006 evidence and records checks

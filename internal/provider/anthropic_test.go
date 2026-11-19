@@ -956,7 +956,7 @@ func TestAnthropic_StaticPrefixWire(t *testing.T) {
 	for _, row := range anthropicStaticPrefixRows() {
 		t.Run(row.name, func(t *testing.T) {
 			req := anthropicStaticPrefixRequest(row)
-			requests := make(chan []byte, 1)
+			capture := &cacheCompatibilityCapture{}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
@@ -964,7 +964,9 @@ func TestAnthropic_StaticPrefixWire(t *testing.T) {
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				requests <- body
+				capture.mu.Lock()
+				capture.bodies = append(capture.bodies, string(body))
+				capture.mu.Unlock()
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = io.WriteString(w, `{"content":[{"type":"text","text":"ok"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
 			}))
@@ -981,13 +983,18 @@ func TestAnthropic_StaticPrefixWire(t *testing.T) {
 					var firstSystem, firstTools json.RawMessage
 					for i, turn := range turns {
 						t.Run(turn.name, func(t *testing.T) {
+							capture.mu.Lock()
+							previous := len(capture.bodies)
+							capture.mu.Unlock()
 							req.Messages = turn.messages
 							before, err := json.Marshal(req)
 							if err != nil {
 								t.Fatal(err)
 							}
 
-							_, err = a.Send(context.Background(), req)
+							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+							defer cancel()
+							_, err = a.Send(ctx, req)
 							if err != nil {
 								t.Fatalf("Send: %v", err)
 							}
@@ -999,8 +1006,18 @@ func TestAnthropic_StaticPrefixWire(t *testing.T) {
 							if !bytes.Equal(before, after) {
 								t.Errorf("Send mutated caller request/tools/schema/history:\nbefore %s\nafter  %s", before, after)
 							}
+							capture.mu.Lock()
+							count := len(capture.bodies)
+							var body string
+							if count == previous+1 {
+								body = capture.bodies[previous]
+							}
+							capture.mu.Unlock()
+							if count != previous+1 {
+								t.Fatalf("requests captured this turn = %d, want 1", count-previous)
+							}
 							var got map[string]json.RawMessage
-							if err := json.Unmarshal(<-requests, &got); err != nil {
+							if err := json.Unmarshal([]byte(body), &got); err != nil {
 								t.Fatal(err)
 							}
 							if i == 0 {
