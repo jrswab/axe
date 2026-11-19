@@ -14,6 +14,8 @@ axe run my-agent --json
 | `content` | string | The agent's text response |
 | `input_tokens` | int | Total input tokens across all turns |
 | `output_tokens` | int | Total output tokens across all turns |
+| `cache_read_tokens` | int | Provider-reported cache-read tokens across this Run's turns; omitted when zero |
+| `cache_write_tokens` | int | Provider-reported cache-write tokens across this Run's turns; omitted when zero |
 | `stop_reason` | string | Why the LLM stopped (e.g., `end_turn`, `tool_use`) |
 | `duration_ms` | int | Wall-clock time for the entire run in milliseconds |
 | `tool_calls` | int | Total number of tool calls made |
@@ -23,6 +25,8 @@ axe run my-agent --json
 | `budget_max_tokens` | int | Token budget cap (only present when a budget is set) |
 | `budget_used_tokens` | int | Cumulative tokens used (only present when a budget is set) |
 | `budget_exceeded` | bool | Whether the budget was exceeded (only present when a budget is set) |
+
+Cache counters are cumulative across this Run's turns only; a Nested Run's counters do not cross its Nested Outcome. A missing or zero counter does not establish cache state or savings.
 
 ## tool_call_details
 

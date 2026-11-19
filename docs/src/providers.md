@@ -24,7 +24,7 @@ Each run resolves `params.cache_enabled` from its own agent definition: omitted 
 
 For Anthropic Messages, an enabled ephemeral breakpoint marks the system prompt and preceding ordered tools. With an empty system and tools present, the breakpoint instead marks the last tool; with neither, Axe adds no breakpoint. Conversation messages remain outside that static prefix. Model and provider constraints and cache availability determine eligibility; a hint does not guarantee a hit or savings. See [Anthropic's prompt caching guide](https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
 
-OpenAI Chat caching is provider-managed and automatic; `cache_enabled = false` does not disable it. Compatible adapters share request code but are not guaranteed to support first-party caching behavior.
+Anthropic reports cache-read and cache-write tokens when provided in usage. OpenAI Chat caching is provider-managed and automatic; `cache_enabled = false` does not disable it. Axe sends no explicit OpenAI cache request controls and maps reported cache-read tokens only, not cache-write tokens. Compatible adapters share request code but are not guaranteed to support first-party caching behavior.
 
 ## Configuring Credentials
 

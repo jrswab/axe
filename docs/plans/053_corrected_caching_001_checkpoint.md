@@ -20,15 +20,15 @@
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
 - Current phase: `execute`
-- Current task: T3
+- Current task: T4
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
-- T3: `unchecked`
+- T3: `checked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect N003 diff/greps and complete index, then commit exact nit/bookkeeping paths
-- Last completed phase/task/gate and timestamp: N003 nit batch verified; C003 commit inspection intent, 2026-11-19T00:10:15.869486+00:00
+- Next safe action: Run L004 lint, inspect full index/diff, commit T4 and launch G004 whole-suite review evidence
+- Last completed phase/task/gate and timestamp: W004 PASS; L004 pre-review records lint intent, 2026-11-19T00:24:29.124902+00:00
 
 ## Milestone acceptance
 
@@ -1819,8 +1819,153 @@ C003 intent IN FLIGHT: explore verifies reported fixed-string greps, unchanged e
 
 - Next action: Inspect N003 diff/greps and complete index, then commit exact nit/bookkeeping paths
 
+### C003 PASS; V003 postcommit verification intent
+
+- Gate: C003 PASS; V003 postcommit verification intent
+- Commands/results:
+C003 outcome PASS: deterministic read-only inspection independently confirmed full index269 stage0, cached diff empty, exactly5 accounted-for paths, no untracked. Original assertions/cases/literal oracles preserved; duplicate drain block moved byte-identically apart from indentation/local declaration. Scoped grep -F found zero unbounded original Send/SendStream calls and zero inline duplicate drain blocks in Anthropic/OpenAI; exactly1 check in helper; original unmarshal remains in all3. No nit re-review. factory-commit exit0 created34dda4a37beb3b08048dc6c7ceaab723936422d3 with exactly checkpoint+4 provider test paths; remaining_changes[].
+V003 intent IN FLIGHT: general nonwriter verification call at commit34dda4a37beb3b08048dc6c7ceaab723936422d3 runs focused stable-schema tests, go test -race ./internal/provider, golangci-lint run and gofmt/diff checks using recorded PATH/unset GOTOOLCHAIN. No edits. Postcommit affected tests/lint replace re-review for nits. T3 remains unchecked until pass. Caps unchanged, no review retry.
+- HEAD commit SHA: `34dda4a37beb3b08048dc6c7ceaab723936422d3`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run V003 postcommit affected tests/lint, then mark T3 checked and start T4
+
+### V003 PASS; T3 checked; D004 T4 discovery intent
+
+- Gate: V003 PASS; T3 checked; D004 T4 discovery intent
+- Commands/results:
+V003 outcome PASS at34dda4a37beb3b08048dc6c7ceaab723936422d3 with only checkpoint bookkeeping dirty, unchanged source before/after. Focused3 schema tests exit0 (0.693s); go test -race ./internal/provider exit0(cached); golangci-lint run exit0 0 issues; gofmt-l four test files exit0 empty; git diff --check exit0. Cache reuse is valid under unchanged-code/input policy, not a missing gate. No assertion changed. T3 gate now PASS and T3 checked. Original T3 review round1 with2 nits plus N003 fix and V003 replace re-review. No full completion gate or final review claimed.
+D004 intent IN FLIGHT: read-only T4 discovery at fixed point34dda4a37beb3b08048dc6c7ceaab723936422d3 to map preservation coverage, existing-GREEN tests, docs changes and exact test author public interfaces. Read exec phase skill and applicable requirements. No tests/edits/review. T4 standard task, source behavior changes not authorized. Preserve all existing assertions/acceptance. Record existing-GREEN reason before any verification-first tests: checklist T4 explicitly preserves currently-correct usage/error/retry/adapter/runner/JSON contracts, adds new tests rather than behavior rewrite; existing source/tests must establish each behavior. Any failing preservation test triggers investigation, not assertion changes. Caps unchanged (planning2 active incomplete0; task axes0; no final review/round4).
+- HEAD commit SHA: `34dda4a37beb3b08048dc6c7ceaab723936422d3`
+- Relevant work: `committed` — stash ref `1930ba8f00a144f23ccf580d949b9f7325b5550f` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Discover T4 coverage and test interfaces, then separate preservation test-author calls
+
+### D004 PASS; T004P provider preservation test intent
+
+- Gate: D004 PASS; T004P provider preservation test intent
+- Commands/results:
+D004 outcome PASS: T4 remains standard preservation/docs with no identified contract change. Evidence provider/openai.go265-305,379-384,436-586 automatic/read-only mapping; anthropic.go253-569 usage; retry.go49-145 configured transient nonstream retries/no stream retry; adapters embed known providers but don't promise actual cache support; OpenRouter no read mapping; runner/run.go574-683,794-803,882-970 and result.go120-131 own-run counts/zero omission/budget semantics. Existing tests grounded required preservation. No tests/edits/reviews launched. Fixed point34dda4a37beb3b08048dc6c7ceaab723936422d3 retained.
+D9 procedure exception recorded before action: T4 uses existing-GREEN verification-first rather than fabricated RED because approved checklist explicitly preserves currently-correct contracts and new tests must not drive behavior rewrites. Local/reversible/in-scope, acceptance/assertions unchanged, no gate/review bypass, no cap/human boundary crossed. Source citations above and checklist T4 establish conditions. Intended next gates focused test, full touched-package race/lint and independent Standards/Spec plus milestone review. Applies only unchanged successful behavior, not unexpected failing tests. Report to user in next Decided for you.
+T004P intent IN FLIGHT: test agent writes new internal/provider/cache_compatibility_test.go only with TestCacheCompatibility_WireUsageErrors covering exact T4 compatibility matrix, runs focused plus unchanged relevant tests/package tests. Explicit existing-GREEN route, not RED. No existing tests/assertions or production edits. Stop on failing contract test for investigation. Caps unchanged: planning2/incomplete0/Q2 consumed, task axes0, final review unstarted.
+- HEAD commit SHA: `34dda4a37beb3b08048dc6c7ceaab723936422d3`
+- Relevant work: `committed` — stash ref `29e3501e3e73d125a5f2e652087bf7aaa75861d5` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Author and execute provider preservation test T004P, then runner test separately
+
+### T004P GREEN; T004R runner preservation test intent
+
+- Gate: T004P GREEN; T004R runner preservation test intent
+- Commands/results:
+T004P outcome GREEN: test agent added only internal/provider/cache_compatibility_test.go with TestCacheCompatibility_WireUsageErrors. First behavioral run GREEN, no assertion changes afterward. Local literal normal/SSE fixtures cover10 constructors, enabled/disabled request controls, read/write/zero/absent/interrupted usage, errors/transport/partial text/tool failures, no cache-off replay, configured transient nonstream retries/no stream retries, LiteLLM cost and OpenRouter preserved no read mapping. Focused exit0(0.265s), go test ./internal/provider exit0(17.591s), go test -race ./internal/provider exit0(22.756s), golangci-lint exit0 0 issues, supporting retry/LiteLLM/OpenRouter/regression command exit0(0.528s), gofmt/diff checks exit0. HEAD34dda4a unchanged, only expected planning paths plus new test untracked. No production edits.
+T004R intent IN FLIGHT: separate test author adds TestRun_CacheUsageBoundaries to pkg/runner/run_test.go only, using D9 existing-GREEN preservation rationale. Test public Run normal/stream own-run cumulative counts, absent/zero/interrupted usage, JSON each-zero omission, unchanged budget/Outcome/Nested boundary semantics. Run new focused and unchanged protected tests/package-race/lint. No existing assertions/source edits; stop on behavioral failure. T4 remains unchecked. Caps unchanged, no final review/round4.
+- HEAD commit SHA: `34dda4a37beb3b08048dc6c7ceaab723936422d3`
+- Relevant work: `uncommitted` — stash ref `082d04ee94626dfc0b84c1fc6f806e93abec264c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+?? internal/provider/cache_compatibility_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+a2af23fc9b2697de70e12d49c0d1dae85f2ea7d0  "internal/provider/cache_compatibility_test.go"
+```
+
+- Next action: Author/execute T004R runner preservation test, then documentation implementation
+
+### T004R GREEN; W004 documentation intent
+
+- Gate: T004R GREEN; W004 documentation intent
+- Commands/results:
+T004R outcome GREEN first-run ALREADY-PASSES per D9. Only pkg/runner/run_test.go new TestRun_CacheUsageBoundaries211 lines at250, no import changes. Normal/stream multi-turn counts, zero/absent usage, independent JSON zero omission, EOF before/after final usage, partial stream errors, budget excludes cache counts. Unchanged Nested choice/privacy and Outcome test verified. Removing new test restores entire file byte-for-byte; protected cumulative/choice/zero omission tests identical. Commands gofmt exit0; focused new test exit0(0.027s); protected existing tests exit0(0.076s); go test ./pkg/runner exit0(0.539s); go test -race ./pkg/runner exit0(2.426s); golangci-lint exit0 0 issues; diff-check exit0. HEAD34dda4a unchanged, expected baseline planning/provider test retained. No assertions rewritten.
+W004 intent IN FLIGHT: general docs-only implementation of T4 README.md, docs/src/configuration/agent-config.md, docs/src/providers.md, docs/src/cli/json-output.md, CHANGELOG.md. Preserve existing correct per-agent/Nested/prefix docs, add provider reported read/write own-run cumulative/each-zero omission and appropriate Unreleased note, no Bedrock/003/cache hit/savings/universal promises. All behavior fixed by reviewed spec, no product promise change. Stop on ambiguity/new contract. Verify combined T4 touched packages go test -race ./internal/provider ./pkg/runner and lint/docs checks, no whole-suite race. T4 standard fixedpoint34dda4a, Standards/Spec pending. Caps unchanged.
+- HEAD commit SHA: `34dda4a37beb3b08048dc6c7ceaab723936422d3`
+- Relevant work: `uncommitted` — stash ref `fbe1cbc44035dad2b8f5ece5346bc5c0d2c4acff` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M pkg/runner/run_test.go
+?? internal/provider/cache_compatibility_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+a2af23fc9b2697de70e12d49c0d1dae85f2ea7d0  "internal/provider/cache_compatibility_test.go"
+```
+
+- Next action: Implement W004 durable docs and integrated touched-package verification
+
+### W004 PASS; L004 pre-review records lint intent
+
+- Gate: W004 PASS; L004 pre-review records lint intent
+- Commands/results:
+W004 outcome PASS: changed only docs/src/providers.md27, docs/src/cli/json-output.md17-18,29, CHANGELOG.md18-19,24. README374-376 and agent-config65-67 already satisfy approved R5, left unchanged. Provider-reported counters/read-only OpenAI mapping, each-zero omission/own-run cumulative/Nested opacity documented without new promises. Source anthropic.go358/openai.go385/result.go127/run.go676/GLOSSARY25 grounds claims. Both test files hashes unchanged. go test -race ./internal/provider ./pkg/runner exit0 cached; golangci-lint exit0 0 issues; gofmt/diff checks exit0. HEAD34dda4a, no index changes. No additional durable-doc contradiction identified.
+L004 intent IN FLIGHT: orchestrator docs-lint --since original milestone base3e178147775f5c002e7b967995c8823d72472a57 and spec-lint --root repo spec+checklist before T4 review/commit. On exit1 mechanical fixes only, exit2 blocker. G004 intent IN FLIGHT pending clean launch: after exact precommit inspection/commit, factory-gate run --gate test at actual clean resulting HEAD, poll existing run to final, record matching log. Covers T4 review whole-suite evidence, not completion gate. Candidate commit7 paths: checkpoint/checklist, new provider test, runner test, providers/json docs/changelog. T4 review original fixedpoint34dda4a, standard Standards+Spec axes. No task checkbox until review passes. Caps unchanged.
+- HEAD commit SHA: `34dda4a37beb3b08048dc6c7ceaab723936422d3`
+- Relevant work: `uncommitted` — stash ref `70d296704b6b9a2a1b4ced81eaad7ee2aaa3a796` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_001_implement.md
+ M docs/src/cli/json-output.md
+ M docs/src/providers.md
+ M pkg/runner/run_test.go
+?? internal/provider/cache_compatibility_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+a2af23fc9b2697de70e12d49c0d1dae85f2ea7d0  "internal/provider/cache_compatibility_test.go"
+```
+
+- Next action: Run L004 lint, inspect full index/diff, commit T4 and launch G004 whole-suite review evidence
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect N003 diff/greps and complete index, then commit exact nit/bookkeeping paths
+- Next action: Run L004 lint, inspect full index/diff, commit T4 and launch G004 whole-suite review evidence

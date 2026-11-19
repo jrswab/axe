@@ -15,8 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
 
 ### Fixed
+- Resolve each Nested Run's cache choice independently and mark the complete Anthropic static prefix, including tools-only requests.
+- Keep required tool-schema names in stable order for Anthropic Messages and OpenAI Chat.
 - Preserve all tool-call arguments, text, finish reasons, and usage when OpenAI-compatible streaming chunks combine them (#95).
 - Ignore malformed optional gateway cost metadata without breaking OpenAI-compatible streams or JSON results (#95).
+
+### Changed
+- Document provider-reported cache usage and its per-Run JSON scope.
 
 ## [1.12.0] - 2026-11-16
 

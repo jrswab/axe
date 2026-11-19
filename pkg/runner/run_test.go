@@ -247,6 +247,217 @@ func TestRun_TemperaturePresence(t *testing.T) {
 	}
 }
 
+func TestRun_CacheUsageBoundaries(t *testing.T) {
+	// R3/R5 and T4 preserve provider-reported own-run usage, not cache hits or
+	// savings. Literal Messages fixtures follow the usage fields documented at
+	// https://platform.claude.com/docs/en/api/messages and
+	// https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+	// (contract research retrieved 2026-11-18). Final stream usage is authoritative;
+	// message_start alone does not establish a completed turn's usage.
+	normal := func(body string) testutil.MockLLMResponse {
+		return testutil.MockLLMResponse{StatusCode: 200, Body: body}
+	}
+	sse := func(body string) testutil.MockLLMResponse {
+		return testutil.MockLLMResponse{StatusCode: 200, ContentType: "text/event-stream", Body: body}
+	}
+	const normalTool = `{"id":"msg_tool","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"tool_use","id":"list-usage","name":"list_directory","input":{"path":"."}}],"stop_reason":"tool_use","usage":{"input_tokens":20,"output_tokens":10,"cache_read_input_tokens":150,"cache_creation_input_tokens":50}}`
+	const normalFinal = `{"id":"msg_final","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":4,"cache_read_input_tokens":30,"cache_creation_input_tokens":10}}`
+	const streamTool = `event: message_start
+ data: {"type":"message_start","message":{"id":"msg_tool","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"usage":{"input_tokens":20,"output_tokens":0,"cache_read_input_tokens":150,"cache_creation_input_tokens":50}}}
+
+ event: content_block_start
+ data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"list-usage","name":"list_directory","input":{}}}
+
+ event: content_block_delta
+ data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\".\"}"}}
+
+ event: content_block_stop
+ data: {"type":"content_block_stop","index":0}
+
+ event: message_delta
+ data: {"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":10}}
+
+ event: message_stop
+ data: {"type":"message_stop"}
+
+`
+	const streamStart = `event: message_start
+ data: {"type":"message_start","message":{"id":"msg_final","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"usage":{"input_tokens":8,"output_tokens":0,"cache_read_input_tokens":30,"cache_creation_input_tokens":10}}}
+
+`
+	const streamText = `event: content_block_start
+ data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+ event: content_block_delta
+ data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Done"}}
+
+ event: content_block_stop
+ data: {"type":"content_block_stop","index":0}
+
+`
+	const streamDone = `event: message_delta
+ data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":4}}
+
+`
+	const streamStop = `event: message_stop
+ data: {"type":"message_stop"}
+
+`
+	// Strip indentation from literal SSE lines, without synthesizing usage.
+	streamWire := func(parts ...string) testutil.MockLLMResponse {
+		return sse(strings.ReplaceAll(strings.Join(parts, ""), "\n ", "\n"))
+	}
+	tests := []struct {
+		name                       string
+		stream, tools              bool
+		responses                  []testutil.MockLLMResponse
+		input, output, read, write int
+		stop                       string
+		wantError                  bool
+	}{
+		{
+			name: "normal_multiturn_own_usage_and_budget", tools: true,
+			responses: []testutil.MockLLMResponse{normal(normalTool), normal(normalFinal)},
+			input:     28, output: 14, read: 180, write: 60, stop: "end_turn",
+		},
+		{
+			name: "stream_multiturn_own_usage_and_budget", stream: true, tools: true,
+			responses: []testutil.MockLLMResponse{streamWire(streamTool), streamWire(streamStart, streamText, streamDone, streamStop)},
+			input:     28, output: 14, read: 180, write: 60, stop: "end_turn",
+		},
+		{
+			name:      "normal_usage_absent",
+			responses: []testutil.MockLLMResponse{normal(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn"}`)},
+			stop:      "end_turn",
+		},
+		{
+			name:      "normal_usage_zero",
+			responses: []testutil.MockLLMResponse{normal(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":0,"output_tokens":0,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}`)},
+			stop:      "end_turn",
+		},
+		{
+			name:      "normal_read_only_omits_write_key",
+			responses: []testutil.MockLLMResponse{normal(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":4,"cache_read_input_tokens":30,"cache_creation_input_tokens":0}}`)},
+			input:     8, output: 4, read: 30, stop: "end_turn",
+		},
+		{
+			name:      "normal_write_only_omits_read_key",
+			responses: []testutil.MockLLMResponse{normal(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":4,"cache_read_input_tokens":0,"cache_creation_input_tokens":10}}`)},
+			input:     8, output: 4, write: 10, stop: "end_turn",
+		},
+		{
+			name: "stream_usage_absent", stream: true,
+			responses: []testutil.MockLLMResponse{streamWire(streamText, `event: message_delta
+ data: {"type":"message_delta","delta":{"stop_reason":"end_turn"}}
+
+`, streamStop)}, stop: "end_turn",
+		},
+		{
+			name: "stream_usage_zero", stream: true,
+			responses: []testutil.MockLLMResponse{streamWire(`event: message_start
+ data: {"type":"message_start","message":{"usage":{"input_tokens":0,"output_tokens":0,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}
+
+`, streamText, `event: message_delta
+ data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":0}}
+
+`, streamStop)}, stop: "end_turn",
+		},
+		{
+			name: "stream_eof_before_final_usage_does_not_invent_counts", stream: true,
+			responses: []testutil.MockLLMResponse{streamWire(streamStart, streamText)},
+		},
+		{
+			name: "stream_eof_after_final_usage_preserves_observed_counts", stream: true,
+			responses: []testutil.MockLLMResponse{streamWire(streamStart, streamText, streamDone)},
+			input:     8, output: 4, read: 30, write: 10, stop: "end_turn",
+		},
+		{
+			name: "stream_partial_error_returns_no_success_usage", stream: true,
+			responses: []testutil.MockLLMResponse{streamWire(streamStart, streamText, `event: error
+ data: {"type":"error","error":{"type":"api_error","message":"usage fixture interrupted"}}
+
+`)}, wantError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange: no live credentials, filesystem context, or provider traffic.
+			toolConfig := ""
+			if tt.tools {
+				toolConfig = "tools = [\"list_directory\"]\n"
+			}
+			setupTestEnv(t, "[providers.anthropic]\napi_key = \"local-test-key\"\n", "cache-usage",
+				"name = \"cache-usage\"\nmodel = \"anthropic/claude-sonnet-4-20250514\"\n"+toolConfig+"[budget]\nmax_tokens = 43\n")
+			t.Setenv("XDG_DATA_HOME", t.TempDir())
+			t.Setenv("XDG_CACHE_HOME", t.TempDir())
+			t.Setenv("ANTHROPIC_API_KEY", "local-test-key")
+			server := testutil.NewMockLLMServer(t, tt.responses)
+			t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
+			stdout, stderr := newMockStdoutStderr()
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Act: the real public runner consumes literal HTTP/SSE responses.
+			result, err := Run(ctx, Options{
+				AgentName: "cache-usage", Workdir: t.TempDir(), Prompt: "Inspect then finish.",
+				Stdin: strings.NewReader(""), Stdout: stdout, Stderr: stderr, JSON: true, Stream: tt.stream,
+			})
+
+			// Assert: EOF is not universally an error, while an explicit stream
+			// error must not become a successful result with fabricated usage.
+			if got := server.RequestCount(); got != len(tt.responses) {
+				t.Errorf("requests = %d, want %d (no replay)", got, len(tt.responses))
+			}
+			if tt.wantError {
+				if err == nil || !strings.Contains(err.Error(), "usage fixture interrupted") {
+					t.Fatalf("Run() error = %v, want original stream error", err)
+				}
+				if result != nil || stdout.Len() != 0 {
+					t.Errorf("interrupted JSON run published success: result=%+v stdout=%q", result, stdout)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Run() error = %v; stderr = %s", err, stderr)
+			}
+			if result.Content != "Done" || result.StopReason != tt.stop {
+				t.Errorf("content/stop = %q/%q, want Done/%q", result.Content, result.StopReason, tt.stop)
+			}
+			if result.InputTokens != tt.input || result.OutputTokens != tt.output || result.CacheReadTokens != tt.read || result.CacheWriteTokens != tt.write {
+				t.Errorf("usage input/output/read/write = %d/%d/%d/%d, want %d/%d/%d/%d", result.InputTokens, result.OutputTokens, result.CacheReadTokens, result.CacheWriteTokens, tt.input, tt.output, tt.read, tt.write)
+			}
+			// The two-turn fixture reports 240 cache tokens but only 42 budget
+			// tokens: a 43-token budget must still allow both turns to finish.
+			if result.Budget != (BudgetState{Max: 43, Used: tt.input + tt.output}) {
+				t.Errorf("budget = %+v, want only reported input+output, max 43, not exceeded", result.Budget)
+			}
+			wantTools := 0
+			if tt.tools {
+				wantTools = 1
+			}
+			if result.ToolCalls != wantTools {
+				t.Errorf("ToolCalls = %d, want %d", result.ToolCalls, wantTools)
+			}
+			var output map[string]json.RawMessage
+			if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+				t.Fatalf("JSON stdout = %q: %v", stdout, err)
+			}
+			for key, want := range map[string]int{"cache_read_tokens": tt.read, "cache_write_tokens": tt.write} {
+				raw, present := output[key]
+				if want == 0 {
+					if present {
+						t.Errorf("zero %s must be omitted independently, got %s", key, raw)
+					}
+				} else if !present || string(raw) != fmt.Sprint(want) {
+					t.Errorf("JSON %s = %s (present %t), want %d", key, raw, present, want)
+				}
+			}
+		})
+	}
+	// Nested own-run counters/Outcome privacy and independent choices are
+	// preserved separately by unchanged TestRun_IndependentCacheChoices.
+}
+
 func TestRun_SingleShot_NoTools(t *testing.T) {
 	mock := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
 		testutil.AnthropicResponse("Hello from runner"),
