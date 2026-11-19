@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect and commit final gate bookkeeping, then run and poll G009 whole-suite test and lint at the same HEAD
-- Last completed phase/task/gate and timestamp: A001 acceptance/Git comparison PASS; G009 test/lint awaiting clean launch, 2026-11-19T15:40:43.708058+00:00
+- Next safe action: Inspect full index and complete pending checkpoint content, commit approved checkpoint bookkeeping only, inspect clean HEAD, then run Y008 factory-sync
+- Last completed phase/task/gate and timestamp: Y008 new-run initial sync intent IN FLIGHT, 2026-11-19T15:59:26.321184+00:00
 
 ## Milestone acceptance
 
@@ -2672,8 +2672,94 @@ A001 complete read-only every-R1-R5/milestone001acceptancecomparisonPASSat8bc330
 
 - Next action: Inspect and commit final gate bookkeeping, then run and poll G009 whole-suite test and lint at the same HEAD
 
+### G009 lint PASS; test running; H004 user-requested handoff intent in flight
+
+- Gate: G009 lint PASS; test running; H004 user-requested handoff intent in flight
+- Commands/results:
+Externalinterruption:Jaroninvokedhandoffskill,endingcurrentFactoryrunbeforecompletion. No furthermilestoneworkstarted. G009actualcleanlaunchHEAD36842bf72a7e44117aa0a27e752f356901223103 aftercheckpoint-onlycommit36842bf. factory-gate run --gate test exit0 returnedgate-test-36842bf72a7e-20261119T154121Z sha36842bf72a7e44117aa0a27e752f356901223103 log/tmp/factory-gate-1001/gate-test-36842bf72a7e-20261119T154121Z.log networkonline superseded[];latestpoll exit4 running,NO finaloutcomeclaimed. factory-gate run --gate lint exit0 returnedgate-lint-36842bf72a7e-20261119T154125Z sameSHA log/tmp/factory-gate-1001/gate-lint-36842bf72a7e-20261119T154125Z.log;poll exit0 exited0 PASS. G009aggregatePENDINGtest,notcomplete. A001acceptance/GitcomparisonPASSrecorded;allT1-T4checked001unchecked. B005,V009fulltracedrace,unchangedci-checktest,Python22,actionlintPASScurrentrunat8bc3309,priorfailurecauseUNKNOWN,notsilentlyattributedtodisk. Originalscope/capsunchangedplanningfail2incomplete0Q2consumed;milestonefail1incomplete0noround4R005passednoopenfindings. H004INFLIGHTscopeuser-requestedhandoffdocumentonly: generalwrite/tmpdraft thenhandoff.py state --checkpoint /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md --since 3e178147775f5c002e7b967995c8823d72472a57;redactreviewandpublish--topicaxe-iss83. Mustfirstlineresolvedmilestonedoc,referenceauthoritativeartifacts,captureG009running/notrelaunch,newgateSHAconstraints/nextrecovery,safety/approvals/allopenthreads. Publicationoutcomeappendedonlyafteractualpublishasexpectedcheckpoint-onlydelta. No source/assertion/acceptanceedits,tests/gates/sync/commits/push/deploy/livecalls authorizedbyhandofftask. Terminalexternalinterruption,notcompletion;002/003notselected. Keepcurrentpendingcheckpointforrestart. NextsessionRecoveryentryaftermilestone-entries,inspectG009actualrunrecords/pollinflightnotrelaunchandrecordestablishedmissingoutcomesbeforeadvancing.
+- HEAD commit SHA: `36842bf72a7e44117aa0a27e752f356901223103`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Publish H004 handoff, append actual publication outcome; next session recovers and polls G009 test
+
+### H004 handoff published; G009 test outcome pending recovery
+
+- Gate: H004 handoff published; G009 test outcome pending recovery
+- Commands/results:
+H004 actualpublicationcomplete: generalhandoffonlytaskwrote/tmp/axe-iss83-h004-draft.md,ranhandoff.py state --checkpoint /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md --since3e178147775f5c002e7b967995c8823d72472a57 exit0,exactstateincluded;redactexit0usedoutput/manualsecretreviewnone;publish--topicaxe-iss83 exit0 produced/tmp/handoff-axe-iss83.20261119T154655381018Z.md mode0444 latest/tmp/handoff-axe-iss83.latest.md. Publishedcontentmatchesdraft,requiredabsolutemilestonefirstline andparseablestateverified. Initialverificationassertionnewlinehandlingfixedwithoutartifactstatechange,correctedcheckPASS. RepositoryHEAD36842bf72a7e44117aa0a27e752f356901223103 onlypreexistingcheckpointdirty,agentmadeNOrepowrites/tests/polls/gates/sync/commits. Thisappendisexpectedpostpublicationcheckpoint-onlydeltaasdeclaredinhandoff. G009testlastpollRUNNINGexit4,NOnewpoll/finaloutcomeclaimed;lintPASSexit0.Aggregatependingtest. Allhandoffdispatchoutcomesknown,noH004inflightleft;testremainsrecordedinflightuntilactualrecoverypoll. Terminalexternalinterruption001uncheckedT1-T4checked002/003notselected. Capsplanning2milestone1incomplete0noround4,Q2consumed,R005passedunchanged;allD1-D13preserved. Nextsessionfactory--handoff/tmp/handoff-axe-iss83.latest.md prerequisitevalidationthenreadonlyrecovery;pollestablishedtestrunnotrelaunch,recordactualoutcome,applynew-runsync/cleanlaunch/freshSHAevidencebeforecompletion. No furtherworkthisrun.
+- HEAD commit SHA: `36842bf72a7e44117aa0a27e752f356901223103`
+- Relevant work: `committed` — stash ref `ec4622237d4477a355309edc061fae7438a26272` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume via /tmp/handoff-axe-iss83.latest.md; recover checkpoint and poll existing G009 test before further work
+
+### REC007 recovery PASS; G009 established test and lint PASS at 36842bf
+
+- Gate: REC007 recovery PASS; G009 established test and lint PASS at 36842bf
+- Commands/results:
+REC007 read-only recovery for current Factory invocation completed after milestone-entries --handoff /tmp/handoff-axe-iss83.latest.md exit0 resolved /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_milestones.md. Repository /home/jaron/dev/axe/iss-83-finish-caching, branch iss-83-finish-caching, HEAD 36842bf72a7e44117aa0a27e752f356901223103, original milestone/review base 3e178147775f5c002e7b967995c8823d72472a57. Independent read-only recovery inspections checked all89 actual snapshot refs: first4 and slices A29/B28/C28. Objects readable, recorded first parents/status/path sets match, source/planning transitions reconcile to subsequent commits. All12 JSON-path inventory records (2 static-prefix,7 stable-schema,3 compatibility) and three historical blobs verified. Current hashes: internal/provider/anthropic_static_prefix_test.go 1bb3e2e76ec68d44fa103a6a4229a21e9b988ce9; stable_tool_schemas_test.go d33cd8421be12b416a1291c2fd113f8064c9d63c; cache_compatibility_test.go 6ef1a463cd8a43039c097eaa47ef3bca979f7828. Historical stable blob 2db3b80001156b6ca455fad7c4467609a5c2fdfa committed e1c6ffb, shared drain/close addition committed34dda4a. Historical compatibility blob a2af23fc9b2697de70e12d49c0d1dae85f2ea7d0 committed71482a7, adapter reuse correction7f1b0c3 and canonical SSE fixture repair3f76578. Actual content changes match recorded scopes. Guard supports hash-object only one path per command and git show --format=raw --stat; rejected unsupported forms performed no work and no guard was bypassed. A provisional slice-C claim of pre-intent citation/footer correction was independently REFUTED by full raw diffs and literal blob lines: snapshots7135cfb387d1634fe256366acd7871f41c789b75 and20c9a0fd93e4e8de18d81aa75192864baf811ed0 both retain old citation/footer;20c9a0f..8944322865d4e4a69a5984ac202247f9912c9df4 introduces corrections, consistent with REC004. No historical correction, unknown writer, changed gate identity/outcome, or cap change remains. Initial e058f76 spec narrow Q1 documentation matches78c0cc9. Pending complete index inspection: git ls-files --stage all stage0; git diff --cached empty. Only checkpoint modified by fully inspected H004 intent/publication outcome and State/footer bookkeeping. Checklist and milestone unchanged, identities/checkboxes agree. H004 actual publication outcome already present. No unrelated baseline or staged work found. No tests/gates/polls/sync/reviews/writes launched by recovery inspections. Current df headroom was not established because read-only guard refused df; do not infer current space from history.
+G009 outcomes established from existing records, NOT rerun: test gate-test-36842bf72a7e-20261119T154121Z command go test -race ./..., matching SHA/worktree/branch, log /tmp/factory-gate-1001/gate-test-36842bf72a7e-20261119T154121Z.log final exit0 and detached exit file0; all packages ok or no test files, no failed packages. Lint gate-lint-36842bf72a7e-20261119T154125Z command golangci-lint run, matching SHA/worktree/branch, log /tmp/factory-gate-1001/gate-lint-36842bf72a7e-20261119T154125Z.log final exit0,0 issues and detached exit file0. G009 aggregate PASS ONLY for launch HEAD36842bf; not evidence for a later SHA. Historical pending observations preserved. Acceptance A001 and applicable V007/V009 results retained as their actual source evidence, not relabeled. Milestone remains unchecked pending new-run sync and completion gates.
+Ledger/cap snapshot: D1-D13 unchanged; planning failing rounds2,active incomplete0,Q2 replacement consumed; all task axes round1 passed,nits fixed; R005 backend B1/B2 round1 passed,records S1round1/S2round2 passed; milestone failing rounds1,active incomplete0,no round4,no open blockers/nits. T1-T4 checked;001unchecked;002/003 unchecked/unselected,no checkpoints found. Q1 applies only approved Nested-memory extraction change; Bedrock contradicted assertion replacement in002 still requires separate Jaron approval. No acceptance/assertion change, paid/live probe, Docker, deploy,push,PR merge,secret or production operation authorized by this recovery.
+- HEAD commit SHA: `36842bf72a7e44117aa0a27e752f356901223103`
+- Relevant work: `committed` — stash ref `11f9b734a263ff4a9af0d6a34b39c418158280f8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record Y008 new-run sync intent, inspect bookkeeping diff/index, commit checkpoint only, then run factory-sync at actual clean HEAD
+
+### Y008 new-run initial sync intent IN FLIGHT
+
+- Gate: Y008 new-run initial sync intent IN FLIGHT
+- Commands/results:
+Y008 intent IN FLIGHT. Original gate/scope: current Factory invocation initial sync with origin/master on iss-83-finish-caching; round not applicable. Intended action: after fresh full-index and pending listed-path inspection, commit only approved checkpoint bookkeeping, inspect actual launch HEAD/status, run factory-sync with default base origin/master. Preserve all baseline work and stop for unexpected content, dirty guard, conflicts, fetch refusal or changed scope/stakes. Record actual command/JSON, launch/result HEAD and exit before advancing. Current HEAD36842bf72a7e44117aa0a27e752f356901223103; actual launch SHA determined after intent commit, not predicted. REC007 established prior state and G009 PASS at36842bf, no unknown launch/outcome. No blind retry. Ledger D1-D13 preserved. Cap snapshot planning failures2/active incomplete0/Q2 consumed; task axes passed; milestone failures1/active incomplete0/R005 passed/no round4/no findings; T1-T4 checked,001unchecked. Following sync: record separate B006 Go preflight intent and resource check, exact B001 PATH,GOTOOLCHAIN unset,XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN retained. Any HEAD change needs fresh applicable trusted test/lint evidence for actual resulting HEAD. No source/assertion/acceptance change or consequential action authorized.
+- HEAD commit SHA: `36842bf72a7e44117aa0a27e752f356901223103`
+- Relevant work: `committed` — stash ref `ece2c65ebe2204607ef8ce34398f93cc52da51d4` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect full index and complete pending checkpoint content, commit approved checkpoint bookkeeping only, inspect clean HEAD, then run Y008 factory-sync
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect and commit final gate bookkeeping, then run and poll G009 whole-suite test and lint at the same HEAD
+- Next action: Inspect full index and complete pending checkpoint content, commit approved checkpoint bookkeeping only, inspect clean HEAD, then run Y008 factory-sync
