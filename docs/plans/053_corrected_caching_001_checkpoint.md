@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit inspected Y004 intent, sync, then final-HEAD completion tests/lint/integration comparison
-- Last completed phase/task/gate and timestamp: R005 final review PASS; Y004 completion sync intent, 2026-11-19T01:13:24.459087+00:00
+- Next safe action: Inspect complete index and checkpoint pending changes, commit exact bookkeeping, launch Y005 factory-sync
+- Last completed phase/task/gate and timestamp: REC004 recovery PASS; Y005 new-run sync intent in flight, 2026-11-19T01:32:20.552509+00:00
 
 ## Milestone acceptance
 
@@ -2228,8 +2228,95 @@ Y004 intent IN FLIGHT: completion factory-sync args[] origin/master after comple
 
 - Next action: Commit inspected Y004 intent, sync, then final-HEAD completion tests/lint/integration comparison
 
+### Y004 PASS; G007 completion gates intent
+
+- Gate: Y004 PASS; G007 completion gates intent
+- Commands/results:
+Y004 outcome PASS: full index/pending inspection approved exact checkpoint-only bookkeeping; factory-commit exit0 created3a30c1c00b1472a88b6e933a9b1cca8f306de042 remaining_changes[]. factory-sync args[] exit0 JSON {"branch":"iss-83-finish-caching","base":"origin/master","head_before":"3a30c1c00b1472a88b6e933a9b1cca8f306de042","ahead":15,"behind":0,"shared_files":[],"conflicts":[],"synced":true}. ResultHEADsame, no merge/source changes.
+G007 intent IN FLIGHT: completion tests after Y004 sync. Clean-launch inspect/commit this checkpoint intent first. At actual resulting clean HEAD run factory-gate run --gate test and poll final, then factory-gate run --gate lint and poll final without intervening HEAD change. Non-review general call then runs make check; .agents/scripts/ci-check integrity, vet, build, test; python3 -B -m unittest discover -s .agents/scripts/tests -v; actionlint -shellcheck= -pyflakes=; verify tests/data/schema and no source changes. Use B001 PATH/unset GOTOOLCHAIN. No paid/network provider or Docker smoke (CI-only). API diff uses availablev1.11.0 tag/tool. Stop if any required gate unsafe/partial/fails. Separate acceptance/status inspection maps R1-R5 and all milestone001acceptance, accounts every change before mark. All taskschecked/milestoneunchecked. Review passed R005 round2 records/round1backend, no findings; historical failingrounds1/incomplete0; planning2/Q2consumed unchanged.
+- HEAD commit SHA: `3a30c1c00b1472a88b6e933a9b1cca8f306de042`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect/commit G007 intent, run final-HEAD full race/lint gates and integration commands
+
+### H003 interruption handoff intent; G007 NOT LAUNCHED
+
+- Gate: H003 interruption handoff intent; G007 NOT LAUNCHED
+- Commands/results:
+H003 intent IN FLIGHT: Jaron requested /skill:handoff. This external interruption terminates this Factory run; do not continue milestone work/tests/gates/sync/commits now. General agent may write/publish only /tmp/handoff-axe-iss83.*.md and latest symlink using shared handoff.py, read repository/state and existing records, no repository edits. Capture state --checkpoint absolute checkpoint --since3e178147775f5c002e7b967995c8823d72472a57, redact and publish topicaxe-iss83. Append established publication outcome afterward as expected checkpoint-only delta.
+Interruption state: HEAD3a30c1c00b1472a88b6e933a9b1cca8f306de042; only checkpoint modified by Y004 outcome/G007 intent and this H003 entry. Immediately preceding explore fully inspected complete index and all pending bookkeeping PASS exact checkpoint-only candidate, but NO G007 intent commit occurred. NO G007 factory-gate test/lint run, make check/API diff, ci-check integrity/vet/build/test, Python or actionlint completion checks launched. Prior G006 completed successfully at3f76578 and R005 final review passed, not completion evidence. No completion comparison/status gate or milestone tick. AllT1-T4checked, allmilestonesunchecked. Latest syncY004 passed atcurrentHEAD ahead15behind0no merge. Original milestone base3e17814preserved.
+Recovery next session: milestone-entries handoff then read-only recovery; reconcile H003 publication outcome and existing pending checkpoint, original scopes/caps. New-run sync requires recorded intent plus complete-index/pending-content inspection and exact bookkeeping commit; do not blindly run stale G007 intent or recreate already-completed work. After sync record refreshed final-HEAD completion intents and use actual clean resultingHEAD for test/lint and integration commands. Original review/fix outcomes and counts remain: R005 complete backend round1APPROVEDWITHNITS fixed, records round2APPROVED; failing milestone rounds1, incomplete0, no round4, no unresolved findings. Planning2failures/incomplete0/Q2consumed. Q1 only prior Nested extraction assertion approval; no further rewrites authorized. D9existingGREEN/D10review split recorded and reported. No push/PR/deploy requested or performed.
+- HEAD commit SHA: `3a30c1c00b1472a88b6e933a9b1cca8f306de042`
+- Relevant work: `committed` — stash ref `1a928cc0eac2b6c93a69fe0a68bdf378f65fd1f5` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Publish H003 handoff and stop. New session recovers before new-run sync and completion gates.
+
+### H003 handoff published; interruption terminal
+
+- Gate: H003 handoff published; interruption terminal
+- Commands/results:
+H003 outcome PASS: handoff-only general agent ran handoff.py state --checkpoint /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md --since3e178147775f5c002e7b967995c8823d72472a57 with separate actual arguments, redact draft, and publish --topic axe-iss83 /tmp/handoff-axe-iss83.draft.md; all exit0 stderrempty. Published immutable /tmp/handoff-axe-iss83.20261119T011641486789Z.md mode0444; latest /tmp/handoff-axe-iss83.latest.md resolves to it. Firstline correct absolute milestone document; exact state output embedded, redaction no changes/manual secret-email review clean. HEAD before/after3a30c1c00b1472a88b6e933a9b1cca8f306de042 and only pre-existing checkpointdirty. No repo edits/test/gates/sync/commits/push during publication. This outcome append is the expected checkpoint-only postpublication delta described in handoff. G007 remains NOTCOMMITTED/NOTLAUNCHED. Run terminal due to user interruption, milestone001unchecked/alltaskschecked; new session resumes from latest handoff via recovery then fresh sync/completion steps, never infer completion.
+- HEAD commit SHA: `3a30c1c00b1472a88b6e933a9b1cca8f306de042`
+- Relevant work: `committed` — stash ref `36a427efee74441133bdccbc3c16cd160ef1f2a2` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: STOP: user-requested handoff published. Resume new session from /tmp/handoff-axe-iss83.latest.md.
+
+### REC004 recovery PASS; Y005 new-run sync intent in flight
+
+- Gate: REC004 recovery PASS; Y005 new-run sync intent in flight
+- Commands/results:
+REC004 read-only restart recovery completed for this new Factory invocation. milestone-entries --handoff /tmp/handoff-axe-iss83.latest.md exit0 resolved /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_milestones.md; branch iss-83-finish-caching, original milestone/review base 3e178147775f5c002e7b967995c8823d72472a57, HEAD3a30c1c00b1472a88b6e933a9b1cca8f306de042, only pending checkpoint bookkeeping. Recovery slices independently reconciled all74 unique recorded stash refs: readable objects, recorded first parents, path/status correspondence, source/planning history, and all sequential checkpoint deltas through worktree. All12 inventory entries/3 distinct paths decoded and historical blobs verified, with current hashes and later documented changes reconciled. Full checkpoint/spec/checklist/milestone identities and checkboxes agree; T1-T4 checked,001unchecked. Original run records and transcripts establish launches/outcomes and all review scopes/caps. A provisional claim of pre-intent record edits was refuted by direct git show of both7135cfb387d1634fe256366acd7871f41c789b75 and20c9a0fd93e4e8de18d81aa75192864baf811ed0 checkpoint blobs: both contain old citation/footer. Actual W005 edit succeeded01:00:39 after00:59:39 dispatch, established /home/jaron/.pi/agent/sessions/subagents/run-1TKtuL/session.jsonl:37-38 and original parent transcript2026-11-18T23-53-05-348Z_01a1f114-0c44-748d-88b3-33705aefba2a.jsonl:127-129.20c9a0f..8944322865d4e4a69a5984ac202247f9912c9df4 contains the later corrections. No unknown historical writer remains. Prior recovery inspection mistake is not a historical procedure violation. H003 publication outcome established and expected current delta. G007 saved but uncommitted/unlaunched; supersede its stale intention without inventing execution. G001-G006 historical test exit0 identities established, not current completion evidence. Y004 exit0 at3a30c1c no HEAD move. Historical ignored I001/I002 unavailability remains disclosed, superseded by committed reviewed checklist. Decision ledger D1-D10 preserved without new procedure exception. Cap snapshot: planning failing rounds2, active incomplete0,Q2 replacement consumed; all task axes round1 passed,nits fixed; R005 backend B1/B2 round1 passed,records S1 round1+S2 round2 passed; milestone failing rounds1,active incomplete0,no round4,no open blockers/nits. Q1 applies only already-approved Nested-memory extraction replacement; all other existing assertions/acceptance unchanged. Y005 original scope new-run sync with origin/master; identityY005,round not applicable,intended action factory-sync after exact checkpoint-only clean-launch commit,in flight. Actual launch HEAD must be inspected after commit. Before commit inspect full index and all pending content of listed bookkeeping paths; stop for unexplained content. Preserve baseline. No tests/sync/gates launched during recovery. After Y005 outcome, refresh root Go preflight using exact B001 PATH and unset GOTOOLCHAIN, then record refreshed completion intentions. No deploy/live calls/push/merge authorized here.
+- HEAD commit SHA: `3a30c1c00b1472a88b6e933a9b1cca8f306de042`
+- Relevant work: `committed` — stash ref `857bb483f5afb194d2f623995234ebf9f1305dc5` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect complete index and checkpoint pending changes, commit exact bookkeeping, launch Y005 factory-sync
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Commit inspected Y004 intent, sync, then final-HEAD completion tests/lint/integration comparison
+- Next action: Inspect complete index and checkpoint pending changes, commit exact bookkeeping, launch Y005 factory-sync
