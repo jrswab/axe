@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect and commit checkpoint bookkeeping, then launch Y007 factory-sync
-- Last completed phase/task/gate and timestamp: REC006 recovery reconciled; Y007 new-run sync intent in flight, 2026-11-19T15:30:29.642588+00:00
+- Next safe action: Inspect and commit final gate bookkeeping, then run and poll G009 whole-suite test and lint at the same HEAD
+- Last completed phase/task/gate and timestamp: A001 acceptance/Git comparison PASS; G009 test/lint awaiting clean launch, 2026-11-19T15:40:43.708058+00:00
 
 ## Milestone acceptance
 
@@ -2609,8 +2609,71 @@ REC006 usercleanedspace/requestedtryagain. Current-runmilestone-entries directab
 
 - Next action: Inspect and commit checkpoint bookkeeping, then launch Y007 factory-sync
 
+### Y007 sync PASS; B005 preflight and V009 diagnostic intent in flight
+
+- Gate: Y007 sync PASS; B005 preflight and V009 diagnostic intent in flight
+- Commands/results:
+Y007 factory-sync args[] exit0 actualcleanlaunchHEAD8bc3309ae5911126bd3c648dd7ae921caa7f591d aftercheckpoint-onlycommit8bc3309;JSONbranchiss-83-finish-caching baseorigin/master head_before8bc3309ae5911126bd3c648dd7ae921caa7f591d ahead19behind0shared_files[]conflicts[]syncedtrue,stderrEMPTY,noHEADmove. B005freshrootGopreflightINFLIGHT sameB001PATH/GOTOOLCHAINunset/XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN. V009 compilerdiagnosticINFLIGHT originalscopefailed001completionracesuite,NOTunchangedblindrerun: intended go test -x -json -race -v ./... withseparatestdout/stderr at8bc3309 onlyafterB005PASSandfreshdisk/cache/toolprerequisites. D13 procedureexceptionRECORDEDBEFOREACTION: coverage-preservingmechanicaldiagnosticretryafteruserfreedspace. EvidenceE008installedGo buildfailedsummaryomitsunderlyingaction,E009/E010lowspacehalt,usercleanupnowstatfree8853123072bytes; priorV008missingdiagnostic. Add-xbuildcommands/-jsonbuildeventattribution only; package./...,race,-v,assertions/acceptanceunchanged,notweakened. Localreversibletmpoutputs/cacheonly,no gates/independentreviewbypassed or cap/humanboundarycrossed. Preservepriorfailures/capsplanning2milestone1incomplete0noround4,Q2consumed. D13reportpending. VerifyatleastseveralGiBheadroomandcachewriteabilityfresh;no/run/user1001workaround,no deletion,no cacheclearing,no -p/-count/no wrapperbypass. IfprerequisitefailsorcommandfailsSTOPwithactualunderlyingdiagnostic/unknown. IfV009PASSrununchangedci-checktestforrequiredverbosefullracegatebeforePythonhelpertests/actionlint,eachseparatelylogged,stoponfailure;alltheseintentsrecordednowasV009originalcompletionbatchwithorderedsubcommands. Freshfactorytest/lintatsamefinalHEADstillneededlaterforcompletion. No repositorysource/test/artifactedits. No live/Docker/deploy/push.
+- HEAD commit SHA: `8bc3309ae5911126bd3c648dd7ae921caa7f591d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B005 preflight then V009 full race compiler diagnostic; continue required remaining checks only on pass
+
+### B005/V009 PASS; A001 acceptance comparison and G009 final test/lint intent in flight
+
+- Gate: B005/V009 PASS; A001 acceptance comparison and G009 final test/lint intent in flight
+- Commands/results:
+B005freshpreflightPASSexit0at8bc3309ae5911126bd3c648dd7ae921caa7f591d exactB001PATH/GOTOOLCHAINunset/XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN;allchecksPASSnovulnerabilities log/tmp/run-detached-1001/general-b005-4e2a91/output.log. V009diagnostic go test -x -json -race -v ./... exit0 stdout/tmp/axe-v009-4e2a91-stdout.log stderr/tmp/axe-v009-4e2a91-stderr.log(empty);17packagesPASS1notests,4529testpasses,0fail/buildfailjson. BuildcommandsinJSONbuildoutput. Requiredunchanged .agents/scripts/ci-check test exit0 log/tmp/run-detached-1001/general-ci-test-4e2a91/output.log17pkgsPASS1notests. Python3-B-munittestdiscover-s.agents/scripts/tests-vexit0 22testsPASS log/tmp/run-detached-1001/general-python-4e2a91/output.log. actionlint-shellcheck=-pyflakes=exit0emptylog/tmp/run-detached-1001/general-actionlint-4e2a91/output.log. No retries/sourcechanges;historicalfailurecauseUNKNOWNnotprovenlowdisk. D13reported. Cachewritableowned6byteprobe/tmp/axe-v006-cache.itoPgN/axe-b005-probe.WShk3Jn8retained. Freeblocksafter2143614*4096bytes;Go1.26.11;PI_SANDBOXED1otherrequestedoverridesunset;effectiveCGO1/GOCACHEtempgo-build. HEADunchanged8bc3309,onlycheckpointdirty,modulehashesunchanged. A001INFLIGHT read-onlycompareEVERYspecR1-R5andmilestone001acceptance,accountentirerange/preexisting/currentindex/worktree,checkrequiredrecords/gatesandartifactconsistency,notareviewretry. G009test andG009lintINFLIGHT finalcleanHEADmechanicalbatch intendedfactory-gate run --gate test andrun --gate lint aftercheckpoint-onlycleanlaunchcommit;pollbothtoexit0/logmatchingactualHEADwithoutHEADchange. Beforecommitcompleteindex/pendingpathinspection. No unittest/assertion/acceptancechanges;allcapsunchangedplanning2milestone1incomplete0noround4R005passed. Completion001uncheckeduntilA001+G009pass. ExistingV007makecheck/APIdiff/integrityvetbuildPASSunchangedsource;A001mustassessreuseorrequirefreshchecks. NoDocker/live/deploy/push.
+- HEAD commit SHA: `8bc3309ae5911126bd3c648dd7ae921caa7f591d`
+- Relevant work: `committed` — stash ref `fce0b5544a68303e0bd7e4bf8e61b4cc0a817d73` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Compare all acceptance criteria and inspect bookkeeping, commit exact state, then run G009 final test/lint gates
+
+### A001 acceptance/Git comparison PASS; G009 test/lint awaiting clean launch
+
+- Gate: A001 acceptance/Git comparison PASS; G009 test/lint awaiting clean launch
+- Commands/results:
+A001 complete read-only every-R1-R5/milestone001acceptancecomparisonPASSat8bc3309ae5911126bd3c648dd7ae921caa7f591d,notanewreviewround. R1independentMain/Nested omitted/true/false,oppositeparentchoices/perturn/opaqueOutcomes supported pkg/runner/run.go:438-452 internal/tool/tool.go:247-261 andrunner/tooltests. R2Anthropicbothtransportsstaticprefixallpresence/cachechoices/no-messagebreakpoint/dynamicNestedcontext supportedanthropic.go:221-259 andliteralfixtureanthropic_static_prefix_test.go:26-144 normal/stream/tooltests. R3stableexactrequiredschemas/order/optionalmetadata/repeatedturns supportedanthropic.go:186-207 openai.go:228-249 stable_tool_schemas_test.go+adaptertests;Chat automaticreadreportingonly. R4providererror/retry/interruption/no-cacheoffreplay/compatibility/adapters/cost coveredcache_compatibility_test.go:27-59,72-88,322-505,506 andexistingretrytests. R5independentliteraloracles/readwritezeroabsentcumulativeusage/budget/zeroomission/opacity supportedcompatibilitytests+runnerresult/run tests;durabledocsREADME374-376/config65-67/providers23-27/json17-18/CHANGELOG18-24 accurate,nohitguarantee. IndependentR005passedunchanged. Fullrange3e178147775f5c002e7b967995c8823d72472a57..8bc3309:19commits21paths(4planning5docs3production9tests),baselinecleanallchangesaccounted. 879475c..HEADand3f76578..HEADbothcheckpointONLY,thereforeV007makecheck/APIdiff/integrityvetbuildpassesremainapplicabletounchangedvalidatedfiles/env,NOTrelabelednewHEADpasses. B005/V009/ci-checktest/Python22/actionlintPASS8bc3309;historicalV007/V008racefailurespreservedcauseUNKNOWN. Noacceptance/assertionchanges. G009test/lintstillpendingINFLIGHTrequiredsameactualcleanlaunchHEADaftercheckpoint-onlycommit,pollbothmatchinglogs. A001fullindex/cachedempty/fullpendingdiffreadonlycheckpointbookkeeping;mustrepeatafterthisappendbeforecommit. DockerlocallyunrunCI-onlydocumentedjob,nohostsmokegate;paid/liveexcludednotacceptancecriteria. Capsplanning2milestone1incomplete0noround4,Q2consumed,R005nofindings;001uncheckeduntilG009. 002notselected;itscontradictedBedrockassertionsrequireseparateJaronapprovallater.
+- HEAD commit SHA: `8bc3309ae5911126bd3c648dd7ae921caa7f591d`
+- Relevant work: `committed` — stash ref `ab20b90752bded0e532a2d6b2b22a53313ea4e86` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect and commit final gate bookkeeping, then run and poll G009 whole-suite test and lint at the same HEAD
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect and commit checkpoint bookkeeping, then launch Y007 factory-sync
+- Next action: Inspect and commit final gate bookkeeping, then run and poll G009 whole-suite test and lint at the same HEAD
