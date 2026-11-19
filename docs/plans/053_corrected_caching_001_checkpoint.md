@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect full index and complete pending checkpoint content, commit approved checkpoint bookkeeping only, inspect clean HEAD, then run Y008 factory-sync
-- Last completed phase/task/gate and timestamp: Y008 new-run initial sync intent IN FLIGHT, 2026-11-19T15:59:26.321184+00:00
+- Next safe action: Inspect complete index and pending checkpoint diff, commit bookkeeping, inspect actual clean HEAD, then launch G010 trusted test and lint gates
+- Last completed phase/task/gate and timestamp: B006 preflight PASS; G010 completion test and lint intents IN FLIGHT, 2026-11-19T16:03:16.229246+00:00
 
 ## Milestone acceptance
 
@@ -2758,8 +2758,54 @@ Y008 intent IN FLIGHT. Original gate/scope: current Factory invocation initial s
 
 - Next action: Inspect full index and complete pending checkpoint content, commit approved checkpoint bookkeeping only, inspect clean HEAD, then run Y008 factory-sync
 
+### Y008 sync PASS; B006 refreshed Go preflight intent IN FLIGHT
+
+- Gate: Y008 sync PASS; B006 refreshed Go preflight intent IN FLIGHT
+- Commands/results:
+Y008 actual launch HEAD e14d93472ab998e179bbc401928d42816cd03c9b, clean index/worktree confirmed by repo-state after exact checkpoint-only commit e14d934 (precommit full-index/content inspection PASS). run_script factory-sync args[] exit0, stderr empty, JSON {"branch":"iss-83-finish-caching","base":"origin/master","head_before":"e14d93472ab998e179bbc401928d42816cd03c9b","ahead":21,"behind":0,"shared_files":[],"conflicts":[],"synced":true}. No merge/HEAD move. Origin/master fetch successful. This fulfills current-run initial sync and pre-completion sync before tests. G009 remains prior SHA evidence, fresh completion test/lint will be launched at a later actual clean HEAD.
+B006 intent IN FLIGHT: general agent refreshes in-scope root Go preflight with exact B001 PATH, unset GOTOOLCHAIN and retained XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN; checks current disk headroom and environment without guard bypass, no cache deletion or HOME/config/data changes. Command /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching; inspect deterministic CLI/script usage first. May use existing run-detached to retain long preflight log, poll identified existing run only, report exact identity and result. Do not run full suite or other completion gates in this action. No source or assertion changes. If prerequisites fail or resource safety remains unknown, report and stop before further work. Original gate B006 refreshed Go preflight/resource check, round not applicable. Expected repository unchanged except preceding checkpoint bookkeeping.
+Cap/ledger snapshot D1-D13 unchanged, planning failures2/incomplete0/Q2 consumed, task axes passed, milestone failures1/incomplete0/R005 passed/no round4/no findings. T1-T4 checked,001unchecked,002/003 unselected. No consequential action authorized.
+- HEAD commit SHA: `e14d93472ab998e179bbc401928d42816cd03c9b`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B006 refreshed Go preflight and current resource check, then record actual outcome before fresh completion gate intents
+
+### B006 preflight PASS; G010 completion test and lint intents IN FLIGHT
+
+- Gate: B006 preflight PASS; G010 completion test and lint intents IN FLIGHT
+- Commands/results:
+B006 outcome PASS. Actual command env -u GOTOOLCHAIN PATH=<exact B001 PATH at checkpoint environment entry> XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN /home/jaron/.agents/scripts/run-detached start --name general-b006-ef42c9 -- /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching. Launch exit0, identified /tmp/run-detached-1001/general-b006-ef42c9; poll --wait100 exited0 with stdout exited0. Combined log /tmp/run-detached-1001/general-b006-ef42c9/output.log: Go1.26.11 available, root github.com/jrswab/axe module loads read-only, govulncheck ./... No vulnerabilities found, preflight PASS. Separate child stdout/stderr not established; log combines them. df -h / /tmp exit0: /dev/sda1 193G size,185G used,7.9G available,96% used for both paths. HOME/config/data unchanged. Go wrapper /home/jaron/.local/share/../bin/go, govulncheck /home/jaron/go/bin/govulncheck. Exact B001 PATH retained,GOTOOLCHAIN unset,retained XDG_CACHE_HOME writable. HEAD before/after e14d93472ab998e179bbc401928d42816cd03c9b; status only preceding checkpoint bookkeeping. go.mod SHA2565cdf52caaa1cd1c27da160e1317484e7b36c62f12026c0dd1a16854c67920cb2 and go.sum d38cb7800f4a9f1ad581a0aaf741376864b6e98b4207fe4202b63471ca377b6a unchanged. Aggregate tracked Go source SHA256877db1b336aa752af59bf33ba4f097193a7332968a03ccaa51cf09ec7a69b46f unchanged. No repository file edits by agent; only /tmp records/cache population. No other test/gate run.
+G010 intent IN FLIGHT, original scope refreshed completion trusted whole-suite test and lint after Y008 sync (origin/master,exit0,no merge). Round not applicable. After fresh full-index/pending checkpoint inspection, commit only approved bookkeeping then inspect actual clean HEAD. Run factory-gate run --gate test (go test -race ./...) and factory-gate run --gate lint (golangci-lint run), trusted commands from origin default branch. Record exact run identities/logs/actual launch HEAD; poll existing identities only to final exit and append actual outcomes before advancing. No extra -count or -p, no wrapper/guard bypass or cache clearing. Resource headroom7.9G checked B006. Do not relabel G009 logs for new SHA. Current source unchanged since3f76578; historical applicable make check/API diff/ci-check integrity/vet/build and V009 test/Python/actionlint retained as original evidence pending fresh applicability/Git acceptance accounting A002. No additional independent milestone review needed for bookkeeping-only changes after R005 passed, but final completion requires exact acceptance and Git accounting. Any failed/unsafe gate stops milestone unchecked.
+Cap snapshot D1-D13 unchanged, planning failures2/incomplete0/Q2 consumed; all task axes passed; milestone failures1/incomplete0/R005 passed/no round4/no findings; T1-T4 checked,001unchecked;002/003 unselected. No source,assertion,acceptance,live/paid,Docker,production,deploy,push or merge authorization.
+- HEAD commit SHA: `e14d93472ab998e179bbc401928d42816cd03c9b`
+- Relevant work: `committed` — stash ref `fc7e3f53e3d85f3ade872a94806ba13abaa53841` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect complete index and pending checkpoint diff, commit bookkeeping, inspect actual clean HEAD, then launch G010 trusted test and lint gates
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect full index and complete pending checkpoint content, commit approved checkpoint bookkeeping only, inspect clean HEAD, then run Y008 factory-sync
+- Next action: Inspect complete index and pending checkpoint diff, commit bookkeeping, inspect actual clean HEAD, then launch G010 trusted test and lint gates
