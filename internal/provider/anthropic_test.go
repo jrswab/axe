@@ -1056,38 +1056,6 @@ func TestAnthropic_StableToolSchemas(t *testing.T) {
 	]`
 	decode := anthropicStaticPrefixDecode()
 	turns := anthropicStaticPrefixTurns()
-	requests := make(chan []byte, 1)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("read local request: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		requests <- body
-		var envelope struct {
-			Stream bool `json:"stream"`
-		}
-		if err := json.Unmarshal(body, &envelope); err != nil {
-			t.Errorf("decode local request: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if envelope.Stream {
-			w.Header().Set("Content-Type", "text/event-stream")
-			writeSSE(w, "message_start", `{"type":"message_start","message":{"usage":{"input_tokens":1}}}`)
-			writeSSE(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}`)
-			writeSSE(w, "message_stop", `{"type":"message_stop"}`)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"content":[{"type":"text","text":"ok"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
-	}))
-	defer server.Close()
-	a, err := NewAnthropic("local-test-key", WithBaseURL(server.URL))
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Cache modes/system rows may legitimately differ; transports may not.
 	firstTools := make(map[string]json.RawMessage)
@@ -1101,6 +1069,45 @@ func TestAnthropic_StableToolSchemas(t *testing.T) {
 					for _, mode := range anthropicStaticPrefixModes() {
 						name := fmt.Sprintf("stream=%t/system=%t/%s/reverse=%t/construction=%02d", streaming, system != "", mode.name, reverse, construction)
 						t.Run(name, func(t *testing.T) {
+							requests := make(chan []byte, 1)
+							ready := make(chan struct{}, 1)
+							server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+								body, err := io.ReadAll(r.Body)
+								if err != nil {
+									t.Errorf("read local request: %v", err)
+									w.WriteHeader(http.StatusBadRequest)
+									return
+								}
+								select {
+								case requests <- body:
+									ready <- struct{}{}
+								default:
+									t.Error("request capture already full")
+									return
+								}
+								var envelope struct {
+									Stream bool `json:"stream"`
+								}
+								if err := json.Unmarshal(body, &envelope); err != nil {
+									t.Errorf("decode local request: %v", err)
+									w.WriteHeader(http.StatusBadRequest)
+									return
+								}
+								if envelope.Stream {
+									w.Header().Set("Content-Type", "text/event-stream")
+									writeSSE(w, "message_start", `{"type":"message_start","message":{"usage":{"input_tokens":1}}}`)
+									writeSSE(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}`)
+									writeSSE(w, "message_stop", `{"type":"message_stop"}`)
+									return
+								}
+								w.Header().Set("Content-Type", "application/json")
+								_, _ = io.WriteString(w, `{"content":[{"type":"text","text":"ok"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
+							}))
+							defer server.Close()
+							a, err := NewAnthropic("local-test-key", WithBaseURL(server.URL))
+							if err != nil {
+								t.Fatal(err)
+							}
 							req.CacheConfig = mode.enabled
 							hint := ""
 							if mode.enabled && system == "" {
@@ -1108,6 +1115,8 @@ func TestAnthropic_StableToolSchemas(t *testing.T) {
 							}
 							wantTools := decode(t, []byte(fmt.Sprintf(toolsWire, hint)))
 							for _, turn := range turns {
+								ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+								defer cancel()
 								req.Messages = turn.messages
 								before, err := json.Marshal(req)
 								if err != nil {
@@ -1115,21 +1124,12 @@ func TestAnthropic_StableToolSchemas(t *testing.T) {
 								}
 
 								if streaming {
-									stream, err := a.SendStream(context.Background(), req)
+									stream, err := a.SendStream(ctx, req)
 									if err != nil {
 										t.Fatalf("SendStream: %v", err)
 									}
-									for {
-										_, err = stream.Next()
-										if err != nil {
-											break
-										}
-									}
-									closeErr := stream.Close()
-									if err != io.EOF || closeErr != nil {
-										t.Fatalf("drain/close stream: %v / %v", err, closeErr)
-									}
-								} else if _, err := a.Send(context.Background(), req); err != nil {
+									drainStableToolStream(t, stream)
+								} else if _, err := a.Send(ctx, req); err != nil {
 									t.Fatalf("Send: %v", err)
 								}
 
@@ -1141,6 +1141,11 @@ func TestAnthropic_StableToolSchemas(t *testing.T) {
 									t.Errorf("%s mutated caller tools/schema/history: before %s; after %s", turn.name, before, after)
 								}
 								var got map[string]json.RawMessage
+								select {
+								case <-ready:
+								case <-ctx.Done():
+									t.Fatalf("request capture: %v", ctx.Err())
+								}
 								if err := json.Unmarshal(<-requests, &got); err != nil {
 									t.Fatal(err)
 								}

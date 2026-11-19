@@ -97,37 +97,6 @@ func TestOpenAI_StableToolSchemas(t *testing.T) {
 				{"role":"user","content":"Summarize both."}]`,
 		},
 	}
-	requests := make(chan []byte, 1)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("read local request: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		var envelope struct {
-			Stream bool `json:"stream"`
-		}
-		if err := json.Unmarshal(body, &envelope); err != nil {
-			t.Errorf("decode local request: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		requests <- body
-		if envelope.Stream {
-			w.Header().Set("Content-Type", "text/event-stream")
-			_, _ = io.WriteString(w, "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"model":"gpt-4o","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}`)
-	}))
-	defer server.Close()
-	o, err := NewOpenAI("local-test-key", WithOpenAIBaseURL(server.URL))
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	var firstTools json.RawMessage
 	for _, streaming := range []bool{false, true} {
 		for _, reverse := range []bool{false, true} {
@@ -138,6 +107,45 @@ func TestOpenAI_StableToolSchemas(t *testing.T) {
 					for _, turn := range turns {
 						name := fmt.Sprintf("stream=%t/reverse=%t/construction=%02d/cache=%t/%s", streaming, reverse, construction, cacheEnabled, turn.name)
 						t.Run(name, func(t *testing.T) {
+							requests := make(chan []byte, 1)
+							ready := make(chan struct{}, 1)
+							server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+								body, err := io.ReadAll(r.Body)
+								if err != nil {
+									t.Errorf("read local request: %v", err)
+									w.WriteHeader(http.StatusBadRequest)
+									return
+								}
+								var envelope struct {
+									Stream bool `json:"stream"`
+								}
+								if err := json.Unmarshal(body, &envelope); err != nil {
+									t.Errorf("decode local request: %v", err)
+									w.WriteHeader(http.StatusBadRequest)
+									return
+								}
+								select {
+								case requests <- body:
+									ready <- struct{}{}
+								default:
+									t.Error("request capture already full")
+									return
+								}
+								if envelope.Stream {
+									w.Header().Set("Content-Type", "text/event-stream")
+									_, _ = io.WriteString(w, "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")
+									return
+								}
+								w.Header().Set("Content-Type", "application/json")
+								_, _ = io.WriteString(w, `{"model":"gpt-4o","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}`)
+							}))
+							defer server.Close()
+							o, err := NewOpenAI("local-test-key", WithOpenAIBaseURL(server.URL))
+							if err != nil {
+								t.Fatal(err)
+							}
+							ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+							defer cancel()
 							req.Messages = turn.messages
 							before, err := json.Marshal(req)
 							if err != nil {
@@ -145,21 +153,12 @@ func TestOpenAI_StableToolSchemas(t *testing.T) {
 							}
 
 							if streaming {
-								stream, err := o.SendStream(context.Background(), req)
+								stream, err := o.SendStream(ctx, req)
 								if err != nil {
 									t.Fatalf("SendStream: %v", err)
 								}
-								for {
-									_, err = stream.Next()
-									if err != nil {
-										break
-									}
-								}
-								closeErr := stream.Close()
-								if err != io.EOF || closeErr != nil {
-									t.Fatalf("drain/close stream: %v / %v", err, closeErr)
-								}
-							} else if _, err := o.Send(context.Background(), req); err != nil {
+								drainStableToolStream(t, stream)
+							} else if _, err := o.Send(ctx, req); err != nil {
 								t.Fatalf("Send: %v", err)
 							}
 
@@ -171,6 +170,11 @@ func TestOpenAI_StableToolSchemas(t *testing.T) {
 								t.Errorf("mutated caller tools/schema/history: before %s; after %s", before, after)
 							}
 							var got map[string]json.RawMessage
+							select {
+							case <-ready:
+							case <-ctx.Done():
+								t.Fatalf("request capture: %v", ctx.Err())
+							}
 							if err := json.Unmarshal(<-requests, &got); err != nil {
 								t.Fatal(err)
 							}

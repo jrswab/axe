@@ -27,8 +27,8 @@
 - T3: `unchecked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit inspected restart-sync intent, run Y003, then Go preflight before T3 nit fix
-- Last completed phase/task/gate and timestamp: Recovery validated; Y003 restart sync intent, 2026-11-19T00:00:46.326103+00:00
+- Next safe action: Inspect N003 diff/greps and complete index, then commit exact nit/bookkeeping paths
+- Last completed phase/task/gate and timestamp: N003 nit batch verified; C003 commit inspection intent, 2026-11-19T00:10:15.869486+00:00
 
 ## Milestone acceptance
 
@@ -1749,8 +1749,78 @@ Y003 intent IN FLIGHT: restart factory-sync against origin/master after this che
 
 - Next action: Commit inspected restart-sync intent, run Y003, then Go preflight before T3 nit fix
 
+### Y003 PASS; B002 Go preflight intent
+
+- Gate: Y003 PASS; B002 Go preflight intent
+- Commands/results:
+Y003 outcome PASS: checkpoint intent committed as 6bc30a7a17567e21cc0608e12cf6aeb99b2651b1 after complete-index/pending-content inspection PASS; repo-state confirmed fully clean launch. factory-sync args[] exit0 JSON {"branch":"iss-83-finish-caching","base":"origin/master","head_before":"6bc30a7a17567e21cc0608e12cf6aeb99b2651b1","ahead":9,"behind":0,"shared_files":[],"conflicts":[],"synced":true}. No HEAD change, resulting HEAD6bc30a7a17567e21cc0608e12cf6aeb99b2651b1. Original milestone base unchanged. No push.
+B002 intent IN FLIGHT: general setup-only agent runs /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching with historical checkpoint PATH and GOTOOLCHAIN unset. No source/docs edits or paid/live tests. May populate allowed user caches. Capture actual command/environment/output/exit, HEAD/status. All caps unchanged: planning failures2 active incomplete0, Q2 consumed, T1/T2 checked T3/T4 unchecked, T3 review gate passed with2 nits no fix launched, no final review/round4.
+- HEAD commit SHA: `6bc30a7a17567e21cc0608e12cf6aeb99b2651b1`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B002 Go preflight, then record T3 nit-fix intent
+
+### B002 PASS; N003 T3 nit batch intent
+
+- Gate: B002 PASS; N003 T3 nit batch intent
+- Commands/results:
+B002 outcome PASS exit0: env -u GOTOOLCHAIN PATH=<exact recorded checkpoint line58 PATH> /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching. Output: go1.26.11 installed/downloadable PASS; repository Go version PASS; module loads read-only github.com/jrswab/axe PASS; govulncheck ./... No vulnerabilities found PASS; Go pre-flight checks PASS. stderr empty. Go binary /home/jaron/.local/share/../bin/go, govulncheck /home/jaron/go/bin/govulncheck, single root module. Module hashes unchanged. HEAD before/after6bc30a7a17567e21cc0608e12cf6aeb99b2651b1; status only checkpoint modified by prior Y003 outcome/B002 intent. No repository edits.
+N003 intent IN FLIGHT: one code batch limited to exactly the two T3 round1 nits quoted verbatim above (duplicate stream drain/close mechanics and failure-prone shared capture channels/unbounded contexts). Inspect first, then test-only extraction/capture/context mechanics, preserve every assertion, case and literal wire oracle unchanged. Allowed surfaces three provider test files and shared test-only helper. No source behavior or acceptance change. Existing passing review remains, no nit re-review. Run focused tests, touched-package race and repository lint, inspect exact diff/index, then orchestrator commit and postcommit affected tests/lint before T3 checked. Caps unchanged: planning failures2/active incomplete0/Q2 consumed; task axes failures0/incompletes0; no milestone review/round4. Next safe action code N003 only.
+- HEAD commit SHA: `6bc30a7a17567e21cc0608e12cf6aeb99b2651b1`
+- Relevant work: `committed` — stash ref `de6e1d4451447448c18d903a4ac429fa21a583c9` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement N003 test-only nit batch and verify assertions unchanged
+
+### N003 nit batch verified; C003 commit inspection intent
+
+- Gate: N003 nit batch verified; C003 commit inspection intent
+- Commands/results:
+N003 code outcome PASS: test-only changes to internal/provider/{anthropic_test,openai_test,openrouter_test,stable_tool_schemas_test}.go. Per-subtest servers, nonblocking capture, bounded10s contexts and readiness waits remove test timeout chain. Duplicate exact drain/close check moved into shared helper; OpenRouter distinct text check retained. Writer compared assertions, if conditions, quoted/backtick literals, case/oracle setup with HEAD: unchanged except additive capture/timeout checks. gofmt exit0; focused3 stable schema tests exit0; go test ./internal/provider exit0(17.617s); derived touched-package go test -race ./internal/provider exit0(22.022s); golangci-lint run exit0 0 issues; git diff --check exit0. Historical PATH/unset GOTOOLCHAIN and Go1.26.11 used. HEAD6bc30a7a17567e21cc0608e12cf6aeb99b2651b1. Full pending patch /tmp/n003-all-pending.patch, provider patch /tmp/n003-provider-pending.patch, full index /tmp/n003-full-index.txt. No source edits/deps/commits. No re-review for nits.
+C003 intent IN FLIGHT: explore verifies reported fixed-string greps, unchanged existing assertions and oracle/case setups, and full index/pending contents against approved nit/bookkeeping changes, then exact orchestrator commit. Stop on any unexplained content or assertion rewrite. Candidate paths checkpoint plus four provider test files only. After commit postcommit lint/affected tests required before T3 checked. Caps unchanged; no new review round or incomplete.
+- HEAD commit SHA: `6bc30a7a17567e21cc0608e12cf6aeb99b2651b1`
+- Relevant work: `uncommitted` — stash ref `1844fb135e17dffd694a30a701e3774e7d6a8e9a` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M internal/provider/anthropic_test.go
+ M internal/provider/openai_test.go
+ M internal/provider/openrouter_test.go
+ M internal/provider/stable_tool_schemas_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect N003 diff/greps and complete index, then commit exact nit/bookkeeping paths
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Commit inspected restart-sync intent, run Y003, then Go preflight before T3 nit fix
+- Next action: Inspect N003 diff/greps and complete index, then commit exact nit/bookkeeping paths

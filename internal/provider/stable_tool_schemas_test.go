@@ -1,5 +1,25 @@
 package provider
 
+import (
+	"io"
+	"testing"
+)
+
+func drainStableToolStream(t *testing.T, stream *EventStream) {
+	t.Helper()
+	var err error
+	for {
+		_, err = stream.Next()
+		if err != nil {
+			break
+		}
+	}
+	closeErr := stream.Close()
+	if err != io.EOF || closeErr != nil {
+		t.Fatalf("drain/close stream: %v / %v", err, closeErr)
+	}
+}
+
 // stableToolSchemaFixture constructs equivalent definitions in opposite parameter
 // insertion orders. Wire expectations belong to each adapter's test, not here.
 func stableToolSchemaFixture(reverse bool) []Tool {
