@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect and commit exact checkpoint bookkeeping, then launch Y006 new-run factory-sync
-- Last completed phase/task/gate and timestamp: REC005 recovery established; Y006 new-run sync intent in flight, 2026-11-19T14:10:29.769634+00:00
+- Next safe action: Inspect and commit checkpoint bookkeeping, then launch Y007 factory-sync
+- Last completed phase/task/gate and timestamp: REC006 recovery reconciled; Y007 new-run sync intent in flight, 2026-11-19T15:30:29.642588+00:00
 
 ## Milestone acceptance
 
@@ -2504,8 +2504,113 @@ REC005 new invocation after Jaron requested continue. Current-run prerequisite w
 
 - Next action: Inspect and commit exact checkpoint bookkeeping, then launch Y006 new-run factory-sync
 
+### Y006 sync PASS; B004 preflight and E008 diagnostic preparation in flight
+
+- Gate: Y006 sync PASS; B004 preflight and E008 diagnostic preparation in flight
+- Commands/results:
+Y006 factory-sync args[] exit0 atactualcleanlaunchd9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e aftercheckpointcommitd9bfba1. JSONbranchiss-83-finish-caching,baseorigin/master,head_befored9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e,ahead18,behind0,shared_files[],conflicts[],syncedtrue;stderrEMPTY,noHEADmove. B004freshrootGo preflight intentINFLIGHT exactB001PATH/GOTOOLCHAINunset withsupportedcache/tmp/axe-v006-cache.itoPgN retainedifwritable,reportenv. E008diagnosticpreparationINFLIGHT scope inspect actualcompiler/toolchain/wrapper/ci-checkcommandsandcachedbuilddiagnostics for repeatedverbose-racefailure. No unchangedtestretry. Read goenv/toolpaths/configsafevalues andexistinglogs; inspect Go1.26 testbuild output behavior to propose diagnostic mode-x/-json ifappropriate,notrunyet. Do noteditanysource/assertion/acceptance/cacheobjects. Preflightmaypopulatecaches. Need concrete nextdiagnostic preservingfullsuitecoverage andseparatedcapturewithoutbypassingwrapperor sandbox. Capsunchangedplanning2milestone1incomplete0noround4;001unchecked,priorfailurepreserved. No deploy/live/Docker/push.
+- HEAD commit SHA: `d9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B004 fresh preflight and E008 compiler diagnostic preparation without rerunning failed tests
+
+### B004 PASS; E008 diagnostic prepared; E009 disk assessment in flight
+
+- Gate: B004 PASS; E008 diagnostic prepared; E009 disk assessment in flight
+- Commands/results:
+B004 preflightPASSexit0 exactB001PATH/GOTOOLCHAINunset/XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN; Go1.26.11release/repositoryselection/moduleload/vulnscanPASS no vulnerabilities. Combinedlog/tmp/run-detached-1001/general-b004-8ol7rn/output.log,separatestderrnotestablished. E008complete: actualci-checkgo test-race-v./...,underlyingfailurecauseunknown; installedGo src/cmd/go/internal/test/test.go:1503-1516 genericbuildfailedsummarynotcause. Wrapper/usr/bin/go selects1.26.11,compiler1.26.11,CGO1,GCC13.3.0accessible,cachewritableGOFLAGS/GOTMPDIRempty. Proposeddiagnostic go test -x -json -race -v ./... preservesassertions/package/racecoveragebutNOTLAUNCHED. Newfailedprerequisite: /tmp+homefilesystem100%used~833MiBavailable;notproofofhistoricalcause. No cleanup/diagnostictestrun. E009INFLIGHT read-onlydiskassessment: establishfreebytes/inodes/mounts/sizesofrun-createdcacheandtempoutputswithownership/provenance, determine whether saferoutingorcleanupofonlyFactory-createdregenerablecachecouldrestoreheadroom. No deletionauthorizedyet,no unrelatedusercachechanges. Stopbeforetestuntilsufficientspaceestablished. HEADd9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e onlycheckpointdirty,modulehashesunchanged. Capsplanning2milestone1incomplete0noround4;001unchecked. No Docker/live/paid/deploy/push.
+- HEAD commit SHA: `d9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e`
+- Relevant work: `committed` — stash ref `23d1f7d5ab854c41a10513d6c4377f56575fb961` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Assess disk headroom and run-created cache sizes without deletion before compiler diagnostic
+
+### E009 disk assessment complete; E010 bounded temporary-workspace prerequisite in flight
+
+- Gate: E009 disk assessment complete; E010 bounded temporary-workspace prerequisite in flight
+- Commands/results:
+E009 complete: /tmp+checkoutshare/dev/sda1 available869486592bytes100%used,freeinodes21525527;diskfailurecauseNOTestablished. Run-created/tmp/axe-v006-cache.itoPgN allocated382275584bytes:go-build372174848,golangci-lint10076160,goimports4096,axe12288. Preserveallretainedartifacts/cache/logs,nocleanupchosen;clearingcouldincreasebuilddemand. No symlinks incache,processvisibilitylimited. Other/tmp/go-buildprovenanceUNKNOWNnotcleanupcandidates. Sandbox/run/user/1001 tmpfs available8384516096bytesbutwrite/exec/memory/lifetime/namespaceNOTverified. E010INFLIGHT scopeboundedtemporaryworkspaceprerequisite only: inspect effectivecgroup/procmemorylimits/available,mountflags/namespace andresolvefreshpathunder sandbox/run/user/1001; minimalownedtemporarywrite+executionprobe withno externalcommands/data, reportbytes andresourceheadroom. DoNOTstarttests/builds/diagnosticuntilprerequisitesverified;no cleanupofotherfiles/cache,no production/rootaction. If memlimit/spacecannotestablishedreportstop. Preserve B001PATH/GOTOOLCHAINunset andknowncache. CandidateGOTMPDIRroutewouldholdcompilerobjectsontmpfs,remainingcachegrowthmustbeaccounted;proposalnotyetapprovedasviable. E009HEADd9bfba1onlycheckpointdirty;capsplanning2milestone1incomplete0noround4unchanged;001unchecked. No newprocedureexceptionyet.
+- HEAD commit SHA: `d9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e`
+- Relevant work: `committed` — stash ref `870497f04e8a2622278ccfd2dfd4903730c09b82` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Verify temporary build-workspace write/execute access and effective memory limits without running builds or deleting caches
+
+### E010 workspace prerequisite refused; Factory BLOCKED on safe build headroom
+
+- Gate: E010 workspace prerequisite refused; Factory BLOCKED on safe build headroom
+- Commands/results:
+E010 outcomeSTOP: commandguard rejected tinywrite/copied/usr/bin/true probe under/run/user/1001 outsideallowedwriteroots(worktree,/tmp,sharedscripts),explicitly do not retry/work around. No alternativeworkspaceprobe/build/test/cleanup ran. Readonlyevidence sandbox/run/user1001 freshperinvocationtmpfs8.38GB capacity but pi.slice memorymax10737418240,current8202227712,high9663676416,swapmax0;headroom~2.54GBmax/~1.46GBhigh sharedfluctuating,notguaranteedbuildbudget. Root/tmpavailable868352000bytes;run-createdcache382275584retain. No safelyverifiedtemporarybuildworkspace;donotbypassguardorstartpotentiallyspaceexhaustingbuild. E010initialHEADd9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e onlycheckpointdirty,finalagentstatusnotrecheckedafterguardstop; no repositorywritesreported. All E009/E010attemptoutcomesknown,noneinflight. CurrentFactoryrunTERMINAL blockedfailedworkspaceprerequisite/verificationpartial,001uncheckedT1-T4checked;002/003notselected. UnderlyingpriorracebuildfailurecauseUNKNOWN;lowdiskisrisknotprovenhistoricalcause. Proposedgo test -x -json -race -v ./... NOTLAUNCHED; no failedtestblindretrythisrun. B004preflightPASS/no vulnerabilities;Y006syncPASSa18b0nomerge;commitd9bfba1bookkeepingonly. NeedJaronfreeadequateext4diskheadroomorprovideapprovedwritablebuildfilesystembeforeboundeddiagnostic;neverdeleteunknown/unrelatedfilesorhost/rootactionswithoutapproval. Preserveallsource/assertions/acceptanceunchanged,capsplanning2milestone1incomplete0noround4,Q2consumed,Q1narrowpriorapproval. ExistingD11/D12choicespreserved,no newprocedureexception. Existingartifactsabsoluteidentitiesunchanged. Finalcomparison/Pythonhelpers/actionlint/completiontickunrun. Checkpointpendingoutcomesretained,nopush/PR/deploy/merge. Reporthumandecisiononsafeworkspace,notclaimimplementationdefect.
+- HEAD commit SHA: `d9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e`
+- Relevant work: `committed` — stash ref `2ed6773a29df0cb582a7608c79b47359c4e9f82d` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: BLOCKED: Jaron must provide disk headroom or an approved writable build location before further compiler diagnostics
+
+### REC006 recovery reconciled; Y007 new-run sync intent in flight
+
+- Gate: REC006 recovery reconciled; Y007 new-run sync intent in flight
+- Commands/results:
+REC006 usercleanedspace/requestedtryagain. Current-runmilestone-entries directabsolutepath exit0 beforedispatch. Recoveryreadallcurrentartifacts/fullindex270stage0/cachedempty/onlycheckpointdirty,three newerrefs23d1f7d/870497f/2ed6773 parentd9bfba1 andexpectedcheckpoint-onlysequentialdeltas/inventoriesempty. Cachedpriorrecoveryrefs/ledgeraccepted. Disk now8853123072bytesavailable21568820freeinodes samefilesystem/tmp/checkout/cache. Cache/tmp/axe-v006-cache.itoPgNexists. Recoveryagent didnotindependentlyrecheckpriorY006/E010runrecords; orchestrator HAS cachedactualtoolresults fromthisconversation: Y006factory-sync exit0 actualHEADd9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e a18b0 shared[]conflicts[]syncedtrue noHEADmove;B004general exit0preflightlog retained;E008/E009general completeandE010generalreturned explicitguarddenialwithnocleanup/build/test/diagnosticrun. Theseestablishedoutcomesareknown,notinferredfrommissingrecords;noinflightoperationunknown. Newrefs/currentcheckpointmatchcachedoutcomes. Priorblockerlowspaceaddressedbyuser,compilerfailurecauseSTILLUNKNOWN. No blindretry orassertionchange. Capsplanningfail2incomplete0Q2consumed;milestonefail1incomplete0noround4,R005passedallfindingsclosed;T1-T4checked001unchecked. Originalreviewbase3e178147775f5c002e7b967995c8823d72472a57 branchiss-83-finish-caching preserved;D1-D12preserved. Y007 new-runsyncidentity/originalscopeorigin/master INFLIGHT: clean-launchcommitexactcheckpointbookkeepingafterfreshcompleteindex/pendingpathinspection,thenfactory-sync;recordactuallaunch/resultHEAD. Nextfreshpreflightthenpreviouslypreparedcoveragepreserving-x/-jsondiagnosticwithseparatecaptureifprerequisitespass. No source/test/assertion/acceptancechanges/deletionauthorized. No/run/user1001workaround,noDocker/live/deploy/push.
+- HEAD commit SHA: `d9bfba1d511573ffdfa7e7ba6f6a9d8968eca38e`
+- Relevant work: `committed` — stash ref `29f2b0dd4e00de1aba2ed3e9514549eeda90ad38` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect and commit checkpoint bookkeeping, then launch Y007 factory-sync
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect and commit exact checkpoint bookkeeping, then launch Y006 new-run factory-sync
+- Next action: Inspect and commit checkpoint bookkeeping, then launch Y007 factory-sync
