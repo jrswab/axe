@@ -28,7 +28,9 @@ func TestCacheCompatibility_WireUsageErrors(t *testing.T) {
 	for _, adapter := range cacheCompatibilityAdapters() {
 		t.Run(adapter.name, func(t *testing.T) {
 			if adapter.cost {
-				t.Run("optional-proxy-cost", cacheCompatibilityCost)
+				t.Run("optional-proxy-cost", func(t *testing.T) {
+					cacheCompatibilityCost(t, adapter)
+				})
 			}
 			for _, streaming := range []bool{false, true} {
 				t.Run(fmt.Sprintf("stream=%t", streaming), func(t *testing.T) {
@@ -495,12 +497,11 @@ func cacheCompatibilityRetry(t *testing.T, a cacheCompatibilityAdapter) {
 // LiteLLM's independently optional cost metadata is deliberately separate from
 // cache counts. Existing named regression tests cover malformed cost and usage
 // on a choice chunk; these cases keep both normal and stream absence explicit.
-func cacheCompatibilityCost(t *testing.T) {
+func cacheCompatibilityCost(t *testing.T, a cacheCompatibilityAdapter) {
 	t.Helper()
 	for _, streaming := range []bool{false, true} {
 		for _, header := range []string{"", "0.0021"} {
 			t.Run(fmt.Sprintf("stream=%t/header=%q", streaming, header), func(t *testing.T) {
-				a := cacheCompatibilityAdapter{name: "LiteLLM", cost: true, path: "/v1/chat/completions", new: func(url string) (StreamProvider, error) { return NewLiteLLM("local-key", url) }}
 				capture := &cacheCompatibilityCapture{}
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					capture.record(t, a, r)

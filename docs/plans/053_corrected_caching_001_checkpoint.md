@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Run L004 lint, inspect full index/diff, commit T4 and launch G004 whole-suite review evidence
-- Last completed phase/task/gate and timestamp: W004 PASS; L004 pre-review records lint intent, 2026-11-19T00:24:29.124902+00:00
+- Next safe action: Inspect N004 fixed strings/full index and commit exact2paths
+- Last completed phase/task/gate and timestamp: N004 verified; C004 commit inspection intent, 2026-11-19T00:38:37.935419+00:00
 
 ## Milestone acceptance
 
@@ -1964,8 +1964,87 @@ a2af23fc9b2697de70e12d49c0d1dae85f2ea7d0  "internal/provider/cache_compatibility
 
 - Next action: Run L004 lint, inspect full index/diff, commit T4 and launch G004 whole-suite review evidence
 
+### L004/G004 PASS; R004 T4 axes round1 intent
+
+- Gate: L004/G004 PASS; R004 T4 axes round1 intent
+- Commands/results:
+L004 outcome PASS: docs-lint 1: checks task-id, stale-milestone, broken-mem-link, stale-citation; changed since3e178147775f5c002e7b967995c8823d72472a57;52 Markdown files0findings0outside scope, exit0. spec-lint --root repo spec+implement exit0,26+4citations0findings. Precommit inspection PASS complete index269stage0/cached empty/exact7paths, full new554line provider test and211line additive runner test inspected; no existing assertion/source/acceptance rewrite. factory-commit exit0 created71482a71d8a44dc1ec9d4d5e003d8a708e69a9a9 exactly7paths, remaining_changes[]. repo-state confirmed clean launch.
+G004 outcome PASS: factory-gate run --gate test exit0 namegate-test-71482a71d8a4-20261119T002520Z sha71482a71d8a44dc1ec9d4d5e003d8a708e69a9a9; first poll4/running, final poll0/exited0. Log /tmp/factory-gate-1001/gate-test-71482a71d8a4-20261119T002520Z.log. Whole-suite go test -race ./... evidence for T4 review HEAD, not completion gate. records-stale-check34dda4a37beb3b08048dc6c7ceaab723936422d3 exit0 No removed or renamed names found.
+R004 intent IN FLIGHT: independent parallel Standards and Spec reviews, original gate T4 per-task round1, range34dda4a37beb3b08048dc6c7ceaab723936422d3..71482a71d8a44dc1ec9d4d5e003d8a708e69a9a9, all7changed paths each axis, fixedpoint34dda4a. No design-risk axis because preservation/docs only. Each original scope7files, no slices, failed rounds0/consecutive incompletes0, no prior findings. Test evidence G004 matching log. Do not pass writer rationale/other axis outcomes. Independent milestone review still pending. All other caps unchanged.
+- HEAD commit SHA: `71482a71d8a44dc1ec9d4d5e003d8a708e69a9a9`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch R004 Standards and Spec round1 independently in one parallel batch
+
+### R004 PASS with1 nit; N004 fix intent
+
+- Gate: R004 PASS with1 nit; N004 fix intent
+- Commands/results:
+R004 outcome complete at71482a71d8a44dc1ec9d4d5e003d8a708e69a9a9, all7files each axis, no slices/incompletes/blockers. Standards Verdict: APPROVED WITH NITS. Spec Verdict: APPROVED, no findings. Combined gate passes with1nit, no failed round, both original scopes round1 active incomplete0. No design-risk axis required. Exact Standards nit verbatim:
+**N1 — Duplicated Code:** `internal/provider/cache_compatibility_test.go:503` repeats the LiteLLM adapter definition from line 83 rather than using the adapter selected by its enclosing subtest:
+```diff
++ if adapter.cost {
++     t.Run("optional-proxy-cost", cacheCompatibilityCost)
++ }
+```
+```diff
++ a := cacheCompatibilityAdapter{name: "LiteLLM", cost: true, path: "/v1/chat/completions", new: func(url string) (StreamProvider, error) { return NewLiteLLM("local-key", url) }}
+```
+This gives the same fixture two constructor/path definitions to maintain. Source: Standards’ **Duplicated Code** criterion; explicit-dependency guidance in `AGENTS.md:20` and `CONTRIBUTING.md:129`.
+**Minimal fix:** pass the current adapter into `cacheCompatibilityCost` and reuse it, preserving every assertion.
+N004 intent IN FLIGHT: one code fix only this nit, cache_compatibility_test.go call/helper parameter, remove duplicate adapter definition without assertion/case/oracle changes. Focused/provider race/lint and exact offending-text grep required; no re-review. Then commit and postcommit affected tests/lint before T4 checked. Cap state otherwise unchanged; final milestone review unstarted.
+- HEAD commit SHA: `71482a71d8a44dc1ec9d4d5e003d8a708e69a9a9`
+- Relevant work: `committed` — stash ref `30e0bf7e18ddce72f95667610bef33c0a0437878` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Fix N004 duplicate adapter setup, verify unchanged assertions, commit then postcommit checks
+
+### N004 verified; C004 commit inspection intent
+
+- Gate: N004 verified; C004 commit inspection intent
+- Commands/results:
+N004 outcome PASS: only cost subtest closure/helper adapter parameter and removed duplicate adapter declaration in internal/provider/cache_compatibility_test.go. After excluding removed fixture declaration helper body byte-identical1649bytes SHA256c3d6c1c865b9dff5cca5ff4566b3d61e946badc310afdedde0e5a8e9afbce487. Full-file exactly3intended replacements, no assertion/case/oracle change. Reported grep-F zero offending strings. Focused test exit0, derived go test -race ./internal/provider exit0(22.010s), go vet/build package exit0, golangci-lint exit0 0issues, gofmt/diff exit0. HEAD71482a7, index270stage0/cached empty, no untracked, only checkpoint+test dirty. No re-review.
+C004 intent IN FLIGHT: explore independently repeats required fixed-string greps and complete index/pending contents inspection for exact2path nit+bookkeeping commit; orchestrator commits if PASS. V004 next intent after commit: postcommit focused/race/lint checks before T4 checked. Caps unchanged, all task review axes pass with nits fixed; final milestone review pending.
+- HEAD commit SHA: `71482a71d8a44dc1ec9d4d5e003d8a708e69a9a9`
+- Relevant work: `uncommitted` — stash ref `76c6592805a8163a5f43bdb3ee601e853148ca61` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M internal/provider/cache_compatibility_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect N004 fixed strings/full index and commit exact2paths
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Run L004 lint, inspect full index/diff, commit T4 and launch G004 whole-suite review evidence
+- Next action: Inspect N004 fixed strings/full index and commit exact2paths
