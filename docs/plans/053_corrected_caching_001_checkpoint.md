@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect exact W005 changes/greps, commit4paths, run fresh G006 evidence and records checks
-- Last completed phase/task/gate and timestamp: W005 fixes verified; C005/G006 clean launch intent, 2026-11-19T01:05:46.165569+00:00
+- Next safe action: Commit inspected Y004 intent, sync, then final-HEAD completion tests/lint/integration comparison
+- Last completed phase/task/gate and timestamp: R005 final review PASS; Y004 completion sync intent, 2026-11-19T01:13:24.459087+00:00
 
 ## Milestone acceptance
 
@@ -2184,8 +2184,52 @@ C005/G006 intent IN FLIGHT: explore independently verifies required fixed-string
 
 - Next action: Inspect exact W005 changes/greps, commit4paths, run fresh G006 evidence and records checks
 
+### C005/G006 PASS; R005 records round2 intent
+
+- Gate: C005/G006 PASS; R005 records round2 intent
+- Commands/results:
+C005 outcome PASS complete-index/pending-content inspection; exact4paths, cached empty/no untracked. Required grep-F found old footer/citation only in retained verbatim finding quotes, corrected actual passages present, assertions/cases/oracles/outward events/interrupted fixtures unchanged. factory-commit exit0 created3f76578f9a0ef685a9b89f982a94c5215c687b81 exact4paths remaining_changes[]. repo-state confirmed completely clean launch. G006 factory-gate run --gate test exit0 namegate-test-3f76578f9a0e-20261119T010629Z matching SHA3f76578f9a0ef685a9b89f982a94c5215c687b81; final poll0/exited0. Log /tmp/factory-gate-1001/gate-test-3f76578f9a0e-20261119T010629Z.log. docs-lint1 originalbase exit0 52md0findings0outside; records-stale-check samebase exit0 no removed/renamed names. Backend nits require postcommit lint/affected tests, full-suite G006 supplies affected tests, lint retained pending completion.
+R005 records round2 intent IN FLIGHT: rerun only blocking original spec/records gate's S2 slice, checkpoint committed981-through-end at3f76578, full rangeoriginalbase3e17814..3f76578 and fix rangeb116412..3f76578. Original S1 fivefiles+checkpoint1-980 APPROVED carried unchanged; verify no scope gaps. Prior sole blocker and citation nit quoted verbatim in round1 ledger supplied to reviewer; no backend nit re-review. Original records6files round2 consecutive incomplete0, no new findings; failed milestone rounds1 before dispatch. Backend combined APPROVED WITH NITS carried with fixes implemented. No round4; planning2/Q2consumed unchanged.
+- HEAD commit SHA: `3f76578f9a0ef685a9b89f982a94c5215c687b81`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch R005 records S2 round2 re-review, then completion sync and gates
+
+### R005 final review PASS; Y004 completion sync intent
+
+- Gate: R005 final review PASS; Y004 completion sync intent
+- Commands/results:
+R005 records round2 outcome APPROVED COMPLETE S2 checkpoint981-2191 at3f76578f9a0ef685a9b89f982a94c5215c687b81, prior blocker and PATH nit resolved, no new findings/incomplete. Preserved round1 S1 complete scope except current-action/timestamp bookkeeping lines30-31 changed as expected, not literally unchanged; reviewer confirmed no acceptance/stakes/prerequisite change. Combined original records APPROVED. Combined original backend APPROVED WITH NITS, both exact nits fixed in3f76578 with G006 whole-suite pass; postcommit lint remains. Overall independent milestone review PASS, no unresolved blockers/nits. Milestone failing review rounds1(total), original-scope active incompletes0, no round4. Planning historical2/Q2consumed unchanged.
+Y004 intent IN FLIGHT: completion factory-sync args[] origin/master after complete-index/pending checkpoint inspection+exact bookkeeping commit. Record actual launch/result HEAD/JSON and stop on failure/conflict. Original milestone base remains3e17814. After sync, record fresh completion gate intents and commit checkpoint before whole-suite factory test/lint gate launches. Completion tests include full race, lint, make check, ci-check integrity/vet/build/test, Python tests, actionlint and independent spec comparison/status accounting; local Docker CI-only smoke and paid probes excluded as established. All tasks checked, milestoneunchecked until all4checks. No push/PR requested.
+- HEAD commit SHA: `3f76578f9a0ef685a9b89f982a94c5215c687b81`
+- Relevant work: `committed` — stash ref `729ee6fcbd54b99b8e4d2995a7dcc67f1f75fcb1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit inspected Y004 intent, sync, then final-HEAD completion tests/lint/integration comparison
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect exact W005 changes/greps, commit4paths, run fresh G006 evidence and records checks
+- Next action: Commit inspected Y004 intent, sync, then final-HEAD completion tests/lint/integration comparison
