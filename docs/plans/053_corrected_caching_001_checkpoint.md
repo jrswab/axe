@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Inspect final C001 outcome delta/full index, commit checkpoint+001 milestone tick, inspect actual clean HEAD, run Y009 pre-selection sync
-- Last completed phase/task/gate and timestamp: C001 completion handoff validation PASS; Y009 pre-selection sync pending launch, 2026-11-19T16:20:26.519322+00:00
+- Next safe action: Wait for Jaron Q3 approval of the exact Bedrock assertion replacements; preserve001complete and002/003unchecked
+- Last completed phase/task/gate and timestamp: N002 discovery complete; Factory STOP for Q3 Bedrock assertion approval, 2026-11-19T16:22:44.044387+00:00
 
 ## Milestone acceptance
 
@@ -2963,8 +2963,53 @@ C001 read-only validation outcome PASS at aff44548d9656d2e9b8296169905a7a77567a0
 
 - Next action: Inspect final C001 outcome delta/full index, commit checkpoint+001 milestone tick, inspect actual clean HEAD, run Y009 pre-selection sync
 
+### Y009 pre-selection sync PASS; N002 next-entry discovery intent IN FLIGHT
+
+- Gate: Y009 pre-selection sync PASS; N002 next-entry discovery intent IN FLIGHT
+- Commands/results:
+Y009 actual command run_script factory-sync args[] exit0,stderr empty, launch clean HEAD8b0ab7efeb44e7f17189bfd4d36683da3ae8f2ba after exact checkpoint/milestone completion commit8b0ab7e and repo-state clean confirmation. JSON {"branch":"iss-83-finish-caching","base":"origin/master","head_before":"8b0ab7efeb44e7f17189bfd4d36683da3ae8f2ba","ahead":23,"behind":0,"shared_files":[],"conflicts":[],"synced":true}. No merge/HEAD move,completed001 handoff validated before sync.001 completion tick ships on feature branch. Actual test evidence remains aff4454 unchanged source; no new source change. Commit8b0ab7e completion;prior current-run checkpoint commits e14d934,aff4454. All baseline preserved.
+N002 intent IN FLIGHT, original scope read-only next sequential unchecked entry selection discovery after successful pre-selection sync. Reread full current milestone document/status,confirm002 first unchecked and003later,inspect source assertions internal/provider/bedrock_test.go638-656 against documented contract and exact existing human-only approval requirement. Confirm no002checkpoint/artifacts yet,resolve intended absolute paths and full lane,extract all current human questions in one batch. No planning/source/assertion change or002checkpoint creation before identified blocker resolved. Distinguish existing approved behavior from exact assertion replacements needing Jaron approval. Return narrow recommendation and retained valid assertions. No tests,gates,reviews or writes. Existing001 ledger D1-D14/caps unchanged andcomplete. No human-only action authorized by next-entry discovery.
+- HEAD commit SHA: `8b0ab7efeb44e7f17189bfd4d36683da3ae8f2ba`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Read/select next sequential002 entry and inspect exact Bedrock assertion approval blocker, then ask Jaron once with safe recommendation
+
+### N002 discovery complete; Factory STOP for Q3 Bedrock assertion approval
+
+- Gate: N002 discovery complete; Factory STOP for Q3 Bedrock assertion approval
+- Commands/results:
+N002 read-only next-entry discovery outcome COMPLETE. Current milestone document001checked,002first sequential unchecked,003later/dependent. Y009 sync PASS,no HEADmove.002 needs full lane (provider wire and execution setup change),but existing explicit human-only assertion checkpoint requires separate Jaron approval before contradicted assertions change; no002spec/checklist/checkpoint yet and none created. Resolved intended absolute002artifacts under /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_{spec,implement,checkpoint}.md. No other current human question found. Factory terminal condition explicit human decision required;001remainscomplete,002unchecked,003unchecked/unstarted.
+Q3 proposed exact approval scope,NOT yet approved: replace only contradicted assertions in internal/provider/bedrock_test.go TestBedrock_Send_Cache lines638-645 and652-656. Old len(receivedReq.System)!=1/expected1systemblock and CachePoint-on-System[0] checks -> two separate union entries preserving original system text first and cache-point-only default second,assert neither combines members. Old receivedReq.ToolConfig.CachePoint presence/type checks -> toolConfig.tools retains tool specification plus separate cache-point-only default array entry,not top-level ToolConfig cachePoint. RETAIN ToolConfig existence lines648-650 and cache read/write usage lines659-664,all unrelated assertions/tests. No existing inputSchema assertion there to rewrite;add independent raw-wire inputSchema.json checks including caching disabled. Add matrix/raw-wire coverage normally through TDD,do not weaken/delete correctness. Evidence local dated contract .scratch/issue-83/assets/provider-cache-contracts-research.md3/34-39 and milestone29/44-46;current production contradicted shapes bedrock.go107-128/164-196/240-258. This establishes local contract intent,NOT observed server rejection. Main AWS credential exception runner/run.go393-414, Nested ordinary-key path tool.go218-235,already assigned002. EarlierQ1 only approved Nested-memory extraction,NOT Bedrock. Recommendation approve Q3 narrowly;leave requirements/assertions outside scope unchanged. Standing approvals do not authorize assertion rewrite. No source/assertion or acceptance changes performed.
+Current terminal repository evidence HEAD8b0ab7efeb44e7f17189bfd4d36683da3ae8f2ba,only checkpoint Y009/N002/terminal bookkeeping pending,index empty. Completed001 production symbols tool.go Nested cache resolution,anthropic.go buildAnthropicStaticPrefix/convertToAnthropicTools,openai.go convertToOpenAITools plus tests/docs,all source unchanged THIS invocation. This invocation commits e14d93472ab998e179bbc401928d42816cd03c9b,aff44548d9656d2e9b8296169905a7a77567a07b,8b0ab7efeb44e7f17189bfd4d36683da3ae8f2ba;36842bf is prior invocation. Final checkpoint-only terminal bookkeeping commit may follow exact full-index/pending-path inspection. No push/PR/deploy/merge performed. D1-D14 preserved,planning failures2/incomplete0/Q2 consumed,milestone failures1/incomplete0/R005 passed/no round4/no findings. Docker local smoke unavailable,paid/live excluded.001test/lint/localchecks actual PASS ataff4454 unchangedsource. No tests/gates/reviews launched N002.
+- HEAD commit SHA: `8b0ab7efeb44e7f17189bfd4d36683da3ae8f2ba`
+- Relevant work: `committed` — stash ref `50bf0e5ab3a05c842c9f8e398d09bf1fafe6d435` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Wait for Jaron Q3 approval of the exact Bedrock assertion replacements; preserve001complete and002/003unchecked
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect final C001 outcome delta/full index, commit checkpoint+001 milestone tick, inspect actual clean HEAD, run Y009 pre-selection sync
+- Next action: Wait for Jaron Q3 approval of the exact Bedrock assertion replacements; preserve001complete and002/003unchecked
