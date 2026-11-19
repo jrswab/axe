@@ -25,10 +25,10 @@
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
-- T4: `unchecked`
+- T4: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect N004 fixed strings/full index and commit exact2paths
-- Last completed phase/task/gate and timestamp: N004 verified; C004 commit inspection intent, 2026-11-19T00:38:37.935419+00:00
+- Next safe action: Inspect/commit G005 intent, run fresh full-suite evidence and records checks, then final milestone review
+- Last completed phase/task/gate and timestamp: V004 PASS; T4 checked; G005 milestone review gate intent, 2026-11-19T00:42:11.047716+00:00
 
 ## Milestone acceptance
 
@@ -2043,8 +2043,52 @@ C004 intent IN FLIGHT: explore independently repeats required fixed-string greps
 
 - Next action: Inspect N004 fixed strings/full index and commit exact2paths
 
+### C004 committed; V004 postcommit verification intent
+
+- Gate: C004 committed; V004 postcommit verification intent
+- Commands/results:
+C004 outcome: complete-index/pending-content inspection found exactly2approved paths, empty cached diff, no untracked; full-context comparison confirmed helper body unchanged other than duplicate declaration removal/signature/call. Both required exact grep-F searches returned0hits. Optional independent SHA256 repetition was blocked by read-only guard, but writer hash plus independent full-context diff proves required assertion preservation; hashing is not a gate prerequisite and no alternate writer needed. factory-commit exit0 created7f1b0c3e37488d6f14ef6a3aff833cbc7e4aeb7f with exactly checkpoint+compatibility test; remaining_changes[].
+V004 intent IN FLIGHT: non-review general call runs postcommit focused provider+runner tests, go test -race ./internal/provider ./pkg/runner, golangci-lint run and format/diff checks using recorded PATH/unset GOTOOLCHAIN; no edits. Also read-only measure final milestone range/counts/file lists to support necessary review split, load review-criteria and gate applicability. T4 remains unchecked until pass. Final milestone review still unstarted, all caps unchanged.
+- HEAD commit SHA: `7f1b0c3e37488d6f14ef6a3aff833cbc7e4aeb7f`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run V004 postcommit verification and size final milestone review scopes
+
+### V004 PASS; T4 checked; G005 milestone review gate intent
+
+- Gate: V004 PASS; T4 checked; G005 milestone review gate intent
+- Commands/results:
+V004 outcome PASS at7f1b0c3e37488d6f14ef6a3aff833cbc7e4aeb7f. Focused provider/runner tests exit0 cached; go test -race ./internal/provider ./pkg/runner exit0 cached; golangci-lint exit0 0issues; gofmt/diff checks exit0. Only checkpoint dirty, test files unchanged. T4 Standards APPROVED WITH NITS plus Spec APPROVED, sole nit fixed at7f1b0c3 with postcommit verification. T4 gate passes and T4 checked. All tasks checked; milestone001 remains unchecked, final independent review and completion pending. No new review rounds/failures/incompletes.
+G005 intent IN FLIGHT: after exact clean-launch bookkeeping-only inspection/commit, factory-gate run --gate test at actual new HEAD and poll to final. Fresh matching whole-suite log required for final milestone review; G004 is historical71482a7 evidence only. Run docs-lint --since originalbase3e178147775f5c002e7b967995c8823d72472a57 plus records-stale-check samebase before review. Need inspect exact CONTRIBUTING Docker applicability; no Docker/paid/live steps authorized in subagents. Scope sizing currently12commits21files+4486/-15; UI empty. Proposed original final review scopes backend15files split providers9 and remaining6; records6files split checkpoint1-980+5files and checkpoint981-end. Re-measure committed range after intent commit. Splitting retains complete original coverage and combined category outcomes, no cap reset. R005 final milestone round1 not yet launched, failed rounds0/consecutive incompletes0, no round4. Planning historical2/incomplete0/Q2 consumed.
+- HEAD commit SHA: `7f1b0c3e37488d6f14ef6a3aff833cbc7e4aeb7f`
+- Relevant work: `committed` — stash ref `80e4f31361f0764a296c15d310785eaf2e6d9dc2` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect/commit G005 intent, run fresh full-suite evidence and records checks, then final milestone review
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect N004 fixed strings/full index and commit exact2paths
+- Next action: Inspect/commit G005 intent, run fresh full-suite evidence and records checks, then final milestone review
