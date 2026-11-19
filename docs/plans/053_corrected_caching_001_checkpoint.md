@@ -27,8 +27,8 @@
 - T3: `unchecked`
 - T4: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Inspect/commit T3 then run whole-suite evidence gate
-- Last completed phase/task/gate and timestamp: T3c GREEN; G003 intent, 2026-11-18T23:31:45.861596+00:00
+- Next safe action: Commit inspected restart-sync intent, run Y003, then Go preflight before T3 nit fix
+- Last completed phase/task/gate and timestamp: Recovery validated; Y003 restart sync intent, 2026-11-19T00:00:46.326103+00:00
 
 ## Milestone acceptance
 
@@ -1605,8 +1605,152 @@ T3c independent entire-file comparison to RED stash and shared fixture hash pass
 
 - Next action: Inspect/commit T3 then run whole-suite evidence gate
 
+### G003 PASS; R003 record checks intent
+
+- Gate: G003 PASS; R003 record checks intent
+- Commands/results:
+Precommit full index/content inspection passed exactly8files, empty staged diff, helper full content and RED comparisons validated. factory-commit exit0 at e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8 remaining_changes[]. G003 factory-gate run --gate test exit0 name gate-test-e1c6ffb6f0a4-20261118T233228Z matching sha baseorigin/master no superseded; poll exit0 exited0. Passing whole-suite log /tmp/factory-gate-1001/gate-test-e1c6ffb6f0a4-20261118T233228Z.log. R003 in flight docs-lint since original milestone base and records-stale-check T3fixedpointcfa5c1754f5b81a535e8fe45be10ef65b5412b44. Reviewed HEAD remains fixed after bookkeeping writes only. Caps unchanged, T3axes not launched.
+- HEAD commit SHA: `e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run R003 records checks then record three-axis review intent
+
+### R003 PASS; T3 axes round1 intent
+
+- Gate: R003 PASS; T3 axes round1 intent
+- Commands/results:
+R003 docs-lint since original base exit0 headerdocs-lint1 52files0findings; records-stale-check cfa5c1754f5b81a535e8fe45be10ef65b5412b44 exit0 no removed/renamed names. T3-Standards/T3-Spec/T3-DesignRisk round1 in flight one parallel batch. Each original scope all8changed files rangecfa5c1754f5b81a535e8fe45be10ef65b5412b44..e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8; no slices/prior findings, rationale/other-axis outcomes withheld. All use matchingG003 log. Axis incomplete/failing rounds0; planning failures2 historical, T1/T2checked T3/T4unchecked. No milestone review/completion yet.
+- HEAD commit SHA: `e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8`
+- Relevant work: `committed` — stash ref `31a5aa1637f2fbd6382b120ef258aa73721c0548` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch independent T3 Standards, Spec and Design-risk reviews
+
+### T3 axes PASS WITH NITS; H002 interruption handoff intent
+
+- Gate: T3 axes PASS WITH NITS; H002 interruption handoff intent
+- Commands/results:
+T3 review batch completed before user interruption. Reviewed HEAD e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8, fixed point cfa5c1754f5b81a535e8fe45be10ef65b5412b44. Standards round1 Verdict: APPROVED WITH NITS, Coverage: complete all8files. Spec round1 Verdict: APPROVED, Coverage: complete all8files, no findings. DesignRisk round1 Verdict: APPROVED WITH NITS, Coverage: complete all8files and consumers. Combined gate passes with two nits; no blocker or incomplete result. No nit fix launched. T3 remains unchecked until nit fixes and postcommit lint/affected tests pass. No re-review for nits.
+
+Standards nit verbatim:
+**Nit — Duplicated Code:** `internal/provider/openai_test.go:147–161` repeats the stream-drain/close sequence added at `internal/provider/anthropic_test.go:1117–1131`:
+```diff
++ for {
++     _, err = stream.Next()
++     if err != nil {
++         break
++     }
++ }
++ closeErr := stream.Close()
++ if err != io.EOF || closeErr != nil {
++     t.Fatalf("drain/close stream: %v / %v", err, closeErr)
++ }
+```
+Source rules: Standards’ **Duplicated Code** criterion and `CONTRIBUTING.md:128` (small, focused functions). **Suggested fix:** extract the identical drain/close mechanics into a test-only helper, preserving all checks and adapter-specific literal wire oracles. This is maintainability-only; it does not block T3.
+
+DesignRisk nit verbatim:
+**N1 — nit: failed subtests can strand the shared request-capture channel.**
+Locations: `internal/provider/openai_test.go:100-174`, `internal/provider/openrouter_test.go:98-186`, and `internal/provider/anthropic_test.go:1059-1144`.
+Relevant added fragments from `TestOpenAI_StableToolSchemas`:
+```diff
++ requests := make(chan []byte, 1)
+...
++ requests <- body
+...
++ } else if _, err := o.Send(context.Background(), req); err != nil {
++     t.Fatalf("Send: %v", err)
+...
++ if err := json.Unmarshal(<-requests, &got); err != nil {
+```
+If a send or stream-drain regression triggers `t.Fatalf` after the handler captures its request, that child exits before consuming the capture. The next child blocks its handler on `requests <- body` before sending response headers; the client uses an unbounded background context. This can turn the original useful failure into a suite-wide timeout. It introduces no direct production defect, but weakens failure diagnosis in the regression gate.
+**Question/fix:** Can capture delivery be nonblocking or isolated per case, with bounded request contexts, while preserving every existing assertion?
+
+Cap-state summary: shared planning failing rounds2 retained, active planning incomplete0, P001 Q2 exception consumed. T1 three axes complete approved round1 no findings. T2 Standards approved with nit, Spec/Design approved complete round1; N002 nit fixed in cfa5c1754f5b81a535e8fe45be10ef65b5412b44 with identical assertions and postcommit checks passed. T3 original each-axis scope full8files fixedpoint..reviewed HEAD, one dispatch per axis round1, no slices/retries/incompletes/carried blockers; consecutive incomplete0 and failed rounds0 per axis. Two nits pending exactly as quoted. Milestone reviews0, roundfour not applicable. T1/T2 checked, T3/T4 unchecked; milestones001-003 unchecked.
+
+H002 in flight: user explicitly invoked handoff skill, an external interruption for this Factory run. Publish local topic axe-iss83 handoff via general agent; scope only /tmp draft/publication and read-only state inspection. Include actual handoff.py state --checkpoint this path --since original base output, redact, inspect secrets and publish immutable/latest. No more implementation/tests/reviews/gates/sync/commits during interruption. Next session must run milestone-entries and read-only recovery, then record intent for scoped T3 two-nit fix inspection. Preserve all assertions/expectations, no suppressions; any assertion rewrite requires Jaron. All current source changes are committed at reviewed HEAD; pending checkpoint-only bookkeeping expected.
+- HEAD commit SHA: `e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8`
+- Relevant work: `committed` — stash ref `867caf9db1e83b83085d38d8a577af860af425b1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Publish H002 interruption handoff; resume next session with recovery before T3 nit fixes
+
+### H002 handoff published; external interruption
+
+- Gate: H002 handoff published; external interruption
+- Commands/results:
+H002 completed by general agent. python3 ~/.agents/scripts/handoff.py state --checkpoint /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md --since 3e178147775f5c002e7b967995c8823d72472a57 exit0 exact stdout included in handoff and matched. redact exit0 unchanged and manual secret/email review clean. publish --topic axe-iss83 exit0 published /tmp/handoff-axe-iss83.20261118T235222813873Z.md, latest /tmp/handoff-axe-iss83.latest.md; readlink/stat/cmp/first-line checks exit0, immutable0444, latest correct. HEAD remained e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8 and only existing checkpoint dirty. This H002 outcome is known post-publication checkpoint delta described by handoff. User interruption ends run, no further work launched. T1/T2 checked; T3 review passes with two exact pending nits (no fix launched), T4 unstarted; all milestones unchecked. All caps and original scopes unchanged. Resume Factory --handoff /tmp/handoff-axe-iss83.latest.md with milestone validation and read-only recovery before intent/sync/substantive work.
+- HEAD commit SHA: `e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8`
+- Relevant work: `committed` — stash ref `826ccf60a6c7bcb3c3e94eb2cd39beae17605c25` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume from /tmp/handoff-axe-iss83.latest.md after read-only recovery; inspect two T3 nit fixes
+
+### Recovery validated; Y003 restart sync intent
+
+- Gate: Recovery validated; Y003 restart sync intent
+- Commands/results:
+REC-20261119-01 outcome: read-only recovery completed across six explore dispatches. milestone-entries --handoff /tmp/handoff-axe-iss83.latest.md exited 0 before all dispatches; resolved absolute milestone identity unchanged. All 57 referenced stash snapshots exist and actual content deltas reconcile with recorded parent HEADs, source/planning evolution and expected checkpoint writes. Both formerly untracked helper inventories match recorded hashes and subsequent committed blobs. Original T3 review batch call_kPfIDXFAVtTU18PN6oMKzuct was recovered with jq and agrees verbatim with checkpoint: complete Standards APPROVED WITH NITS, Spec APPROVED, DesignRisk APPROVED WITH NITS. G003 final exit0/log SHA e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8 confirmed, not completion evidence. H002 publication outcome is appended and expected. Historical ignored I001/I002 checklist content remains explicitly unknown and superseded by committed reviewed checklist, not an unresolved dispatch outcome. No unknown active identity, outcome or count remains. Entire index is stage0 with empty cached diff; only checkpoint bookkeeping dirty, no untracked files. No tests/reviews/fixes/sync/gates were launched during recovery.
+Cap snapshot: original milestone base 3e178147775f5c002e7b967995c8823d72472a57 preserved. P001/P002 approved, shared planning failures2, active incomplete0, Q2 replacement consumed. T1/T2 checked. T3 round1 original eight-file three-axis gate passed with exactly two recorded nits, zero blockers, zero failed rounds/incompletes, no nit fix dispatched. T4 unstarted. No final milestone review or round-four state. Decisions D1-D8 unchanged.
+Y003 intent IN FLIGHT: restart factory-sync against origin/master after this checkpoint intent is committed using complete-index and pending-path inspection. Original gate/scope: milestone001 restart sync, no review round. Expected launch command factory-sync with args []; record actual resulting launch HEAD and JSON/outcome after execution. Preserve all baseline changes and assertions. Preconditions: exact checkpoint-only bookkeeping commit and no tracked changes; stop on failed guard/conflicts. Next record preflight intent and run go-toolchain-check with recorded PATH and unset GOTOOLCHAIN before milestone work.
+- HEAD commit SHA: `e1c6ffb6f0a4e4f6d396bdddc478d2db4ef671b8`
+- Relevant work: `committed` — stash ref `c1bb4502d95aa5520a429f6b39d704d0e55095ea` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit inspected restart-sync intent, run Y003, then Go preflight before T3 nit fix
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Ignored plan artifacts are not included in ordinary `git status --porcelain`, tracked-file stash snapshots, or the updater's untracked inventory. The milestone and checkpoint are ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect/commit T3 then run whole-suite evidence gate
+- Next action: Commit inspected restart-sync intent, run Y003, then Go preflight before T3 nit fix
