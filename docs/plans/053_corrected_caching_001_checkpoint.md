@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Reinspect full index and approved bookkeeping, commit, then launch Y012 sync
-- Last completed phase/task/gate and timestamp: REC009c bookkeeping rendering repair; Y012 intent retained, 2026-11-20T20:01:08.167786+00:00
+- Next safe action: Create initial 002 checkpoint only, then establish lane and context
+- Last completed phase/task/gate and timestamp: B009 PASS; C003 002 checkpoint creation IN FLIGHT, 2026-11-20T20:03:40.914159+00:00
 
 ## Milestone acceptance
 
@@ -3249,8 +3249,50 @@ REC009c clean-launch inspection found checkpoint tool defaulted omitted --milest
 
 - Next action: Reinspect full index and approved bookkeeping, commit, then launch Y012 sync
 
+### Y012 PASS; B009 Go preflight IN FLIGHT
+
+- Gate: Y012 PASS; B009 Go preflight IN FLIGHT
+- Commands/results:
+Y012 actual factory-sync --wip exit 0 at launch/result HEAD 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676. JSON branch iss-83-finish-caching, base origin/master, ahead 27 behind 0 shared_files [] conflicts [] synced true; no WIP or merge commit and no HEAD change. Launch status clean as confirmed by factory-commit remaining_changes []. B009 intent: run existing /home/jaron/.agents/scripts/go-toolchain-check on this module, GOTOOLCHAIN unset and same recorded PATH, with existing /tmp/axe-v006-cache.itoPgN as XDG_CACHE_HOME and GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod. All existing checks retained including vulnerability scan. This is current sandbox verification after known B008 module-cache permission failure, not a retroactive pass. Original scope 002 prerequisite. No review count/cap reset. IN FLIGHT. If runtime exceeds single command budget use existing run-detached and retain command, launch source, status and final logs. No paid/provider calls or production operations authorized.
+- HEAD commit SHA: `1e9e4c3064e3310da64ea62e3efe25aa7ce7b676`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B009 existing Go toolchain preflight with writable user module cache and record result
+
+### B009 PASS; C003 002 checkpoint creation IN FLIGHT
+
+- Gate: B009 PASS; C003 002 checkpoint creation IN FLIGHT
+- Commands/results:
+B009 actual launch env -u GOTOOLCHAIN XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod /home/jaron/.agents/scripts/run-detached start --name general-b009-f71a38 -- /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching. Retained run /tmp/run-detached-1001/general-b009-f71a38/output.log, exit 0, PID 40, source HEAD 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676; recorded PATH unchanged and GOTOOLCHAIN unset. Go 1.26.11 downloaded, both version probes and read-only module load passed. govulncheck: No vulnerabilities found. PASS Go pre-flight checks. Before/after only expected checkpoint bookkeeping dirty, identical diff, clean index; no source changes. B008 failure remains historical failure. C003 intent IN FLIGHT: create only initial docs/plans/053_corrected_caching_002_checkpoint.md from shared CHECKPOINT.md template, preserving original scope and Q3 narrow approval. 002 review base is current post-sync HEAD 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676. Artifact paths absolute under current worktree. 002 and 003 remain unchecked. Initial 002 lane pending context, phase setup, no checklist/tasks/reviews launched, all 002 counts zero on established absent checkpoint. Carry 001 counts unchanged as history, never reset. Next phase work requires 002 intent first.
+- HEAD commit SHA: `1e9e4c3064e3310da64ea62e3efe25aa7ce7b676`
+- Relevant work: `committed` — stash ref `6fd6598a1f4f86f3a6f7ee05b6b256213f34154e` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Create initial 002 checkpoint only, then establish lane and context
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Reinspect full index and approved bookkeeping, commit, then launch Y012 sync
+- Next action: Create initial 002 checkpoint only, then establish lane and context
