@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Wait for Jaron Q3 approval of the exact Bedrock assertion replacements; preserve001complete and002/003unchecked
-- Last completed phase/task/gate and timestamp: N002 discovery complete; Factory STOP for Q3 Bedrock assertion approval, 2026-11-19T16:22:44.044387+00:00
+- Next safe action: Inspect approved Q3/Y010 checkpoint diff and full index, commit checkpoint only, inspect clean HEAD, run Y010 sync
+- Last completed phase/task/gate and timestamp: Q3 user approval recorded; Y010 resume pre-selection sync intent IN FLIGHT, 2026-11-20T15:02:41.849025+00:00
 
 ## Milestone acceptance
 
@@ -3008,8 +3008,31 @@ Current terminal repository evidence HEAD8b0ab7efeb44e7f17189bfd4d36683da3ae8f2b
 
 - Next action: Wait for Jaron Q3 approval of the exact Bedrock assertion replacements; preserve001complete and002/003unchecked
 
+### Q3 user approval recorded; Y010 resume pre-selection sync intent IN FLIGHT
+
+- Gate: Q3 user approval recorded; Y010 resume pre-selection sync intent IN FLIGHT
+- Commands/results:
+Jaron explicitly approved Q3 in current conversation: "Q3 I approve". Approval applies ONLY to previously presented replacements in TestBedrock_Send_Cache internal/provider/bedrock_test.go638-645 and652-656: replace single combined system text/cache point expectation with separate text and cache-point-only default union entries; replace top-level ToolConfig.CachePoint expectation with separate default cache-point-only entry in toolConfig.tools while retaining tool specification. Preserve ToolConfig existence648-650,read/write usage659-664 and ALL unrelated assertions/tests. Add independent raw-wire inputSchema.json and cache-disabled checks without weakening acceptance. Q3 grants no other assertion/acceptance change or consequential action. Durable reference this user message plus current timestamped evidence entry. Earlier Q1 remains independent.001complete,002/003unchecked.
+State continuity established from cached REC007/C001/current ledger and repo-state: HEAD4b91ce99c41253f5847b7ea9f21bbdba8f4ac38e,branchiss-83-finish-caching,clean tree,no operation,no unknown dispatch or outcome. milestone-entries direct docs/plans/053_corrected_caching_milestones.md exit0. Prior terminal commit4b91ce9 checkpoint only. No need repeat immutable verified recovery history. D1-D14 retained;001caps planning failures2/incomplete0/Q2consumed,milestone failures1/incomplete0/R005passed,no round4,no findings.
+Y010 intent IN FLIGHT: resume/pre-selection sync origin/master. Before launch inspect complete index and pending checkpoint content,commit only this approved bookkeeping,inspect actual clean HEAD,then factory-sync args[]. Record actual JSON/HEADs/exit before advancing. Following successful sync essential discovery determines002checkpoint absence/artifact paths and in-scope Go module;refresh Go preflight before planning;create initial002checkpoint only from template with actual shared setup evidence. No source/tests/planning artifact write before setup. Stop on failed prerequisite,conflicts or changed scope/stakes.
+- HEAD commit SHA: `4b91ce99c41253f5847b7ea9f21bbdba8f4ac38e`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect approved Q3/Y010 checkpoint diff and full index, commit checkpoint only, inspect clean HEAD, run Y010 sync
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Wait for Jaron Q3 approval of the exact Bedrock assertion replacements; preserve001complete and002/003unchecked
+- Next action: Inspect approved Q3/Y010 checkpoint diff and full index, commit checkpoint only, inspect clean HEAD, run Y010 sync
