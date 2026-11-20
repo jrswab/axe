@@ -34,10 +34,10 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Prepare exact 002 checklist/checkpoint commit then independent checklist review round 1
+- Next safe action: Reconcile current cap/footer to one failure and pending round2, commit exact two paths, then review
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Last completed phase/task/gate and timestamp: L202b PASS; S203 stage/commit preparation IN FLIGHT; P203 intent, 2026-11-20T20:28:06.513942+00:00
+- Last completed phase/task/gate and timestamp: L203 PASS; S204 current summaries/commit prep IN FLIGHT, 2026-11-20T20:33:52.748488+00:00
 
 ## Gate evidence
 
@@ -49,8 +49,8 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 ### Cap-state summary
 
-- Cap `002/planning`: lane `full`; spec approved at P202; three-task checklist drafted and lint PASS at L202b. Independent checklist review round 1 is next after S203 preparation. No 002 planning review failures or incompletes. Evidence: P202, F203 and L202b below.
-- Planning: shared failing rounds `0`; incomplete count `0`; unresolved findings `none`; post-cap fixes/check `not applicable`. The independent spec review approved without findings; checklist review has not launched. These counts do not reset or replace the historical 001 counts.
+- Cap `002/planning`: lane `full`; spec approved at P202; complete checklist review round 1 at P203 returned CHANGES REQUESTED. F204 writer fixes for F1–F4 and L203 lint and independent fix checks are complete; complete independent checklist review round 2 is pending. Evidence: P202, P203, F204 and L203 below.
+- Planning: shared failing rounds `1`; incomplete count `0`; F1–F4 fixed by the writer and independently checked, pending round 2 review; post-cap fixes/check `not applicable`. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
 - Code review `002`: gate/round `none`; original scope, slices, dispatches, blockers and unreviewed files `none` (no review scope established); combined outcome `not applicable`; round-four eligibility/reason and progress `not applicable`; incomplete count `none` until a scope/round exists.
 - Tasks T1–T3 are `unchecked`; task execution, task reviews, implementation fixes and milestone reviews for 002: `0` launched; no task review rounds or gate scopes established.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
@@ -398,8 +398,94 @@ L202b exit 0 both artifacts: spec 26 citations, checklist 8 citations and 6 exis
 
 - Next action: Prepare exact 002 checklist/checkpoint commit then independent checklist review round 1
 
+### S203 commit PASS; P203 checklist review round 1 IN FLIGHT
+
+- Gate: S203 commit PASS; P203 checklist review round 1 IN FLIGHT
+- Commands/results:
+S203 reconciled current summary, inspected entire index and pending changes, exact two paths approved. factory-commit exit 0 cd8a9f7cd92a11a460cf77756a1752b1b723f14e no remaining changes. P203 IN FLIGHT original gate 002 checklist, full artifact against approved spec, round 1, no slices/prior findings, shared failing rounds 0, incompletes 0. Latest L202b lint both artifacts PASS and docs-lint 1 PASS recorded. Clean planning brief, no range, test evidence not applicable. No implementation task launched.
+- HEAD commit SHA: `cd8a9f7cd92a11a460cf77756a1752b1b723f14e`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run P203 independent checklist review round 1
+
+### P203 CHANGES REQUESTED; F204 findings repair IN FLIGHT
+
+- Gate: P203 CHANGES REQUESTED; F204 findings repair IN FLIGHT
+- Commands/results:
+P203 complete checklist round 1 CHANGES REQUESTED, no incompleteness. Shared planning failing rounds now 1. F1 blocking: T3 'No source or test additions' and 'source/accounting checks, not claimed behavioral test coverage' omit R3/R4 Bedrock failure/replay/Run/streaming evidence. Fix add failure rows to T1/T2 before RED: HTTP errors and transport lost-response, exposed status/category/message/cause, Main error versus Nested ToolResult, attempt counts and unchanged hints through permitted Main retry, Main streaming request falls back nonstreaming Converse. F2 blocking: T2 'own-Main input/output/read/write accumulation and budget accounting without aggregating Nested counts' conflates own result with shared budget. Fix distinct Main/Nested fixture counts, own-only Main result, shared Main+Nested input/output budget excluding cache counts. F3 blocking: T2 'no ordinary API key or endpoint override' lacks general README:611/providers:77 and API-key resolution providers:31-34 qualifications. Fix general paragraphs alongside Bedrock exact precedence. F4 nit: 'spec lines 638–645' should cite internal/provider/bedrock_test.go. F204 IN FLIGHT checklist only, all four precise findings and no added scope. Preserve acceptance/assertions; no production work. After fix independent grep validation, lint both artifacts then round 2 with prior findings verbatim.
+- HEAD commit SHA: `cd8a9f7cd92a11a460cf77756a1752b1b723f14e`
+- Relevant work: `committed` — stash ref `1ec90b80cb5ca3344716a05b4b43912a20a901f1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Fix P203 checklist findings without changing requirements, then lint and re-review round 2
+
+### F204 repaired; L203 lint/independent fix check IN FLIGHT
+
+- Gate: F204 repaired; L203 lint/independent fix check IN FLIGHT
+- Commands/results:
+F204 writer changed checklist only for P203 F1-F4. Added failure/replay/retry/stream-fallback rows to T1/T2, separated own result vs shared budget, qualified general API-key/base-URL docs and corrected Q3 citation. Valid T3 verification-only policy retained, obsolete source-only gaps replaced with T1/T2 evidence. diff check PASS; reported zero old phrase matches. L203 IN FLIGHT: both artifact spec-lint/docs-lint and independent explore fixed-string/change-scope verification including full index/pending inspection for next exact checkpoint/checklist commit. Shared failures 1, no incompletes; round2 not launched.
+- HEAD commit SHA: `cd8a9f7cd92a11a460cf77756a1752b1b723f14e`
+- Relevant work: `uncommitted` — stash ref `e5a954e551c1b0bfa580b4af523e50162ddef350` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_002_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Lint and independently verify F204, commit exact checklist/checkpoint, then P204 round 2
+
+### L203 PASS; S204 current summaries/commit prep IN FLIGHT
+
+- Gate: L203 PASS; S204 current summaries/commit prep IN FLIGHT
+- Commands/results:
+L203 spec-lint exit 0 spec 26/checklist 9 citations and 6 patterns, zero findings. docs-lint 1 exit 0 55 files zero findings. Independent explore verified F1-F4 additions and zero old phrases, no missing acceptance from replacements and only two approved pending paths; found stale current cap/footer summary still says failures0/round1. S204 IN FLIGHT: reconcile current cap/footer with authoritative P203 evidence: one shared failing planning round, zero incompletes, fixed F1-F4 pending independent checklist round2. Inspect all pending/index content and stage exactly 002 checkpoint/checklist, no unrelated writes. P204 intended complete checklist round2 after commit, prior P203 findings verbatim.
+- HEAD commit SHA: `cd8a9f7cd92a11a460cf77756a1752b1b723f14e`
+- Relevant work: `uncommitted` — stash ref `5c5cb900f8aa3fa806b0eef16c264f19210b6f6e` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_002_implement.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Reconcile current cap/footer to one failure and pending round2, commit exact two paths, then review
+
 ## Limitations & blockers
 
-- Limitations: Lane is `full`; the spec was approved at P202, and the three-task checklist is drafted with lint PASS at L202b. T1–T3 are unchecked; independent checklist review round 1 is next after S203 preparation. Shared planning failures and incompletes are zero; no task execution or task/milestone reviews have launched. Historical preflight and completion results are recorded as actual prior evidence, not rerun here. No source parse/type/lint or package tests apply to this summary repair. B008 remains a failure; E009 and B009 passed separately.
-- Blockers: `none` for S203 preparation; Q3 does not authorize any assertion changes outside its stated narrow scope.
-- Next action: Prepare exact 002 checklist/checkpoint commit then independent checklist review round 1
+- Limitations: Lane is `full`; the spec was approved at P202, and complete checklist review round 1 at P203 returned CHANGES REQUESTED. Shared planning failures are one and incompletes are zero; F1–F4 writer fixes, lint and independent fix checks are complete, with complete independent checklist review round 2 pending. T1–T3 are unchecked; no task execution or task/milestone reviews have launched. Historical preflight and completion results are recorded as actual prior evidence, not rerun here. No source parse/type/lint or package tests apply to this summary repair. B008 remains a failure; E009 and B009 passed separately.
+- Blockers: `none` for S204 preparation; Q3 does not authorize any assertion changes outside its stated narrow scope.
+- Next action: Inspect the exact two staged paths, then commit and conduct complete independent checklist review round 2.
