@@ -27,17 +27,17 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `implement`
+- Current phase: `blocked`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Reconcile current cap/footer to one failure and pending round2, commit exact two paths, then review
+- Next safe action: Run final records lint, inspect/commit exact four docs paths, then Y013 pre-push sync
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Last completed phase/task/gate and timestamp: L203 PASS; S204 current summaries/commit prep IN FLIGHT, 2026-11-20T20:33:52.748488+00:00
+- Last completed phase/task/gate and timestamp: PARK002/003 recorded; L204 final records lint IN FLIGHT; Y013 pre-push sync intent, 2026-11-20T20:40:16.543570+00:00
 
 ## Gate evidence
 
@@ -49,8 +49,8 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 ### Cap-state summary
 
-- Cap `002/planning`: lane `full`; spec approved at P202; complete checklist review round 1 at P203 returned CHANGES REQUESTED. F204 writer fixes for F1–F4 and L203 lint and independent fix checks are complete; complete independent checklist review round 2 is pending. Evidence: P202, P203, F204 and L203 below.
-- Planning: shared failing rounds `1`; incomplete count `0`; F1–F4 fixed by the writer and independently checked, pending round 2 review; post-cap fixes/check `not applicable`. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
+- Cap `002/planning`: lane `full`; P202 spec review approved. P203 complete checklist round 1 returned CHANGES REQUESTED (F1–F3 blockers, F4 nit); F204 fixed the text and L203 independently checked the edits and lint. Original round 2 scope is the complete checklist against the approved spec and cited sources, with no original slices; P204 reviewed artifact text but was INCOMPLETE, and P204b retried the remaining source-verification scope within the same gate and round but was INCOMPLETE. Consecutive incompletes for this original scope/round: `2`; cap reached. F1–F4 text fixes are confirmed, but complete independent source coverage is unresolved; carry the findings until the gate can be completed. Unreviewed coverage is recorded verbatim in P204b below. No additional retry, fix, or round 3 is authorized; explicit new direction is required. Evidence: P202–P204b.
+- Planning: shared failing rounds `1` (P203); round 2 consecutive incompletes `2`; no new blocking finding was established in either partial review. Post-cap fixes/check `not applicable`. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
 - Code review `002`: gate/round `none`; original scope, slices, dispatches, blockers and unreviewed files `none` (no review scope established); combined outcome `not applicable`; round-four eligibility/reason and progress `not applicable`; incomplete count `none` until a scope/round exists.
 - Tasks T1–T3 are `unchecked`; task execution, task reviews, implementation fixes and milestone reviews for 002: `0` launched; no task review rounds or gate scopes established.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
@@ -484,8 +484,116 @@ L203 spec-lint exit 0 spec 26/checklist 9 citations and 6 patterns, zero finding
 
 - Next action: Reconcile current cap/footer to one failure and pending round2, commit exact two paths, then review
 
+### S204 commit PASS; P204 checklist review round 2 IN FLIGHT
+
+- Gate: S204 commit PASS; P204 checklist review round 2 IN FLIGHT
+- Commands/results:
+S204 current summaries reconciled, complete index and pending content inspected, exact checkpoint/checklist commit f8f35709bf0baf257d3f8ba30d01f9048a1a19fc exit 0 remaining changes []. L203 applicable planning lint PASS already recorded. P204 IN FLIGHT original gate complete 002 checklist, round2 after P203 CHANGES REQUESTED. Shared planning failures1/incompletes0, carried findings F1-F3 blocking and F4 nit pending reviewer verification. Prior findings supplied verbatim. No implementation tasks launched. test evidence not applicable planning review.
+- HEAD commit SHA: `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run P204 checklist planning review round2
+
+### P204 INCOMPLETE; P204b source-verification retry IN FLIGHT
+
+- Gate: P204 INCOMPLETE; P204b source-verification retry IN FLIGHT
+- Commands/results:
+P204 returned Verdict CHANGES REQUESTED with Review incomplete line. Read checklist/spec fully and found F1-F4 addressed in text, but did not independently inspect cited sources. No blocking finding listed, so shared planning failures remain1. Original scope 002 checklist round2 consecutive incomplete count1. Unreviewed scope: milestone document, both milestone checkpoints, 001 checklist, .scratch/issue-83 research/decision records and AWS references, GLOSSARY/COMPATIBILITY/CONTRIBUTING/TAGS/README/CHANGELOG, cited docs/src pages, cmd/run.go and cited internal/pkg source/tests. P204b IN FLIGHT same original gate/scope/round2, limited to completing independent source verification and combining with P204 complete artifact text inspection. This is first retry and does not reset allowance. Need fresh spec/docs lint before retry. No implementation tasks launched.
+- HEAD commit SHA: `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc`
+- Relevant work: `committed` — stash ref `53e54652aa0792f740f2108c922a5d8cd274ad4c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Rerun planning lint then complete P204b unreviewed source verification at round2
+
+### P204b prerequisite lint PASS; review retry IN FLIGHT
+
+- Gate: P204b prerequisite lint PASS; review retry IN FLIGHT
+- Commands/results:
+Fresh pre-P204b lint actual results: spec-lint exit0 spec26/checklist9 citations 6 current selectors zero findings; docs-lint1 exit0 55 Markdown files 0 findings since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676. Same HEAD f8f35709bf0baf257d3f8ba30d01f9048a1a19fc. P204b original checklist round2 source verification remains IN FLIGHT, shared failing1, consecutive incomplete1, no counter reset. Retry covers all P204 unreviewed source files and produces combined complete verdict only if all covered.
+- HEAD commit SHA: `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc`
+- Relevant work: `committed` — stash ref `4fe92995f49285a5933622cfb45231ff39037f6c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run P204b source verification for complete checklist review round2
+
+### P204b INCOMPLETE; round2 incomplete cap reached; PARK002/003 IN FLIGHT
+
+- Gate: P204b INCOMPLETE; round2 incomplete cap reached; PARK002/003 IN FLIGHT
+- Commands/results:
+P204b returned Verdict CHANGES REQUESTED with Review incomplete line. Source verification still unfinished for milestone document, both checkpoints, 001 checklist, .scratch/issue-83 records/AWS research, GLOSSARY, COMPATIBILITY, CONTRIBUTING, TAGS, CHANGELOG, docs/src/configuration/agent-config.md, docs/src/cli/json-output.md, cmd/run.go, cited internal/pkg implementation/tests except bedrock.go; README/provider-guide surrounding passages unfinished. No new blocker established; F1-F4 textual fixes confirmed only, required independent source verification unresolved. Original complete-checklist gate round2 now two consecutive incomplete results P204 then P204b. Shared failing planning rounds remains1 because neither partial listed a new blocking finding. Incomplete cap reached, no further review retry/fix/round3 authorized. PARK002: milestone unchecked, T1-T3 unchecked, no source/tests implemented, preserve approved spec and lint-clean checklist with unpassed planning gate. Recommendation High stakes Q1: authorize a separately bounded source-verification strategy in a later run; do not waive required review. PARK003: dependency on unchecked002 means blocked by002, no implementation may launch. D002 administrative intent IN FLIGHT: write parking file with exact evidence/recommendation/actions and initial 003 blocked checkpoint, reconcile current summaries only. Continue mandatory run end, draft PR and branch push. No human-only operations authorized.
+- HEAD commit SHA: `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc`
+- Relevant work: `committed` — stash ref `76cddd8bd1f4cb935b5cca30e338652c1a6db327` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record parking file and blocked 003 checkpoint, then commit and sync for draft PR
+
+### PARK002/003 recorded; L204 final records lint IN FLIGHT; Y013 pre-push sync intent
+
+- Gate: PARK002/003 recorded; L204 final records lint IN FLIGHT; Y013 pre-push sync intent
+- Commands/results:
+Administrative writer created parking file and blocked003 checkpoint, reconciled001/002 current summaries and preserved historical evidence. Full index inspection approved exactly four docs paths, no unrelated pending changes. 001 complete,002 cap-parked,003 blocked by002; no source/test edits in current session. L204 IN FLIGHT final docs-lint since002 base. Y013 intent IN FLIGHT after clean-launch approved docs commit: factory-sync --wip against origin/master, then branch first push for draft PR under standing approval (no current open PR per factory-gh pr list output []). Original round2 incomplete cap unchanged2, shared failures1, no further review authorized. All milestone outcomes accounted for, run-end only.
+- HEAD commit SHA: `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc`
+- Relevant work: `committed` — stash ref `14ef72f2a1a9756f8b22635bbedabb43d3768089` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+M  docs/plans/053_corrected_caching_001_checkpoint.md
+M  docs/plans/053_corrected_caching_002_checkpoint.md
+A  docs/plans/053_corrected_caching_003_checkpoint.md
+A  docs/plans/053_corrected_caching_parked.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run final records lint, inspect/commit exact four docs paths, then Y013 pre-push sync
+
 ## Limitations & blockers
 
-- Limitations: Lane is `full`; the spec was approved at P202, and complete checklist review round 1 at P203 returned CHANGES REQUESTED. Shared planning failures are one and incompletes are zero; F1–F4 writer fixes, lint and independent fix checks are complete, with complete independent checklist review round 2 pending. T1–T3 are unchecked; no task execution or task/milestone reviews have launched. Historical preflight and completion results are recorded as actual prior evidence, not rerun here. No source parse/type/lint or package tests apply to this summary repair. B008 remains a failure; E009 and B009 passed separately.
-- Blockers: `none` for S204 preparation; Q3 does not authorize any assertion changes outside its stated narrow scope.
-- Next action: Inspect the exact two staged paths, then commit and conduct complete independent checklist review round 2.
+- Limitations: P202 approved the spec; P203 accounts for one shared failing planning round. F1–F4 text fixes and lint were checked, but P204 and P204b were consecutive incompletes on the same complete-checklist round 2; the source-verification coverage recorded in P204b remains unfinished. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
+- Blockers: complete-checklist round 2 reached its incomplete cap; 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
+- Next action: Run final records lint, inspect/commit exact four docs paths, then Y013 pre-push sync

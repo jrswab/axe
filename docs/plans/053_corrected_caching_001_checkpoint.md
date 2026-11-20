@@ -20,15 +20,15 @@
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
 - Current phase: `complete`
-- Current task: Milestone 002 setup
+- Current task: none (001 complete; 002 parked)
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Create initial 002 checkpoint only, then establish lane and context
-- Last completed phase/task/gate and timestamp: B009 PASS; C003 002 checkpoint creation IN FLIGHT, 2026-11-20T20:03:40.914159+00:00
+- Next safe action: Preserve 001 completion; refer to the 002 checkpoint and parking record for the incomplete-review cap and blocked 003.
+- Last completed phase/task/gate and timestamp: 001 completion PASS at A002; subsequent C003 creation completed, and 002 is parked after P204b INCOMPLETE, 2026-11-20T20:37:00.937005+00:00.
 
 ## Milestone acceptance
 
@@ -38,15 +38,17 @@
 
 ### Decision ledger
 
-Bootstrap decision snapshot (B001): `none` (no procedure exceptions).
+Current 001 ledger: D1–D14 and their completed historical outcomes remain recorded in the append-only evidence below; Q3's narrow approval is retained in the 002 checkpoint. Bootstrap decision snapshot (B001): `none` (no procedure exceptions at bootstrap).
 
 ### Cap-state summary
 
+Current 001 snapshot: shared planning failures `2`, active consecutive incompletes `0`, Q2 replacement consumed; milestone review failures `1`, R005 passed, no open review findings or round four; T1–T4 and milestone 001 checked. See A002 and REC009 below. For the later 002 planning cap, see the 002 checkpoint; these historical 001 counts are not reset.
+
 Bootstrap cap snapshot (B001): no substantive, review, or test dispatches; read-only recovery explore R001 only, completed. No findings or counts to reconstruct. No review gate, round, original scope, or slices established; blockers and unreviewed files `none`; consecutive incomplete counts `none`; next: Build milestone-001 context and choose lane.
 
-Planning: shared failing rounds `0` (no prior planning review); unresolved findings `none`; post-cap fixes/check `not applicable`.
+Bootstrap planning snapshot: shared failing rounds `0` (no prior planning review at B001); unresolved findings `none`; post-cap fixes/check `not applicable`.
 
-Code review: no gate or round established; combined outcome `not applicable`; round-four eligibility/reason `not applicable`; progress `not applicable`.
+Bootstrap code review snapshot: no gate or round established at B001; combined outcome `not applicable`; round-four eligibility/reason `not applicable`; progress `not applicable`.
 
 ### Bootstrap evidence B001
 
@@ -3294,5 +3296,5 @@ B009 actual launch env -u GOTOOLCHAIN XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN 
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
-- Blockers: `none`.
-- Next action: Create initial 002 checkpoint only, then establish lane and context
+- Blockers: 001 is complete; 002 is parked at its checklist review incomplete cap, blocking 003.
+- Next action: Preserve 001 completion and follow the 002 checkpoint and parking record; do not retry the capped review without explicit new direction.
