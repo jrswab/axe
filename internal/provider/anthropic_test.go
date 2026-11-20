@@ -1,12 +1,15 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -943,6 +946,284 @@ func TestAnthropic_Send_AssistantToolCallMessage(t *testing.T) {
 }
 
 // --- Prompt Caching Tests ---
+
+func TestAnthropic_StaticPrefixWire(t *testing.T) {
+	turns := anthropicStaticPrefixTurns()
+	decode := anthropicStaticPrefixDecode()
+	report := func(row, mode string, passed bool) {
+		t.Logf("%s/%s: pass=%t (two turns, literal wire + static stability + caller nonmutation)", row, mode, passed)
+	}
+	for _, row := range anthropicStaticPrefixRows() {
+		t.Run(row.name, func(t *testing.T) {
+			req := anthropicStaticPrefixRequest(row)
+			capture := &cacheCompatibilityCapture{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("read local request: %v", err)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				capture.mu.Lock()
+				capture.bodies = append(capture.bodies, string(body))
+				capture.mu.Unlock()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, `{"content":[{"type":"text","text":"ok"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
+			}))
+			defer server.Close()
+			a, err := NewAnthropic("local-test-key", WithBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Reuse the same request, tool slice and parameter maps: enabled
+			// first, then disabled, so a leaked hint cannot hide in a fresh copy.
+			for _, mode := range anthropicStaticPrefixModes() {
+				passed := t.Run(mode.name, func(t *testing.T) {
+					req.CacheConfig = mode.enabled
+					var firstSystem, firstTools json.RawMessage
+					for i, turn := range turns {
+						t.Run(turn.name, func(t *testing.T) {
+							capture.mu.Lock()
+							previous := len(capture.bodies)
+							capture.mu.Unlock()
+							req.Messages = turn.messages
+							before, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+
+							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+							defer cancel()
+							_, err = a.Send(ctx, req)
+							if err != nil {
+								t.Fatalf("Send: %v", err)
+							}
+
+							after, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !bytes.Equal(before, after) {
+								t.Errorf("Send mutated caller request/tools/schema/history:\nbefore %s\nafter  %s", before, after)
+							}
+							capture.mu.Lock()
+							count := len(capture.bodies)
+							var body string
+							if count == previous+1 {
+								body = capture.bodies[previous]
+							}
+							capture.mu.Unlock()
+							if count != previous+1 {
+								t.Fatalf("requests captured this turn = %d, want 1", count-previous)
+							}
+							var got map[string]json.RawMessage
+							if err := json.Unmarshal([]byte(body), &got); err != nil {
+								t.Fatal(err)
+							}
+							if i == 0 {
+								firstSystem, firstTools = got["system"], got["tools"]
+							} else if !bytes.Equal(firstSystem, got["system"]) || !bytes.Equal(firstTools, got["tools"]) {
+								t.Error("static system/tool prefix changed when only dynamic conversation changed")
+							}
+							assertAnthropicStaticPrefixWire(t, got, row, mode, turn, decode)
+							// Reject top-level/synthetic controls as well as any controls
+							// hidden in messages, schemas or earlier tools above.
+							metadata, err := json.Marshal(got)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !reflect.DeepEqual(decode(t, metadata), decode(t, []byte(`{"model":"claude-sonnet-4-20250514","max_tokens":128}`))) {
+								t.Errorf("unexpected request metadata: %s", metadata)
+							}
+						})
+					}
+				})
+				// These parent logs remain visible in the exact non-verbose RED
+				// command, providing evidence for the verification-only rows too.
+				report(row.name, mode.name, passed)
+			}
+		})
+	}
+}
+
+// TestAnthropic_StableToolSchemas covers R3/R5 of
+// docs/plans/053_corrected_caching_001_spec.md. Literal Messages schemas follow
+// https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+// (contract retrieved 2026-11-18): tools precede system and messages. Sorting
+// required names is Axe's stability contract, not a claimed provider constraint.
+func TestAnthropic_StableToolSchemas(t *testing.T) {
+	const repetitions = 16
+	// Independent wire oracle: do not marshal Tool or production wire structs.
+	// The final placeholder is only the T2 tools-only cache breakpoint.
+	const toolsWire = `[
+		{"name":"z_lookup","description":"Look up a record","input_schema":{"type":"object","properties":{
+			"account":{"type":"string","description":"Account identifier"},
+			"key":{"type":"string","description":"Record key"},
+			"limit":{"type":"integer","description":"Maximum records"},
+			"region":{"type":"string","description":"Lookup region"},
+			"verbose":{"type":"boolean","description":"Include details"}
+		},"required":["account","key","region"]}},
+		{"name":"a_report","description":"Report a record","input_schema":{"type":"object","properties":{
+			"format":{"type":"string","description":"Report format"},
+			"ratio":{"type":"number","description":"Sampling ratio"},
+			"record":{"type":"string","description":"Record to report"},
+			"target":{"type":"string","description":"Report destination"},
+			"title":{"type":"string","description":"Optional title"}
+		},"required":["format","record","target"]}%s}
+	]`
+	decode := anthropicStaticPrefixDecode()
+	turns := anthropicStaticPrefixTurns()
+
+	// Cache modes/system rows may legitimately differ; transports may not.
+	firstTools := make(map[string]json.RawMessage)
+	for _, streaming := range []bool{false, true} {
+		for _, system := range []string{"Static instructions only.", ""} {
+			for _, reverse := range []bool{false, true} {
+				// Reuse each construction enabled -> disabled to catch hint leaks.
+				for construction := range repetitions {
+					req := &Request{Model: "claude-sonnet-4-20250514", MaxTokens: 128,
+						System: system, Tools: stableToolSchemaFixture(reverse)}
+					for _, mode := range anthropicStaticPrefixModes() {
+						name := fmt.Sprintf("stream=%t/system=%t/%s/reverse=%t/construction=%02d", streaming, system != "", mode.name, reverse, construction)
+						t.Run(name, func(t *testing.T) {
+							requests := make(chan []byte, 1)
+							ready := make(chan struct{}, 1)
+							server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+								body, err := io.ReadAll(r.Body)
+								if err != nil {
+									t.Errorf("read local request: %v", err)
+									w.WriteHeader(http.StatusBadRequest)
+									return
+								}
+								select {
+								case requests <- body:
+									ready <- struct{}{}
+								default:
+									t.Error("request capture already full")
+									return
+								}
+								var envelope struct {
+									Stream bool `json:"stream"`
+								}
+								if err := json.Unmarshal(body, &envelope); err != nil {
+									t.Errorf("decode local request: %v", err)
+									w.WriteHeader(http.StatusBadRequest)
+									return
+								}
+								if envelope.Stream {
+									w.Header().Set("Content-Type", "text/event-stream")
+									writeSSE(w, "message_start", `{"type":"message_start","message":{"usage":{"input_tokens":1}}}`)
+									writeSSE(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}`)
+									writeSSE(w, "message_stop", `{"type":"message_stop"}`)
+									return
+								}
+								w.Header().Set("Content-Type", "application/json")
+								_, _ = io.WriteString(w, `{"content":[{"type":"text","text":"ok"}],"model":"claude-sonnet-4-20250514","stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
+							}))
+							defer server.Close()
+							a, err := NewAnthropic("local-test-key", WithBaseURL(server.URL))
+							if err != nil {
+								t.Fatal(err)
+							}
+							req.CacheConfig = mode.enabled
+							hint := ""
+							if mode.enabled && system == "" {
+								hint = `,"cache_control":{"type":"ephemeral"}`
+							}
+							wantTools := decode(t, []byte(fmt.Sprintf(toolsWire, hint)))
+							for _, turn := range turns {
+								ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+								defer cancel()
+								req.Messages = turn.messages
+								before, err := json.Marshal(req)
+								if err != nil {
+									t.Fatal(err)
+								}
+
+								if streaming {
+									stream, err := a.SendStream(ctx, req)
+									if err != nil {
+										t.Fatalf("SendStream: %v", err)
+									}
+									drainStableToolStream(t, stream)
+								} else if _, err := a.Send(ctx, req); err != nil {
+									t.Fatalf("Send: %v", err)
+								}
+
+								after, err := json.Marshal(req)
+								if err != nil {
+									t.Fatal(err)
+								}
+								if !bytes.Equal(before, after) {
+									t.Errorf("%s mutated caller tools/schema/history: before %s; after %s", turn.name, before, after)
+								}
+								var got map[string]json.RawMessage
+								select {
+								case <-ready:
+								case <-ctx.Done():
+									t.Fatalf("request capture: %v", ctx.Err())
+								}
+								if err := json.Unmarshal(<-requests, &got); err != nil {
+									t.Fatal(err)
+								}
+								if !reflect.DeepEqual(decode(t, got["tools"]), wantTools) {
+									t.Errorf("%s tool schema differs from literal (required must be [account key region] and [format record target], exactly once, no optionals):\ngot %s\nwant %s", turn.name, got["tools"], fmt.Sprintf(toolsWire, hint))
+								}
+								var required []struct {
+									Name   string `json:"name"`
+									Schema struct {
+										Required []string `json:"required"`
+									} `json:"input_schema"`
+								}
+								if err := json.Unmarshal(got["tools"], &required); err != nil {
+									t.Fatal(err)
+								}
+								for _, tool := range required {
+									t.Logf("%s %s required=%v", turn.name, tool.Name, tool.Schema.Required)
+								}
+								staticKey := fmt.Sprintf("%s/cache=%t", system, mode.enabled)
+								if first, exists := firstTools[staticKey]; !exists {
+									firstTools[staticKey] = append(json.RawMessage(nil), got["tools"]...)
+								} else if !bytes.Equal(first, got["tools"]) {
+									t.Errorf("%s static tool bytes changed across turns/constructions/insertion order:\nfirst %s\ngot   %s", turn.name, first, got["tools"])
+								}
+								if !reflect.DeepEqual(decode(t, got["messages"]), decode(t, []byte(turn.want))) {
+									t.Errorf("%s conversation order/content changed: %s; want %s", turn.name, got["messages"], turn.want)
+								}
+								wantSystem := `"Static instructions only."`
+								if mode.enabled {
+									wantSystem = `[{"type":"text","text":"Static instructions only.","cache_control":{"type":"ephemeral"}}]`
+								}
+								if system == "" {
+									if _, present := got["system"]; present {
+										t.Errorf("tools-only must omit system: %s", got["system"])
+									}
+								} else if !reflect.DeepEqual(decode(t, got["system"]), decode(t, []byte(wantSystem))) {
+									t.Errorf("system/cache hint changed: %s; want %s", got["system"], wantSystem)
+								}
+								delete(got, "tools")
+								delete(got, "system")
+								delete(got, "messages")
+								wantMetadata := `{"model":"claude-sonnet-4-20250514","max_tokens":128}`
+								if streaming {
+									wantMetadata = `{"model":"claude-sonnet-4-20250514","max_tokens":128,"stream":true}`
+								}
+								metadata, err := json.Marshal(got)
+								if err != nil {
+									t.Fatal(err)
+								}
+								if !reflect.DeepEqual(decode(t, metadata), decode(t, []byte(wantMetadata))) {
+									t.Errorf("unexpected metadata/cache control: %s; want %s", metadata, wantMetadata)
+								}
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+	t.Logf("exercised 2 transports x 2 system rows x 2 cache modes x 2 insertion orders x %d constructions x %d dynamic turns = %d local requests; all streams drained and closed", repetitions, len(turns), 2*2*2*2*repetitions*len(turns))
+}
 
 func TestAnthropic_Send_CachedSystemPrompt_EmitsContentBlocks(t *testing.T) {
 	var gotBody map[string]interface{}
