@@ -20,22 +20,24 @@ The durable recovery record for milestone 002. Setup evidence below is retained 
 
 Absolute paths inside the repository root:
 
-- Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_spec.md` (drafted; absent at creation).
-- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_implement.md` (not yet created; absent at creation).
+- Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_spec.md` (approved at P202).
+- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_implement.md` (drafted; lint PASS).
 - Checkpoint: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`.
 
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `spec`
+- Current phase: `implement`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T1: `unchecked`
+- T2: `unchecked`
+- T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Reconcile current summaries and verify exact three-file commit, then commit and review
+- Next safe action: Prepare exact 002 checklist/checkpoint commit then independent checklist review round 1
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Last completed phase/task/gate and timestamp: F202 repaired summaries; S202 current summary reconciliation IN FLIGHT, 2026-11-20T20:14:01.828475+00:00
+- Last completed phase/task/gate and timestamp: L202b PASS; S203 stage/commit preparation IN FLIGHT; P203 intent, 2026-11-20T20:28:06.513942+00:00
 
 ## Gate evidence
 
@@ -47,10 +49,10 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 ### Cap-state summary
 
-- Cap `002/planning`: lane `full`; spec drafted and lint PASS; no checklist; independent spec review round 1 is next. No 002 review failures or incompletes; no review scope or dispatch established. Evidence: X002, P201 and L201b below.
-- Planning: shared failing rounds `0`; incomplete count `0`; unresolved findings `none`; post-cap fixes/check `not applicable`. The spec is drafted and lint passed; no independent 002 review has launched, so these counts do not reset or replace the historical 001 counts.
+- Cap `002/planning`: lane `full`; spec approved at P202; three-task checklist drafted and lint PASS at L202b. Independent checklist review round 1 is next after S203 preparation. No 002 planning review failures or incompletes. Evidence: P202, F203 and L202b below.
+- Planning: shared failing rounds `0`; incomplete count `0`; unresolved findings `none`; post-cap fixes/check `not applicable`. The independent spec review approved without findings; checklist review has not launched. These counts do not reset or replace the historical 001 counts.
 - Code review `002`: gate/round `none`; original scope, slices, dispatches, blockers and unreviewed files `none` (no review scope established); combined outcome `not applicable`; round-four eligibility/reason and progress `not applicable`; incomplete count `none` until a scope/round exists.
-- Tasks, task reviews, fixes and milestone reviews for 002: `0` launched; no task IDs, review rounds or gate scopes established.
+- Tasks T1–T3 are `unchecked`; task execution, task reviews, implementation fixes and milestone reviews for 002: `0` launched; no task review rounds or gate scopes established.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
 
 ### Bootstrap evidence B002-001
@@ -249,8 +251,155 @@ A  docs/plans/053_corrected_caching_002_spec.md
 
 - Next action: Reconcile current summaries and verify exact three-file commit, then commit and review
 
+### S202 commit PASS; P202 spec review round 1 IN FLIGHT
+
+- Gate: S202 commit PASS; P202 spec review round 1 IN FLIGHT
+- Commands/results:
+S202 summary reconciliation and exact three-path staging completed. Independent citation check old string zero hits. Entire index/pending content approved; diff checks exit 0. Latest spec-lint exit 0 26 citations 0 findings; docs-lint 1 exit 0 54 files 0 findings since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676. factory-commit exit 0 commit b924db133d9aabf64d4ef5e4cef8b3418d6b352a with no remaining changes. P202 IN FLIGHT original gate 002 spec, scope complete 002 spec against milestone 002 plus cited sources, round 1, no slices/prior findings, shared failing rounds 0 and incomplete count 0 before launch. Planning review clean brief, no range, test evidence not applicable. No code tests applicable.
+- HEAD commit SHA: `b924db133d9aabf64d4ef5e4cef8b3418d6b352a`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run P202 independent spec planning review round 1
+
+### P202 APPROVED; I201 checklist drafting IN FLIGHT
+
+- Gate: P202 APPROVED; I201 checklist drafting IN FLIGHT
+- Commands/results:
+P202 complete independent spec round 1 Verdict: APPROVED, no findings, no Review incomplete line. Entire spec and source acceptance reviewed. Shared planning failures 0, incomplete count 0. Spec artifact exists; checklist absent. Phase checklist-pending records spec approval before checklist creation. I201 IN FLIGHT: read full implement skill and write only 002 implementation checklist from approved spec, meaningful test-first slices, explicit focused RED and touched-package race verification, independent per-task Standards/Spec and design-risk axis if tier applies, final milestone review and full completion gates preserved. No source/test changes. No assertions may be rewritten beyond recorded Q3 scope. Next lint both artifacts then checklist planning review round 1.
+- HEAD commit SHA: `b924db133d9aabf64d4ef5e4cef8b3418d6b352a`
+- Relevant work: `committed` — stash ref `1d164136eaa8823a490ae6ac0c7d85627def7435` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Read implement phase instructions and draft 002 checklist
+
+### I201 checklist draft PASS; L202 lint IN FLIGHT
+
+- Gate: I201 checklist draft PASS; L202 lint IN FLIGHT
+- Commands/results:
+I201 drafted checklist 4 unchecked tasks: T1 design-bearing wire contract, T2 design-bearing prefix stability, T3 design-bearing Nested AWS parity, T4 standard compatibility verification. Maps all spec R1-R4 and full completion gates. git diff --check exit 0; no tests run and no RED claimed. T4 new preservation tests may start GREEN, but existing-GREEN exception applies only unchanged tests with reason, not new test additions. Checklist review must enforce unchanged-tests-only evidence route or genuine RED. L202 IN FLIGHT lint both spec/checklist plus docs since milestone base. Shared failures 0 and incompletes 0. Checklist new path ignored until force-staged.
+- HEAD commit SHA: `b924db133d9aabf64d4ef5e4cef8b3418d6b352a`
+- Relevant work: `uncommitted` — stash ref `0f2ce97e37c006918e53c7d81dceca09a1866246` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Lint spec/checklist and records, then checklist planning review round 1
+
+### L202 checklist command FAIL; X203 lint convention discovery IN FLIGHT
+
+- Gate: L202 checklist command FAIL; X203 lint convention discovery IN FLIGHT
+- Commands/results:
+L202 spec passes 26 citations; checklist exit 1 eight focused patterns name future tests not yet present. docs-lint 1 exit 0 55 files 0 findings. No planning review launched, failures 0. X203 IN FLIGHT read spec-lint documentation/source for supported future RED test declaration, existing approved checklist conventions, and exec phase instructions now needed for precise future task structure. No gates/tests/edits. Existing-GREEN route cannot cover newly added passing tests. Preserve all acceptance and tests unchanged.
+- HEAD commit SHA: `b924db133d9aabf64d4ef5e4cef8b3418d6b352a`
+- Relevant work: `uncommitted` — stash ref `1f02c382c2908eaebc49fcda07bceaa0ee9db1e1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Discover supported planned-test notation and precise TDD gate conventions, then fix checklist only
+
+### X203 PASS; F203 checklist correction IN FLIGHT
+
+- Gate: X203 PASS; F203 checklist correction IN FLIGHT
+- Commands/results:
+X203 established supported 001 checklist convention: exact planned test names/packages/behavior now, focused RED command constructed and recorded after test creation. spec-lint:705 requires current -run matches. Existing-GREEN route applies unchanged tests only. F203 IN FLIGHT: correct checklist command declarations and group new tests into genuine failing behavioral contracts before production changes. Internal task structure decision: T1 wire+stable prefix contract and preservation response assertions at Bedrock.Send in one genuine RED contract; T2 Nested/Main AWS/cache parity in one genuine RED contract whose missing Nested behavior fails before implementation, Main assertions corroborate preservation within same test; T3 verification-only unchanged regression tests and required docs/accounting. All acceptance remains mapped, no assertion weakening or linter bypass. Update checklist IDs intentionally from 4 draft tasks to 3 prior to approval/implementation; no implementation gates or task evidence exist, nothing reset. Need task states T1/T2/T3 unchecked after correction. Full per-task independent axes for T1/T2 design-bearing; verification-only T3 can retain final milestone review under recorded exception later. No new GREEN-only test claim.
+- HEAD commit SHA: `b924db133d9aabf64d4ef5e4cef8b3418d6b352a`
+- Relevant work: `uncommitted` — stash ref `c1b9e2cbf5245994da28d075357685a907be15fc` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Correct checklist to three coherent tasks and valid planned-test declarations, preserving complete coverage
+
+### F203 PASS; L202b lint IN FLIGHT
+
+- Gate: F203 PASS; L202b lint IN FLIGHT
+- Commands/results:
+F203 replaced draft checklist with 3 coherent unchecked tasks and complete R1-R4 mapping. T1/T2 genuine missing behavior RED required; T3 unchanged regression/source-accounting only. Old 4 headings/GREEN-only passage zero exact matches reported. No source/tests changed. T3 explicitly lists Bedrock-specific transport/replay/read/decode/stream fallback evidence as source/accounting gaps, not claimed behavioral tests. L202b IN FLIGHT: lint spec/checklist plus records; independent review will judge coverage completeness. Shared failures 0, incompletes 0. No criterion/assertion changes.
+- HEAD commit SHA: `b924db133d9aabf64d4ef5e4cef8b3418d6b352a`
+- Relevant work: `uncommitted` — stash ref `2500ffd9844df59b4a2fc21bba8736acf8dcf0e1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run L202b then commit planning checklist and independent review
+
+### L202b PASS; S203 stage/commit preparation IN FLIGHT; P203 intent
+
+- Gate: L202b PASS; S203 stage/commit preparation IN FLIGHT; P203 intent
+- Commands/results:
+L202b exit 0 both artifacts: spec 26 citations, checklist 8 citations and 6 existing -run patterns, zero findings. docs-lint 1 exit 0, 55 files zero findings. S203 IN FLIGHT: reconcile current checkpoint summary to approved spec, 3-task checklist drafted/lint PASS, zero failing rounds/incompletes, independent checklist round 1 next; preserve append-only history. Force-stage new checklist and checkpoint; inspect entire index and pending changes, only approved 002 checkpoint/checklist. P203 planned checklist review round 1 clean brief after commit. No source/tests changed. Existing-GREEN exception not invoked for new tests.
+- HEAD commit SHA: `b924db133d9aabf64d4ef5e4cef8b3418d6b352a`
+- Relevant work: `uncommitted` — stash ref `7e43cbe78e7977a9bfcdf4218cb5f9b0c43693c0` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Prepare exact 002 checklist/checkpoint commit then independent checklist review round 1
+
 ## Limitations & blockers
 
-- Limitations: Lane is `full`; the spec is drafted and lint PASS, and no checklist exists. The next review is independent spec review round 1; 002 has zero review failures and incompletes. Historical preflight and completion results are recorded as actual prior evidence, not rerun here. No source parse/type/lint or package tests apply to this summary repair. B008 remains a failure; E009 and B009 passed separately.
-- Blockers: `none` for this authorized creation; Q3 does not authorize any assertion changes outside its stated narrow scope.
-- Next action: Reconcile current summaries and verify exact three-file commit, then commit and review
+- Limitations: Lane is `full`; the spec was approved at P202, and the three-task checklist is drafted with lint PASS at L202b. T1–T3 are unchecked; independent checklist review round 1 is next after S203 preparation. Shared planning failures and incompletes are zero; no task execution or task/milestone reviews have launched. Historical preflight and completion results are recorded as actual prior evidence, not rerun here. No source parse/type/lint or package tests apply to this summary repair. B008 remains a failure; E009 and B009 passed separately.
+- Blockers: `none` for S203 preparation; Q3 does not authorize any assertion changes outside its stated narrow scope.
+- Next action: Prepare exact 002 checklist/checkpoint commit then independent checklist review round 1
