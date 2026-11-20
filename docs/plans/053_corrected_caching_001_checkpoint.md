@@ -27,8 +27,8 @@
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Inspect approved Q3/Y010 checkpoint diff and full index, commit checkpoint only, inspect clean HEAD, run Y010 sync
-- Last completed phase/task/gate and timestamp: Q3 user approval recorded; Y010 resume pre-selection sync intent IN FLIGHT, 2026-11-20T15:02:41.849025+00:00
+- Next safe action: Inspect full index and pending bookkeeping, commit clean-launch intent, then run Y011 factory-sync.
+- Last completed phase/task/gate and timestamp: REC008 recovery PASS; Y011 current-run sync intent IN FLIGHT, 2026-11-20T15:15:00.462481+00:00
 
 ## Milestone acceptance
 
@@ -3031,8 +3031,117 @@ Y010 intent IN FLIGHT: resume/pre-selection sync origin/master. Before launch in
 
 - Next action: Inspect approved Q3/Y010 checkpoint diff and full index, commit checkpoint only, inspect clean HEAD, run Y010 sync
 
+### Y010 resume sync PASS; B007 shared002 setup preflight intent IN FLIGHT
+
+- Gate: Y010 resume sync PASS; B007 shared002 setup preflight intent IN FLIGHT
+- Commands/results:
+Y010 launch clean HEAD552c2f430401f4ded726348f0cf904e27facd161 after approved checkpoint-only commit and repo-state clean confirmation. factory-sync args[] exit0,stderr empty,JSON {"branch":"iss-83-finish-caching","base":"origin/master","head_before":"552c2f430401f4ded726348f0cf904e27facd161","ahead":25,"behind":0,"shared_files":[],"conflicts":[],"synced":true}. No merge/HEAD move. Read-only setup confirmed002first unchecked,003later;002spec/checklist/checkpoint absent;one root Go module;no ordinary untracked/baseline edits,sixignored research context preserved,.mem absent. Q3 narrow approval recorded unchanged. Original002scope full lane because provider wire contract/AWS execution setup changes. Intended milestone002start/review base552c2f430401f4ded726348f0cf904e27facd161 after pre-selection sync.
+B007 intent IN FLIGHT: general setup-only root Go preflight/current resource check,exact B001 PATH,GOTOOLCHAIN unset,XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN;command go-toolchain-check repository root,existing run-detached for durable logs,poll identified run to actual result. No other gates/source/artifact writes. Record actual environment/commands/exit/HEAD/status/module hashes,disk headroom. Failure blocks002checkpoint creation/planning. After PASS creation-only general dispatch may create initial002checkpoint from template with actual shared setup evidence,Y010/B007,Q3approval,absolute paths and lane placeholders until context/lane established. No spec/checklist writing in creation call.001D1-D14/caps immutable complete.
+- HEAD commit SHA: `552c2f430401f4ded726348f0cf904e27facd161`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B007 shared setup Go preflight, then create002checkpoint only with actual setup evidence
+
+### B007 shared preflight PASS; C002 initial checkpoint creation intent IN FLIGHT
+
+- Gate: B007 shared preflight PASS; C002 initial checkpoint creation intent IN FLIGHT
+- Commands/results:
+B007 actual setup preflight PASS. env -u GOTOOLCHAIN PATH=<exact B001 checkpoint-session PATH> XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN /home/jaron/.agents/scripts/run-detached start --name general-b007-738c5e -- /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching;launch exit0,poll --wait100 finalexited0. Combined log /tmp/run-detached-1001/general-b007-738c5e/output.log:Go1.26.11,root module read-only load,govulncheck ./... no vulnerabilities,PASS. Separate stderr not established. Go wrapper /home/jaron/.local/share/../bin/go,scanner /home/jaron/go/bin/govulncheck. Exact requested PATH retained;historical original B001 preflight PATH not separately captured,checkpoint-session PATH is established later standard. HOME/config/data unchanged. Disk / and/tmp7.6Gavailable,97%used,memory10Gi before11Giafter. HEAD552c2f430401f4ded726348f0cf904e27facd161/source/module hashes unchanged,only preceding001checkpoint bookkeeping dirty. No repo edits by agent,no other gates. Source aggregate877db1b336aa752af59bf33ba4f097193a7332968a03ccaa51cf09ec7a69b46f;go.mod5cdf52caaa1cd1c27da160e1317484e7b36c62f12026c0dd1a16854c67920cb2;go.sumd38cb7800f4a9f1ad581a0aaf741376864b6e98b4207fe4202b63471ca377b6a.
+C002 intent IN FLIGHT: general creation-only dispatch creates /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md from Factory CHECKPOINT.md template. No other writes or substantive work. Use actual setup evidence milestone-entries exit0,Y010 actual sync JSON/HEAD,source HEAD552c2f4,B007 actual result/log,baseline only001checkpoint bookkeeping,six ignored research context. Absolute002spec/checklist paths absent,002unchecked. Lane/acceptance placeholders until context/lane recorded following creation. Original002start/review base552c2f430401f4ded726348f0cf904e27facd161. Record narrow Q3 approval and constraints unchanged.002own gate/review counts genuinely0 because artifact absence and no002planning/source work established,not resetting001counters. Preserve reference001completed ledger/caps. Following creation record its actual outcome in new checkpoint before research/spec dispatch. Stop on existing/ambiguous checkpoint instead of replacing.
+- HEAD commit SHA: `552c2f430401f4ded726348f0cf904e27facd161`
+- Relevant work: `committed` — stash ref `bbae6b644847c88b742ed1052f87664cdbdf5f45` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Create initial002checkpoint only from template with actual shared setup evidence, then record outcome in002checkpoint
+
+### C002 creation NOT LAUNCHED; H005 user-requested handoff intent IN FLIGHT
+
+- Gate: C002 creation NOT LAUNCHED; H005 user-requested handoff intent IN FLIGHT
+- Commands/results:
+Jaron invoked handoff at this exact boundary,terminal external interruption for current Factory run. C002 initial002checkpoint creation intent was saved in prior entry but NO creation subagent was dispatched and no002checkpoint/spec/checklist creation was launched. Outcome C002 NOT LAUNCHED,not failed/not in flight,no unknown writer. Do not infer creation from intent.002remainsunchecked/absent artifacts per last inspection and no subsequent writer;verify actual absence on restart. B007 completed PASS and Y010 completed PASS recorded,not unknown. No002planning/review/test/source task launched.001complete,T1-T4checked,002/003unchecked. Q3 explicit user "Q3 I approve" recorded with narrow scope in this checkpoint;do not ask again unless scope changes.
+H005 intent IN FLIGHT: general document-only agent reads handoff workflow/tool help and current checkpoint/milestone,status/history;writes /tmp/handoff-axe-iss83-h005-draft.md,includes actual handoff.py state --checkpoint /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md --since 3e178147775f5c002e7b967995c8823d72472a57 output;redacts and manually reviews;publishes with topic axe-iss83 using existing handoff.py publish. No repository edits/tests/gates/sync/planning/source/checkpoint creation/commits/push. First line absolute milestone path /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_milestones.md. Capture full resumable setup and Q3 boundaries,all pending intents/outcomes,001completion and immutable ledger/caps plus exact002checkpoint absence and next safe recovery sequence. Actual current HEAD552c2f430401f4ded726348f0cf904e27facd161,only001checkpoint shared setup/interruption bookkeeping dirty,index empty at last full inspection. After publication append actual H005 result through checkpoint only;handoff must warn capture predates that final expected delta. No completion/acceptance/source/assertion change. Preserve all existing artifacts and ignored research. Do not start next step in current interrupted run.
+- HEAD commit SHA: `552c2f430401f4ded726348f0cf904e27facd161`
+- Relevant work: `committed` — stash ref `a9a9cbce54c56681efefbb9bbe79c45d97da891c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Publish H005 handoff, append actual publication outcome, stop; next session recovers001 shared setup before any002creation
+
+### H005 handoff published; C002 NOT LAUNCHED; external interruption
+
+- Gate: H005 handoff published; C002 NOT LAUNCHED; external interruption
+- Commands/results:
+H005 outcome COMPLETE. general agent used handoff.py state --checkpoint /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md --since 3e178147775f5c002e7b967995c8823d72472a57,redact,and publish --topic axe-iss83;all exit0,stderr empty. Latest /tmp/handoff-axe-iss83.latest.md;immutable /tmp/handoff-axe-iss83.20261120T150926788439Z.md mode0444;draft /tmp/handoff-axe-iss83-h005-draft.md. Actual stateJSON included,firstline absolute milestone identity correct,manual secret review found no unrecognized secrets,published content matches redacted draft. Before/after HEAD552c2f430401f4ded726348f0cf904e27facd161,branchiss-83-finish-caching,+25/-0origin/master,only existing001checkpoint bookkeeping dirty,index empty,ordinary untrackednone. No repo edits byhandoff agent,no tests/gates/sync/commits/source/assertionchanges. Confirmed002spec/checklist/checkpointallabsent,C002NOTLAUNCHED. Q3 user approval quoted and durable checkpointreference preserved;no need reask same narrowapproval.001complete,002/003unchecked. Userhandoff request terminates currentFactoryrun as externalinterruption,not002completion. This actualpublicationoutcome is expectedcheckpoint-onlydelta AFTER capturedhandoffstate,explicitly warned inhandoff. No additionalworkauthorizedbyhandoff. Preserve001D1-D14/caps,allactualsetupY010/B007results. Nextsession invokes factory --handoff/latest,milestone-entriesbeforeagents,read-onlyrecoveryandnormalwriteahead/cleanlaunchbefore002initialcheckpointcreation. Do not assume C002launchedorunknown. No unknown consequentialoperation.
+- HEAD commit SHA: `552c2f430401f4ded726348f0cf904e27facd161`
+- Relevant work: `committed` — stash ref `4fc6329de3b29b8e5cad992b9d73ba3c80dcbcf4` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume via /skill:factory --handoff /tmp/handoff-axe-iss83.latest.md; recover shared setup and recorded Q3 approval before any002checkpoint creation
+
+### REC008 recovery PASS; Y011 current-run sync intent IN FLIGHT
+
+- Gate: REC008 recovery PASS; Y011 current-run sync intent IN FLIGHT
+- Commands/results:
+REC008: Current invocation validated milestone-entries --handoff /tmp/handoff-axe-iss83.latest.md exit 0 and decoded unique absolute target docs/plans/053_corrected_caching_milestones.md. Three read-only recovery inspections reconstructed shared setup, full 001 ledger and caps. HEAD 552c2f430401f4ded726348f0cf904e27facd161, branch iss-83-finish-caching, operation null, index equal HEAD, only 001 checkpoint bookkeeping dirty. H005 publication outcome is present; Y010 sync passed, B007 preflight passed; C002 explicitly NOT LAUNCHED. All three 002 artifacts remain absent. Retained REC007 comparison establishes 89 refs and 12 inventories, C001 preserves that comparison and eight subsequent refs. Latest independent inspection read 13 subsequent snapshot objects, compared first parents and changed paths, reconciled the three newest checkpoint-only snapshots and final H005 worktree delta, confirmed three current inventory hashes and stored blobs plus subsequent historical file commits. No discrepancies or unknown launches/outcomes remain. All seven retained V010 logs were opened, verbose test output sampled; seven zero exit files and G010 logs corroborate historical passing evidence at aff44548d9656d2e9b8296169905a7a77567a07b, not relabeled to current HEAD. Historical V006–V008 failures and unknown causes remain intact. Q3 assertion approval at lines 3012–3016 remains limited and valid. CAP SNAPSHOT: 001 shared planning failures 2, active incomplete 0, Q2 replacement consumed; R005 milestone failures 1, active incomplete 0, complete APPROVED after scoped fix, no open findings, no round 4. T1–T4 checked, 001 complete. 002 has no planning/test/source/review launches. Recovery inspections wrote no state or test output.
+Y011 INTENT: New-run initial/pre-selection factory-sync with default base origin/master, original gate shared setup for 002, scope this physical worktree and named branch, status IN FLIGHT pending clean-launch bookkeeping commit. This is a distinct invocation, not a retry of successful Y010. Before commit inspect full index and all pending checkpoint/rendered paths against recorded bookkeeping. Commit only approved bookkeeping, then inspect status and launch at actual resulting clean HEAD. Preserve all baseline files including six ignored research files. Record actual sync command/JSON/exit and resulting HEAD before advancing. No push, deploy or other consequential action authorized.
+- HEAD commit SHA: `552c2f430401f4ded726348f0cf904e27facd161`
+- Relevant work: `committed` — stash ref `02926c48c55d912264c465ef9a083243f8bfedaf` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect full index and pending bookkeeping, commit clean-launch intent, then run Y011 factory-sync.
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect approved Q3/Y010 checkpoint diff and full index, commit checkpoint only, inspect clean HEAD, run Y010 sync
+- Next action: Inspect full index and pending bookkeeping, commit clean-launch intent, then run Y011 factory-sync.
