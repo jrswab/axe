@@ -34,10 +34,10 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit Y014 outcome, push final bookkeeping to existing draft PR108, then report parked handoff
+- Next safe action: Inspect/commit approved A004/E010/Y015 bookkeeping then launch initial factory-sync --wip
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Last completed phase/task/gate and timestamp: Y014 PASS; final evidence push intent, 2026-11-20T20:42:39.142133+00:00
+- Last completed phase/task/gate and timestamp: E010 PASS; Y015 initial sync IN FLIGHT, 2026-11-20T23:07:28.578478+00:00
 
 ## Gate evidence
 
@@ -655,8 +655,50 @@ Y014 actual factory-sync --wip exit0, launch/resultHEADebbe08cb792dc169e8fb906de
 
 - Next action: Commit Y014 outcome, push final bookkeeping to existing draft PR108, then report parked handoff
 
+### REC010 established; A004 four-review approval; E010 IN FLIGHT
+
+- Gate: REC010 established; A004 four-review approval; E010 IN FLIGHT
+- Commands/results:
+REC010 read-only recovery established current state at c5d90515dd4036fc1224d3a06b3082b31106aac4 clean/pushed, no operation or unaccounted dispatch. Final prior push actually completed exit0 ba5af61..c5d9051 to draft PR108; old next-action text is superseded. A004 explicit user authorization: user 'I approve' in direct response to one additional batch of four independent read-only source reviews beyond reached incomplete cap, S1 records/research/AWS contracts, S2 standards/user docs, S3 provider/config code/tests, S4 execution/errors/retries/budget. No incomplete retries. Approval durable reference current conversation, original session JSONL lines197-198 (recovery inspected). Preserve original complete-checklist round2, shared failures1, P204/P204b consecutive incomplete2, F1-F4 carried pending complete verification. This authorization adds only four specific calls, not a reset/new round or generic procedure exception. Every slice must pass to continue002 then003; any nonpass parks work. No acceptance/assertion changes authorized beyond prior exact Q3. E010 IN FLIGHT factory-preflight --fix current declared environment prerequisites before sync and review. No substantive implementation launched.
+- HEAD commit SHA: `c5d90515dd4036fc1224d3a06b3082b31106aac4`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run E010 preflight, clean-launch initial sync, then lint and dispatch exactly four approved source-review slices
+
+### E010 PASS; Y015 initial sync IN FLIGHT
+
+- Gate: E010 PASS; Y015 initial sync IN FLIGHT
+- Commands/results:
+E010 factory-preflight --fix exit0 launchHEADc5d90515dd4036fc1224d3a06b3082b31106aac4. JSON oktrue disk35.6GB minimum15 pass; tmp35.6GB ext4 pass; origin git@github.com:jrswab/axe.git pass; gates2 pass; Go toolchain pass; browsers3 pass; sandbox bwrap writable worktree pass. Fixed pruned Go/uv/npm caches and11 stale/tmp entries. Does not alter historical gate results. Y015 IN FLIGHT factory-sync --wip baseorigin/master after approved bookkeeping clean-launch inspection and commit. Current source-review exception A004 not consumed yet: exactlyS1-S4 one batch, no retries. Original round2 incomplete2/shared failures1 carried. Need no new Go preflight for read-only planning review; must satisfy before substantive Go tasks if all pass.
+- HEAD commit SHA: `c5d90515dd4036fc1224d3a06b3082b31106aac4`
+- Relevant work: `committed` — stash ref `c6ec5c29e8712963ae9e6cf1f0e68a9438add1bd` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect/commit approved A004/E010/Y015 bookkeeping then launch initial factory-sync --wip
+
 ## Limitations & blockers
 
 - Limitations: P202 approved the spec; P203 accounts for one shared failing planning round. F1–F4 text fixes and lint were checked, but P204 and P204b were consecutive incompletes on the same complete-checklist round 2; the source-verification coverage recorded in P204b remains unfinished. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
 - Blockers: complete-checklist round 2 reached its incomplete cap; 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit Y014 outcome, push final bookkeeping to existing draft PR108, then report parked handoff
+- Next action: Inspect/commit approved A004/E010/Y015 bookkeeping then launch initial factory-sync --wip
