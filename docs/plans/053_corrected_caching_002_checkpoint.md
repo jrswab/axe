@@ -34,10 +34,10 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit Y013 outcome, push branch and open draft PR, take one CI snapshot
+- Next safe action: Commit publication evidence, sync Y014, persist outcome and push final bookkeeping to draft PR108
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Last completed phase/task/gate and timestamp: L204/Y013 PASS; RUNEND push/draft-PR intent, 2026-11-20T20:40:59.080485+00:00
+- Last completed phase/task/gate and timestamp: RUNEND draft PR108 created; Y014 final-evidence sync IN FLIGHT, 2026-11-20T20:42:05.705889+00:00
 
 ## Gate evidence
 
@@ -613,8 +613,29 @@ L204 actual docs-lint --since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676 exit0, do
 
 - Next action: Commit Y013 outcome, push branch and open draft PR, take one CI snapshot
 
+### RUNEND draft PR108 created; Y014 final-evidence sync IN FLIGHT
+
+- Gate: RUNEND draft PR108 created; Y014 final-evidence sync IN FLIGHT
+- Commands/results:
+RUNEND actual first factory-gh push exit0 created origin/iss-83-finish-caching and set upstream. factory-gh pr-create --draft --base master exit0 URL https://github.com/jrswab/axe/pull/108. One nonblocking CI snapshot factory-gh gh pr checks108 exit1 GitHub GraphQL server error at 2026-11-20T20:41:46Z requestBE50:D312A:14A45AD:41AA97C:6B00B089; no CI pass/fail inferred and no polling. repo-state confirmed HEADba5af61ca6ff403633495ff857ae3df1a7109687 clean tree, upstream ahead0 behind0, origin/master behind0, no operation. All milestones complete or parked;001 complete(full),002 parked(full) at two consecutive incomplete source reviews round2 and shared failures1,003 blocked by002(lane pending). No new code/test edits or live probes. Y014 final-evidence sync intent IN FLIGHT: persist this actual publication evidence, inspect full index/pending checkpoint, commit, factory-sync --wip, record outcome and final push intent, commit actual outcome and push to existing open draft PR with --require-open-pr. No further review/retry/implementation authorized. Final branch ref/upstream and script output provide final push outcome evidence for recovery.
+- HEAD commit SHA: `ba5af61ca6ff403633495ff857ae3df1a7109687`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit publication evidence, sync Y014, persist outcome and push final bookkeeping to draft PR108
+
 ## Limitations & blockers
 
 - Limitations: P202 approved the spec; P203 accounts for one shared failing planning round. F1–F4 text fixes and lint were checked, but P204 and P204b were consecutive incompletes on the same complete-checklist round 2; the source-verification coverage recorded in P204b remains unfinished. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
 - Blockers: complete-checklist round 2 reached its incomplete cap; 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit Y013 outcome, push branch and open draft PR, take one CI snapshot
+- Next action: Commit publication evidence, sync Y014, persist outcome and push final bookkeeping to draft PR108
