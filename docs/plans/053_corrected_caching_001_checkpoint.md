@@ -20,15 +20,15 @@
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
 - Current phase: `complete`
-- Current task: T4
+- Current task: Milestone 002 setup
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Inspect full index and pending bookkeeping, commit clean-launch intent, then run Y011 factory-sync.
-- Last completed phase/task/gate and timestamp: REC008 recovery PASS; Y011 current-run sync intent IN FLIGHT, 2026-11-20T15:15:00.462481+00:00
+- Next safe action: Reinspect full index and approved bookkeeping, commit, then launch Y012 sync
+- Last completed phase/task/gate and timestamp: REC009c bookkeeping rendering repair; Y012 intent retained, 2026-11-20T20:01:08.167786+00:00
 
 ## Milestone acceptance
 
@@ -3140,8 +3140,117 @@ Y011 INTENT: New-run initial/pre-selection factory-sync with default base origin
 
 - Next action: Inspect full index and pending bookkeeping, commit clean-launch intent, then run Y011 factory-sync.
 
+### Y011 sync PASS; B008 current Go preflight intent IN FLIGHT
+
+- Gate: Y011 sync PASS; B008 current Go preflight intent IN FLIGHT
+- Commands/results:
+Y011 OUTCOME: factory-sync args [] exit 0, stderr empty. Launch HEAD ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1 after checkpoint-only commit and clean repo-state. JSON {"branch":"iss-83-finish-caching","base":"origin/master","head_before":"ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1","ahead":26,"behind":0,"shared_files":[],"conflicts":[],"synced":true}. No HEAD change. Current milestone 002 start/review fixed point is ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1, preserving all new work after this initial sync.
+B008 INTENT: Refresh shared Go setup preflight for root module with /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching. Use established B007 PATH, GOTOOLCHAIN unset, XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN. General agent may inspect resources and execute existing preflight, optionally via run-detached for timeout safety, only user caches and /tmp logs may change. Retain exact command, output/exit, HEAD/status and module/source hashes. This is a setup check, not milestone source or tests. Stop for resource safety failure, missing tool or nonzero exit. CAP SNAPSHOT unchanged: 001 planning failures 2/incomplete 0, milestone failures 1/incomplete 0, R005 passed, no round4/open findings; 002 no substantive task launched.
+- HEAD commit SHA: `ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run B008 shared Go preflight with established environment, then create 002 checkpoint alone after outcome.
+
+### B008 preflight FAILED; milestone 002 setup BLOCKED
+
+- Gate: B008 preflight FAILED; milestone 002 setup BLOCKED
+- Commands/results:
+B008 OUTCOME: General setup dispatch completed. Exact requested environment preserved (B007 PATH, GOTOOLCHAIN unset, XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN). Command /home/jaron/.agents/scripts/go-toolchain-check /home/jaron/dev/axe/iss-83-finish-caching launched via retained detached run general-b008-9CmViN; final exit 1. Combined output /tmp/run-detached-1001/general-b008-9CmViN/output.log; evidence directory /tmp/axe-b008-evidence.9CmViN. Both Go version probes failed because /home/jaron/go/pkg/mod was read-only. govulncheck was present and ran but failed with no go.mod file; vulnerability scan did NOT pass. No retry or repair occurred. HEAD before/after ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1. Status before/after only M docs/plans/053_corrected_caching_001_checkpoint.md, existing bookkeeping. All 270 tracked-file hashes, including 155 Go/module files, unchanged. Only root go.mod found. No repository files changed, no 002 artifacts created, no milestone tests/reviews/source work launched. B007 remains historical pass, not current setup evidence. B008 is established failed, not unknown liveness/outcome.
+BLOCKER: Factory current-run Go preflight nonzero exit blocks milestone 002. No automatic cache deletion, environment override, command guard bypass or retry authorized by this entry. Preserve the exact failure for investigation. CAP SNAPSHOT unchanged: 001 complete, planning failures 2/incomplete 0, milestone failures 1/incomplete 0, R005 passed, no round4/open findings; 002 unstarted and unchecked. Next action is report setup blocker with retained evidence, not substantive work.
+- HEAD commit SHA: `ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1`
+- Relevant work: `committed` — stash ref `81a376634f59db0c46eb2a362353f1d4ddd8cd92` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: BLOCKED: current Go preflight failed on read-only module cache; report failure before any repair or retry.
+
+### REC009 recovery established; E009 preflight IN FLIGHT
+
+- Gate: REC009 recovery established; E009 preflight IN FLIGHT
+- Commands/results:
+REC009a/b read-only recovery completed in this session at HEAD ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1. Both inspected the sole pending checkpoint edit and clean index. REC009b reconciled retained REC007/C001/REC008 evidence, critical stash objects and current inventory hashes. Required active launch identities/outcomes and counts are determined. Y011 PASS moved no HEAD. B008 go-toolchain-check completed exit 1, retained run general-b008-9CmViN: Go could not create /home/jaron/go/pkg/mod (read-only filesystem), and govulncheck did not pass. C002 not launched. Preserve all known failures. Historical V007/V008 failed outcomes are known and superseded by passing 001 completion evidence; no historical unknown-result disposition is used. T1-T4 and 001 remain complete. Shared planning failures 2; milestone review failures 1; active incompletes 0; findings 0; no round 4. Q3 original user approval at session JSONL 2026-11-19T15-47-50-732Z_01a1f47e-274c-748d-88b3-337965f93f71.jsonl:106 is limited to contradicted Bedrock system-union/tool-cache-point assertions, preserving unrelated assertions and requiring raw-wire/cache-disabled coverage. Current setup blocker is B008 known environment failure, superseding any historical 'Blockers: none' footer. E009 intent: run factory-preflight --fix through orchestrator to assess/repair declared prerequisites, original scope 002 setup, no review round or cap reset. No environment guard will be added. IN FLIGHT. Next gate: current declared preflight result, then determine safe setup action. No consequential actions authorized.
+- HEAD commit SHA: `ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1`
+- Relevant work: `committed` — stash ref `4a31a450b04c1d07254a05513449f71e3c50e0a1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run E009 factory-preflight --fix and record its actual result
+
+### E009 PASS; Y012 initial current-session sync IN FLIGHT
+
+- Gate: E009 PASS; Y012 initial current-session sync IN FLIGHT
+- Commands/results:
+E009 actual command: factory-preflight --fix, launch HEAD ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1, exit 0. JSON: ok true; disk pass 38.5 GB free minimum 15; tmp pass ext4 38.5 GB; origin pass git@github.com:jrswab/axe.git; gates pass 2 commands; go pass toolchain ok; browsers pass 3 binaries; sandbox pass bwrap starts and can write worktree. fixed: pruned Go build, uv and npm caches; removed 116 stale /tmp entries. This establishes the declared host preflight only, not a retroactive B008 pass or a passing vulnerability scan. REC009 ledger/caps unchanged. Y012 intent: current-session initial factory-sync --wip against base origin/master, run only after clean-launch index and complete pending-diff inspection, approved bookkeeping commit and status confirmation. IN FLIGHT original scope 002 setup, not a review and no cap reset. Pre-existing pending checkpoint writes were inspected by REC009 and are preserved. 001 remains complete; 002/003 remain unchecked.
+- HEAD commit SHA: `ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1`
+- Relevant work: `committed` — stash ref `da543c289fb1cc755922a07839fc2c5abee30f14` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_milestones.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Inspect full index and checkpoint changes, commit approved bookkeeping, then run Y012 factory-sync --wip
+
+### REC009c bookkeeping rendering repair; Y012 intent retained
+
+- Gate: REC009c bookkeeping rendering repair; Y012 intent retained
+- Commands/results:
+REC009c clean-launch inspection found checkpoint tool defaulted omitted --milestone to unchecked, rendering 001 unchecked in the milestone and checkpoint despite unchanged historical completion evidence. No substantive launch or commit occurred. This bookkeeping call restores the established checked state only, using prior C001/G010 completion evidence and REC009 recovery, not a new completion claim for current HEAD. T1-T4 remain checked. All pending Y011/B008/REC009/E009/Y012 bookkeeping remains preserved. Y012 is not yet launched. Procedure decision D009: retain existing host preflight PASS, preserve sandbox B008 failure, and use explicit GOMODCACHE in existing writable /tmp cache for the next go-toolchain-check because XDG_CACHE_HOME does not redirect Go module downloads. Sources: shared go-toolchain-check:48-78,103-107 inherits caller environment; Go helpdoc.go:369-381 defaults module cache to GOPATH/pkg/mod; shared factory-preflight:168-181 checks worktree writability only. This is reversible local cache selection within 002 setup; it changes no criterion/assertion or code, bypasses no check/review/cap and crosses no human-only boundary. Next gate is full existing go-toolchain-check with all checks retained. No new environment guard will be created. Review counts/caps unchanged.
+- HEAD commit SHA: `ad2b3796a0ed831739b8e3c2d6823cb8cbccc7f1`
+- Relevant work: `committed` — stash ref `e94357f4c36a5d50a0991fac0abfe86e41f3d532` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_milestones.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Reinspect full index and approved bookkeeping, commit, then launch Y012 sync
+
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
 - Blockers: `none`.
-- Next action: Inspect full index and pending bookkeeping, commit clean-launch intent, then run Y011 factory-sync.
+- Next action: Reinspect full index and approved bookkeeping, commit, then launch Y012 sync
