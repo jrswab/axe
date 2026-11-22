@@ -34,11 +34,11 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Sync and publish the parking records to draft PR 108. Keep 002 and 003 parked pending separate review direction.
+- Next safe action: Publish the parked records to the existing draft PR. Keep 002 and 003 parked pending separate review direction.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P205 completed under A004 with F5 and F6 outstanding; all four authorized calls were used, none remain, and no retry is allowed. The open draft PR 108 remains at its original pushed HEAD until the orchestrator pushes this run; see retained publication evidence below.
-- Last completed phase/task/gate and timestamp: Run-end sync and publication intent, 2026-11-22T16:54:13.500579+00:00
+- Last completed phase/task/gate and timestamp: Run-end sync passed, 2026-11-22T16:54:23.168946+00:00
 
 ## Gate evidence
 
@@ -867,8 +867,29 @@ Parking records committed 6ae67f289e154a8d85ae7699b9c7ba8afd26e648. Post-parking
 
 - Next action: Sync and publish the parking records to draft PR 108. Keep 002 and 003 parked pending separate review direction.
 
+### Run-end sync passed
+
+- Gate: Run-end sync passed
+- Commands/results:
+factory-sync --wip exit 0 at 634e112f627655b6fc753f70a9a1f404be3ba89d. JSON: branch iss-83-finish-caching; base origin/master; ahead 41, behind 0; shared_files [], conflicts [], synced true. No merge or WIP. Only this administrative sync result commit will follow before the authorized open-PR push; it does not change code or base. Push intent remains in flight until confirmed remotely; later recovery can verify remote branch HEAD and draft PR.
+- HEAD commit SHA: `634e112f627655b6fc753f70a9a1f404be3ba89d`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Publish the parked records to the existing draft PR. Keep 002 and 003 parked pending separate review direction.
+
 ## Limitations & blockers
 
 - Limitations: P202 approved the spec; P205 resolved F1–F4 but failed on F5 and F6. P204 and P204b remain two historical consecutive incompletes; P205 added none. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
 - Blockers: F5 and F6 remain outstanding; the gate did not pass and A004 is exhausted (4 used, 0 left, no retry). 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Sync and publish the parking records to draft PR 108. Keep 002 and 003 parked pending separate review direction.
+- Next action: Publish the parked records to the existing draft PR. Keep 002 and 003 parked pending separate review direction.
