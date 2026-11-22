@@ -34,11 +34,11 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Repair Q3 citation and record current recovery summary before fresh lint and exact A004 review intent.
+- Next safe action: Commit bookkeeping, run fresh lint, then dispatch the authorized S1–S4 batch only if all lint gates pass.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: REC009 reconciled the prior publication: `factory-gh gh pr view 108` verified the open draft PR at pushed HEAD `1d8718d1e9ebf801913e9aeaa158bcdc570566e4`. P205 was intent only, not dispatched; all four A004 review calls remain unlaunched. Earlier Y016 handoff sync, L205 and Y015 passed; see retained evidence below.
-- Last completed phase/task/gate and timestamp: REC009 direct Factory restart and citation repair intent, 2026-11-22T16:45:12.629472+00:00
+- Last completed phase/task/gate and timestamp: L206 and P205 restart write-ahead, 2026-11-22T16:46:15.914801+00:00
 
 ## Gate evidence
 
@@ -804,8 +804,29 @@ Direct milestone-entries exit 0, 3 entries. Restart: 001 complete, 002 first unc
 
 - Next action: Repair Q3 citation and record current recovery summary before fresh lint and exact A004 review intent.
 
+### L206 and P205 restart write-ahead
+
+- Gate: L206 and P205 restart write-ahead
+- Commands/results:
+REC009 citation repair complete, commit 418d6b4733e1d486a0ababb74623cfb24af39381, clean index and worktree. git diff --check exit 0; old citation grep exit 1 (no matches). No acceptance, assertion, code, or pre-existing artifact scope change. In flight: refresh spec-lint for both artifacts and docs-lint since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676 on the clean intent commit. Conditional in-flight intent only, not yet dispatched: after all three lint gates exit 0, launch exactly one parallel A004 batch S1–S4, original complete 002 checklist round 2. Source/artifact pin is the resulting clean intent commit, with unchanged code and checklist and REC009 Q3 citation repair only in spec. Same S1–S4 disjoint source inventory as original P205, shared complete artifacts, F1–F4 verbatim. Preserve one shared failed planning round, two consecutive historic incomplete results, no retries, 4 calls available until dispatch. Require four complete passes before T1; if any nonpass, record exact unfinished coverage and park 002 and dependency-blocked 003. No test or implementation launch yet.
+- HEAD commit SHA: `418d6b4733e1d486a0ababb74623cfb24af39381`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit bookkeeping, run fresh lint, then dispatch the authorized S1–S4 batch only if all lint gates pass.
+
 ## Limitations & blockers
 
 - Limitations: P202 approved the spec; P203 accounts for one shared failing planning round. F1–F4 text fixes and lint were checked, but P204 and P204b were consecutive incompletes on the same complete-checklist round 2; the source-verification coverage recorded in P204b remains unfinished. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
 - Blockers: complete-checklist round 2 reached its incomplete cap; A004 authorizes only the four still-unlaunched source-review calls as described above. The gate remains unpassed and 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Repair Q3 citation and record current recovery summary before fresh lint and exact A004 review intent.
+- Next action: Commit bookkeeping, run fresh lint, then dispatch the authorized S1–S4 batch only if all lint gates pass.
