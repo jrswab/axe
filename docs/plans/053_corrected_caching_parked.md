@@ -4,14 +4,14 @@ The run ends with a draft PR because milestones 002 and 003 are unchecked. No ex
 
 ## Current outcome and review direction
 
-P205 completed the A004 four-slice batch: S1 and S3 approved; S2 and S4 requested changes. F1–F4 are resolved; F5 and F6 remain outstanding. The shared planning count is two failed rounds (P203 and combined P205); the two consecutive P204/P204b incompletes remain historical and P205 added zero. A004 has 4 calls used, 0 left, and no retry is allowed. Milestone 002 remains parked and 003 remains dependency-blocked; no implementation or new execution evidence is claimed.
+P205 completed the A004 four-slice batch: S1 and S3 approved; S2 and S4 requested changes. F1–F4 are resolved; F5 and F6 checklist fixes are applied pending verification and review. The shared planning count is two failed rounds (P203 and combined P205); the two consecutive P204/P204b incompletes remain historical and P205 added zero. A004 has 4 calls used, 0 left, and no retry is allowed. A005 authorizes only the fixes and one parallel independent review per fix, with no retries; no implementation may start until both reviews pass. Milestone 003 remains dependency-blocked; no implementation or new execution evidence is claimed.
 
 - **F5 — Low stakes checklist fix (S2/R4):** `docs/plans/053_corrected_caching_002_implement.md:37,39` checks `json-output.md` but neither assigns documentation edits nor names `run-flags.md`. Both `docs/src/cli/json-output.md:80` and `docs/src/cli/run-flags.md:46` say `--stream` and `--json` always stream, contrary to `docs/src/providers.md:109` and `pkg/runner/run.go:529-533`. Recommend assigning T2 both documentation edits to explain fallback while retaining a single JSON envelope.
 - **F6 — Low stakes checklist fix (S4/R3–R4):** `docs/plans/053_corrected_caching_002_spec.md:52,60` versus `docs/plans/053_corrected_caching_002_implement.md:28,38,70` leaves omitted usage and independently zero cache usage untested through Bedrock Run. Recommend assigning T2 literal Converse fixtures that assert Result values and JSON omission for those cases, plus numerical nonzero counterparts, without changing accounting.
 
-### Current question — High stakes: review direction after A004
+### Current direction — A005 pending review
 
-**Recommendation:** Keep 002 and 003 parked until Jaron authorizes a targeted way to fix and verify both findings. The alternative is to leave them parked with no changes. A004 is exhausted, so neither a retry nor a fix-and-review path is authorized by it.
+Jaron approved the bounded F5/F6 checklist fixes and exactly one parallel independent review per fix; no retries are authorized. Verify the fixes, then run that review batch. A004 remains exhausted; 002 execution must not start until both reviews pass, and 003 remains blocked by 002.
 
 ## Historical parking questions
 
