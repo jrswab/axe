@@ -27,18 +27,18 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `implement`
-- Current task: none
+- Current phase: `execute`
+- Current task: T1
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Run fresh planning lint on the clean intent commit, then dispatch only the approved F5 and F6 reviews.
+- Next safe action: Commit T1, then run HEAD-matched gate evidence and independent task reviews.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P205 completed under A004 with F5 and F6 outstanding; all four A004 calls were used, none remain, and no retry is allowed. A005 authorized the bounded checklist fixes and one parallel independent review per fix; fixes are applied pending verification and both reviews. The open draft PR 108 remains at its original pushed HEAD; see retained publication evidence below.
-- Last completed phase/task/gate and timestamp: L207 and P206 A005 write-ahead, 2026-11-22T18:13:21.221904+00:00
+- Last completed phase/task/gate and timestamp: T1 independent VERIFY passed; task review and gate intent, 2026-11-22T18:21:05.822584+00:00
 
 ## Gate evidence
 
@@ -930,8 +930,105 @@ F5/F6 fix commit 1cd56b55ff5dbae7d1993ef33685452eef9297e5. git diff --check exit
 
 - Next action: Run fresh planning lint on the clean intent commit, then dispatch only the approved F5 and F6 reviews.
 
+### L207 and P206 passed; T1 RED intent
+
+- Gate: L207 and P206 passed; T1 RED intent
+- Commands/results:
+Clean HEAD c67046be996a47b103e18b7ceca85657a09e0701. spec-lint exit 0: spec 25 citations, checklist 13 citations and 6 selectors. docs-lint 1 exit 0, 57 files and 0 findings, since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676. P206 checklist round 3: both A005 independent reviewers APPROVED on first line, no incomplete lines, F5 and F6 verified resolved, no other findings. A005 consumed exactly 2/2, no retries. Cumulative shared failing rounds remain 2, historical P204/P204b incomplete events 2, A004 exhausted. Complete checklist planning gate now passes; T1–T3 remain unchecked. Starting Phase 3 for requested 002 only. In flight: T1 new focused behavioral test RED on Bedrock Send, provider wire contract, no source or existing assertion edits before RED. T1 design-bearing; all three independent per-task axes remain required after GREEN, as do final independent milestone review and completion.
+- HEAD commit SHA: `c67046be996a47b103e18b7ceca85657a09e0701`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T1
+
+### T1 RED passed; provider fix intent
+
+- Gate: T1 RED passed; provider fix intent
+- Commands/results:
+RED at c67046be996a47b103e18b7ceca85657a09e0701; only new test and checkpoint pending. gofmt -w internal/provider/bedrock_wire_test.go exit 0. go test -mod=readonly ./internal/provider -run '^TestBedrock_StaticWireContract$' -count=1 exit 1 for missing behavior: combined system text/checkpoint union, misplaced tools checkpoint, missing inputSchema.json and unstable toolConfig bytes. Empty/static disabled positive cases, all five usage and nine failure/no replay cases ran and passed. No existing source or assertions edited. In flight: T1 provider wire fix and required docs, use only narrow Q3 existing replacements, preserving all other assertions and new test verbatim. Separate focused GREEN and touched-package verification required.
+- HEAD commit SHA: `c67046be996a47b103e18b7ceca85657a09e0701`
+- Relevant work: `uncommitted` — stash ref `defb16dabceee3f19b621f786d40f7d6071a7df8` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+?? internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+b9ac0dd4987e03cb61cb47cb8aa0b470d97beda6  "internal/provider/bedrock_wire_test.go"
+```
+
+- Next action: Implement T1 provider wire fix only.
+
+### T1 implementation green; independent VERIFY intent
+
+- Gate: T1 implementation green; independent VERIFY intent
+- Commands/results:
+At c67046b, T1 implementation worker reports focused RED command unchanged now exit 0; provider build, vet, package tests, touched package go test -race, golangci-lint run (0 issues), git diff --check and docs-lint pass. Q3 retained all other assertions; mutation of each checkpoint type made corresponding assertions fail, restoration passed. New RED test unchanged by SHA-256 1d02bcc552ca573177f9a73cfaee082bd1f16289f1b9e6358e312ce88b13b2cf. Supplemental .agents/scripts/ci-check integrity exit 1 only under worker-imposed GOPROXY=off, cache missing two dependencies. In flight: independent unchanged GREEN, package checks and integrity with normal module dependency resolution, no paid or live provider calls. If environment limitations persist, report for preflight or completion gate, add no code guards. T1 not yet reviewed or checked.
+- HEAD commit SHA: `c67046be996a47b103e18b7ceca85657a09e0701`
+- Relevant work: `uncommitted` — stash ref `828158d93d3e00453ee41c21608f10d1ccf24b69` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/src/providers.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_test.go
+?? internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+b9ac0dd4987e03cb61cb47cb8aa0b470d97beda6  "internal/provider/bedrock_wire_test.go"
+```
+
+- Next action: Independently verify T1 GREEN, then commit and run required review evidence gates.
+
+### T1 independent VERIFY passed; task review and gate intent
+
+- Gate: T1 independent VERIFY passed; task review and gate intent
+- Commands/results:
+Independent test VERIFY at c67046b: unchanged RED file SHA-256 1d02bcc552ca573177f9a73cfaee082bd1f16289f1b9e6358e312ce88b13b2cf; go test -mod=readonly ./internal/provider -run '^TestBedrock_StaticWireContract$' -count=1 exit 0, package race and vet exit 0; golangci-lint run exit 0 (0 issues); git diff --check exit 0; .agents/scripts/ci-check integrity exit 0 all modules verified with normal module resolution, resolving worker's offline-only cache error. Independent diff verification: only Q3 original assertion ranges 638–645 and 652–656 replaced; existence, spec, usage and all unrelated assertions retained. Index clean, only allowed paths and checkpoint pending. In flight after commit: docs-lint, records-stale-check, and factory-gate test for clean T1 commit. On acceptable evidence, one parallel design-bearing task review batch Standards, Spec and Design risk, round 1, fixed point c67046be996a47b103e18b7ceca85657a09e0701. Do not check T1 before all review axes pass.
+- HEAD commit SHA: `c67046be996a47b103e18b7ceca85657a09e0701`
+- Relevant work: `uncommitted` — stash ref `ee884c18658f7e9aea47c517b532efcff5c26085` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/src/providers.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_test.go
+?? internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+b9ac0dd4987e03cb61cb47cb8aa0b470d97beda6  "internal/provider/bedrock_wire_test.go"
+```
+
+- Next action: Commit T1, then run HEAD-matched gate evidence and independent task reviews.
+
 ## Limitations & blockers
 
 - Limitations: P202 approved the spec; P205 resolved F1–F4 but failed on F5 and F6. P204 and P204b remain two historical consecutive incompletes; P205 added none. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
 - Blockers: F5 and F6 fixes await verification and the A005 reviews; the gate did not pass and A004 is exhausted (4 used, 0 left, no retry). 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Run fresh planning lint on the clean intent commit, then dispatch only the approved F5 and F6 reviews.
+- Next action: Commit T1, then run HEAD-matched gate evidence and independent task reviews.

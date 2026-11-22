@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -111,7 +112,7 @@ type bedrockCachePoint struct {
 
 // bedrockSystemBlock is a system prompt block in the Bedrock API.
 type bedrockSystemBlock struct {
-	Text       string             `json:"text"`
+	Text       string             `json:"text,omitempty"`
 	CachePoint *bedrockCachePoint `json:"cachePoint,omitempty"`
 }
 
@@ -123,13 +124,13 @@ type bedrockInferenceConfig struct {
 
 // bedrockToolConfig wraps the tool definitions sent to Bedrock.
 type bedrockToolConfig struct {
-	Tools      []bedrockToolDef   `json:"tools"`
-	CachePoint *bedrockCachePoint `json:"cachePoint,omitempty"`
+	Tools []bedrockToolDef `json:"tools"`
 }
 
 // bedrockToolDef is the wire format for a tool definition in the Bedrock API.
 type bedrockToolDef struct {
-	ToolSpec bedrockToolSpec `json:"toolSpec"`
+	ToolSpec   *bedrockToolSpec   `json:"toolSpec,omitempty"`
+	CachePoint *bedrockCachePoint `json:"cachePoint,omitempty"`
 }
 
 // bedrockToolSpec is the tool specification inside a bedrockToolDef.
@@ -166,6 +167,7 @@ type bedrockErrorResponse struct {
 }
 
 // buildBedrockRequest converts a provider Request to the Bedrock wire format.
+// @anchor:provider:policy Place Bedrock cache checkpoints in separate static union members.
 func buildBedrockRequest(req *Request) bedrockRequest {
 	br := bedrockRequest{
 		Messages: convertMessages(req.Messages),
@@ -189,10 +191,10 @@ func buildBedrockRequest(req *Request) bedrockRequest {
 	}
 	if req.CacheConfig {
 		if len(br.System) > 0 {
-			br.System[len(br.System)-1].CachePoint = &bedrockCachePoint{Type: "default"}
+			br.System = append(br.System, bedrockSystemBlock{CachePoint: &bedrockCachePoint{Type: "default"}})
 		}
 		if br.ToolConfig != nil {
-			br.ToolConfig.CachePoint = &bedrockCachePoint{Type: "default"}
+			br.ToolConfig.Tools = append(br.ToolConfig.Tools, bedrockToolDef{CachePoint: &bedrockCachePoint{Type: "default"}})
 		}
 	}
 	return br
@@ -235,6 +237,7 @@ func convertMessages(msgs []Message) []bedrockMessage {
 }
 
 // convertTools converts provider Tools to the Bedrock wire format.
+// @anchor:provider:integration Wrap Bedrock tool schemas and keep required names stable.
 func convertTools(tools []Tool) []bedrockToolDef {
 	result := make([]bedrockToolDef, len(tools))
 	for i, tool := range tools {
@@ -248,10 +251,11 @@ func convertTools(tools []Tool) []bedrockToolDef {
 		}
 		schema := map[string]interface{}{"type": "object", "properties": props}
 		if len(required) > 0 {
+			sort.Strings(required)
 			schema["required"] = required
 		}
-		result[i] = bedrockToolDef{ToolSpec: bedrockToolSpec{
-			Name: tool.Name, Description: tool.Description, InputSchema: schema,
+		result[i] = bedrockToolDef{ToolSpec: &bedrockToolSpec{
+			Name: tool.Name, Description: tool.Description, InputSchema: map[string]interface{}{"json": schema},
 		}}
 	}
 	return result

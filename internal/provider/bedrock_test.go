@@ -635,25 +635,35 @@ func TestBedrock_Send_Cache(t *testing.T) {
 			}
 
 			if tc.wantSystemCachePoint {
-				if len(receivedReq.System) != 1 {
-					t.Fatalf("expected 1 system block, got %d", len(receivedReq.System))
+				if len(receivedReq.System) != 2 {
+					t.Fatalf("expected 2 system blocks, got %d", len(receivedReq.System))
 				}
-				if receivedReq.System[0].CachePoint == nil {
-					t.Fatal("expected cachePoint on system block")
+				if receivedReq.System[0].Text != "You are helpful." || receivedReq.System[0].CachePoint != nil {
+					t.Errorf("expected text-only system block, got %+v", receivedReq.System[0])
 				}
-				if receivedReq.System[0].CachePoint.Type != "default" {
-					t.Errorf("cachePoint.type = %q, want %q", receivedReq.System[0].CachePoint.Type, "default")
+				if receivedReq.System[1].Text != "" || receivedReq.System[1].CachePoint == nil {
+					t.Fatal("expected separate cachePoint-only system block")
+				}
+				if receivedReq.System[1].CachePoint.Type != "default" {
+					t.Errorf("cachePoint.type = %q, want %q", receivedReq.System[1].CachePoint.Type, "default")
 				}
 			}
 			if tc.wantToolCachePoint {
 				if receivedReq.ToolConfig == nil {
 					t.Fatal("expected ToolConfig when tools present")
 				}
-				if receivedReq.ToolConfig.CachePoint == nil {
-					t.Fatal("expected cachePoint on ToolConfig")
+				if len(receivedReq.ToolConfig.Tools) != 2 {
+					t.Fatalf("expected tool specification and cachePoint, got %d tools", len(receivedReq.ToolConfig.Tools))
 				}
-				if receivedReq.ToolConfig.CachePoint.Type != "default" {
-					t.Errorf("toolConfig cachePoint.type = %q, want %q", receivedReq.ToolConfig.CachePoint.Type, "default")
+				if receivedReq.ToolConfig.Tools[0].ToolSpec == nil || receivedReq.ToolConfig.Tools[0].ToolSpec.Name != "read_file" || receivedReq.ToolConfig.Tools[0].CachePoint != nil {
+					t.Error("expected read_file tool specification without cachePoint")
+				}
+				checkpoint := receivedReq.ToolConfig.Tools[1]
+				if checkpoint.ToolSpec != nil || checkpoint.CachePoint == nil {
+					t.Fatal("expected separate cachePoint-only tool entry")
+				}
+				if checkpoint.CachePoint.Type != "default" {
+					t.Errorf("tool cachePoint.type = %q, want %q", checkpoint.CachePoint.Type, "default")
 				}
 			}
 			if resp.CacheReadTokens != tc.wantCacheReadTokens {

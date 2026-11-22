@@ -375,6 +375,8 @@ OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard
 
 For Anthropic Messages, an enabled hint marks the system prompt and preceding ordered tools as the static prefix. If the system is empty, it marks the last tool instead; if both are empty, Axe adds no breakpoint. Conversation messages, including tasks and sub-agent context, remain outside that breakpoint. Eligibility depends on provider and model constraints and cache availability; a hint does not guarantee a hit or savings.
 
+For Bedrock Converse, enabled hints add separate default checkpoints after the system text and after the ordered tool specifications when each is present; empty static inputs add no checkpoint. Tool schema required names have stable ordering, and changing conversation messages remain outside these static prefixes. AWS model, API, region and routing determine support, checkpoint limits, minimum prefix sizes and TTL; shorter prefixes may not be cached. Cache reads and writes are provider-reported counts, not proof of hits or savings. See the [AWS prompt caching guide](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html) for current eligibility.
+
 ### Retry
 
 Agents can retry on transient LLM provider errors — rate limits (429), server

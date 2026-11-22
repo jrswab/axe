@@ -24,6 +24,8 @@ Each run resolves `params.cache_enabled` from its own agent definition: omitted 
 
 For Anthropic Messages, an enabled ephemeral breakpoint marks the system prompt and preceding ordered tools. With an empty system and tools present, the breakpoint instead marks the last tool; with neither, Axe adds no breakpoint. Conversation messages remain outside that static prefix. Model and provider constraints and cache availability determine eligibility; a hint does not guarantee a hit or savings. See [Anthropic's prompt caching guide](https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
 
+For Bedrock Converse, enabled hints add separate default checkpoints after the system text and after the ordered tool specifications when each is present; empty static inputs add no checkpoint. Tool schema required names have stable ordering, and changing conversation messages remain outside these static prefixes. AWS model, API, region and routing determine support, checkpoint limits, minimum prefix sizes and TTL; shorter prefixes may not be cached. Cache reads and writes are provider-reported counts, not proof of hits or savings. See the [AWS prompt caching guide](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html) for current eligibility.
+
 Anthropic reports cache-read and cache-write tokens when provided in usage. OpenAI Chat caching is provider-managed and automatic; `cache_enabled = false` does not disable it. Axe sends no explicit OpenAI cache request controls and maps reported cache-read tokens only, not cache-write tokens. Compatible adapters share request code but are not guaranteed to support first-party caching behavior.
 
 ## Configuring Credentials

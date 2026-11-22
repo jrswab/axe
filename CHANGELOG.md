@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
 
 ### Fixed
+- Serialize Bedrock Converse static checkpoints as separate union entries, wrap tool schemas, and keep required names stable; cache eligibility remains subject to the [AWS prompt caching guide](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html).
 - Resolve each Nested Run's cache choice independently and mark the complete Anthropic static prefix, including tools-only requests.
 - Keep required tool-schema names in stable order for Anthropic Messages and OpenAI Chat.
 - Preserve all tool-call arguments, text, finish reasons, and usage when OpenAI-compatible streaming chunks combine them (#95).
