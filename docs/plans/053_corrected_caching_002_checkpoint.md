@@ -34,11 +34,11 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Verify the F5/F6 checklist fixes and run the single A005 parallel independent review batch, one review per fix, with no retries. Do not start execution until both reviews pass.
+- Next safe action: Run fresh planning lint on the clean intent commit, then dispatch only the approved F5 and F6 reviews.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P205 completed under A004 with F5 and F6 outstanding; all four A004 calls were used, none remain, and no retry is allowed. A005 authorized the bounded checklist fixes and one parallel independent review per fix; fixes are applied pending verification and both reviews. The open draft PR 108 remains at its original pushed HEAD; see retained publication evidence below.
-- Last completed phase/task/gate and timestamp: REC010 restart and A005 checklist fix intent, 2026-11-22T18:11:27.467875+00:00
+- Last completed phase/task/gate and timestamp: L207 and P206 A005 write-ahead, 2026-11-22T18:13:21.221904+00:00
 
 ## Gate evidence
 
@@ -909,8 +909,29 @@ Direct milestone-entries exit 0 for 3 entries. RESTART inspection at clean a037e
 
 - Next action: Fix F5/F6 in the 002 checklist and record A005 in active summaries. Do not start execution until both reviews pass.
 
+### L207 and P206 A005 write-ahead
+
+- Gate: L207 and P206 A005 write-ahead
+- Commands/results:
+F5/F6 fix commit 1cd56b55ff5dbae7d1993ef33685452eef9297e5. git diff --check exit 0; independent fixed-string grep exit 1 for the removed sentence, no matches. T2 F5 and F6 additions at checklist:38–39 and audit mapping at :57 confirmed; no other requirement, acceptance, test or scope changed. In flight after committing this intent with a clean index: both spec-lint commands and docs-lint since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676. If all exit 0, P206 is one planning review round 3 with exactly two independent read-only calls in one parallel batch, one F5 and one F6. No retries. A005 unconsumed until dispatch; A004 exhausted, shared failures 2, historical incompletes 2. Implementation starts only on two complete passes. No task launched.
+- HEAD commit SHA: `1cd56b55ff5dbae7d1993ef33685452eef9297e5`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run fresh planning lint on the clean intent commit, then dispatch only the approved F5 and F6 reviews.
+
 ## Limitations & blockers
 
 - Limitations: P202 approved the spec; P205 resolved F1–F4 but failed on F5 and F6. P204 and P204b remain two historical consecutive incompletes; P205 added none. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
 - Blockers: F5 and F6 fixes await verification and the A005 reviews; the gate did not pass and A004 is exhausted (4 used, 0 left, no retry). 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Verify the F5/F6 checklist fixes and run the single A005 parallel independent review batch, one review per fix, with no retries. Do not start execution until both reviews pass.
+- Next action: Run fresh planning lint on the clean intent commit, then dispatch only the approved F5 and F6 reviews.
