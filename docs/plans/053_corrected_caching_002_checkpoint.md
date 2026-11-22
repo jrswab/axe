@@ -34,11 +34,11 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit handoff sync outcome, push draftPR108, then publish handoff; next session retains four unlaunched source reviews
+- Next safe action: Repair Q3 citation and record current recovery summary before fresh lint and exact A004 review intent.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state and timestamp: P205 INTENT ONLY/NOT DISPATCHED; user handoff interruption; Y016 handoff sync PASS at `57f47142203deaa81909de1731ab9f90491cead3` with no HEAD change; publication pending, 2026-11-20T23:11:44.221468+00:00. L205 and Y015 passed.
-- Last completed phase/task/gate and timestamp: Y016 handoff sync PASS; publication intent, 2026-11-20T23:11:44.221468+00:00
+- Latest recorded state: REC009 reconciled the prior publication: `factory-gh gh pr view 108` verified the open draft PR at pushed HEAD `1d8718d1e9ebf801913e9aeaa158bcdc570566e4`. P205 was intent only, not dispatched; all four A004 review calls remain unlaunched. Earlier Y016 handoff sync, L205 and Y015 passed; see retained evidence below.
+- Last completed phase/task/gate and timestamp: REC009 direct Factory restart and citation repair intent, 2026-11-22T16:45:12.629472+00:00
 
 ## Gate evidence
 
@@ -783,8 +783,29 @@ Handoff administrative writer reconciled current002 summaries and appended parki
 
 - Next action: Commit handoff sync outcome, push draftPR108, then publish handoff; next session retains four unlaunched source reviews
 
+### REC009 direct Factory restart and citation repair intent
+
+- Gate: REC009 direct Factory restart and citation repair intent
+- Commands/results:
+Direct milestone-entries exit 0, 3 entries. Restart: 001 complete, 002 first unchecked and T1–T3 unchecked, 003 dependency-blocked. Clean HEAD and upstream 1d8718d1e9ebf801913e9aeaa158bcdc570566e4; no index or pending changes before bookkeeping. Historical REC007/REC008 evidence remains attributable to original Git blobs and later commits; ignored bootstrap had no snapshot by design; no stash applied. Existing publication footer reconciled: factory-gh gh pr view 108 exit 0, OPEN DRAFT at exact 1d8718d1e9ebf801913e9aeaa158bcdc570566e4, https://github.com/jrswab/axe/pull/108. factory-preflight --fix exit 0, all seven checks pass, 36.1 GB free, no warnings. factory-sync --wip exit 0, origin/master, ahead 37 behind 0, no conflict or HEAD movement. spec-lint exit 0 for spec (26 citations) and checklist (9 citations, 6 selectors); docs-lint 1 exit 0 (57 Markdown files, 0 findings), at recovery HEAD. A004 allocation intact: original round 2, one shared planning failure, two historical incomplete results, four calls remaining, F1–F4 carried. Citation repair in flight under standing authorization: replace mutable stale Q3 checkpoint line reference at spec line 22 with durable decision label; reconcile active summary for prior publication without rewriting historical evidence. Local and reversible, citation and administrative only, within 002, changes no acceptance or assertions, bypasses no gates or independent reviews and resets no caps. Fresh lint after this change is required.
+- HEAD commit SHA: `1d8718d1e9ebf801913e9aeaa158bcdc570566e4`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Repair Q3 citation and record current recovery summary before fresh lint and exact A004 review intent.
+
 ## Limitations & blockers
 
 - Limitations: P202 approved the spec; P203 accounts for one shared failing planning round. F1–F4 text fixes and lint were checked, but P204 and P204b were consecutive incompletes on the same complete-checklist round 2; the source-verification coverage recorded in P204b remains unfinished. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
 - Blockers: complete-checklist round 2 reached its incomplete cap; A004 authorizes only the four still-unlaunched source-review calls as described above. The gate remains unpassed and 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit handoff sync outcome, push draftPR108, then publish handoff; next session retains four unlaunched source reviews
+- Next action: Repair Q3 citation and record current recovery summary before fresh lint and exact A004 review intent.
