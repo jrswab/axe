@@ -1,17 +1,17 @@
 # Corrected caching — parked
 
-The run ends with a draft PR because milestones 002 and 003 are unchecked. No external probes were authorized or run.
+Milestone 002 is active for execution; 002 and 003 remain unchecked, and 003 depends on 002 and is not being started. No external probes were authorized or run.
 
 ## Current outcome and review direction
 
-P205 completed the A004 four-slice batch: S1 and S3 approved; S2 and S4 requested changes. F1–F4 are resolved; F5 and F6 checklist fixes are applied pending verification and review. The shared planning count is two failed rounds (P203 and combined P205); the two consecutive P204/P204b incompletes remain historical and P205 added zero. A004 has 4 calls used, 0 left, and no retry is allowed. A005 authorizes only the fixes and one parallel independent review per fix, with no retries; no implementation may start until both reviews pass. Milestone 003 remains dependency-blocked; no implementation or new execution evidence is claimed.
+P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 RED and independent VERIFY passed, with original task code commit `4fa25a0`; T1 remains unchecked and no review axes have launched. After fresh lint and stale-record checks, the next action is a fresh HEAD-matched whole-suite gate followed by the first parallel Standards, Spec and Design risk review, conditional on the exact clean HEAD. This reconciliation commit makes the final T1 review pin and keeps base `c67046be996a47b103e18b7ceca85657a09e0701`; the gate and reviews are already recorded in flight under that condition. The whole-suite outcome at `4fa25a0` is dated history only. Milestone 003 remains dependent on 002 and is not being started.
 
 - **F5 — Low stakes checklist fix (S2/R4):** `docs/plans/053_corrected_caching_002_implement.md:37,39` checks `json-output.md` but neither assigns documentation edits nor names `run-flags.md`. Both `docs/src/cli/json-output.md:80` and `docs/src/cli/run-flags.md:46` say `--stream` and `--json` always stream, contrary to `docs/src/providers.md:109` and `pkg/runner/run.go:529-533`. Recommend assigning T2 both documentation edits to explain fallback while retaining a single JSON envelope.
 - **F6 — Low stakes checklist fix (S4/R3–R4):** `docs/plans/053_corrected_caching_002_spec.md:52,60` versus `docs/plans/053_corrected_caching_002_implement.md:28,38,70` leaves omitted usage and independently zero cache usage untested through Bedrock Run. Recommend assigning T2 literal Converse fixtures that assert Result values and JSON omission for those cases, plus numerical nonzero counterparts, without changing accounting.
 
-### Current direction — A005 pending review
+### Current direction — T1 review preparation
 
-Jaron approved the bounded F5/F6 checklist fixes and exactly one parallel independent review per fix; no retries are authorized. Verify the fixes, then run that review batch. A004 remains exhausted; 002 execution must not start until both reviews pass, and 003 remains blocked by 002.
+P206 approved both bounded A005 reviews and 002 is active for execution. After fresh lint and stale-record checks, obtain the fresh HEAD-matched whole-suite gate, then conduct the first parallel Standards, Spec and Design risk review at the exact clean final pin. T1 remains unchecked; 003 is not being started.
 
 ## Historical parking questions
 

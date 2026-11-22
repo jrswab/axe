@@ -34,11 +34,11 @@ Absolute paths inside the repository root:
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit T1, then run HEAD-matched gate evidence and independent task reviews.
+- Next safe action: After fresh lint and stale-record checks, run a fresh HEAD-matched whole-suite gate, then the first parallel Standards, Spec and Design risk review at the exact clean review HEAD.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P205 completed under A004 with F5 and F6 outstanding; all four A004 calls were used, none remain, and no retry is allowed. A005 authorized the bounded checklist fixes and one parallel independent review per fix; fixes are applied pending verification and both reviews. The open draft PR 108 remains at its original pushed HEAD; see retained publication evidence below.
-- Last completed phase/task/gate and timestamp: T1 independent VERIFY passed; task review and gate intent, 2026-11-22T18:21:05.822584+00:00
+- Latest recorded state: P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. A005 consumed 2/2 calls; A004 exhausted 4/4. No retries are authorized. T1 RED and independent VERIFY passed; original task code commit `4fa25a0`; T1 remains unchecked and no review axes have launched. Milestone 002 is active for execution; 003 still depends on 002 and is not being started. Draft PR 108 publication evidence is retained below.
+- Last completed phase/task/gate and timestamp: T1 gate passed; active summary repair intent, 2026-11-22T18:23:08.688749+00:00
 
 ## Gate evidence
 
@@ -51,10 +51,10 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 ### Cap-state summary
 
-- Cap `002/planning`: lane `full`; P202 spec review approved. P203 checklist round 1 failed with F1–F4; F204 repaired them, and P205 independently verified them resolved. Original round 2 scope is the complete checklist against the approved spec and cited sources. P204 and P204b were two consecutive incomplete reviews of this scope/round; the historical count remains `2`. A004 authorized one additional four-slice batch without retries or counter reset; P205 completed S1 records/research/AWS and S3 provider/config APPROVED, S2 standards/docs and S4 execution/accounting CHANGES REQUESTED. F5 and F6 are outstanding; no slice was incomplete and no new incomplete was recorded. A004: `4 used, 0 left`; no retry. Evidence: P202–P205 and A004 below.
-- Planning: shared failing rounds `2` (P203 and combined P205); historical round 2 consecutive incompletes `2`; new incompletes `0`. The combined P205 gate failed once. A005 authorizes only F5/F6 checklist fixes and one parallel independent review per fix, no retries; fixes are applied pending verification and review. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
-- Code review `002`: gate/round `none`; original scope, slices, dispatches, blockers and unreviewed files `none` (no review scope established); combined outcome `not applicable`; round-four eligibility/reason and progress `not applicable`; incomplete count `none` until a scope/round exists.
-- Tasks T1–T3 are `unchecked`; task execution, task reviews, implementation fixes and milestone reviews for 002: `0` launched; no task review rounds or gate scopes established.
+- Cap `002/planning`: lane `full`; P202 spec review approved. P203 checklist round 1 failed with F1–F4; F204 repaired them and P205 verified them resolved. P204 and P204b were two historical consecutive incomplete reviews of the original complete-checklist round 2. P205 completed the A004 four-slice batch: S1 and S3 APPROVED, S2 and S4 CHANGES REQUESTED; A004 exhausted 4/4 calls. P206's two A005 reviews both APPROVED, resolving F5 and F6; A005 consumed 2/2 calls. No retries are authorized. The planning gate passed.
+- Planning: shared failing rounds `2` (P203 and combined P205); historical incomplete events `2` (P204 and P204b); P205 added none. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
+- Code review `002/T1`: first parallel Standards, Spec and Design risk review recorded in flight conditional on the exact clean HEAD; no review axes launched and no outcomes. Review base remains `c67046be996a47b103e18b7ceca85657a09e0701`. This reconciliation commit makes the final T1 review pin; a fresh HEAD-matched whole-suite gate precedes review. Round-four eligibility and progress are not applicable.
+- Tasks T1–T3 are `unchecked`. T1 RED and independent VERIFY passed and task code was committed at `4fa25a0`; no T1 review axes or milestone reviews have launched.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
 
 ### Bootstrap evidence B002-001
@@ -1027,8 +1027,29 @@ b9ac0dd4987e03cb61cb47cb8aa0b470d97beda6  "internal/provider/bedrock_wire_test.g
 
 - Next action: Commit T1, then run HEAD-matched gate evidence and independent task reviews.
 
+### T1 gate passed; active summary repair intent
+
+- Gate: T1 gate passed; active summary repair intent
+- Commands/results:
+At clean T1 commit 4fa25a016b96cb1bff64cf8315101214e2cafbd4: docs-lint 1 --since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676 exit 0, 57 files, 0 findings. records-stale-check c67046be996a47b103e18b7ceca85657a09e0701 exit 0, no mentions of 3 removed or renamed terms (initial two-dot input rejected exit 2; corrected to base ref). factory-gate test poll exit 0, /tmp/factory-gate-1001/gate-test-4fa25a016b96-20261122T182112Z.log. No review axes launched. Read-only prep found active summary and footer still claim P206 pending and implementation not launched; current claims conflict with dated approved verdict and T1 commit. In flight: local administrative summary reconciliation, within 002; no acceptance/assertion change, no gate/review bypass or cap reset, append-only history retained. Fresh lint, stale-record check and HEAD-matched whole suite after bookkeeping commit, before any review dispatch.
+- HEAD commit SHA: `4fa25a016b96cb1bff64cf8315101214e2cafbd4`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Reconcile current summary and parking status, then obtain fresh gate evidence at review HEAD.
+
 ## Limitations & blockers
 
-- Limitations: P202 approved the spec; P205 resolved F1–F4 but failed on F5 and F6. P204 and P204b remain two historical consecutive incompletes; P205 added none. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
-- Blockers: F5 and F6 fixes await verification and the A005 reviews; the gate did not pass and A004 is exhausted (4 used, 0 left, no retry). 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit T1, then run HEAD-matched gate evidence and independent task reviews.
+- Limitations: T1–T3 and 002 remain unchecked. T1 RED and independent VERIFY passed at original task code commit `4fa25a0`; no review axes have launched. The whole-suite outcome at `4fa25a0` is dated history only, not evidence for the final review pin. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
+- Blockers: The planning gate passed; F5 and F6 are resolved. A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 depends on 002 and is not being started. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
+- Next action: After fresh lint and stale-record checks, at the exact clean final T1 review HEAD, run a fresh HEAD-matched whole-suite gate, then the first parallel Standards, Spec and Design risk review. The gate and reviews are recorded in flight conditional on that HEAD; review base stays `c67046be996a47b103e18b7ceca85657a09e0701`.
