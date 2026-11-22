@@ -35,7 +35,7 @@ none
 ### Cap-state summary
 
 - None for 003: no review gate, scope, round, slices, dispatches, findings, incompletes, or round-four eligibility exist. Planning and implementation have not started.
-- The blocking 002 complete-checklist round 2 cap is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2`, historical consecutive same-scope/round incompletes `2`, and new incompletes `0` belong to 002, not 003. P205 left F5 and F6 outstanding; A004 used all four calls with no retry.
+- The 002 planning history is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2` and historical consecutive same-scope/round incompletes `2` belong to 002, not 003. P206 approved the checklist and resolved P205's F5 and F6; A004 used all four calls and A005 used both calls, with no retries. T1 round 1 completed with three CHANGES REQUESTED and no incompletes; 002 is parked pending scope direction and independent confirmation.
 
 ### Administrative initialization
 
@@ -69,5 +69,5 @@ none
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
-- Blockers: milestone 002 remains unchecked and parked after P205 failed on F5 and F6; A004 is exhausted and no retry is allowed.
+- Blockers: milestone 002 remains unchecked and parked after T1 round 1; P206 resolved F5 and F6. The Design risk scope question and independent confirmation of records fixes remain open. 003 depends on 002 completion.
 - Next action: Keep 003 parked until 002 passes its completion gate.

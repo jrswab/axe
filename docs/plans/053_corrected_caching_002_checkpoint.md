@@ -27,18 +27,18 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `execute`
+- Current phase: `blocked`
 - Current task: T1
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: After fresh lint and stale-record checks, run a fresh HEAD-matched whole-suite gate, then the first parallel Standards, Spec and Design risk review at the exact clean review HEAD.
+- Next safe action: Keep 002 parked pending explicit direction on the Bedrock description scope blocker and independent confirmation of the records fixes.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. A005 consumed 2/2 calls; A004 exhausted 4/4. No retries are authorized. T1 RED and independent VERIFY passed; original task code commit `4fa25a0`; T1 remains unchecked and no review axes have launched. Milestone 002 is active for execution; 003 still depends on 002 and is not being started. Draft PR 108 publication evidence is retained below.
-- Last completed phase/task/gate and timestamp: T1 gate passed; active summary repair intent, 2026-11-22T18:23:08.688749+00:00
+- Latest recorded state: P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. A005 consumed 2/2 calls; A004 exhausted 4/4, with no retries authorized. T1 is partial and committed at `4fa25a0`, but remains unchecked. At `c67046b`, RED ran with only the untracked test and checkpoint pending; independent VERIFY ran with full T1 source pending, before the code commit. The whole-suite gate passed at reviewed revision `cafdda4a`. All three T1 round 1 axes completed CHANGES REQUESTED, with no incompletes; records fixes await independent confirmation and the Design risk scope blocker awaits direction. 002 is parked; 003 remains dependency blocked. Draft PR 108 publication evidence is retained below.
+- Last completed phase/task/gate and timestamp: T1 independent round 1 blocked; parking intent, 2026-11-22T18:30:29.823488+00:00
 
 ## Gate evidence
 
@@ -53,8 +53,8 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 - Cap `002/planning`: lane `full`; P202 spec review approved. P203 checklist round 1 failed with F1–F4; F204 repaired them and P205 verified them resolved. P204 and P204b were two historical consecutive incomplete reviews of the original complete-checklist round 2. P205 completed the A004 four-slice batch: S1 and S3 APPROVED, S2 and S4 CHANGES REQUESTED; A004 exhausted 4/4 calls. P206's two A005 reviews both APPROVED, resolving F5 and F6; A005 consumed 2/2 calls. No retries are authorized. The planning gate passed.
 - Planning: shared failing rounds `2` (P203 and combined P205); historical incomplete events `2` (P204 and P204b); P205 added none. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
-- Code review `002/T1`: first parallel Standards, Spec and Design risk review recorded in flight conditional on the exact clean HEAD; no review axes launched and no outcomes. Review base remains `c67046be996a47b103e18b7ceca85657a09e0701`. This reconciliation commit makes the final T1 review pin; a fresh HEAD-matched whole-suite gate precedes review. Round-four eligibility and progress are not applicable.
-- Tasks T1–T3 are `unchecked`. T1 RED and independent VERIFY passed and task code was committed at `4fa25a0`; no T1 review axes or milestone reviews have launched.
+- Code review `002/T1`: Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes and no round 2 dispatched. The reviewed revision was `cafdda4a362468ba9005db71dfd961ccfb664de3`, against base `c67046be996a47b103e18b7ceca85657a09e0701`; its whole-suite gate passed. Standards/Spec records fixes await independent confirmation; Design risk requires scope direction. Round-four eligibility and progress are not applicable.
+- Tasks T1–T3 are `unchecked`. T1 partial code was committed at `4fa25a0` after RED and independent VERIFY at `c67046b`; no milestone reviews have launched.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
 
 ### Bootstrap evidence B002-001
@@ -1048,8 +1048,29 @@ At clean T1 commit 4fa25a016b96cb1bff64cf8315101214e2cafbd4: docs-lint 1 --since
 
 - Next action: Reconcile current summary and parking status, then obtain fresh gate evidence at review HEAD.
 
+### T1 independent round 1 blocked; parking intent
+
+- Gate: T1 independent round 1 blocked; parking intent
+- Commands/results:
+At clean cafdda4a362468ba9005db71dfd961ccfb664de3 on c67046be996a47b103e18b7ceca85657a09e0701 fixed point, docs-lint 1 exit 0 (57 files, zero findings), records-stale-check exit 0 (no hits), factory-gate test poll exit 0, /tmp/factory-gate-1001/gate-test-cafdda4a3624-20261122T182450Z.log (go test -race ./...). Three independent design-bearing axes completed round 1: Standards CHANGES REQUESTED on active-dated record inconsistencies; Spec CHANGES REQUESTED on overlapping parking inconsistency only, T1 behavior otherwise meets reviewed criteria; Design risk CHANGES REQUESTED, blocker that Bedrock serializes optional empty description, which AWS rejects if present. Source: internal/provider/bedrock.go:136–140,257–259, pkg/runner/run.go:525, internal/mcpclient/mcpclient.go:142–147, AWS ToolSpecification snapshot /tmp/issue83-docs/aws-spec-md:23–27. Existing behavior predates T1. Spec R1 :38–40 requires preserving descriptions and contract validation; checklist :29 names union/schema/order. Scope of extending T1 to fix pre-existing empty descriptions remains ambiguous; park and recommend explicit bounded ownership/scope direction rather than implementing unapproved work. No round 2 dispatched, all three round-1 blockers retained until reverified; no incomplete results. Standards nits deferred with review outcome (boolean test fixture flags, name-based switches, provider TAGS coverage); no assertion rewrites authorized. A005 2/2 both passed and planning remains approved, separate from execution. In flight: repair only inaccurate active records identified by Standards/Spec, record scope blocker and consequence in parking, commit, sync and publish. No T2 or T3 launch, 003 still dependency blocked.
+- HEAD commit SHA: `cafdda4a362468ba9005db71dfd961ccfb664de3`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Correct active records, document the Bedrock scope blocker, and publish the partial T1 work.
+
 ## Limitations & blockers
 
-- Limitations: T1–T3 and 002 remain unchecked. T1 RED and independent VERIFY passed at original task code commit `4fa25a0`; no review axes have launched. The whole-suite outcome at `4fa25a0` is dated history only, not evidence for the final review pin. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
-- Blockers: The planning gate passed; F5 and F6 are resolved. A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 depends on 002 and is not being started. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: After fresh lint and stale-record checks, at the exact clean final T1 review HEAD, run a fresh HEAD-matched whole-suite gate, then the first parallel Standards, Spec and Design risk review. The gate and reviews are recorded in flight conditional on that HEAD; review base stays `c67046be996a47b103e18b7ceca85657a09e0701`.
+- Limitations: T1–T3 and 002 remain unchecked. RED and independent VERIFY passed at `c67046b` before partial T1 code commit `4fa25a0`; the whole-suite gate passed at reviewed revision `cafdda4a`. All three round 1 axes completed CHANGES REQUESTED, with no incompletes; no round 2 was dispatched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
+- Blockers: Standards/Spec record fixes await independent confirmation. Design risk identified optional empty Bedrock tool descriptions serialized as empty strings, rejected by AWS when present; the pre-existing issue needs explicit scope direction. The planning gate passed; F5 and F6 are resolved. A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 depends on 002 and remains parked. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
+- Next action: Keep 002 parked pending explicit scope direction and independent confirmation; see the parking record.

@@ -1,17 +1,23 @@
 # Corrected caching — parked
 
-Milestone 002 is active for execution; 002 and 003 remain unchecked, and 003 depends on 002 and is not being started. No external probes were authorized or run.
+Milestone 002 is parked with partial T1 work committed; 002 and 003 remain unchecked, and 003 is parked on its dependency. No external probes were authorized or run.
 
 ## Current outcome and review direction
 
-P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 RED and independent VERIFY passed, with original task code commit `4fa25a0`; T1 remains unchecked and no review axes have launched. After fresh lint and stale-record checks, the next action is a fresh HEAD-matched whole-suite gate followed by the first parallel Standards, Spec and Design risk review, conditional on the exact clean HEAD. This reconciliation commit makes the final T1 review pin and keeps base `c67046be996a47b103e18b7ceca85657a09e0701`; the gate and reviews are already recorded in flight under that condition. The whole-suite outcome at `4fa25a0` is dated history only. Milestone 003 remains dependent on 002 and is not being started.
+P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 RED ran at `c67046b` with only an untracked test and checkpoint pending; independent VERIFY passed at `c67046b` with full T1 source pending, before partial T1 code was committed as `4fa25a0`. The whole-suite gate passed on reviewed revision `cafdda4a`. T1 remains unchecked. Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes or round 2 dispatch. Standards/Spec records fixes await independent confirmation; the Design risk scope blocker awaits explicit direction. Milestone 003 remains parked on 002.
 
-- **F5 — Low stakes checklist fix (S2/R4):** `docs/plans/053_corrected_caching_002_implement.md:37,39` checks `json-output.md` but neither assigns documentation edits nor names `run-flags.md`. Both `docs/src/cli/json-output.md:80` and `docs/src/cli/run-flags.md:46` say `--stream` and `--json` always stream, contrary to `docs/src/providers.md:109` and `pkg/runner/run.go:529-533`. Recommend assigning T2 both documentation edits to explain fallback while retaining a single JSON envelope.
-- **F6 — Low stakes checklist fix (S4/R3–R4):** `docs/plans/053_corrected_caching_002_spec.md:52,60` versus `docs/plans/053_corrected_caching_002_implement.md:28,38,70` leaves omitted usage and independently zero cache usage untested through Bedrock Run. Recommend assigning T2 literal Converse fixtures that assert Result values and JSON omission for those cases, plus numerical nonzero counterparts, without changing accounting.
+- **F5 — HISTORICAL P205, resolved P206 (S2/R4):** At P205, `docs/plans/053_corrected_caching_002_implement.md:37,39` checked `json-output.md` but neither assigned documentation edits nor named `run-flags.md`. Both `docs/src/cli/json-output.md:80` and `docs/src/cli/run-flags.md:46` then said `--stream` and `--json` always stream, contrary to `docs/src/providers.md:109` and `pkg/runner/run.go:529-533`. P205 recommended assigning T2 both documentation edits to explain fallback while retaining a single JSON envelope.
+- **F6 — HISTORICAL P205, resolved P206 (S4/R3–R4):** At P205, `docs/plans/053_corrected_caching_002_spec.md:52,60` versus `docs/plans/053_corrected_caching_002_implement.md:28,38,70` left omitted usage and independently zero cache usage untested through Bedrock Run. P205 recommended assigning T2 literal Converse fixtures that assert Result values and JSON omission for those cases, plus numerical nonzero counterparts, without changing accounting.
 
-### Current direction — T1 review preparation
+### Current direction — parked pending scope decision
 
-P206 approved both bounded A005 reviews and 002 is active for execution. After fresh lint and stale-record checks, obtain the fresh HEAD-matched whole-suite gate, then conduct the first parallel Standards, Spec and Design risk review at the exact clean final pin. T1 remains unchecked; 003 is not being started.
+The records fixes are pending independent confirmation. The Design risk blocker remains open; no scope change, T2 or T3 launch, or further review is authorized by this record. T1 remains unchecked; 003 stays parked until 002 completes.
+
+### High stakes question — empty Bedrock tool descriptions
+
+Optional empty tool descriptions are serialized as an empty string (`internal/provider/bedrock.go:136–140,257–259`), but AWS permits omission and requires length at least 1 when present (`/tmp/issue83-docs/aws-spec-md:23–27`). This behavior predates T1. Accepted R1 (`docs/plans/053_corrected_caching_002_spec.md:38–40`) asks to preserve descriptions and review against AWS contracts; the checklist (`docs/plans/053_corrected_caching_002_implement.md:29`) limits fixes to union/schema/order. An agent must not resolve this scope ambiguity unilaterally.
+
+**Recommendation:** Explicitly authorize the narrow omission of descriptions only when empty, plus a new additive RED test in both cache modes. Preserve all existing assertions and nonempty descriptions; do not touch MCP or config. Then repeat only the required T1 blocking reviews. Alternatively, leave 002 parked and track this issue separately; 003 remains parked by dependency.
 
 ## Historical parking questions
 
@@ -40,11 +46,11 @@ Already decided, not a live question: Jaron's `Q3 I approve` permits only the co
 ## Decided for you
 
 - **D1 — Writable module cache:** For the existing Go preflight, use `GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod`: B008 failed because the default module cache was read-only and `XDG_CACHE_HOME` does not redirect module downloads. B009 retained all existing checks, including the vulnerability scan, and passed. This was a reversible cache choice, not a waiver (`docs/plans/053_corrected_caching_002_checkpoint.md:47,63-73`).
-- **D2 — Three coherent checklist tasks:** F203 grouped 002 into T1 wire/stability, T2 Main/Nested AWS parity, and T3 unchanged regression/accounting. This gives the new behavioral contracts genuine test-first RED paths and preserves independently grounded contract evidence; new passing-only tests cannot use the unchanged-test existing-GREEN route. The checklist remains unapproved at its capped review (`docs/plans/053_corrected_caching_002_checkpoint.md:338-363`).
+- **D2 — Three coherent checklist tasks:** F203 grouped 002 into T1 wire/stability, T2 Main/Nested AWS parity, and T3 unchanged regression/accounting. This gives the new behavioral contracts genuine test-first RED paths and preserves independently grounded contract evidence; new passing-only tests cannot use the unchanged-test existing-GREEN route. P206 approved the checklist after resolving F5 and F6 (`docs/plans/053_corrected_caching_002_checkpoint.md`).
 
 ## Run evidence
 
-- Milestone 001 completed historically; its completion evidence is retained. Milestones 002 and 003 remain unchecked. T1–T3 of 002 are unchecked; no 002 implementation or task execution was launched. No source or test edits were made in the current session.
+- Milestone 001 completed historically; its completion evidence is retained. Milestones 002 and 003 remain unchecked. T1–T3 of 002 are unchecked; partial T1 implementation and tests were committed as `4fa25a0` after RED and independent VERIFY. No source or test edits are made in this administrative repair.
 - B008 failed, B009 passed with the writable module cache, E009 host preflight passed, and Y012 sync passed without moving HEAD. These are recorded historical outcomes, not checks rerun by this administrative task (`docs/plans/053_corrected_caching_002_checkpoint.md:63-73`).
 - No 003 spec, checklist, task, or review has ever been launched; there is no 003 implementation range. Its checkpoint identifies the current HEAD only as the administrative creation source.
 - No external probes were authorized or run. Source tests do not apply to these Markdown bookkeeping changes. The run ends with a draft PR, not completion; commit, sync, push and PR operations are outside this administrative task.
