@@ -27,18 +27,18 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `implement`
+- Current phase: `blocked`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit bookkeeping, run fresh lint, then dispatch the authorized S1–S4 batch only if all lint gates pass.
+- Next safe action: Keep 002 parked pending Jaron's direction on a targeted way to fix and verify F5 and F6; 003 remains dependency-blocked.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: REC009 reconciled the prior publication: `factory-gh gh pr view 108` verified the open draft PR at pushed HEAD `1d8718d1e9ebf801913e9aeaa158bcdc570566e4`. P205 was intent only, not dispatched; all four A004 review calls remain unlaunched. Earlier Y016 handoff sync, L205 and Y015 passed; see retained evidence below.
-- Last completed phase/task/gate and timestamp: L206 and P205 restart write-ahead, 2026-11-22T16:46:15.914801+00:00
+- Latest recorded state: P205 completed under A004 with F5 and F6 outstanding; all four authorized calls were used, none remain, and no retry is allowed. The open draft PR 108 remains at its original pushed HEAD until the orchestrator pushes this run; see retained publication evidence below.
+- Last completed phase/task/gate and timestamp: L206 passed; P205 completed with blockers under A004, 2026-11-22T16:52:27.112179+00:00
 
 ## Gate evidence
 
@@ -46,13 +46,13 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 - Decision Q3: Jaron's exact approval was `Q3 I approve`. It authorizes only replacing the contradicted assertions in `TestBedrock_Send_Cache` in `internal/provider/bedrock_test.go`: the combined system text/cache-point expectation becomes separate text and default cache-point-only union entries, and the top-level `ToolConfig.CachePoint` expectation becomes a separate default cache-point-only entry in `toolConfig.tools` while retaining the tool specification. Preserve ToolConfig existence, cache read/write usage, and all unrelated assertions/tests; independently cover raw-wire `inputSchema.json` and cache-disabled requests. No other assertion or acceptance change is approved. Original source: `/home/jaron/.pi/agent/sessions/--home-jaron-dev-axe-iss-83-finish-caching--/2026-11-19T15-47-50-732Z_01a1f47e-274c-748d-88b3-337965f93f71.jsonl:106`; durable scope and user message also appear in the 001 checkpoint's Q3 and REC009 entries. Action: future implementation only, not performed here; report: recorded in 001; intended gate: later implementation and applicable tests.
 - Decision D009: use `GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod` for the existing Go preflight after B008's read-only module-cache failure. Scope: reversible local cache selection for 002 setup; reason: `XDG_CACHE_HOME` does not redirect Go module downloads. Eligibility: existing full check including vulnerability scan retained, no code/assertion/criterion change, no review or cap bypass, no human-only boundary crossed; stricter reviewer instruction: not applicable. B009 subsequently passed; B008 remains failed history. Intended gate: full existing Go preflight; action: completed; report: retained in 001 and this checkpoint. Evidence: REC009c and B009 in 001, B002-001 below.
-- Decision A004: explicit user approval for exactly one additional batch of four independent read-only source reviews beyond the reached cap, preserving original round 2 and all counters; no incomplete retries. Approval: `/home/jaron/.pi/agent/sessions/--home-jaron-dev-axe-iss-83-finish-caching--/2026-11-20T19-56-16-550Z_01a1fa87-f525-75f1-a143-b33079ea9dda.jsonl:197-198` (proposal and `I approve`). P205 intent was interrupted before dispatch; four calls remain, none consumed. Evidence and slice scopes are retained below.
+- Decision A004: explicit user approval for exactly one additional batch of four independent read-only source reviews beyond the reached cap, preserving original round 2 and all counters; no incomplete retries. Approval: `/home/jaron/.pi/agent/sessions/--home-jaron-dev-axe-iss-83-finish-caching--/2026-11-20T19-56-16-550Z_01a1fa87-f525-75f1-a143-b33079ea9dda.jsonl:197-198` (proposal and `I approve`). After the historical interruption, P205 dispatched and completed all four calls: 4 used, 0 left, no retries. Evidence and slice scopes are retained below.
 - Other new 002 procedure exceptions: `none`. The 001 decision ledger D1–D14 and its historical outcomes remain in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md`; they are not reset by this checkpoint.
 
 ### Cap-state summary
 
-- Cap `002/planning`: lane `full`; P202 spec review approved. P203 complete checklist round 1 returned CHANGES REQUESTED (F1–F3 blockers, F4 nit); F204 fixed the text and L203 independently checked the edits and lint. Original round 2 scope is the complete checklist against the approved spec and cited sources, with no original slices; P204 reviewed artifact text but was INCOMPLETE, and P204b retried the remaining source-verification scope within the same gate and round but was INCOMPLETE. Consecutive incompletes for this original scope/round: `2`; cap reached. F1–F4 text fixes are confirmed, but complete independent source coverage is unresolved; carry the findings until the gate can be completed. Unreviewed coverage is recorded verbatim in P204b below. A004 explicitly authorizes exactly one additional batch of four independent read-only source-review calls beyond the reached cap, not incomplete retries, fixes, a counter reset, or round 3. P205 was intent only: none launched or consumed, all four remain available. Evidence: P202–P204b, A004, P205 interruption outcome.
-- Planning: shared failing rounds `1` (P203); round 2 consecutive incompletes `2`; no new blocking finding was established in either partial review. The approved batch retains the original gate and round; S1 covers records/research/AWS, S2 standards/docs, S3 provider/config, and S4 execution/errors/retries/budget. All four complete passes are required to continue 002, then 003; any nonpass parks. No incomplete retries are authorized. Post-cap fixes/check `not applicable`. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
+- Cap `002/planning`: lane `full`; P202 spec review approved. P203 checklist round 1 failed with F1–F4; F204 repaired them, and P205 independently verified them resolved. Original round 2 scope is the complete checklist against the approved spec and cited sources. P204 and P204b were two consecutive incomplete reviews of this scope/round; the historical count remains `2`. A004 authorized one additional four-slice batch without retries or counter reset; P205 completed S1 records/research/AWS and S3 provider/config APPROVED, S2 standards/docs and S4 execution/accounting CHANGES REQUESTED. F5 and F6 are outstanding; no slice was incomplete and no new incomplete was recorded. A004: `4 used, 0 left`; no retry. Evidence: P202–P205 and A004 below.
+- Planning: shared failing rounds `2` (P203 and combined P205); historical round 2 consecutive incompletes `2`; new incompletes `0`. The combined gate failed once and 002 is parked. Post-cap fixes/check `not applicable`; no fix or new review is authorized. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
 - Code review `002`: gate/round `none`; original scope, slices, dispatches, blockers and unreviewed files `none` (no review scope established); combined outcome `not applicable`; round-four eligibility/reason and progress `not applicable`; incomplete count `none` until a scope/round exists.
 - Tasks T1–T3 are `unchecked`; task execution, task reviews, implementation fixes and milestone reviews for 002: `0` launched; no task review rounds or gate scopes established.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
@@ -825,8 +825,29 @@ REC009 citation repair complete, commit 418d6b4733e1d486a0ababb74623cfb24af39381
 
 - Next action: Commit bookkeeping, run fresh lint, then dispatch the authorized S1–S4 batch only if all lint gates pass.
 
+### L206 passed; P205 completed with blockers under A004
+
+- Gate: L206 passed; P205 completed with blockers under A004
+- Commands/results:
+Clean launch HEAD 9bbbb36747c199ab6f95aa5c20e5f04d982a3b6c. L206: spec-lint --root /home/jaron/dev/axe/iss-83-finish-caching docs/plans/053_corrected_caching_002_spec.md exit 0 (25 citations, 0 findings); same invocation for docs/plans/053_corrected_caching_002_implement.md exit 0 (9 citations, 6 selectors, 0 findings); docs-lint --since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676 exit 0 (docs-lint 1, 57 Markdown files, 0 findings). P205: one four-task parallel review call, 4/4 completed, each with a first-line Verdict and no Review incomplete line. S1 records/research/AWS APPROVED, all authoritative contracts read via dated snapshots. S2 standards/docs CHANGES REQUESTED. S3 provider/config APPROVED. S4 execution/accounting CHANGES REQUESTED. F1–F4 independently verified resolved in the current checklist; combined gate did not pass. F5 (S2): R4 requires affected docs to agree with unchanged Bedrock nonstreaming fallback. Checklist only says to check json-output.md and does not name run-flags.md; both CLI docs say --stream plus --json always streams (docs/plans/053_corrected_caching_002_implement.md:37,39; docs/src/cli/json-output.md:80; docs/src/cli/run-flags.md:46; docs/src/providers.md:109; pkg/runner/run.go:529–533). Assign T2 to qualify both passages and retain one JSON envelope; T3 stays verification-only. F6 (S4): the zero/omitted usage cases are assigned only to Send, not Run (spec:52,60; checklist:28,38,70; pkg/runner/run.go:606–624,833–840). Assign T2 literal Bedrock Converse responses with absent usage and independently zero cache fields; assert Result and JSON, including nonzero counterparts, without changing accounting. Count this complete failing batch once for the combined checklist gate, original round 2: shared planning failing rounds 2 including P203; preserved historical P204/P204b consecutive incompletes 2, 0 new incompletes. A004 consumed exactly 4 calls, 0 remaining and no retries. Per recorded A004 nonpass rule, park 002 unchecked and 003 blocked by 002. No code, test, or acceptance changes; no execution or completion gate launched. Parking and summary update in flight before final sync and PR update by push.
+- HEAD commit SHA: `9bbbb36747c199ab6f95aa5c20e5f04d982a3b6c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record both blockers and 003 dependency, commit parking evidence, then sync and push to draft PR 108.
+
 ## Limitations & blockers
 
-- Limitations: P202 approved the spec; P203 accounts for one shared failing planning round. F1–F4 text fixes and lint were checked, but P204 and P204b were consecutive incompletes on the same complete-checklist round 2; the source-verification coverage recorded in P204b remains unfinished. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
-- Blockers: complete-checklist round 2 reached its incomplete cap; A004 authorizes only the four still-unlaunched source-review calls as described above. The gate remains unpassed and 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit bookkeeping, run fresh lint, then dispatch the authorized S1–S4 batch only if all lint gates pass.
+- Limitations: P202 approved the spec; P205 resolved F1–F4 but failed on F5 and F6. P204 and P204b remain two historical consecutive incompletes; P205 added none. T1–T3 and 002 are unchecked; no 002 implementation, source/test edits, task execution, task review, or milestone review launched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
+- Blockers: F5 and F6 remain outstanding; the gate did not pass and A004 is exhausted (4 used, 0 left, no retry). 003 is blocked by 002. Q3 permits only its recorded narrow future assertion replacements, not any other assertion or acceptance change.
+- Next action: Keep 002 parked pending Jaron's direction on a targeted way to fix and verify both findings.
