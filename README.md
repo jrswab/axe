@@ -606,11 +606,14 @@ The first directory containing a matching `<name>.toml` wins.
 | AWS Bedrock | (uses AWS credentials) | Region-based |
 
 **AWS Bedrock Configuration:**
-- Region: Set via `AWS_REGION` environment variable or `[providers.bedrock] region = "us-east-1"` in config.toml
-- Credentials: Uses environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`) or `~/.aws/credentials` file (supports `AWS_PROFILE` and `AWS_SHARED_CREDENTIALS_FILE`)
-- Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)
 
-Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
+Main and Nested Runs use the same AWS setup; neither uses an ordinary API key or base URL override.
+
+- Region: `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`. A region is required.
+- Credentials: A complete `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment pair takes precedence, with optional `AWS_SESSION_TOKEN`. Otherwise, Axe reads `AWS_SHARED_CREDENTIALS_FILE` or `~/.aws/credentials`, selecting `AWS_PROFILE` or `default`; the profile must contain both keys. This is not the full AWS SDK credential chain.
+- Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`).
+
+For providers other than Bedrock, base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
 

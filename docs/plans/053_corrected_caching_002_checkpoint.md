@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T2 AWS parity RED
+- Current task: T2 task commit and review gate
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: T2 RED focused test with local fixtures
+- Next safe action: Commit scoped T2 work and checkpoint, then run whole-suite test gate on the exact task commit.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. At that round-3 SHA, docs-lint, records-stale-check and the whole-suite factory-gate test passed as recorded below. Final lint and affected tests remain pending. T2 and T3 remain unchecked; 002 remains in execution and unchecked, and 003 is blocked only on 002 completion. The user interrupted this session for handoff; T2 RED starts after restart in the next session. Draft PR 108 publication evidence is retained below.
-- Last completed phase/task/gate and timestamp: resume sync outcome and T2 RED intent, 2026-11-23T17:46:44.083536+00:00
+- Last completed phase/task/gate and timestamp: required record outcome and whole-suite gate intent, 2026-11-23T18:01:16.239422+00:00
 
 ## Gate evidence
 
@@ -1309,8 +1309,114 @@ factory-sync --wip exit 0; JSON: branch iss-83-finish-caching, base origin/maste
 
 - Next action: T2 RED focused test with local fixtures
 
+### T2 genuine RED and implementation intent
+
+- Gate: T2 genuine RED and implementation intent
+- Commands/results:
+RED at HEAD 1eb3541d561f0bae8307b38092be279f43dadd11 with only new pkg/runner/bedrock_parity_test.go; exact test blob ca33da2a96fdae03e4d29b13975ecb1874c206e8. `env GOTOOLCHAIN=local GOCACHE=/tmp/axe-v006-cache.itoPgN/go-build GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod GOPROXY=off /tmp/axe-v006-cache.itoPgN/go-mod/golang.org/toolchain@v0.0.1-go1.26.11.linux-amd64/bin/go test -mod=readonly ./pkg/runner -run '^TestBedrock_AWSRunParity$'` exited 1; stdout /tmp/axe-t2-red.8ks3d1/stdout, stderr empty. Nested AWS_REGION case: 0 requests, wanted 1; returned API key for provider bedrock is not configured despite complete fake AWS setup. Nested missing_region and ordinary_key_and_url_do_not_override_aws used a decoy API key as endpoint region; fixtures blocked requests. No production or existing test changed. GREEN in flight: code implementation limited to ExecuteCallAgent provider setup and checklist-authorized documentation; keep the exact RED test blob, rerun the exact focused command and required touched tests/lint. Independent GREEN remains required. T2 fixed point 1eb3541d561f0bae8307b38092be279f43dadd11.
+- HEAD commit SHA: `1eb3541d561f0bae8307b38092be279f43dadd11`
+- Relevant work: `uncommitted` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+?? pkg/runner/bedrock_parity_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+ca33da2a96fdae03e4d29b13975ecb1874c206e8  "pkg/runner/bedrock_parity_test.go"
+```
+
+- Next action: T2 GREEN implementation against unchanged test blob ca33da2a96fdae03e4d29b13975ecb1874c206e8
+
+### T2 implementation outcome and independent verification intent
+
+- Gate: T2 implementation outcome and independent verification intent
+- Commands/results:
+Code GREEN at HEAD 1eb3541d561f0bae8307b38092be279f43dadd11: exact RED command passed (runner 0.220s); go test ./pkg/runner and ./internal/tool passed (4.225s, 73.675s); derived go test -race ./internal/tool ./pkg/runner passed; golangci-lint run 0 issues; format, diff check, CI vet/build, actionlint, docs lint, records-stale check and 22 script tests passed per writer. RED blob ca33da2a96fdae03e4d29b13975ecb1874c206e8 unchanged. Writer reports ci-check integrity exit 1 with GOPROXY=off: missing mousetrap@v1.1.0 and go-md2man/v2@v2.0.6 for module verify/tidy. Do not treat this as a pass or add an environment guard; completion must use the established writable cache/standard toolchain and record exact integrity result. Current production source and five docs edited, TAGS refresh flagged under repository rules; inspect before fixing. Independent test VERIFY in flight, exact RED command and touched-package race unchanged.
+- HEAD commit SHA: `1eb3541d561f0bae8307b38092be279f43dadd11`
+- Relevant work: `uncommitted` — stash ref `3b308f996faf5cb378d6b8acfba28824fe497239` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/src/cli/json-output.md
+ M docs/src/cli/run-flags.md
+ M docs/src/providers.md
+ M internal/tool/tool.go
+?? pkg/runner/bedrock_parity_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+ca33da2a96fdae03e4d29b13975ecb1874c206e8  "pkg/runner/bedrock_parity_test.go"
+```
+
+- Next action: Independent GREEN on unchanged RED blob, then resolve anchor registry requirements before commit and review.
+
+### T2 independent GREEN outcome and required record intent
+
+- Gate: T2 independent GREEN outcome and required record intent
+- Commands/results:
+Independent VERIFY at 1eb3541d561f0bae8307b38092be279f43dadd11: exact RED command passed (cached), race ./internal/tool ./pkg/runner passed (74.649s, 2.754s), independent uncached repeat passed (0.184s), gofmt/diff check clean, golangci-lint run 0 issues. Test blob ca33da2a96fdae03e4d29b13975ecb1874c206e8 before/after; no edits. Scope caveats for independent review: literal static checks cover each varying run while explicit byte comparisons are within each run; Runner JSON/stream options exercise response envelope, not CLI flag parsing; omission covered in 3x3 matrix but not repeated for every static shape. No assertion changes authorized. Read-only recon confirmed empty index diff, stage-0 entries and only recorded T2 changes. Required-doc authorization: TAGS.md:17 requires registry update for anchor added at internal/tool/tool.go:227. TAGS refresh in flight: update existing provider row only; no scope or behavior change.
+- HEAD commit SHA: `1eb3541d561f0bae8307b38092be279f43dadd11`
+- Relevant work: `uncommitted` — stash ref `19515c9bd0c7477623dae9a003cf234da25c1ef7` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/src/cli/json-output.md
+ M docs/src/cli/run-flags.md
+ M docs/src/providers.md
+ M internal/tool/tool.go
+?? pkg/runner/bedrock_parity_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+ca33da2a96fdae03e4d29b13975ecb1874c206e8  "pkg/runner/bedrock_parity_test.go"
+```
+
+- Next action: Update required TAGS.md record, then commit T2 and prepare its review gate.
+
+### required record outcome and whole-suite gate intent
+
+- Gate: required record outcome and whole-suite gate intent
+- Commands/results:
+TAGS.md existing provider row updated only; anchor discovery at internal/tool/tool.go:227 and git diff --check -- TAGS.md passed. Full 276-entry index inspected, no staged or unmerged entries; only intended T2 files and this checkpoint pending. T2 task commit and factory-gate run --gate test in flight; launch gate only on resulting clean commit. Planned fixed point 1eb3541d561f0bae8307b38092be279f43dadd11. Follow with docs-lint and records-stale-check and record three axis intents before independent reviews; a gate result is valid only on its launch SHA.
+- HEAD commit SHA: `1eb3541d561f0bae8307b38092be279f43dadd11`
+- Relevant work: `uncommitted` — stash ref `f880b11c1959872b7fb4dd413a5f812f3d2bed13` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M TAGS.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/src/cli/json-output.md
+ M docs/src/cli/run-flags.md
+ M docs/src/providers.md
+ M internal/tool/tool.go
+?? pkg/runner/bedrock_parity_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+ca33da2a96fdae03e4d29b13975ecb1874c206e8  "pkg/runner/bedrock_parity_test.go"
+```
+
+- Next action: Commit scoped T2 work and checkpoint, then run whole-suite test gate on the exact task commit.
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: T2 RED focused test with local fixtures
+- Next action: Commit scoped T2 work and checkpoint, then run whole-suite test gate on the exact task commit.

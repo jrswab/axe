@@ -77,7 +77,7 @@ Each entry in the `tool_call_details` array represents one tool invocation:
 
 ## Streaming Compatibility
 
-When `--stream` and `--json` are both enabled, streaming is used internally but the output is still delivered as a single JSON envelope. No incremental text is printed to stdout — the JSON remains safe for machine parsing. See [Run Flags — Streaming](run-flags.md#streaming) for details.
+When `--stream` and `--json` are both enabled, streaming is used internally if the provider supports it; Bedrock falls back to non-streaming. Either way, output is delivered as a single JSON envelope. No incremental text is printed to stdout — the JSON remains safe for machine parsing. See [Run Flags — Streaming](run-flags.md#streaming) for details.
 
 ## Refusal Detection
 

@@ -43,4 +43,4 @@ The flag overrides the TOML `stream` field. If the provider does not support str
 
 ### Streaming with `--json`
 
-When `--stream` and `--json` are both enabled, streaming is used internally (potentially improving time-to-first-byte from the provider) but **no incremental text is printed to stdout**. The output is still delivered as a single JSON envelope once the response is complete. This keeps `--json` output safe to parse in scripts and pipelines.
+When `--stream` and `--json` are both enabled, streaming is used internally if the provider supports it (potentially improving time-to-first-byte from the provider); Bedrock falls back to non-streaming. In either case, **no incremental text is printed to stdout**. The output is delivered as a single JSON envelope once the response is complete. This keeps `--json` output safe to parse in scripts and pipelines.

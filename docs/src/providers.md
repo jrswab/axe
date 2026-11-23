@@ -30,7 +30,7 @@ Anthropic reports cache-read and cache-write tokens when provided in usage. Open
 
 ## Configuring Credentials
 
-API keys are resolved in this order for each provider:
+For providers using ordinary API keys, keys are resolved in this order (Bedrock Runs use AWS credentials instead):
 
 1. **Environment variable** — e.g., `GEMINI_API_KEY`
 2. **`config.toml`** — under `[providers.<name>]`
@@ -76,7 +76,7 @@ api_key = "..."
 region = "us-east-1"
 ```
 
-Base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
+For providers other than Bedrock, base URLs can also be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables (takes precedence over `config.toml`).
 
 Atlas Cloud uses the OpenAI-compatible Chat Completions API. For example, set an agent model to `atlascloud/qwen/qwen3.8-max`.
 
@@ -114,6 +114,8 @@ See [Run Flags — Streaming](cli/run-flags.md#streaming) for usage details and 
 
 ## AWS Bedrock
 
-- **Region resolution order:** `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`
-- **Credentials:** Uses environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`) or `~/.aws/credentials` file (supports `AWS_PROFILE` and `AWS_SHARED_CREDENTIALS_FILE`)
-- **Model IDs:** Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)
+Main and Nested Runs use the same AWS setup; neither uses an ordinary API key or base URL override.
+
+- **Region resolution order:** `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`. A region is required.
+- **Credentials:** A complete `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment pair takes precedence, with optional `AWS_SESSION_TOKEN`. Otherwise, Axe reads `AWS_SHARED_CREDENTIALS_FILE` or `~/.aws/credentials`, selecting `AWS_PROFILE` or `default`; the profile must contain both keys. This is not the full AWS SDK credential chain.
+- **Model IDs:** Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`).
