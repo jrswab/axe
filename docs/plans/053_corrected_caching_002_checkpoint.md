@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T2 AWS parity
+- Current task: T2 AWS parity RED
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Resume sync, then T2 RED
+- Next safe action: T2 RED focused test with local fixtures
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. At that round-3 SHA, docs-lint, records-stale-check and the whole-suite factory-gate test passed as recorded below. Final lint and affected tests remain pending. T2 and T3 remain unchecked; 002 remains in execution and unchecked, and 003 is blocked only on 002 completion. The user interrupted this session for handoff; T2 RED starts after restart in the next session. Draft PR 108 publication evidence is retained below.
-- Last completed phase/task/gate and timestamp: restart reconciliation, 2026-11-23T17:46:30.815620+00:00
+- Last completed phase/task/gate and timestamp: resume sync outcome and T2 RED intent, 2026-11-23T17:46:44.083536+00:00
 
 ## Gate evidence
 
@@ -1288,8 +1288,29 @@ Recovery: factory-preflight --fix exit 0, all seven checks passed (35.9 GB free)
 
 - Next action: Resume sync, then T2 RED
 
+### resume sync outcome and T2 RED intent
+
+- Gate: resume sync outcome and T2 RED intent
+- Commands/results:
+factory-sync --wip exit 0; JSON: branch iss-83-finish-caching, base origin/master, head_before dc1fe782cae46eda37c89bac2d5a221218969d91, ahead 52 behind 0, shared_files [], conflicts [], synced true. HEAD unchanged, no WIP or merge. T2 intent in flight: test agent RED, only pkg/runner/bedrock_parity_test.go, TestBedrock_AWSRunParity. Execute only the focused RED selector; require actual failure for missing Nested AWS setup before inference with fake AWS credentials and no ordinary API key, not a fixture failure. Requirements and rows from the checked 002 spec/checklist. T2 design-bearing due to external AWS signing and wire boundary. Do not change production or any existing test. No paid AWS calls.
+- HEAD commit SHA: `dc1fe782cae46eda37c89bac2d5a221218969d91`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: T2 RED focused test with local fixtures
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Resume sync, then T2 RED
+- Next action: T2 RED focused test with local fixtures
