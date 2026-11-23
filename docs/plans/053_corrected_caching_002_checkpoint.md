@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T1
+- Current task: T2 (not started; next session after restart)
 - Task states — checklist checkboxes render from this list:
-- T1: `unchecked`
+- T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Correct active records to show A006 committed and 003 blocked only on 002 completion. Then rerun both blocking axes at round 3.
+- Next safe action: After restart, start T2 RED in the next session; the user interrupted this session for handoff.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. A005 consumed 2/2 calls; A004 exhausted 4/4, with no retries authorized. T1 remains unchecked. At `c67046b`, RED ran with only the untracked test and checkpoint pending; independent VERIFY ran with full T1 source pending before partial T1 code commit `4fa25a0`. The whole-suite gate passed at reviewed revision `cafdda4a`. All three T1 round 1 axes completed CHANGES REQUESTED, with no incompletes; the earlier docs-only records repair was `e700694`. A006 in REC011 resolved the Design risk scope blocker for the exact narrow Bedrock fix and re-reviews. At `e700694`, additive RED ran alone before the narrow fix, with the new test unchanged; independent VERIFY passed with production changes pending. The A006 fix was committed at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`, where the whole-suite factory-gate test `go test -race ./...` passed (poll exit 0; `/tmp/factory-gate-1001/gate-test-67fef1d41d9a-20261123T172613Z.log`). T1 round 2 completed with Design risk APPROVED; Standards and Spec await round 3 after the records correction. 003 remains blocked strictly on 002 completion. This summary is pre-round-3; consult immutable appended entries for later gates. Draft PR 108 publication evidence is retained below.
-- Last completed phase/task/gate and timestamp: T1 round 2 results and current records fix intent, 2026-11-23T17:30:41.283118+00:00
+- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. At that round-3 SHA, docs-lint, records-stale-check and the whole-suite factory-gate test passed as recorded below. Final lint and affected tests remain pending. T2 and T3 remain unchecked; 002 remains in execution and unchecked, and 003 is blocked only on 002 completion. The user interrupted this session for handoff; T2 RED starts after restart in the next session. Draft PR 108 publication evidence is retained below.
+- Last completed phase/task/gate and timestamp: T1 reviews passed; documentation nit and handoff intent, 2026-11-23T17:37:07.440851+00:00
 
 ## Gate evidence
 
@@ -53,8 +53,8 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 - Cap `002/planning`: lane `full`; P202 spec review approved. P203 checklist round 1 failed with F1–F4; F204 repaired them and P205 verified them resolved. P204 and P204b were two historical consecutive incomplete reviews of the original complete-checklist round 2. P205 completed the A004 four-slice batch: S1 and S3 APPROVED, S2 and S4 CHANGES REQUESTED; A004 exhausted 4/4 calls. P206's two A005 reviews both APPROVED, resolving F5 and F6; A005 consumed 2/2 calls. No retries are authorized. The planning gate passed.
 - Planning: shared failing rounds `2` (P203 and combined P205); historical incomplete events `2` (P204 and P204b); P205 added none. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
-- Code review `002/T1`: Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes. The reviewed revision was `cafdda4a362468ba9005db71dfd961ccfb664de3`, against base `c67046be996a47b103e18b7ceca85657a09e0701`; its whole-suite gate passed. The earlier docs-only records repair was `e700694`; A006 in REC011 resolved the Design risk scope blocker and the narrow fix was committed at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`. The whole-suite factory-gate test `go test -race ./...` passed at that SHA (poll exit 0; `/tmp/factory-gate-1001/gate-test-67fef1d41d9a-20261123T172613Z.log`). Round 2 completed with no incompletes: Design risk APPROVED; Standards and Spec CHANGES REQUESTED for stale records and await round 3 after correction. Round-four eligibility and progress are not applicable. This snapshot is pre-round-3; consult immutable appended entries for later gates.
-- Tasks T1–T3 are `unchecked`. T1 partial code was committed at `4fa25a0` after RED and independent VERIFY at `c67046b`; the A006 fix and round 2 outcomes are recorded above.
+- Code review `002/T1`: Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes, at `cafdda4a362468ba9005db71dfd961ccfb664de3` against base `c67046be996a47b103e18b7ceca85657a09e0701`. Round 2 had no incompletes: Design risk APPROVED at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec requested records corrections. Both approved with nits in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`, with all blockers resolved and no T1 reviews pending. Round-four eligibility and progress are not applicable.
+- Task T1 is `checked`; T2 and T3 are `unchecked`. T1 partial code was committed at `4fa25a0` after RED and independent VERIFY at `c67046b`; A006 resolved the scope blocker and its fix was committed at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
 
 ### Bootstrap evidence B002-001
@@ -1225,8 +1225,29 @@ Clean T1 fix 67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2. docs-lint 1 exit 0 (57 fi
 
 - Next action: Correct active records to show A006 committed and 003 blocked only on 002 completion. Then rerun both blocking axes at round 3.
 
+### T1 reviews passed; documentation nit and handoff intent
+
+- Gate: T1 reviews passed; documentation nit and handoff intent
+- Commands/results:
+T1: round 2 Design risk APPROVED at 67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2. At clean round-3 pin 7b50c9651bde3395bb786aff3cb10b7247351380, docs-lint 1 exit 0 (57 files, 0 findings), records-stale-check fixed point c67046be996a47b103e18b7ceca85657a09e0701 exit 0 (no hits), factory-gate test poll exit 0, /tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log. Standards and Spec both APPROVED WITH NITS, complete, all blockers resolved. Shared nit verbatim Standards: 'The active next action still starts with “Correct active records,” which `7b50c96` already did. Start the handoff with recording the passing gates and collecting the Standards and Spec round-3 results.' Spec: 'still says “Correct active records” as the next action, although this commit does that. Point both active entries to the pending round-3 reviews; keep the original instruction in the dated intent entry.' Round-3 results now available, so advance checkpoint-rendered active action to T2 and align active summaries with recorded approvals. No re-review for this nit; verify lint and affected tests at final revision. No production or test edits. User requested handoff after reviews; do not start T2 in this session. T1 checked; T2/T3 and milestone 002 unchecked; 003 remains dependency-blocked. In flight: reconcile active records, verify, commit, sync, push to existing draft PR and publish handoff. Final whole-milestone review and completion still required.
+- HEAD commit SHA: `7b50c9651bde3395bb786aff3cb10b7247351380`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Start T2 in the next session only.
+
 ## Limitations & blockers
 
-- Limitations: T1–T3 and 002 remain unchecked. RED and independent VERIFY passed at `c67046b` before partial T1 code commit `4fa25a0`; the whole-suite gate passed at reviewed revision `cafdda4a`. The later additive RED at `e700694` preceded the narrow fix with the new test unchanged; independent VERIFY passed with production changes pending. The whole-suite factory-gate test `go test -race ./...` passed at A006 fix commit `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2` (poll exit 0; `/tmp/factory-gate-1001/gate-test-67fef1d41d9a-20261123T172613Z.log`). Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. This entry is pre-round-3; consult immutable appended entries for later gates.
-- Blockers: T1 round 2 Design risk passed; Standards and Spec await round 3 after the records correction. The earlier docs-only repair was `e700694`; A006 in REC011 resolved the Design risk scope blocker for the exact empty-description fix and re-reviews. The planning gate passed; F5 and F6 are resolved. A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked strictly on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Correct active records to show A006 committed and 003 blocked only on 002 completion. Then rerun both blocking axes at round 3.
+- Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
+- Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
+- Next action: After restart, start T2 RED in the next session; the user interrupted this session for handoff.

@@ -35,7 +35,7 @@ none
 ### Cap-state summary
 
 - None for 003: no review gate, scope, round, slices, dispatches, findings, incompletes, or round-four eligibility exist. Planning and implementation have not started.
-- The 002 planning history is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2` and historical consecutive same-scope/round incompletes `2` belong to 002, not 003. P206 approved the checklist and resolved P205's F5 and F6; A004 used all four calls and A005 used both calls, with no retries. A006 resolved the T1 scope question. T1 round 2 completed with Design risk APPROVED; Standards and Spec await round 3 after the records correction. 003 remains blocked strictly on 002 completion.
+- The 002 planning history is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2` and historical consecutive same-scope/round incompletes `2` belong to 002, not 003. P206 approved the checklist and resolved P205's F5 and F6; A004 used all four calls and A005 used both calls, with no retries. A006 resolved the T1 scope question. T1 is checked: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`, and Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`; no T1 reviews remain pending. T2 and T3 remain unchecked. 003 remains blocked only on 002 completion.
 
 ### Administrative initialization
 
@@ -69,5 +69,5 @@ none
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
-- Blockers: milestone 002 remains unchecked; 003 depends strictly on 002 completion. P206 resolved F5 and F6, and A006 resolved the Design risk scope question. T1 round 2 Design risk passed; Standards and Spec await round 3 after the records correction.
+- Blockers: milestone 002 remains unchecked and in execution; 003 depends only on 002 completion. T1 passed all review axes, with no pending T1 reviews; T2 and T3 remain unchecked.
 - Next action: Keep 003 parked until 002 passes its completion gate.

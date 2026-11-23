@@ -4,14 +4,14 @@ Milestone 002's narrow A006 T1 fix was committed as `67fef1d41d9ac87ebddafe10f4d
 
 ## Current outcome and review direction
 
-P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 RED ran at `c67046b` with only an untracked test and checkpoint pending; independent VERIFY passed at `c67046b` with full T1 source pending, before partial T1 code was committed as `4fa25a0`. The whole-suite gate passed on reviewed revision `cafdda4a`. T1 remains unchecked. Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes. The earlier docs-only records repair was `e700694`. A006 in REC011 resolved the Design risk scope blocker for the exact narrow Bedrock fix and re-reviews. At `e700694`, additive RED ran alone before the narrow fix, with the new test unchanged; independent VERIFY passed with production changes pending. The fix was committed at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`, where the whole-suite factory-gate test `go test -race ./...` passed (poll exit 0; `/tmp/factory-gate-1001/gate-test-67fef1d41d9a-20261123T172613Z.log`). Round 2 completed with Design risk APPROVED; Standards and Spec await round 3 after the records correction. Milestone 003 remains blocked strictly on 002 completion.
+P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 is checked and all axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. The whole-suite factory-gate test passed at the round-3 SHA (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests remain pending. T2 and T3 remain unchecked; 002 remains unchecked and in execution, and 003 is blocked only on 002 completion.
 
 - **F5 — HISTORICAL P205, resolved P206 (S2/R4):** At P205, `docs/plans/053_corrected_caching_002_implement.md:37,39` checked `json-output.md` but neither assigned documentation edits nor named `run-flags.md`. Both `docs/src/cli/json-output.md:80` and `docs/src/cli/run-flags.md:46` then said `--stream` and `--json` always stream, contrary to `docs/src/providers.md:109` and `pkg/runner/run.go:529-533`. P205 recommended assigning T2 both documentation edits to explain fallback while retaining a single JSON envelope.
 - **F6 — HISTORICAL P205, resolved P206 (S4/R3–R4):** At P205, `docs/plans/053_corrected_caching_002_spec.md:52,60` versus `docs/plans/053_corrected_caching_002_implement.md:28,38,70` left omitted usage and independently zero cache usage untested through Bedrock Run. P205 recommended assigning T2 literal Converse fixtures that assert Result values and JSON omission for those cases, plus numerical nonzero counterparts, without changing accounting.
 
-### Current direction — records correction before round 3
+### Current direction — handoff before T2
 
-A006 in REC011 authorized omitting only empty tool descriptions, preserving nonempty descriptions and existing assertions, adding a test in both cache modes, and rerunning the blocking reviews; the scope blocker is resolved. Design risk passed T1 round 2; Standards and Spec await round 3 after the records correction. This entry is pre-round-3; consult immutable appended checkpoint entries for later gate evidence. T1 remains unchecked; 003 stays blocked strictly until 002 completes.
+A006 in REC011 resolved the empty-description scope blocker. T1 passed all axes and is checked; no T1 review remains pending. The user interrupted this session for handoff. After restart, start T2 RED in the next session, without starting T2 now. Milestone 003 stays blocked only until 002 completes.
 
 ### High stakes question — empty Bedrock tool descriptions
 
@@ -52,10 +52,10 @@ Already decided, not a live question: Jaron's `Q3 I approve` permits only the co
 
 ## Run evidence
 
-- Milestone 001 completed historically; its completion evidence is retained. Milestones 002 and 003 remain unchecked. T1–T3 of 002 are unchecked; partial T1 implementation and tests were committed as `4fa25a0` after RED and independent VERIFY, followed by the A006 fix at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`.
+- Milestone 001 completed historically; its completion evidence is retained. Milestones 002 and 003 remain unchecked. T1 of 002 is checked; T2 and T3 remain unchecked. Partial T1 implementation and tests were committed as `4fa25a0` after RED and independent VERIFY, followed by the A006 fix at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`.
 - B008 failed, B009 passed with the writable module cache, E009 host preflight passed, and Y012 sync passed without moving HEAD. These are recorded historical outcomes, not checks rerun by this administrative task (`docs/plans/053_corrected_caching_002_checkpoint.md:63-73`).
 - No 003 spec, checklist, task, or review has ever been launched; there is no 003 implementation range. Its checkpoint identifies the historical administrative creation source, not an implementation review base.
-- No external probes were authorized or run. The recorded whole-suite gate `go test -race ./...` passed at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; consult immutable appended checkpoint entries for later gate evidence. This entry is pre-round-3, and the draft PR is not completion.
+- No external probes were authorized or run. The recorded whole-suite gate `go test -race ./...` passed at `7b50c9651bde3395bb786aff3cb10b7247351380`; final lint and affected tests remain pending. The draft PR is not completion.
 
 The following handoff footer is historical; its unconsumed-call recommendation was superseded by P205 above.
 
