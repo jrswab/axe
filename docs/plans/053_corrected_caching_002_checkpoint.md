@@ -27,18 +27,18 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `execute`
-- Current task: T2 task commit and review gate
+- Current phase: `blocked`
+- Current task: T2 parked; publication held
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit scoped T2 work and checkpoint, then run whole-suite test gate on the exact task commit.
+- Next safe action: Resume only after disposition of the three local parking decisions; leave the existing draft unchanged until safe.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. At that round-3 SHA, docs-lint, records-stale-check and the whole-suite factory-gate test passed as recorded below. Final lint and affected tests remain pending. T2 and T3 remain unchecked; 002 remains in execution and unchecked, and 003 is blocked only on 002 completion. The user interrupted this session for handoff; T2 RED starts after restart in the next session. Draft PR 108 publication evidence is retained below.
-- Last completed phase/task/gate and timestamp: required record outcome and whole-suite gate intent, 2026-11-23T18:01:16.239422+00:00
+- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; review blockers and required coverage and gates remain pending. T2 and T3 remain unchecked; 002 is parked unchecked and 003 is blocked by 002. Security disposition and the three unapproved decisions are recorded locally in the parking file; draft PR 108 remains at `d18abf7` and publication is on hold.
+- Last completed phase/task/gate and timestamp: local parking verified and terminal security hold, 2026-11-23T18:16:29.285850+00:00
 
 ## Gate evidence
 
@@ -1415,8 +1415,94 @@ ca33da2a96fdae03e4d29b13975ecb1874c206e8  "pkg/runner/bedrock_parity_test.go"
 
 - Next action: Commit scoped T2 work and checkpoint, then run whole-suite test gate on the exact task commit.
 
+### T2 whole-suite pass and review intent
+
+- Gate: T2 whole-suite pass and review intent
+- Commands/results:
+T2 task commit 9fe4129510d4078e5aabfcd6f79bb68aed7cd05f; clean index and worktree verified for launch. Fixed point 1eb3541d561f0bae8307b38092be279f43dadd11, 1 commit, 9 files, 966 insertions, 17 deletions. factory-gate run --gate test exit 0, gate-test-9fe4129510d4-20261123T180124Z, network online; poll exit 4 then exit 0; SHA-matched log /tmp/factory-gate-1001/gate-test-9fe4129510d4-20261123T180124Z.log. docs-lint --since fixed point exit 0: docs-lint 1, 57 Markdown files, 0 findings, 0 outside scope. records-stale-check fixed point exit 0: no record mentions the one removed or renamed term. Round 1 in flight as one parallel batch: Standards, Spec, Design risk, each independent and pinned to fixed-point..task-commit. Separate axis failing and incomplete caps start at zero for T2; T1 and planning caps unchanged. Pre-dispatch checkpoint write deliberately does not move reviewed HEAD; only bookkeeping is pending and reviewers are pinned to committed range. Review may follow gate on same HEAD without committing outcome first.
+- HEAD commit SHA: `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch independent Standards, Spec, Design-risk reviews on exact T2 range with passing SHA-matched gate evidence.
+
+### T2 round 1 outcomes and integrity rerun intent
+
+- Gate: T2 round 1 outcomes and integrity rerun intent
+- Commands/results:
+T2 task range 1eb3541d561f..9fe4129510d4. Standards round 1 CHANGES REQUESTED: integrity not passed; latest-state summary stale; nits nonexclusive ordinary-provider lookup and indexed lost-response fixture. Spec round 1 CHANGES REQUESTED: no explicit byte comparison across fresh Runs with task/context/history changes; omitted static-shape coverage incomplete; integrity not passed. Design risk round 1 CHANGES REQUESTED: existing Bedrock tool-result role conflicts with documented Converse exchange; proposed adapter and existing assertion edit are outside T2 and Q3. Also raised two security findings at the newly reachable Nested configuration and error boundary (internal/tool/tool.go:227-245 and provider credential/endpoint setup). Nits: cross-run comparison and inherited credential I/O timing. All three complete, each failing round count 1, no incomplete attempts; other caps unchanged. No changed assertions or scope authorized. Local integrity retry and read-only boundary triage in flight. Rerun .agents/scripts/ci-check integrity with the Go 1.26.11 binary and standard module resolution on existing writable cache; no live inference. Do not publish before assessing the security findings and whether it is safe to publish these changes. No T3/003 work launched.
+- HEAD commit SHA: `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`
+- Relevant work: `committed` — stash ref `2f749379bb26fffd525567cb2f15df20612ae594` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Rerun the exact local integrity gate and ground review blockers in committed code before parking.
+
+### integrity retry, security triage, and local parking intent
+
+- Gate: integrity retry, security triage, and local parking intent
+- Commands/results:
+Integrity retry PASS at 9fe4129510d4078e5aabfcd6f79bb68aed7cd05f: `env -u GOPROXY PATH=/tmp/axe-v006-cache.itoPgN/go-mod/golang.org/toolchain@v0.0.1-go1.26.11.linux-amd64/bin:$PATH GOTOOLCHAIN=local GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod GOCACHE=/tmp/axe-v006-cache.itoPgN/go-build .agents/scripts/ci-check integrity`, exit 0, stdout `all modules verified`; stderr normal downloads google/go-cmp v0.7.0, golang.org/x/tools v0.41.0, inconshreveable/mousetrap v1.1.0, golang-jwt/jwt/v5 v5.3.0. No repository edits; checkpoint only unstaged, index clear. Historical offline failure preserved. Read-only triage confirmed potential risks in newly reachable Nested: unvalidated caller region reaches signed endpoint construction (internal/tool/tool.go:227-245, internal/provider/bedrock.go:42-55,309-324); provider-construction error can carry a local credentials file path into parent-visible tool output (internal/provider/awscreds.go:31-49, internal/tool/tool.go:241-245,497-506, pkg/runner/run.go:758-765). Existing Main resolver shares underlying endpoint weakness; no actual requests/exposure or incident observed. Bedrock tool-result role issue additionally requires provider scope and a specific pre-existing assertion change at pkg/runner/large_integer_args_test.go:474 outside Q3. Park 002 at complete round 1 failures, keep T2/T3 unchecked, park 003 blocked by 002. Pending byte stability/omission coverage and other applicable review findings remain unresolved; no gate or cap waived. Security publication hold: current approved draft PR #108 stays at verified d18abf7a2bd50cd9f99112243482ba1b10974d4c; do not push any local commits or post details, even in draft, until security disposition. Local record-only dispatch in flight: append current blockers and recommendations to existing parking file and update only stale Latest recorded state paragraph of 002 checkpoint; retain evidence and checkboxes.
+- HEAD commit SHA: `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`
+- Relevant work: `committed` — stash ref `70be648dbce17804e32e1c7af1a6f3034d38c578` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record local parking decisions, checkpoint dependent 003, commit local records, and keep publication on hold.
+
+### local parking verified and terminal security hold
+
+- Gate: local parking verified and terminal security hold
+- Commands/results:
+Parking prose and records verified: the old T2 RED summary and stale current-direction headings/phrases returned no fixed-string hits; 001/T1 checked, 002/003/T2/T3 unchecked; 003 checkpoint phase blocked with no work launched. Pending paths only this checkpoint, 003 checkpoint and parked.md; full index stage-0 only, cached diff empty. docs-lint --since 9fe4129510d4078e5aabfcd6f79bb68aed7cd05f exit 0, docs-lint 1, 57 Markdown files, zero findings; milestone-entries direct pass three entries; spec-lint checklist exit 0, 13 citations, six selectors listed, zero findings (listing is not T3 execution). Commit local parking records only. Security hold is terminal for this session: no terminal sync/push attempt and no PR body update, because local T2 introduces newly reachable unremediated risks and the existing public draft need not move. Prior remote publication verified at d18abf7. No approval, assertion changes, cap resets, or gate waivers. T3 regression, final independent milestone review, and completion gate did not run.
+- HEAD commit SHA: `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`
+- Relevant work: `committed` — stash ref `f4c0583d20e2f8b6ed98ba8f7b368d86bb9fadc6` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+ M docs/plans/053_corrected_caching_parked.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume only after disposition of the three local parking decisions; leave the existing draft unchanged until safe.
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit scoped T2 work and checkpoint, then run whole-suite test gate on the exact task commit.
+- Next action: Resume only after disposition of the three local parking decisions; leave the existing draft unchanged until safe.

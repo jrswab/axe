@@ -23,8 +23,8 @@
 - Task states — checklist checkboxes render from this list:
 none
 - Milestone checkbox: `unchecked`
-- Next safe action: Keep 003 parked until 002 passes its completion gate.
-- Last completed phase/task/gate and timestamp: Dependency parked after A004 P205 result, 2026-11-22T16:52:30.451390+00:00
+- Next safe action: Wait for 002 security and scope decisions and actual milestone completion before starting 003.
+- Last completed phase/task/gate and timestamp: dependency parked, 2026-11-23T18:13:11.270214+00:00
 
 ## Gate evidence
 
@@ -66,8 +66,30 @@ none
 
 - Next action: Keep 003 parked until 002 passes its completion gate.
 
+### dependency parked
+
+- Gate: dependency parked
+- Commands/results:
+003 parked: blocked by 002. 002 has unchecked T2/T3 after three complete round-1 task review failures and a security publication hold; see local 002 checkpoint and parking file. No 003 spec, checklist, task, review, implementation range or cap consumption. Draft PR #108 remains at d18abf7a2bd50cd9f99112243482ba1b10974d4c; no publication in this restart.
+- HEAD commit SHA: `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`
+- Relevant work: `committed` — stash ref `85b494b0e8c254c9e5f38956a2f01a75201884a9` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_parked.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Wait for 002 security and scope decisions and actual milestone completion before starting 003.
+
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
-- Blockers: milestone 002 remains unchecked and in execution; 003 depends only on 002 completion. T1 passed all review axes, with no pending T1 reviews; T2 and T3 remain unchecked.
-- Next action: Keep 003 parked until 002 passes its completion gate.
+- Blockers: milestone 002 remains unchecked and parked; 003 awaits 002 completion. T1 passed all review axes, with no pending T1 reviews; T2 and T3 remain unchecked.
+- Next action: Wait for 002 security and scope decisions and actual milestone completion before starting 003.
