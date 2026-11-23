@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T1
+- Current task: T2 AWS parity
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Start T2 RED after handoff recovery. No T2 dispatch in this session.
+- Next safe action: Resume sync, then T2 RED
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. At that round-3 SHA, docs-lint, records-stale-check and the whole-suite factory-gate test passed as recorded below. Final lint and affected tests remain pending. T2 and T3 remain unchecked; 002 remains in execution and unchecked, and 003 is blocked only on 002 completion. The user interrupted this session for handoff; T2 RED starts after restart in the next session. Draft PR 108 publication evidence is retained below.
-- Last completed phase/task/gate and timestamp: T1 nit verified; handoff publication intent, 2026-11-23T17:41:40.760989+00:00
+- Last completed phase/task/gate and timestamp: restart reconciliation, 2026-11-23T17:46:30.815620+00:00
 
 ## Gate evidence
 
@@ -1267,8 +1267,29 @@ At d3b77e427b2430549029ff0dd086630d873af583, docs-lint 1 exit 0, 57 files/0 find
 
 - Next action: Start T2 RED after handoff recovery. No T2 dispatch in this session.
 
+### restart reconciliation
+
+- Gate: restart reconciliation
+- Commands/results:
+Recovery: factory-preflight --fix exit 0, all seven checks passed (35.9 GB free), no warnings. milestone-entries --handoff /tmp/handoff-iss-83-caching-t2.latest.md exit 0, three entries, single resolved target /home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_milestones.md. Read-only RESTART recovery confirmed clean index and worktree, branch iss-83-finish-caching, HEAD and local tracking ref d18abf7a2bd50cd9f99112243482ba1b10974d4c, origin/master 3e178147775f5c002e7b967995c8823d72472a57 (51 ahead, 0 behind). Prior handoff records sync exit 0 (no conflict/WIP/merge), push --require-open-pr exit 0 e700694..d18abf7, and no checks reported. Current factory-gh gh pr view 108 exit 0 verifies OPEN DRAFT at exact d18abf7 head, https://github.com/jrswab/axe/pull/108. Publication intent is resolved. No T1 gate relaunched, no cap reset, no T2 launch before recovery. 003 remains dependent on 002. Resume sync in flight: factory-sync --wip on origin/master after this bookkeeping commit.
+- HEAD commit SHA: `d18abf7a2bd50cd9f99112243482ba1b10974d4c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resume sync, then T2 RED
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Start T2 RED after handoff recovery. No T2 dispatch in this session.
+- Next action: Resume sync, then T2 RED
