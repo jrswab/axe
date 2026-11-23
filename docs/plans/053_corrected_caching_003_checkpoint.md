@@ -35,14 +35,14 @@ none
 ### Cap-state summary
 
 - None for 003: no review gate, scope, round, slices, dispatches, findings, incompletes, or round-four eligibility exist. Planning and implementation have not started.
-- The 002 planning history is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2` and historical consecutive same-scope/round incompletes `2` belong to 002, not 003. P206 approved the checklist and resolved P205's F5 and F6; A004 used all four calls and A005 used both calls, with no retries. T1 round 1 completed with three CHANGES REQUESTED and no incompletes; 002 is parked pending scope direction and independent confirmation.
+- The 002 planning history is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2` and historical consecutive same-scope/round incompletes `2` belong to 002, not 003. P206 approved the checklist and resolved P205's F5 and F6; A004 used all four calls and A005 used both calls, with no retries. A006 resolved the T1 scope question. T1 round 2 completed with Design risk APPROVED; Standards and Spec await round 3 after the records correction. 003 remains blocked strictly on 002 completion.
 
 ### Administrative initialization
 
 - No 003 spec, checklist, task, or review has ever been launched. No 003 implementation range exists.
-- The current HEAD `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc` is the administrative creation source only, not an implementation review base.
+- At administrative creation, HEAD `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc` was the creation source only, not an implementation review base.
 - Retained prerequisite evidence, not rerun here: 001 complete; B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed at `1e9e4c3064e3310da64ea62e3efe25aa7ce7b676` without a HEAD change. See the 002 checkpoint bootstrap evidence.
-- Relevant work: administrative documents uncommitted; no stash or untracked-file objects created by this initialization. No current-session source or test edits.
+- At initialization, administrative documents were uncommitted; no stash or untracked-file objects were created. No source or test edits were made during initialization.
 - No external probes were authorized or run.
 
 ### Dependency parked after A004 P205 result
@@ -69,5 +69,5 @@ none
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
-- Blockers: milestone 002 remains unchecked and parked after T1 round 1; P206 resolved F5 and F6. The Design risk scope question and independent confirmation of records fixes remain open. 003 depends on 002 completion.
+- Blockers: milestone 002 remains unchecked; 003 depends strictly on 002 completion. P206 resolved F5 and F6, and A006 resolved the Design risk scope question. T1 round 2 Design risk passed; Standards and Spec await round 3 after the records correction.
 - Next action: Keep 003 parked until 002 passes its completion gate.
