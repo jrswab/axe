@@ -1,19 +1,21 @@
 # Corrected caching — parked
 
-Milestone 002 is parked with partial T1 work committed; 002 and 003 remain unchecked, and 003 is parked on its dependency. No external probes were authorized or run.
+Milestone 002 has partial T1 work committed and a narrow fix pending a clean commit and gates; 002 and 003 remain unchecked, and 003 is parked on its dependency. No external probes were authorized or run.
 
 ## Current outcome and review direction
 
-P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 RED ran at `c67046b` with only an untracked test and checkpoint pending; independent VERIFY passed at `c67046b` with full T1 source pending, before partial T1 code was committed as `4fa25a0`. The whole-suite gate passed on reviewed revision `cafdda4a`. T1 remains unchecked. Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes or round 2 dispatch. Standards/Spec records fixes await independent confirmation; the Design risk scope blocker awaits explicit direction. Milestone 003 remains parked on 002.
+P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 RED ran at `c67046b` with only an untracked test and checkpoint pending; independent VERIFY passed at `c67046b` with full T1 source pending, before partial T1 code was committed as `4fa25a0`. The whole-suite gate passed on reviewed revision `cafdda4a`. T1 remains unchecked. Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes. Records fixes were in `e700694` and await formal re-review. A006 in REC011 resolved the Design risk scope blocker for the exact narrow Bedrock fix and re-reviews. At `e700694`, additive RED ran alone before the narrow fix, with the new test unchanged; independent VERIFY passed with production changes pending in the working tree, not at a clean commit. Round 2 has not launched; all three blocking axes require a clean commit and gates first. Milestone 003 remains parked on 002.
 
 - **F5 — HISTORICAL P205, resolved P206 (S2/R4):** At P205, `docs/plans/053_corrected_caching_002_implement.md:37,39` checked `json-output.md` but neither assigned documentation edits nor named `run-flags.md`. Both `docs/src/cli/json-output.md:80` and `docs/src/cli/run-flags.md:46` then said `--stream` and `--json` always stream, contrary to `docs/src/providers.md:109` and `pkg/runner/run.go:529-533`. P205 recommended assigning T2 both documentation edits to explain fallback while retaining a single JSON envelope.
 - **F6 — HISTORICAL P205, resolved P206 (S4/R3–R4):** At P205, `docs/plans/053_corrected_caching_002_spec.md:52,60` versus `docs/plans/053_corrected_caching_002_implement.md:28,38,70` left omitted usage and independently zero cache usage untested through Bedrock Run. P205 recommended assigning T2 literal Converse fixtures that assert Result values and JSON omission for those cases, plus numerical nonzero counterparts, without changing accounting.
 
-### Current direction — parked pending scope decision
+### Current direction — round 2 pending clean commit and gates
 
-The records fixes are pending independent confirmation. The Design risk blocker remains open; no scope change, T2 or T3 launch, or further review is authorized by this record. T1 remains unchecked; 003 stays parked until 002 completes.
+A006 in REC011 authorized omitting only empty tool descriptions, preserving nonempty descriptions and existing assertions, adding a test in both cache modes, and rerunning the blocking reviews; the scope blocker is resolved. Prepare a clean fix commit, then run docs-lint, records-stale-check at fixed point `c67046b`, and the whole-suite gate before launching all three blocking round 2 axes. Records fixes await formal re-review. T1 remains unchecked; 003 stays parked until 002 completes.
 
 ### High stakes question — empty Bedrock tool descriptions
+
+The following question and recommendation record the earlier state; A006 in REC011 resolved it.
 
 Optional empty tool descriptions are serialized as an empty string (`internal/provider/bedrock.go:136–140,257–259`), but AWS permits omission and requires length at least 1 when present (`/tmp/issue83-docs/aws-spec-md:23–27`). This behavior predates T1. Accepted R1 (`docs/plans/053_corrected_caching_002_spec.md:38–40`) asks to preserve descriptions and review against AWS contracts; the checklist (`docs/plans/053_corrected_caching_002_implement.md:29`) limits fixes to union/schema/order. An agent must not resolve this scope ambiguity unilaterally.
 

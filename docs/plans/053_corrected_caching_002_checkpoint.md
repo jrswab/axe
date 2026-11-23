@@ -27,18 +27,18 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `blocked`
+- Current phase: `execute`
 - Current task: T1
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Keep 002 parked pending explicit direction on the Bedrock description scope blocker and independent confirmation of the records fixes.
+- Next safe action: Prepare a clean T1 fix commit and fresh whole-suite gate evidence, then launch all three blocking round 2 review axes.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. A005 consumed 2/2 calls; A004 exhausted 4/4, with no retries authorized. T1 is partial and committed at `4fa25a0`, but remains unchecked. At `c67046b`, RED ran with only the untracked test and checkpoint pending; independent VERIFY ran with full T1 source pending, before the code commit. The whole-suite gate passed at reviewed revision `cafdda4a`. All three T1 round 1 axes completed CHANGES REQUESTED, with no incompletes; records fixes await independent confirmation and the Design risk scope blocker awaits direction. 002 is parked; 003 remains dependency blocked. Draft PR 108 publication evidence is retained below.
-- Last completed phase/task/gate and timestamp: T1 independent round 1 blocked; parking intent, 2026-11-22T18:30:29.823488+00:00
+- Latest recorded state: P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. A005 consumed 2/2 calls; A004 exhausted 4/4, with no retries authorized. T1 remains unchecked. At `c67046b`, RED ran with only the untracked test and checkpoint pending; independent VERIFY ran with full T1 source pending before partial T1 code commit `4fa25a0`. The whole-suite gate passed at reviewed revision `cafdda4a`. All three T1 round 1 axes completed CHANGES REQUESTED, with no incompletes; records fixes were in `e700694` and await formal re-review. A006 in REC011 resolved the Design risk scope blocker for the exact narrow Bedrock fix and re-reviews. At `e700694`, additive RED ran alone before the narrow fix, with the new test unchanged; independent VERIFY passed with production changes pending in the working tree, not at a clean commit. Round 2 has not launched; all three blocking axes require a clean commit and gates first. 003 remains dependency blocked. Draft PR 108 publication evidence is retained below.
+- Last completed phase/task/gate and timestamp: T1 description independent VERIFY passed; round 2 intent, 2026-11-23T17:24:30.249666+00:00
 
 ## Gate evidence
 
@@ -53,8 +53,8 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 
 - Cap `002/planning`: lane `full`; P202 spec review approved. P203 checklist round 1 failed with F1–F4; F204 repaired them and P205 verified them resolved. P204 and P204b were two historical consecutive incomplete reviews of the original complete-checklist round 2. P205 completed the A004 four-slice batch: S1 and S3 APPROVED, S2 and S4 CHANGES REQUESTED; A004 exhausted 4/4 calls. P206's two A005 reviews both APPROVED, resolving F5 and F6; A005 consumed 2/2 calls. No retries are authorized. The planning gate passed.
 - Planning: shared failing rounds `2` (P203 and combined P205); historical incomplete events `2` (P204 and P204b); P205 added none. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
-- Code review `002/T1`: Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes and no round 2 dispatched. The reviewed revision was `cafdda4a362468ba9005db71dfd961ccfb664de3`, against base `c67046be996a47b103e18b7ceca85657a09e0701`; its whole-suite gate passed. Standards/Spec records fixes await independent confirmation; Design risk requires scope direction. Round-four eligibility and progress are not applicable.
-- Tasks T1–T3 are `unchecked`. T1 partial code was committed at `4fa25a0` after RED and independent VERIFY at `c67046b`; no milestone reviews have launched.
+- Code review `002/T1`: Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes and no round 2 dispatched. The reviewed revision was `cafdda4a362468ba9005db71dfd961ccfb664de3`, against base `c67046be996a47b103e18b7ceca85657a09e0701`; its whole-suite gate passed. Records fixes were in `e700694` and await formal re-review; A006 in REC011 resolved the Design risk scope blocker. Round 2 requires all three blocking axes after a clean fix commit and gates. Round-four eligibility and progress are not applicable.
+- Tasks T1–T3 are `unchecked`. T1 partial code was committed at `4fa25a0` after RED and independent VERIFY at `c67046b`; round 1 reviews completed and round 2 has not launched.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
 
 ### Bootstrap evidence B002-001
@@ -1069,8 +1069,143 @@ At clean cafdda4a362468ba9005db71dfd961ccfb664de3 on c67046be996a47b103e18b7ceca
 
 - Next action: Correct active records, document the Bedrock scope blocker, and publish the partial T1 work.
 
+### REC011 approved T1 scope and RED intent
+
+- Gate: REC011 approved T1 scope and RED intent
+- Commands/results:
+User approval A006 exact quote: 'Decision from Jaron: approved — take the recommended path. Omit only empty tool descriptions, preserve nonempty descriptions and existing assertions, add a test covering both cache modes, then rerun the blocking reviews. Treat this as in scope for 002.' No other scope or assertion changes. Direct milestone-entries exit 0, 3 entries; restart confirmed clean e700694f0a008ddcebf9d3241d2970c2abf2f143, checkboxes consistent, historical snapshot objects inspectable and not applied. Fresh PR 108 view exit 0, OPEN DRAFT at exact e700694f0a008ddcebf9d3241d2970c2abf2f143. Preflight --fix exit 0, seven passes, 36.0 GB free, no warnings. Sync --wip exit 0 at same HEAD, origin/master ahead 47 behind 0, no conflicts or merge. T1 round 1 three blocking results, no incompletes; rerun round 2 only after new RED, implementation, independent VERIFY and clean-HEAD gates. F5/F6 remain resolved and planning caps unchanged. In flight: additive test only in internal/provider/bedrock_wire_test.go covering omission of empty and preservation of nonempty descriptions with caching enabled and disabled, through serialized Bedrock Send. No production or old assertion changes before RED.
+- HEAD commit SHA: `e700694f0a008ddcebf9d3241d2970c2abf2f143`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T1
+
+### T1 description regression RED observed; fix intent
+
+- Gate: T1 description regression RED observed; fix intent
+- Commands/results:
+At e700694 plus only checkpoint and additive test pending, go test -mod=readonly ./internal/provider -run '^TestBedrock_ToolDescriptionWire$' -count=1 exited 1 at wire assertion in cache=true and cache=false: 'toolConfig.tools[0].toolSpec.description = ""; want field absent'. Nonempty fixture with surrounding spaces passed. 40 lines added, zero deletions, gofmt and git diff --check clean. Test blob 20d72240ef3b62aad72972b65983afa875ae2882. In flight: omit only the empty Bedrock tool description from serialized ToolSpecification, independent GREEN required, no other behavior or assertions change. Separately review/reconcile only active records to reflect authorization and exact test evidence; historical gates remain intact.
+- HEAD commit SHA: `e700694f0a008ddcebf9d3241d2970c2abf2f143`
+- Relevant work: `uncommitted` — stash ref `aa54c14690a4f66ce7e644c3b99f04bac7fb9892` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement narrow Bedrock serialization fix; verify unchanged test then rerun blocking reviews.
+
+### T1 focused command normalization and RED recheck intent
+
+- Gate: T1 focused command normalization and RED recheck intent
+- Commands/results:
+First code dispatch stopped before edits or tests: code-verify-go.md stricter no -count=1 except time-dependent/flaky tests. Choose stricter applicable command with flag removed under standing authorization. Local, reversible, same behavior/test/selector, source still unfixed and test unchanged; no assertion or acceptance change, no gate/review bypass and caps unchanged. In flight: rerun genuine RED using go test -mod=readonly ./internal/provider -run '^TestBedrock_ToolDescriptionWire$' (without count flag) before production edits. Use identical command for GREEN and VERIFY.
+- HEAD commit SHA: `e700694f0a008ddcebf9d3241d2970c2abf2f143`
+- Relevant work: `uncommitted` — stash ref `1896f1bf12fff006b45b08e0d46ae4a94320488c` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Verify RED under stricter command, then narrowly fix serialization.
+
+### T1 normalized RED confirmed; narrow implementation in flight
+
+- Gate: T1 normalized RED confirmed; narrow implementation in flight
+- Commands/results:
+At e700694 with only additive test and checkpoint pending, confirmed `go test -mod=readonly ./internal/provider -run '^TestBedrock_ToolDescriptionWire$'` exit 1 at internal/provider/bedrock_wire_test.go:122 in both modes, expected empty field absence. Test blob unchanged 20d72240ef3b62aad72972b65983afa875ae2882. No production edit occurred. In flight: narrow Bedrock tag omission fix, preserve every other field and assertion; use the exact normalized no-count command for GREEN.
+- HEAD commit SHA: `e700694f0a008ddcebf9d3241d2970c2abf2f143`
+- Relevant work: `uncommitted` — stash ref `f9cd1f43982a990d238a3c62e0252174e869c9aa` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement only the approved empty description omission.
+
+### T1 description fix verified by writer; independent VERIFY intent
+
+- Gate: T1 description fix verified by writer; independent VERIFY intent
+- Commands/results:
+Writer at e700694 added only JSON omitempty to bedrockToolSpec.Description and required CHANGELOG note. gofmt, provider build/vet, focused unchanged command, provider race, golangci-lint 0 issues and git diff --check all exit 0; RED blob unchanged. In flight: independent focused GREEN and provider checks; concurrent read-only record examination permitted, no second writer. Reconcile current checkpoint and parking before review gate without rewriting dated outcomes.
+- HEAD commit SHA: `e700694f0a008ddcebf9d3241d2970c2abf2f143`
+- Relevant work: `uncommitted` — stash ref `220549ca5a367f629f6314b7479b470590773360` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Independently verify unchanged GREEN and correct active review state.
+
+### T1 description independent VERIFY passed; round 2 intent
+
+- Gate: T1 description independent VERIFY passed; round 2 intent
+- Commands/results:
+Independent VERIFY at e700694 plus pending T1 fix. RED blob 20d72240ef3b62aad72972b65983afa875ae2882 exact, 40 test lines added, none altered/deleted. Normalized go test -mod=readonly ./internal/provider -run '^TestBedrock_ToolDescriptionWire$', provider race, vet, golangci-lint and diff check all exit 0. An initial self-imposed offline GOSUMDB=off failed during toolchain selection; successful commands selected installed Go 1.26.11 directly. Only JSON tag and CHANGELOG changed outside test and checkpoint. In flight: reconcile active 002 and parking summaries against A006, keep dated history and original acceptance intact, commit intended paths only, then docs-lint, records-stale-check fixed point c67046b and factory-gate test on clean commit. Conditional: one parallel round-2 batch of three blocking task axes, same fixed point c67046be996a47b103e18b7ceca85657a09e0701, no axis has launched. T1 unchecked until all gates pass.
+- HEAD commit SHA: `e700694f0a008ddcebf9d3241d2970c2abf2f143`
+- Relevant work: `uncommitted` — stash ref `392dc41d65928ca95c57e139d7576cad396f95b1` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M internal/provider/bedrock.go
+ M internal/provider/bedrock_wire_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Prepare clean T1 fix commit and fresh whole-suite review evidence.
+
 ## Limitations & blockers
 
-- Limitations: T1–T3 and 002 remain unchecked. RED and independent VERIFY passed at `c67046b` before partial T1 code commit `4fa25a0`; the whole-suite gate passed at reviewed revision `cafdda4a`. All three round 1 axes completed CHANGES REQUESTED, with no incompletes; no round 2 was dispatched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
-- Blockers: Standards/Spec record fixes await independent confirmation. Design risk identified optional empty Bedrock tool descriptions serialized as empty strings, rejected by AWS when present; the pre-existing issue needs explicit scope direction. The planning gate passed; F5 and F6 are resolved. A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 depends on 002 and remains parked. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Keep 002 parked pending explicit scope direction and independent confirmation; see the parking record.
+- Limitations: T1–T3 and 002 remain unchecked. RED and independent VERIFY passed at `c67046b` before partial T1 code commit `4fa25a0`; the whole-suite gate passed at reviewed revision `cafdda4a`. The later additive RED at `e700694` preceded the narrow fix with the new test unchanged; independent VERIFY passed with production changes pending, not on a clean commit. All three round 1 axes completed CHANGES REQUESTED, with no incompletes; no round 2 was dispatched. Historical completion and preflight results are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run. Source tests do not apply to this administrative repair.
+- Blockers: Standards/Spec record fixes were in `e700694` and await formal re-review. A006 in REC011 resolved the Design risk scope blocker for the exact empty-description fix and re-reviews; the Design risk finding remains subject to formal re-review. The planning gate passed; F5 and F6 are resolved. A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 depends on 002 and remains parked. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
+- Next action: Prepare a clean T1 fix commit, then run docs-lint, records-stale-check at fixed point `c67046b`, and the whole-suite gate; only after they pass launch all three blocking round 2 review axes.

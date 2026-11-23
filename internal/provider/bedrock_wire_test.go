@@ -86,6 +86,46 @@ func TestBedrock_StaticWireContract(t *testing.T) {
 	}
 }
 
+// Bedrock ToolSpecification makes description optional, but requires at least
+// one character when present: https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_ToolSpecification.html
+func TestBedrock_ToolDescriptionWire(t *testing.T) {
+	for _, enabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("cache=%t", enabled), func(t *testing.T) {
+			b, capture, _ := newBedrockWireFixture(t, bedrockWireResponse(http.StatusOK, bedrockWireReply+`}`))
+			req := bedrockWireRequest(false, false, enabled, false)
+			const description = "  Look up a record.  "
+			req.Tools = []Tool{
+				{Name: "empty_description", Description: ""},
+				{Name: "nonempty_description", Description: description},
+			}
+
+			if _, err := b.Send(bedrockWireContext(t), req); err != nil {
+				t.Fatalf("Send: %v", err)
+			}
+
+			wire := decodeBedrockWire(t, capture.requests(t, 1)[0])
+			var config struct {
+				Tools []struct {
+					Spec map[string]json.RawMessage `json:"toolSpec"`
+				} `json:"tools"`
+			}
+			if err := json.Unmarshal(wire["toolConfig"], &config); err != nil {
+				t.Fatalf("decode toolConfig: %v", err)
+			}
+			if len(config.Tools) < 2 || config.Tools[0].Spec == nil || config.Tools[1].Spec == nil {
+				t.Fatalf("expected both tool specifications in toolConfig: %s", wire["toolConfig"])
+			}
+			empty, nonempty := config.Tools[0].Spec, config.Tools[1].Spec
+			assertBedrockWireJSON(t, "toolConfig.tools[0].toolSpec.name", empty["name"], `"empty_description"`)
+			assertBedrockWireJSON(t, "toolConfig.tools[1].toolSpec.name", nonempty["name"], `"nonempty_description"`)
+			if value, present := empty["description"]; present {
+				t.Errorf("toolConfig.tools[0].toolSpec.description = %s; want field absent", value)
+			}
+			assertBedrockWireJSON(t, "toolConfig.tools[1].toolSpec.description", nonempty["description"], strconv.Quote(description))
+		})
+	}
+}
+
 func bedrockWireRequest(system, tools, enabled, reverse bool) *Request {
 	req := &Request{Model: "wire-model", Messages: []Message{{Role: "user", Content: "First task"}},
 		CacheConfig: enabled, Temperature: 0.25, MaxTokens: 64}

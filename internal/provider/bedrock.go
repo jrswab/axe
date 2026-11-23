@@ -136,7 +136,7 @@ type bedrockToolDef struct {
 // bedrockToolSpec is the tool specification inside a bedrockToolDef.
 type bedrockToolSpec struct {
 	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
+	Description string                 `json:"description,omitempty"`
 	InputSchema map[string]interface{} `json:"inputSchema"`
 }
 
