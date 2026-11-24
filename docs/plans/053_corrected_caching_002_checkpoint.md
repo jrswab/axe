@@ -27,18 +27,18 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `blocked`
-- Current task: T2 parked on existing credential-error assertion conflict
+- Current phase: `execute`
+- Current task: T2 Q4 approval and local RED intent
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Get explicit disposition on the one existing credential-error assertion; then run scoped RED before implementation.
+- Next safe action: Implement T2
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; review blockers and required coverage and gates remain pending. T2 and T3 remain unchecked; 002 is parked unchecked and 003 is blocked by 002. Security disposition and the three unapproved decisions are recorded locally in the parking file; draft PR 108 remains at `d18abf7` and publication is on hold.
-- Last completed phase/task/gate and timestamp: Jaron security disposition and read-only restart, 2026-11-24T03:39:55.792102+00:00
+- Last completed phase/task/gate and timestamp: Q4 authorization and restart, 2026-11-24T16:28:30.989752+00:00
 
 ## Gate evidence
 
@@ -1523,8 +1523,29 @@ Restart: milestone-entries --handoff exit 0, resolved canonical milestone doc fo
 
 - Next action: Get explicit disposition on the one existing credential-error assertion; then run scoped RED before implementation.
 
+### Q4 authorization and restart
+
+- Gate: Q4 authorization and restart
+- Commands/results:
+Jaron verbatim `Q4 -  yes` approves only the missing-credential-file expectation split proposed in the prior report: keep Main's existing filename/cause checks, require actionable Nested guidance and no local path or filename. Prior three authorizations at checkpoint lines 1504–1511 remain the only other scope amendments. Required coverage, reviews and gates intact; no push, PR update or external communication. Restart: milestone-entries direct exit 0 three entries; repo-state and recovery explorer verify clean 437043cdd582c4532c0e2a5024696b053d36a8dd, ahead 5, all index stage 0, cached and worktree diff empty, only record changes since earlier recovery. factory-preflight --fix exit 0, seven passes, 29.0 GB free. T2 three completed round-1 changes-requested axes with no incompletes; no caps reset. Local RED intent in flight: listed two runner test files only, no live network, verify three independent missing behaviors using exact focused command; additive coverage for cross-run bytes and omitted shapes must preserve all pre-existing assertions except user-approved Q3-disposition role and Q4 missing-file split. Base sync before RED; no publication.
+- HEAD commit SHA: `437043cdd582c4532c0e2a5024696b053d36a8dd`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T2
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Get explicit disposition on the one existing credential-error assertion; then run scoped RED before implementation.
+- Next action: Implement T2
