@@ -250,6 +250,9 @@ Config is read-write because `axe config init` and `axe agents init` write into 
 | `AXE_OPENCODE_BASE_URL` | No | Override OpenCode API endpoint |
 | `TAVILY_API_KEY` | If using web_search | Tavily web search API key |
 | `AXE_WEB_SEARCH_BASE_URL` | No | Override web search endpoint |
+| `AXE_WEB_SEARCH_PROVIDER` | No | `web_search` backend: `tavily` (default) or `keenable` |
+| `KEENABLE_API_KEY` | No | Keenable API key for `AXE_WEB_SEARCH_PROVIDER=keenable`; without it, the keyless endpoint is used (rate limited per IP) |
+| `AXE_KEENABLE_BASE_URL` | No | Override the Keenable API endpoint |
 
 ## CLI Reference
 

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Runcrate provider using the OpenAI-compatible Chat Completions API
 - Eden AI provider (`edenai/<vendor>/<model>`) using the OpenAI-compatible Chat Completions API, with `EDENAI_API_KEY`, streaming, and HTTPS custom endpoints (HTTP is restricted to localhost and loopback/private IP literals).
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
+- Opt-in Keenable backend for `web_search`, selected with `AXE_WEB_SEARCH_PROVIDER=keenable`. It uses `KEENABLE_API_KEY` when set and the keyless endpoint otherwise. Tavily stays the default, and an unknown provider name is an error.
 
 ### Fixed
 - Preserve all tool-call arguments, text, finish reasons, and usage when OpenAI-compatible streaming chunks combine them (#95).
