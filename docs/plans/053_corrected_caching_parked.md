@@ -71,6 +71,8 @@ P205 recorded intent, but the user requested handoff before any review dispatch.
 
 This section is the current parking direction; earlier directions and evidence remain historical. Milestone 002 is parked unchecked. T1 is checked; T2 and T3 are unchecked. T2's RED and GREEN are committed; its independent Standards, Spec, and Design risk round-1 reviews each returned **CHANGES REQUESTED**, with no incomplete results. Integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; the earlier offline failure remains history. Review identified potential newly reachable Nested risks, confirmed by source triage; no actual exposure was observed ([002 checkpoint](053_corrected_caching_002_checkpoint.md), T2 round 1 and integrity retry entries).
 
+The following three questions and recommendations preserve the historical decision wording. They are no longer open: see the current follow-up below.
+
 ### 1 — High stakes question: validate the resolved region?
 
 Nested now passes a resolved region to provider construction (`internal/tool/tool.go:227-245`); the same underlying endpoint weakness affects Main. The provider constructs the endpoint from that region and signs requests (`internal/provider/bedrock.go:42-55,309-324`). This security-boundary change is not authorized by the current T2 scope.
@@ -89,6 +91,12 @@ The provider currently maps a non-user/assistant role to assistant while seriali
 
 **Recommendation:** Authorize provider-scoped Converse tool-result role correction and only the existing role assertion at `pkg/runner/large_integer_args_test.go:474`, plus tests preserving large-integer checks. **Alternative:** Leave the role and assertions untouched and keep 002 blocked.
 
-No remediation for these three decisions is approved. In-scope review coverage remains open: explicit comparison of serialized static bytes across fresh Runs with varying task, context, and history, and all omitted static-shape cases. These are blockers, not waived by the integrity pass. Nit candidates only: nonexclusive ordinary-provider lookup, indexed lost-response fixture, cross-run comparison, and inherited credential I/O timing; the cross-run byte-comparison requirement remains a Spec blocker. All required coverage, reviews, and gates remain intact ([002 spec](053_corrected_caching_002_spec.md), R1–R4; [002 checklist](053_corrected_caching_002_implement.md), T2 and final completion gate).
+In-scope review coverage remains open: explicit comparison of serialized static bytes across fresh Runs with varying task, context, and history, and all omitted static-shape cases. These are blockers, not waived by the integrity pass. Nit candidates only: nonexclusive ordinary-provider lookup, indexed lost-response fixture, cross-run comparison, and inherited credential I/O timing; the cross-run byte-comparison requirement remains a Spec blocker. All required coverage, reviews, and gates remain intact ([002 spec](053_corrected_caching_002_spec.md), R1–R4; [002 checklist](053_corrected_caching_002_implement.md), T2 and final completion gate).
 
-Milestone 003 is blocked by 002, with no 003 spec, checklist, task, or review launched. Existing draft #108 remains at verified `d18abf7a2bd50cd9f99112243482ba1b10974d4c`; no push of local commits has occurred. One-way doors, external communications, and all pushes remain on hold pending security disposition.
+Milestone 003 is blocked by 002, with no 003 spec, checklist, task, or review launched. Existing draft #108 remains at verified `d18abf7a2bd50cd9f99112243482ba1b10974d4c`; no push of local commits has occurred. One-way doors, external communications, and all pushes remain on hold.
+
+### Current follow-up — Q4: missing-file credential assertion
+
+The original three issues—region validation, credential-path protection, and the Converse tool-result role correction—have explicit, narrowly scoped authorization in the [latest local 002 checkpoint](053_corrected_caching_002_checkpoint.md#jaron-security-disposition-and-read-only-restart). Authority and caps otherwise remain unchanged; no other scope expansion, push, or external communication is authorized.
+
+**Q4 — High stakes approval requested:** May the existing assertion for the missing-file credential case in `pkg/runner/bedrock_parity_test.go:367-387,423-458` be split? Recommend retaining Main's filename/cause check and requiring Nested to provide actionable guidance while asserting the local filename and path are absent. Otherwise, keep 002 parked and unpublished. This is the sole new decision; existing cross-run serialized-byte comparison and omitted static-shape requirements, reviews, and gates remain intact.

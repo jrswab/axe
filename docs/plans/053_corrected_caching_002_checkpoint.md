@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `blocked`
-- Current task: T2 parked; publication held
+- Current task: T2 parked on existing credential-error assertion conflict
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Resume only after disposition of the three local parking decisions; leave the existing draft unchanged until safe.
+- Next safe action: Get explicit disposition on the one existing credential-error assertion; then run scoped RED before implementation.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; review blockers and required coverage and gates remain pending. T2 and T3 remain unchecked; 002 is parked unchecked and 003 is blocked by 002. Security disposition and the three unapproved decisions are recorded locally in the parking file; draft PR 108 remains at `d18abf7` and publication is on hold.
-- Last completed phase/task/gate and timestamp: local parking verified and terminal security hold, 2026-11-23T18:16:29.285850+00:00
+- Last completed phase/task/gate and timestamp: Jaron security disposition and read-only restart, 2026-11-24T03:39:55.792102+00:00
 
 ## Gate evidence
 
@@ -1501,8 +1501,30 @@ Parking prose and records verified: the old T2 RED summary and stale current-dir
 
 - Next action: Resume only after disposition of the three local parking decisions; leave the existing draft unchanged until safe.
 
+### Jaron security disposition and read-only restart
+
+- Gate: Jaron security disposition and read-only restart
+- Commands/results:
+Verbatim authorization: Decision from Jaron — security disposition for the three parked high-stakes questions: (1) AUTHORIZED: provider-scope validation of the resolved region before endpoint construction for both Main and Nested. (2) AUTHORIZED: keep local credential-path details out of parent-model-facing failure output while retaining a safe actionable diagnostic. (3) AUTHORIZED: narrow Converse tool-result role correction, touching only the existing role assertion at pkg/runner/large_integer_args_test.go:474 plus tests preserving large-integer checks. Guardrails: these three authorizations only — no other scope expansion; the Spec blocker (cross-run serialized-bytes comparison) and required reviews/gates still stand; do not push or send any external communication — stop and report before any push.
+Restart: milestone-entries --handoff exit 0, resolved canonical milestone doc for three entries. Read-only recovery confirmed HEAD 59c0f91bd8ba31dc941e6244f40968b31e367648, clean worktree and index, local tracking ref d18abf7a2bd50cd9f99112243482ba1b10974d4c, ahead 4. No sync, outbound publication or substantive work launched. 002 T1 checked, T2/T3 unchecked; 003 blocked by 002; round 1 per-axis findings/caps unchanged. New blocker: pkg/runner/bedrock_parity_test.go:367-387 supplies the local credentials filename as a required diagnostic in both Main and Nested, and :423-458 asserts its presence. It conflicts with the newly approved redaction. The narrow authorization to revise the role assertion does not authorize revising this separate assertion or its acceptance. Recommend approve splitting only this case: retain the current Main filename/cause check, require actionable Nested guidance and assert local path and filename absence. Otherwise keep 002 unpublished and parked. No production or test edits, no gates waived; cross-run serialized bytes and omitted-shape coverage still required. Local parking prose update in flight; no external communication.
+- HEAD commit SHA: `59c0f91bd8ba31dc941e6244f40968b31e367648`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Get explicit disposition on the one existing credential-error assertion; then run scoped RED before implementation.
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Resume only after disposition of the three local parking decisions; leave the existing draft unchanged until safe.
+- Next action: Get explicit disposition on the one existing credential-error assertion; then run scoped RED before implementation.
