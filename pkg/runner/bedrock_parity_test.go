@@ -284,11 +284,11 @@ func parityStatic(t *testing.T, got parityWire, system string, enabled bool, too
 	}
 }
 
-func parityStable(t *testing.T, first, later parityWire) {
+func parityStable(t *testing.T, first, later parityWire, scope string) {
 	t.Helper()
 	for _, k := range []string{"system", "toolConfig"} {
 		if !bytes.Equal(first[k], later[k]) {
-			t.Errorf("serialized %s changed across turns: %s -> %s", k, first[k], later[k])
+			t.Errorf("serialized %s changed %s: %s -> %s", k, scope, first[k], later[k])
 		}
 	}
 }
@@ -326,9 +326,40 @@ func bedrockParitySetup(t *testing.T) {
 					paritySetupSuccess(t, who, tt.want, parityEnvCredentials, false)
 				})
 			}
+			t.Run("malformed_resolved_region", func(t *testing.T) { bedrockParityMalformedRegion(t, who) })
 			bedrockParityCredentials(t, who)
 		})
 	}
+}
+
+func bedrockParityMalformedRegion(t *testing.T, who string) {
+	t.Helper()
+	f := newParityFixture(t)
+	f.agent(t, who, "Static setup.", "[retry]\nmax_retries = 0\n")
+	f.config(t, "us-west-2", false)
+	t.Setenv("AWS_REGION", "us_east_1") // An underscore is not valid in a DNS label.
+	exchanges := parityIntercept(t, "", parityCredentials{}, nil)
+
+	ctx := context.Background()
+	var diagnostic string
+	if who == "nested" {
+		got := parityNested(t, ctx, "Nested task.", "")
+		if !got.IsError || got.CallID != "direct-delegation" {
+			t.Fatalf("Nested result = %+v, want error ToolResult", got)
+		}
+		diagnostic = got.Content
+	} else {
+		got, err := Run(ctx, parityMainOptions(io.Discard))
+		if got != nil || err == nil {
+			t.Fatalf("Main Run = %+v, %v; want error and no result", got, err)
+		}
+		diagnostic = err.Error()
+	}
+
+	if msg := strings.ToLower(diagnostic); !strings.Contains(msg, "region") || !strings.Contains(msg, "invalid") {
+		t.Errorf("setup diagnostic = %q; want an invalid-region diagnostic before inference", diagnostic)
+	}
+	parityCount(t, exchanges, 0, diagnostic)
 }
 
 func bedrockParityCredentials(t *testing.T, who string) {
@@ -377,14 +408,26 @@ aws_secret_access_key = fixture-home-secret
 			parityWrite(t, filepath.Join(f.home, ".aws", "credentials"), home)
 			sharedPath := filepath.Join(f.home, "fixture-credentials.ini")
 			parityWrite(t, sharedPath, shared)
+			var missingPath string
 			switch tt.file {
 			case "shared":
 				t.Setenv("AWS_SHARED_CREDENTIALS_FILE", sharedPath)
 			case "missing":
-				t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(f.home, tt.why))
+				missingPath = filepath.Join(f.home, tt.why)
+				t.Setenv("AWS_SHARED_CREDENTIALS_FILE", missingPath)
 			}
 			if tt.why != "" {
-				paritySetupError(t, who, []string{"AWS credentials not found", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "credentials", tt.why}, false, tt.cause)
+				guidance := []string{"AWS credentials not found", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "credentials"}
+				if who == "nested" && missingPath != "" {
+					msg := paritySetupError(t, who, guidance, false, nil)
+					for _, private := range []string{missingPath, filepath.Base(missingPath)} {
+						if strings.Contains(msg, private) {
+							t.Errorf("Nested credential diagnostic exposes local file information: %q", msg)
+						}
+					}
+				} else {
+					paritySetupError(t, who, append(guidance, tt.why), false, tt.cause)
+				}
 				return
 			}
 			paritySetupSuccess(t, who, parityRegion, tt.want, tt.decoys)
@@ -420,7 +463,7 @@ func paritySetupSuccess(t *testing.T, who, region string, creds parityCredential
 	parityAssertJSON(t, "messages", wire["messages"], "["+wantMessage+"]")
 }
 
-func paritySetupError(t *testing.T, who string, parts []string, missingRegion bool, cause error) {
+func paritySetupError(t *testing.T, who string, parts []string, missingRegion bool, cause error) string {
 	t.Helper()
 	exchanges := parityIntercept(t, "", parityCredentials{}, nil)
 	ctx := context.Background()
@@ -457,6 +500,7 @@ func paritySetupError(t *testing.T, who string, parts []string, missingRegion bo
 		}
 	}
 	parityCount(t, exchanges, 0, msg)
+	return msg
 }
 
 func bedrockParityStaticAndTaskEdges(t *testing.T) {
@@ -468,8 +512,8 @@ func bedrockParityStaticAndTaskEdges(t *testing.T) {
 			{"system_only", "Stable system.", false}, {"tools_only", "", true},
 			{"system_and_tools", "Stable system.", true}, {"neither", "", false},
 		} {
-			for _, enabled := range []bool{true, false} {
-				t.Run(fmt.Sprintf("%s/%s/cache=%t", who, row.name, enabled), func(t *testing.T) {
+			for _, choice := range parityCacheChoices {
+				t.Run(fmt.Sprintf("%s/%s/cache=%s", who, row.name, choice.name), func(t *testing.T) {
 					f := newParityFixture(t)
 					var definition string
 					var schemas []string
@@ -477,7 +521,7 @@ func bedrockParityStaticAndTaskEdges(t *testing.T) {
 						definition = "tools = [\"write_file\", \"read_file\"]\n"
 						schemas = []string{parityWriteTool, parityReadTool}
 					}
-					f.agent(t, who, row.system, definition+fmt.Sprintf("[params]\ncache_enabled = %t\n", enabled))
+					f.agent(t, who, row.system, definition+choice.toml)
 					exchanges := parityIntercept(t, parityRegion, parityEnvCredentials, map[string][]parityReplyFunc{who: {parityHTTP(200, parityReply+`}`)}})
 					ctx := context.Background()
 					var wantMessage string
@@ -498,7 +542,7 @@ func bedrockParityStaticAndTaskEdges(t *testing.T) {
 						wantMessage = parityText("user", "Main task.")
 					}
 					wire := (*exchanges)[0].wire
-					parityStatic(t, wire, row.system, enabled, schemas...)
+					parityStatic(t, wire, row.system, choice.enabled, schemas...)
 					parityAssertJSON(t, "messages", wire["messages"], "["+wantMessage+"]")
 				})
 			}
@@ -521,25 +565,62 @@ type parityChoice struct {
 	enabled    bool
 }
 
+var parityCacheChoices = []parityChoice{
+	{"omitted", "", true},
+	{"true", "[params]\ncache_enabled = true\n", true},
+	{"false", "[params]\ncache_enabled = false\n", false},
+}
+
 func bedrockParityDelegation(t *testing.T) {
-	choices := []parityChoice{{"omitted", "", true}, {"true", "[params]\ncache_enabled = true\n", true}, {"false", "[params]\ncache_enabled = false\n", false}}
-	for _, main := range choices {
-		for _, nested := range choices {
+	for _, main := range parityCacheChoices {
+		for _, nested := range parityCacheChoices {
 			t.Run(main.name+"_main/"+nested.name+"_nested", func(t *testing.T) {
-				bedrockParityDelegatedRun(t, main, nested)
+				bedrockParityDelegatedRun(t, main, nested, "")
 			})
 		}
 	}
+	t.Run("follow_up_roles", func(t *testing.T) {
+		main, nested := parityCacheChoices[0], parityCacheChoices[2]
+		exchanges := bedrockParityDelegatedRun(t, main, nested, "")
+		for _, followup := range exchanges[2:] {
+			t.Run(followup.who, func(t *testing.T) {
+				// Converse sends tool results back to the model in a user message.
+				// https://docs.aws.amazon.com/bedrock/latest/userguide/tool-use-inference-call.html
+				var messages []parityWire
+				if err := json.Unmarshal(followup.wire["messages"], &messages); err != nil || len(messages) == 0 {
+					t.Fatalf("missing follow-up messages: %s (%v)", followup.wire["messages"], err)
+				}
+				parityAssertJSON(t, "appended tool result role", messages[len(messages)-1]["role"], `"user"`)
+			})
+		}
+	})
+	t.Run("cross_run_static", func(t *testing.T) {
+		main, nested := parityCacheChoices[0], parityCacheChoices[2]
+		var first, second []parityExchange
+		if !t.Run("first", func(t *testing.T) {
+			first = bedrockParityDelegatedRun(t, main, nested, " / first run")
+		}) || !t.Run("second", func(t *testing.T) {
+			second = bedrockParityDelegatedRun(t, main, nested, " / second run")
+		}) {
+			return
+		}
+		for i, req := range first {
+			if bytes.Equal(req.wire["messages"], second[i].wire["messages"]) {
+				t.Errorf("%s request %d: conversation did not change across runs", req.who, i+1)
+			}
+			parityStable(t, req.wire, second[i].wire, fmt.Sprintf("across runs (%s request %d)", req.who, i+1))
+		}
+	})
 }
 
-func bedrockParityDelegatedRun(t *testing.T, main, nested parityChoice) {
+func bedrockParityDelegatedRun(t *testing.T, main, nested parityChoice, dynamicSuffix string) []parityExchange {
 	t.Helper()
 	f := newParityFixture(t)
 	f.agent(t, "main", "Main static.", "tools = [\"read_file\"]\nsub_agents = [\"parity-nested\"]\n"+main.toml)
 	f.agent(t, "nested", "Nested static.", "tools = [\"write_file\", \"read_file\"]\n"+nested.toml)
 
-	task := "Check local fixture: " + main.name
-	contextText := "Only this explicit context: " + nested.name
+	task := "Check local fixture: " + main.name + dynamicSuffix
+	contextText := "Only this explicit context: " + nested.name + dynamicSuffix
 	args := map[string]string{"agent": "parity-nested", "task": task, "context": contextText}
 	delegate := `{"toolUse":{"toolUseId":"delegate-1","name":"call_agent","input":` + parityJSON(args) + `}}`
 	const privateCall = `{"toolUse":{"toolUseId":"private-1","name":"write_file","input":{"path":"nested-private.txt","content":"private file body"}}}`
@@ -561,7 +642,7 @@ func bedrockParityDelegatedRun(t *testing.T, main, nested parityChoice) {
 	opts := parityMainOptions(&stdout)
 	maxBudget := 100
 	opts.JSON, opts.MaxTokens = true, &maxBudget
-	opts.Messages = []Message{{Role: "user", Content: "Main earlier: " + nested.name}, {Role: "assistant", Content: "Main earlier answer."}, {Role: "user", Content: "Main now: " + main.name}}
+	opts.Messages = []Message{{Role: "user", Content: "Main earlier: " + nested.name + dynamicSuffix}, {Role: "assistant", Content: "Main earlier answer."}, {Role: "user", Content: "Main now: " + main.name + dynamicSuffix}}
 	got, err := Run(context.Background(), opts)
 	if err != nil || got == nil {
 		t.Fatalf("Main delegation Run: %v", err)
@@ -580,10 +661,10 @@ func bedrockParityDelegatedRun(t *testing.T, main, nested parityChoice) {
 	for _, req := range []parityWire{n1, n2} {
 		parityStatic(t, req, "Nested static.", nested.enabled, parityWriteTool, parityReadTool)
 	}
-	parityStable(t, m1, m2)
-	parityStable(t, n1, n2)
+	parityStable(t, m1, m2, "across Main turns")
+	parityStable(t, n1, n2, "across Nested turns")
 
-	mainHistory := []string{parityText("user", "Main earlier: "+nested.name), parityText("assistant", "Main earlier answer."), parityText("user", "Main now: "+main.name)}
+	mainHistory := []string{parityText("user", "Main earlier: "+nested.name+dynamicSuffix), parityText("assistant", "Main earlier answer."), parityText("user", "Main now: "+main.name+dynamicSuffix)}
 	nestedTask := parityText("user", "Task: "+task+"\n\nContext:\n"+contextText)
 	parityAssertJSON(t, "Main initial history", m1["messages"], "["+strings.Join(mainHistory, ",")+"]")
 	parityAssertJSON(t, "Nested initial task/context", n1["messages"], "["+nestedTask+"]")
@@ -608,6 +689,7 @@ func bedrockParityDelegatedRun(t *testing.T, main, nested parityChoice) {
 	if got.Budget != (BudgetState{Max: 100, Used: 98}) {
 		t.Errorf("shared budget = %+v, want 98 of 100 (all input/output, no cache counters)", got.Budget)
 	}
+	return *exchanges
 }
 
 func parityHistoryWithToolResult(t *testing.T, req parityWire, prior []string, resultContent string) {
@@ -623,8 +705,7 @@ func parityHistoryWithToolResult(t *testing.T, req parityWire, prior []string, r
 	for i, want := range prior {
 		parityAssertJSON(t, fmt.Sprintf("history[%d]", i), original[i], want)
 	}
-	// R1/T2 preserves the existing tool-result adapter; assert its block and
-	// position without imposing a new conversation-role mapping in this slice.
+	// The follow_up_roles subtests check the role separately from content and order.
 	parityAssertJSON(t, "appended tool result content", history[len(prior)]["content"], resultContent)
 }
 
@@ -690,6 +771,7 @@ type parityFailure struct {
 }
 
 func bedrockParityFailures(t *testing.T) {
+	lostResponse := parityFailure{name: "accepted_then_lost_response", category: provider.ErrCategoryServer, cause: io.EOF, mainDiagnostic: "provider server error: retry with backoff", mainAttempts: 3}
 	rows := []parityFailure{
 		{name: "authentication_401", status: 401, body: `{"message":"Missing signature"}`, category: provider.ErrCategoryAuth, message: "Missing signature", mainDiagnostic: "check credentials/token", mainAttempts: 1},
 		{name: "authorization_403", status: 403, body: `{"message":"Access denied"}`, category: provider.ErrCategoryAuth, message: "Access denied", mainDiagnostic: "check credentials/token", mainAttempts: 1},
@@ -697,7 +779,7 @@ func bedrockParityFailures(t *testing.T) {
 		{name: "throttling", status: 429, body: `{"message":"Slow down"}`, category: provider.ErrCategoryRateLimit, message: "Slow down", mainDiagnostic: "backoff or increase quota", mainAttempts: 3},
 		{name: "server", status: 500, body: `{"message":"Internal inference error"}`, category: provider.ErrCategoryServer, message: "Internal inference error", mainDiagnostic: "provider server error: retry with backoff", mainAttempts: 3},
 		{name: "cancellation_after_request", category: provider.ErrCategoryTimeout, cause: context.Canceled, message: "context canceled", mainDiagnostic: "provider call failed", mainAttempts: 1},
-		{name: "accepted_then_lost_response", category: provider.ErrCategoryServer, cause: io.EOF, mainDiagnostic: "provider server error: retry with backoff", mainAttempts: 3},
+		lostResponse,
 		{name: "response_read", cause: io.ErrUnexpectedEOF, message: "failed to read response body: unexpected EOF", mainDiagnostic: "provider call failed", mainAttempts: 1},
 		{name: "response_decode", body: `{"output":`, category: provider.ErrCategoryServer, message: "failed to parse response: unexpected end of JSON input", mainDiagnostic: "provider server error: retry with backoff", mainAttempts: 3},
 	}
@@ -708,7 +790,7 @@ func bedrockParityFailures(t *testing.T) {
 	}
 	// With retries disabled, an ambiguous loss gives exactly one attempt.
 	t.Run("main/accepted_then_lost_without_retries", func(t *testing.T) {
-		tt := rows[6]
+		tt := lostResponse
 		tt.mainAttempts = 1
 		bedrockParityFailure(t, "main", tt)
 	})
@@ -785,7 +867,7 @@ func bedrockParityFailure(t *testing.T, who string, tt parityFailure) {
 	for _, request := range *exchanges {
 		parityStatic(t, request.wire, "Static failure fixture.", true, parityReadTool)
 		parityAssertJSON(t, "unchanged messages on inference attempt", request.wire["messages"], "["+wantUser+"]")
-		parityStable(t, (*exchanges)[0].wire, request.wire)
+		parityStable(t, (*exchanges)[0].wire, request.wire, "across attempts")
 	}
 }
 

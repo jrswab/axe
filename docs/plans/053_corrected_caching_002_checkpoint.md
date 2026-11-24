@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T2 Q4 approval and local RED intent
+- Current task: T2 defensive commit and round 2 gate
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T2
+- Next safe action: Commit scoped T2 review fixes and run SHA-specific gates.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; review blockers and required coverage and gates remain pending. T2 and T3 remain unchecked; 002 is parked unchecked and 003 is blocked by 002. Security disposition and the three unapproved decisions are recorded locally in the parking file; draft PR 108 remains at `d18abf7` and publication is on hold.
-- Last completed phase/task/gate and timestamp: Q4 authorization and restart, 2026-11-24T16:28:30.989752+00:00
+- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`. Four decisions are authorized: region validation, credential-path redaction, tool-result role correction, and the Q4 missing-file expectation split. Defensive T2 changes passed the unchanged focused RED-to-GREEN command and touched-package race; cross-run and omitted-shape checks pass. Independent verification, round 2 review, T3 and final gates remain pending. T2, T3 and 002 remain unchecked; 003 is blocked by 002. No push or external communication is authorized, and the defensive changes have not been published.
+- Last completed phase/task/gate and timestamp: independent GREEN passed and gate launch intent, 2026-11-24T16:52:49.561033+00:00
 
 ## Gate evidence
 
@@ -1544,8 +1544,141 @@ Jaron verbatim `Q4 -  yes` approves only the missing-credential-file expectation
 
 - Next action: Implement T2
 
+### base sync outcome and RED launch
+
+- Gate: base sync outcome and RED launch
+- Commands/results:
+factory-sync --wip exit 0 at 4ef51db5eec17f0185ea8776c90176f882a096f5, origin/master ahead 57 behind 0, no shared files or conflicts, no merge/WIP, synced true. RED launch in flight; runner parity and role assertion only; local fake credentials and intercept only. No push.
+- HEAD commit SHA: `4ef51db5eec17f0185ea8776c90176f882a096f5`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run focused RED.
+
+### authorized RED and fix intent
+
+- Gate: authorized RED and fix intent
+- Commands/results:
+RED at 4ef51db5eec17f0185ea8776c90176f882a096f5, only two test edits plus checkpoint. `env GOTOOLCHAIN=local GOCACHE=/tmp/axe-v006-cache.itoPgN/go-build GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod GOPROXY=off GONOPROXY=none GOSUMDB=off /tmp/axe-v006-cache.itoPgN/go-mod/golang.org/toolchain@v0.0.1-go1.26.11.linux-amd64/bin/go test -mod=readonly -v ./pkg/runner -run '^(TestBedrock_AWSRunParity|TestLargeIntegerArgs_Bedrock_BufferedHistory)$'` exit 1, stderr empty. Safe invalid resolved region hit rejecting local transport on both boundaries; Nested missing-file error contained synthetic local path/basename; both follow-up result messages had assistant role instead of user; integer test failed only on corrected role before later integer assertions. Cross-run bytes and eight omitted-shape cases passed; no change to existing assertions except scoped role and Q4 test split. RED blobs parity b2b24f15b2cad0bccb30bc3b96c02d339a36ce72, integer bdacffc376c5474857af0ee57c74a53ad8df91d0. GREEN in flight: fix only provider region/role and Nested setup diagnostic/branch; reconcile exact scoped spec/checklist and parking record, preserve all history/caps/criteria not changed by approvals; verify unchanged blobs. No publication.
+- HEAD commit SHA: `4ef51db5eec17f0185ea8776c90176f882a096f5`
+- Relevant work: `uncommitted` — stash ref `13c25842826fa58ea488f8c55bbcef2881d8c24b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M pkg/runner/bedrock_parity_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement approved changes and rerun focused and touched-package gates.
+
+### safe diagnostic triage and corrected implementation intent
+
+- Gate: safe diagnostic triage and corrected implementation intent
+- Commands/results:
+First GREEN agent stopped before edits: fixed generic diagnostic alone drops existing missing/incomplete profile checks at pkg/runner/bedrock_parity_test.go:398-400,429. Read-only source triage isolated path-bearing open/read/scanner errors in internal/provider/awscreds.go and parser-originated profile diagnostics; a typed private classification and provider projection permits preserving tested benign identifiers without echoing arbitrary causes or file locations. Proceed in same authorized redaction boundary and preserve all assertions/blobs; allow only narrow awscreds.go classification in addition to previously listed production files. No changes to resolver precedence, error cause for Main, profile selection or credential loading. No scope expansion, publication or cap change. Revised GREEN in flight.
+- HEAD commit SHA: `4ef51db5eec17f0185ea8776c90176f882a096f5`
+- Relevant work: `uncommitted` — stash ref `2ee3cbe9d53b55f51fc4b8b4b048c20dd5c238a0` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M pkg/runner/bedrock_parity_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement approved security fixes with typed credential diagnostic projection, keeping RED blobs unchanged.
+
+### defensive implementation outcome and independent verify intent
+
+- Gate: defensive implementation outcome and independent verify intent
+- Commands/results:
+Code GREEN at 4ef51db5eec17f0185ea8776c90176f882a096f5: exact focused RED command exit 0 runner 0.352s; derived race ./internal/provider ./internal/tool ./pkg/runner exit 0; golangci-lint final 0 issues; ci-check integrity exit 0 (all modules verified), vet/build pass; format/diff, spec/docs lint, actionlint and script tests (22) pass per agent. Implemented single-label validation after options, safe Bedrock diagnostic projection using typed profile errors (Main original cause preserved), Converse tool-result user role, non-Bedrock lookup isolation, and scoped docs/records. RED hashes unchanged. Independent GREEN in flight before commit, no external publication.
+- HEAD commit SHA: `4ef51db5eec17f0185ea8776c90176f882a096f5`
+- Relevant work: `uncommitted` — stash ref `5da451e8c26e5ea48006631730fb8de734f3c6d2` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M TAGS.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_002_implement.md
+ M docs/plans/053_corrected_caching_002_spec.md
+ M docs/plans/053_corrected_caching_parked.md
+ M docs/src/providers.md
+ M internal/provider/awscreds.go
+ M internal/provider/bedrock.go
+ M internal/tool/tool.go
+ M pkg/runner/bedrock_parity_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Verify exact RED command and touched-package race independently.
+
+### independent GREEN passed and gate launch intent
+
+- Gate: independent GREEN passed and gate launch intent
+- Commands/results:
+Independent VERIFY at 4ef51db5eec17f0185ea8776c90176f882a096f5 passed exact RED (cached), uncached repeat (0.356s), race ./internal/provider ./internal/tool ./pkg/runner, compile/typecheck, gofmt, lint (0 issues), diff checks. Both test blobs match RED snapshot 13c25842826fa58ea488f8c55bbcef2881d8c24b. Fixed greps found zero tt := rows[6] and old stale summary matches; latest prose reflects authorizations. Full index stage 0, cached diff empty, exactly 13 scoped modified paths; ignored research files excluded. Gate launch and SHA-specific integrity rerun in flight after commit; planned T2 review round 2, no cap reset. No publication.
+- HEAD commit SHA: `4ef51db5eec17f0185ea8776c90176f882a096f5`
+- Relevant work: `uncommitted` — stash ref `65bea184e0cce5ea02b3b7ca2d8028f01fa10602` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M TAGS.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_002_implement.md
+ M docs/plans/053_corrected_caching_002_spec.md
+ M docs/plans/053_corrected_caching_parked.md
+ M docs/src/providers.md
+ M internal/provider/awscreds.go
+ M internal/provider/bedrock.go
+ M internal/tool/tool.go
+ M pkg/runner/bedrock_parity_test.go
+ M pkg/runner/large_integer_args_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit scoped T2 review fixes and run SHA-specific gates.
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Implement T2
+- Next action: Commit scoped T2 review fixes and run SHA-specific gates.

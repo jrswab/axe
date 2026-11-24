@@ -215,33 +215,34 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		}
 	}
 
-	// Step 9: Resolve API key and base URL
+	// Step 9: Resolve provider configuration
 	globalCfg := opts.GlobalConfig
 	if globalCfg == nil {
 		globalCfg = &config.GlobalConfig{}
 	}
 
-	apiKey := globalCfg.ResolveAPIKey(provName)
-	baseURL := globalCfg.ResolveBaseURL(provName)
-
+	var apiKey, baseURL string
 	// @anchor:provider:configuration Match Main's Bedrock region and AWS credential setup for Nested Runs.
 	if provName == "bedrock" {
-		region := globalCfg.ResolveRegion(provName)
-		if region == "" {
-			return errorResult(call.ID, agentName, fmt.Sprintf("region for provider %q is not configured (set AWS_REGION or add to config.toml)", provName), opts)
+		apiKey = globalCfg.ResolveRegion(provName)
+		if apiKey == "" {
+			return errorResult(call.ID, "Bedrock", "region for provider \"bedrock\" is not configured (set AWS_REGION or add to config.toml)", opts)
 		}
-		apiKey = region
-		baseURL = ""
-	}
-
-	if provider.Supported(provName) && provName != "ollama" && provName != "bedrock" && apiKey == "" {
-		envVar := config.APIKeyEnvVar(provName)
-		return errorResult(call.ID, agentName, fmt.Sprintf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar), opts)
+	} else {
+		apiKey = globalCfg.ResolveAPIKey(provName)
+		baseURL = globalCfg.ResolveBaseURL(provName)
+		if provider.Supported(provName) && provName != "ollama" && apiKey == "" {
+			envVar := config.APIKeyEnvVar(provName)
+			return errorResult(call.ID, agentName, fmt.Sprintf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar), opts)
+		}
 	}
 
 	// Step 10: Create provider
 	prov, err := provider.New(provName, apiKey, baseURL)
 	if err != nil {
+		if provName == "bedrock" {
+			return errorResult(call.ID, "Bedrock", "failed to create provider: "+provider.BedrockSetupDiagnostic(err), opts)
+		}
 		return errorResult(call.ID, agentName, fmt.Sprintf("failed to create provider for agent %q: %s", agentName, err), opts)
 	}
 

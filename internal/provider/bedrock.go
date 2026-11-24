@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,7 +39,10 @@ type Bedrock struct {
 	client  *http.Client
 }
 
+var errInvalidBedrockRegion = errors.New("invalid Bedrock region: use a single DNS label")
+
 // NewBedrock creates a new Bedrock provider.
+// @anchor:provider:configuration Validate the resolved Bedrock region before constructing an endpoint or loading credentials.
 func NewBedrock(region string, opts ...BedrockOption) (*Bedrock, error) {
 	b := &Bedrock{region: region}
 	for _, opt := range opts {
@@ -46,6 +50,9 @@ func NewBedrock(region string, opts ...BedrockOption) (*Bedrock, error) {
 	}
 	if b.region == "" {
 		return nil, fmt.Errorf("region is required (set AWS_REGION environment variable or configure in config.toml)")
+	}
+	if !validBedrockRegion(b.region) {
+		return nil, errInvalidBedrockRegion
 	}
 	if b.baseURL == "" {
 		b.baseURL = fmt.Sprintf("https://bedrock-runtime.%s.amazonaws.com", b.region)
@@ -63,6 +70,18 @@ func NewBedrock(region string, opts ...BedrockOption) (*Bedrock, error) {
 		},
 	}
 	return b, nil
+}
+
+func validBedrockRegion(region string) bool {
+	if len(region) == 0 || len(region) > 63 || region[0] == '-' || region[len(region)-1] == '-' {
+		return false
+	}
+	for _, c := range region {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' {
+			return false
+		}
+	}
+	return true
 }
 
 // bedrockRequest is the JSON body sent to the Bedrock Converse API.
@@ -205,7 +224,9 @@ func convertMessages(msgs []Message) []bedrockMessage {
 	result := make([]bedrockMessage, 0, len(msgs))
 	for _, msg := range msgs {
 		bm := bedrockMessage{Role: msg.Role}
-		if msg.Role != "user" && msg.Role != "assistant" {
+		if msg.Role == "tool" {
+			bm.Role = "user"
+		} else if msg.Role != "user" && msg.Role != "assistant" {
 			bm.Role = "assistant"
 		}
 		if msg.Content != "" {

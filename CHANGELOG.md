@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
 
 ### Fixed
+- Validate resolved Bedrock regions before endpoint construction, keep Nested credential-file details out of parent-facing setup errors, and send Converse tool results with the user role.
 - Use the same AWS region and credential resolution for Nested Bedrock Runs as Main Runs, without an ordinary API key or base URL override.
 - Omit empty tool descriptions from Bedrock Converse requests while preserving nonempty descriptions.
 - Serialize Bedrock Converse static checkpoints as separate union entries, wrap tool schemas, and keep required names stable; cache eligibility remains subject to the [AWS prompt caching guide](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html).

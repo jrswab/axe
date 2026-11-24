@@ -471,7 +471,7 @@ tools = ["read_file"]
 	if len(initial.Messages) != 1 || initial.Messages[0].Role != seed.Role || len(initial.Messages[0].Content) != 1 || initial.Messages[0].Content[0].Text != seed.Content {
 		t.Errorf("initial request = %+v", initial)
 	}
-	if len(followup.Messages) != 3 || followup.Messages[0].Role != seed.Role || len(followup.Messages[0].Content) != 1 || followup.Messages[0].Content[0].Text != seed.Content || followup.Messages[1].Role != "assistant" || len(followup.Messages[1].Content) != 2 || followup.Messages[1].Content[0].Text != "Read values" || followup.Messages[2].Role != "assistant" || len(followup.Messages[2].Content) != 1 {
+	if len(followup.Messages) != 3 || followup.Messages[0].Role != seed.Role || len(followup.Messages[0].Content) != 1 || followup.Messages[0].Content[0].Text != seed.Content || followup.Messages[1].Role != "assistant" || len(followup.Messages[1].Content) != 2 || followup.Messages[1].Content[0].Text != "Read values" || followup.Messages[2].Role != "user" || len(followup.Messages[2].Content) != 1 {
 		t.Fatalf("follow-up = %+v", followup.Messages)
 	}
 	wireCall := followup.Messages[1].Content[1].ToolUse

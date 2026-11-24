@@ -2,6 +2,7 @@ package provider
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,41 @@ type awsCredentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	SessionToken    string
+}
+
+type awsProfileError struct {
+	profile string
+	path    string
+}
+
+func (e *awsProfileError) Error() string {
+	return fmt.Sprintf("profile %q not found or missing credentials", e.profile)
+}
+
+// BedrockSetupDiagnostic projects a Bedrock construction error without exposing local credential-file details.
+// @anchor:provider:policy Keep Nested Bedrock setup diagnostics free of local credential-file details.
+func BedrockSetupDiagnostic(err error) string {
+	if errors.Is(err, errInvalidBedrockRegion) {
+		return errInvalidBedrockRegion.Error()
+	}
+	const guidance = "AWS credentials not found: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or configure a credentials file and AWS_PROFILE"
+	var profileErr *awsProfileError
+	if errors.As(err, &profileErr) && safeAWSProfileName(profileErr.profile, profileErr.path) {
+		return guidance + ": " + fmt.Sprintf("profile %q not found or missing credentials", profileErr.profile)
+	}
+	return guidance
+}
+
+func safeAWSProfileName(profile, path string) bool {
+	if len(profile) == 0 || len(profile) > 64 || strings.Contains(strings.ToLower(profile), strings.ToLower(filepath.Base(path))) {
+		return false
+	}
+	for _, c := range profile {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' {
+			return false
+		}
+	}
+	return true
 }
 
 // resolveCredentials loads AWS credentials from env vars first, then ~/.aws/credentials.
@@ -82,7 +118,7 @@ func parseCredentialsFile(path, profile string) (*awsCredentials, error) {
 		return nil, err
 	}
 	if creds.AccessKeyID == "" || creds.SecretAccessKey == "" {
-		return nil, fmt.Errorf("profile %q not found or missing credentials", profile)
+		return nil, &awsProfileError{profile: profile, path: path}
 	}
 	return &creds, nil
 }
