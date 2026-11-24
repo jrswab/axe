@@ -18,6 +18,7 @@ import (
 
 func TestWebSearch_EmptyQuery(t *testing.T) {
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 
 	entry := webSearchEntry()
 	result := entry.Execute(context.Background(), provider.ToolCall{ID: "ws-empty", Arguments: map[string]string{}}, ExecContext{})
@@ -32,6 +33,7 @@ func TestWebSearch_EmptyQuery(t *testing.T) {
 
 func TestWebSearch_MissingQueryArgument(t *testing.T) {
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 
 	entry := webSearchEntry()
 	result := entry.Execute(context.Background(), provider.ToolCall{ID: "ws-missing-query", Arguments: map[string]string{"query": ""}}, ExecContext{})
@@ -46,6 +48,7 @@ func TestWebSearch_MissingQueryArgument(t *testing.T) {
 
 func TestWebSearch_MissingAPIKey(t *testing.T) {
 	t.Setenv("TAVILY_API_KEY", "")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 
 	entry := webSearchEntry()
 	result := entry.Execute(context.Background(), provider.ToolCall{ID: "ws-missing-key", Arguments: map[string]string{"query": "test"}}, ExecContext{})
@@ -65,6 +68,7 @@ func TestWebSearch_Success(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -98,6 +102,7 @@ func TestWebSearch_CallIDPassthrough(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -116,6 +121,7 @@ func TestWebSearch_EmptyResults(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -136,6 +142,7 @@ func TestWebSearch_NullResults(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -157,6 +164,7 @@ func TestWebSearch_HTTPError_401(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "bad-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -181,6 +189,7 @@ func TestWebSearch_HTTPError_429(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -202,6 +211,7 @@ func TestWebSearch_HTTPError_500(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -225,6 +235,7 @@ func TestWebSearch_InvalidJSON(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -253,6 +264,7 @@ func TestWebSearch_ContextCancellation(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
@@ -277,6 +289,7 @@ func TestWebSearch_ConnectionRefused(t *testing.T) {
 	}
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", "http://"+addr)
 
 	entry := webSearchEntry()
@@ -301,6 +314,7 @@ func TestWebSearch_BaseURLOverride(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -336,6 +350,7 @@ func TestWebSearch_RequestBody(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -364,6 +379,7 @@ func TestWebSearch_AuthorizationHeader(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key-123")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -381,6 +397,7 @@ func TestWebSearch_VerboseLog(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "secret-test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	var stderr bytes.Buffer
@@ -407,6 +424,7 @@ func TestWebSearch_VerboseLogQueryTruncation(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	longQuery := strings.Repeat("q", 120)
@@ -435,6 +453,7 @@ func TestWebSearch_LargeResponseTruncation(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -457,6 +476,7 @@ func TestWebSearch_ErrorBodyTruncation(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
@@ -475,6 +495,7 @@ func TestWebSearch_ErrorBodyTruncation(t *testing.T) {
 }
 
 func TestWebSearch_Definition(t *testing.T) {
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	entry := webSearchEntry()
 	def := entry.Definition()
 
@@ -495,6 +516,7 @@ func TestWebSearch_Definition(t *testing.T) {
 
 func TestWebSearch_BaseURLDefault(t *testing.T) {
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", "")
 
 	entry := webSearchEntry()
@@ -516,6 +538,7 @@ func TestWebSearch_Non2xxBodyFormatting(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("TAVILY_API_KEY", "test-key")
+	t.Setenv("AXE_WEB_SEARCH_PROVIDER", "tavily")
 	t.Setenv("AXE_TAVILY_BASE_URL", ts.URL)
 
 	entry := webSearchEntry()
