@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T2 round 3 Spec re-review
+- Current task: T3 verification-only regression and accounting
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
-- T2: `unchecked`
+- T2: `checked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit the fix batch, run factory-gate test and integrity at the new HEAD, then Spec round 3.
+- Next safe action: T3
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`. Four decisions are authorized: region validation, credential-path redaction, tool-result role correction, and the Q4 missing-file expectation split. Defensive T2 changes passed the unchanged focused RED-to-GREEN command and touched-package race; cross-run and omitted-shape checks pass. Independent verification passed. T2 round 2: Standards and Design risk APPROVED WITH NITS; Spec CHANGES REQUESTED (Nested setup errors named the provider instead of the sub-agent), fixed with the nits in one batch; Spec round 3, T3 and final gates remain pending. T2, T3 and 002 remain unchecked; 003 is blocked by 002. No push or external communication is authorized, and the defensive changes have not been published.
-- Last completed phase/task/gate and timestamp: T2 round 2 fix batch outcome, 2026-11-25T17:59:57.868126+00:00
+- Last completed phase/task/gate and timestamp: T2 Spec round 3 approved; T2 checked, 2026-11-25T18:04:18.948110+00:00
 
 ## Gate evidence
 
@@ -1789,8 +1789,50 @@ Fix batch at base a9b9543af68f22fa4834ff3ae4037f3dfb6036a8 (uncommitted at recor
 
 - Next action: Commit the fix batch, run factory-gate test and integrity at the new HEAD, then Spec round 3.
 
+### T2 fix gates and Spec round 3 intent
+
+- Gate: T2 fix gates and Spec round 3 intent
+- Commands/results:
+Fix commit eea1f6eb27189a2af97f119e187dd4f92cc02eb2 (clean tree). .agents/scripts/ci-check integrity exit 0 'all modules verified'. factory-gate run --gate test -> gate-test-eea1f6eb2718-20261125T175959Z, poll exit 0 'exited 0'; log /tmp/factory-gate-1001/gate-test-eea1f6eb2718-20261125T175959Z.log sha eea1f6eb27189a2af97f119e187dd4f92cc02eb2, go test -race ./..., exit 0, 17 ok, no FAIL. docs-lint --since 1eb3541d561f0bae8307b38092be279f43dadd11 exit 0, 0 findings. Standards and Design risk passed round 2 (APPROVED WITH NITS); nits batched with lint and affected tests per Milestone review verdict rule, no further round. IN FLIGHT: Spec round 3 (failing count 2 of 3), range 1eb3541d561f0bae8307b38092be279f43dadd11..eea1f6eb27189a2af97f119e187dd4f92cc02eb2, fix range a9b9543af68f22fa4834ff3ae4037f3dfb6036a8..eea1f6eb27189a2af97f119e187dd4f92cc02eb2, round-2 Spec findings carried verbatim.
+- HEAD commit SHA: `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch T2 Spec round 3 review.
+
+### T2 Spec round 3 approved; T2 checked
+
+- Gate: T2 Spec round 3 approved; T2 checked
+- Commands/results:
+Spec round 3 at range 1eb3541d561f0bae8307b38092be279f43dadd11..eea1f6eb27189a2af97f119e187dd4f92cc02eb2: APPROVED, no new findings; S2-1 RESOLVED (tool.go:229,245 pass agentName; parityNestedFailureNamesAgent asserts sub-agent "parity-nested" failed); S2-2 RESOLVED (two cross_run_static pairs). Reviewer judged lowercase-only region validation inside authorization (1), new provider tests in scope, profileErr.Error() reuse byte-identical. Reviewer reran go test -count=1 ./internal/provider ./internal/tool ./pkg/runner: ok. Final T2 axis verdicts: Standards APPROVED WITH NITS (r2), Design risk APPROVED WITH NITS (r2), Spec APPROVED (r3). Final caps: Standards 1, Spec 2, Design 1 failing rounds; 0 incompletes. T2 evidence: whole-suite race gate exit 0 at eea1f6eb27189a2af97f119e187dd4f92cc02eb2. T2 checked.
+- HEAD commit SHA: `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`
+- Relevant work: `committed` — stash ref `81099d3d109fb2ce217c4a315bcf9d7cfb0d0ae7` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: T3
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit the fix batch, run factory-gate test and integrity at the new HEAD, then Spec round 3.
+- Next action: T3
