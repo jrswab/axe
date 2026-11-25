@@ -2,7 +2,7 @@
 
 ## Current status (2026-11-25)
 
-Milestone 002 is complete: T1–T3 checked, milestone review passed and the completion gate passed at `608e0730f988f750e1b3e7e9f5fe8474c4c0f323` ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003's tasks T1 and T2 are checked; its milestone review and completion gate are in progress ([003 checkpoint](053_corrected_caching_003_checkpoint.md)). Nothing is parked. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
+Milestone 002 is complete: T1–T3 checked, milestone review passed and the completion gate passed at `608e0730f988f750e1b3e7e9f5fe8474c4c0f323` ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003 is complete: T1 and T2 checked, milestone review passed in round 2, and the completion gate passed at `b2397a33ca364d4260b6f024b96e21f9506067f2` ([003 checkpoint](053_corrected_caching_003_checkpoint.md)). All three milestones are checked. Nothing is parked; one non-blocking decision for Jaron follows. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
 
 ### Decision for Jaron — verbose stderr and the opt-in rule (003, not blocking)
 
