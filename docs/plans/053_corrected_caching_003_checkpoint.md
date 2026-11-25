@@ -18,14 +18,14 @@
 ## State
 
 - Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
-- Current phase: `execute`
-- Current task: Milestone 003 completion gate
+- Current phase: `complete`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Commit, milestone sync, completion gate.
-- Last completed phase/task/gate and timestamp: milestone 003 review passed, 2026-11-25T18:50:59.967974+00:00
+- Milestone checkbox: `checked`
+- Next safe action: Run end: commit records and sync; stop before push per handoff.
+- Last completed phase/task/gate and timestamp: 003 completion gate passed, 2026-11-25T19:05:11.205512+00:00
 
 ## Gate evidence
 
@@ -419,8 +419,29 @@ Milestone 003 review round 2 at 93627c1de9a4bbd55715e0651aa3f3aa5121f339..8307c6
 
 - Next action: Commit, milestone sync, completion gate.
 
+### 003 completion gate passed
+
+- Gate: 003 completion gate passed
+- Commands/results:
+Completion gate at b2397a33ca364d4260b6f024b96e21f9506067f2 after milestone sync (factory-sync --wip exit 0, origin/master ahead 73 behind 0, no conflicts, HEAD unchanged). (1) R4 gates: factory-gate test gate-test-b2397a33ca36-20261125T185105Z exit 0 (go test -race ./..., 17 ok, sha matches); factory-gate lint gate-lint-b2397a33ca36-20261125T185106Z exit 0 (golangci-lint run, 0 issues); go test ./... exit 0 17 ok; make apidiff exit 0; ci-check integrity exit 0 'all modules verified', vet exit 0, build exit 0, test exit 0 17 ok; python3 -B -m unittest discover -s .agents/scripts/tests exit 0; actionlint exit 0; focused touched-package race go test -race ./pkg/runner ok (T1 and fix batches). Not run: mdbook build docs/ (mdbook not installed locally); Docker smoke (no declared host gate); credentialed live probe (not authorized). (2) R1-R4 confirmed by T1/T2 reviews and milestone review round 2. (3) Git status clean; no pre-existing baseline changes remain. (4) Milestone 003 checked. Open non-blocking decision for Jaron recorded in the parking file (COMPATIBILITY.md opt-in reading).
+- HEAD commit SHA: `b2397a33ca364d4260b6f024b96e21f9506067f2`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run end: commit records and sync; stop before push per handoff.
+
 ## Limitations & blockers
 
 - Limitations: `mdbook build docs/` cannot run locally (`mdbook` not installed); Docker smoke has no declared host gate; no credentialed live probe is authorized or run.
 - Blockers: none. 002 is complete. T1 and T2 are checked; the milestone review and completion gate remain. Open decision for Jaron, not blocking: whether to record the verbose-stderr reading of COMPATIBILITY.md's opt-in rule (see the parking file).
-- Next action: Commit, milestone sync, completion gate.
+- Next action: Run end: commit records and sync; stop before push per handoff.
