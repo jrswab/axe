@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T3 verification-only regression and accounting
+- Current task: Milestone 002 final review
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
-- T3: `unchecked`
+- T3: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: T3
+- Next safe action: Run the milestone 002 review over 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..HEAD.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`. Four decisions are authorized: region validation, credential-path redaction, tool-result role correction, and the Q4 missing-file expectation split. Defensive T2 changes passed the unchanged focused RED-to-GREEN command and touched-package race; cross-run and omitted-shape checks pass. Independent verification passed. T2 round 2: Standards and Design risk APPROVED WITH NITS; Spec CHANGES REQUESTED (Nested setup errors named the provider instead of the sub-agent), fixed with the nits in one batch; Spec round 3, T3 and final gates remain pending. T2, T3 and 002 remain unchecked; 003 is blocked by 002. No push or external communication is authorized, and the defensive changes have not been published.
-- Last completed phase/task/gate and timestamp: T2 Spec round 3 approved; T2 checked, 2026-11-25T18:04:18.948110+00:00
+- Last completed phase/task/gate and timestamp: T3 verification and accounting passed, 2026-11-25T18:05:09.899291+00:00
 
 ## Gate evidence
 
@@ -1831,8 +1831,29 @@ Spec round 3 at range 1eb3541d561f0bae8307b38092be279f43dadd11..eea1f6eb27189a2a
 
 - Next action: T3
 
+### T3 verification and accounting passed
+
+- Gate: T3 verification and accounting passed
+- Commands/results:
+At 698e3554306d5717a7cf109b640f6ebf1acc4e90 (code identical to eea1f6eb27189a2af97f119e187dd4f92cc02eb2). Existing-GREEN, all go test -count=1 -v, exit 0: ./internal/provider '^TestBedrock_Send_(AuthError|RateLimitError|BadRequestError|ServerError)$' 4 PASS; ./internal/provider '^TestRetrySend_(SuccessAfterRetries|NonRetriableAuth|NonProviderError)$' 3 PASS; ./internal/provider '^TestCacheCompatibility_WireUsageErrors$' 1 PASS; ./pkg/runner '^TestRun_(CacheUsageBoundaries|ConversationLoop_CacheTokensAccumulate|IndependentCacheChoices)$' 3 PASS; ./pkg/runner '^TestResultMarshalJSON_CacheTokens(OmittedWhenZero)?$' 2 PASS; ./internal/tool '^TestExecuteCallAgent_CacheChoicePerTurn$' 1 PASS. Unchanged-test proof: git diff --stat 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..HEAD over retry_test.go, cache_compatibility_test.go, run_test.go, result_test.go, tool_test.go empty; bedrock_test.go only hunk in TestBedrock_Send_Cache (Q3, excluded per checklist). Source accounting vs milestone base: internal/provider/retry.go, pkg/runner/run.go, pkg/runner/result.go unchanged (run, mapProviderError, MarshalJSON, RetryProvider.Send/SendStream preserved). bedrock.go hunks only in imports, types (omitempty/union CachePoint, ToolSpec pointer), NewBedrock region validation, buildBedrockRequest checkpoints, convertMessages tool role, convertTools schema wrap/sort; no hunks in Send, mapStatusToCategory, parseBedrockResponse. tool.go hunks only in ExecuteCallAgent Step 9/10 provider setup; runConversationLoop unchanged. Static accounting is not behavioral evidence; behavioral failure/replay/streaming evidence is T1/T2's parity tests. Docs: CHANGELOG Unreleased Fixed and README:374-378 / docs/src/providers.md match integrated behavior, state provider-reported counts, no milestone 003 promise. golangci-lint run (full) 0 issues. Changed-package race: T3 changed no Go files; not applicable. DECISION LEDGER: Factory procedure exception 'skipping a per-task review for verification-only work' applied to T3: local, reversible, in scope, no acceptance/assertion change, no gate bypass, final milestone review not skipped. T3 checked.
+- HEAD commit SHA: `698e3554306d5717a7cf109b640f6ebf1acc4e90`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run the milestone 002 review over 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..HEAD.
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: T3
+- Next action: Run the milestone 002 review over 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..HEAD.

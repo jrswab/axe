@@ -41,7 +41,7 @@ Main and Nested Runs already resolve each agent's cache choice independently, bu
 
 ### Unchanged regression evidence and accounting
 
-- [ ] **T3 — Verify existing regressions and account for preservation** — verification-only; **R2, R3, R4**; after T1–T2. Budget: 30 min per incremental cycle.
+- [x] **T3 — Verify existing regressions and account for preservation** — verification-only; **R2, R3, R4**; after T1–T2. Budget: 30 min per incremental cycle.
   - No source or test additions or assertion edits. Run the following unchanged tests and record actual results as existing-GREEN preservation evidence, with their stated limits. A failure is a blocker to investigate; do not change assertions or add a passing-only test. The Q3-modified test is not unchanged evidence; T1 runs it separately.
   - `go test ./internal/provider -run '^TestBedrock_Send_(AuthError|RateLimitError|BadRequestError|ServerError)$'` — existing Bedrock HTTP status-category checks (`internal/provider/bedrock_test.go:374-439`); they do not assert status/message/cause, replay or Run propagation.
   - `go test ./internal/provider -run '^TestRetrySend_(SuccessAfterRetries|NonRetriableAuth|NonProviderError)$'` — generic retry call counts for transient, auth and non-provider errors (`internal/provider/retry_test.go:212-302`), not Bedrock-specific cache replay. `go test ./internal/provider -run '^TestCacheCompatibility_WireUsageErrors$'` — existing Anthropic/OpenAI and compatible adapter usage, error, streaming and no-cache-off-replay tests (`internal/provider/cache_compatibility_test.go:27-91`); Bedrock is not an adapter in this test.
