@@ -19,13 +19,13 @@
 
 - Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
 - Current phase: `execute`
-- Current task: Milestone 003 review
+- Current task: Milestone 003 review round 2
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Run milestone 003 review.
-- Last completed phase/task/gate and timestamp: T2 reviews passed; nits batched, 2026-11-25T18:41:02.981279+00:00
+- Next safe action: Commit fixes, gate, milestone 003 review round 2.
+- Last completed phase/task/gate and timestamp: milestone 003 review round 1 outcome and fixes, 2026-11-25T18:45:30.202379+00:00
 
 ## Gate evidence
 
@@ -35,12 +35,16 @@
 
 ### Cap-state summary
 
-- Cap `003/planning`: failing rounds 0, incompletes 0 (before the first spec review).
+- Cap `003/planning`: spec round 1 CHANGES REQUESTED, round 2 APPROVED WITH NITS; checklist round 1 APPROVED WITH NITS. Failing rounds 1, incompletes 0. Planning gate passed.
+- Code review `003/T1` (standard): Standards and Spec APPROVED WITH NITS in round 1 at `d2a5066b8e60f5ddbdb4033ad0f97d118a3e656c`; failing 0, incompletes 0.
+- Code review `003/T2` (standard, Markdown only): Standards and Spec APPROVED WITH NITS in round 1 at `bbdc79182c07747f3a2608d74c01aef97f756f72`; failing 0, incompletes 0.
+- Milestone review `003`: round 1 at `8366ee99100fb8e89c619305a8148dacd66e97ee` CHANGES REQUESTED (stale checkpoint records); failing 1, incompletes 0.
+- Historical (002, kept for audit):
 - The 002 planning history is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2` and historical consecutive same-scope/round incompletes `2` belong to 002, not 003. P206 approved the checklist and resolved P205's F5 and F6; A004 used all four calls and A005 used both calls, with no retries. A006 resolved the T1 scope question. T1 is checked: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`, and Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`; no T1 reviews remain pending. T2 and T3 remain unchecked. 003 remains blocked only on 002 completion.
 
 ### Administrative initialization
 
-- No 003 spec, checklist, task, or review has ever been launched. No 003 implementation range exists.
+- Historical, at administrative creation: no 003 spec, checklist, task, or review had been launched. The 003 milestone review base is `93627c1de9a4bbd55715e0651aa3f3aa5121f339` (002 completion).
 - At administrative creation, HEAD `f8f35709bf0baf257d3f8ba30d01f9048a1a19fc` was the creation source only, not an implementation review base.
 - Retained prerequisite evidence, not rerun here: 001 complete; B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed at `1e9e4c3064e3310da64ea62e3efe25aa7ce7b676` without a HEAD change. See the 002 checkpoint bootstrap evidence.
 - At initialization, administrative documents were uncommitted; no stash or untracked-file objects were created. No source or test edits were made during initialization.
@@ -307,8 +311,52 @@ T2 round 1 at 0beea82ced4314e93f788d5228a148c5f17e0a11..bbdc79182c07747f3a2608d7
 
 - Next action: Run milestone 003 review.
 
+### milestone 003 review intent
+
+- Gate: milestone 003 review intent
+- Commands/results:
+HEAD 8366ee99100fb8e89c619305a8148dacd66e97ee. factory-gate test gate-test-8366ee99100f-20261125T184109Z poll exit 0 'exited 0'; log sha matches, go test -race ./..., exit 0. docs-lint --since 93627c1de9a4bbd55715e0651aa3f3aa5121f339 PASS 0 findings. Range 93627c1de9a4bbd55715e0651aa3f3aa5121f339..8366ee99100fb8e89c619305a8148dacd66e97ee: 5 commits, 9 files (not above split threshold). IN FLIGHT: milestone 003 review round 1, single reviewer. Caps: milestone review 003 failing 0, incompletes 0.
+- HEAD commit SHA: `8366ee99100fb8e89c619305a8148dacd66e97ee`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record milestone 003 review verdict.
+
+### milestone 003 review round 1 outcome and fixes
+
+- Gate: milestone 003 review round 1 outcome and fixes
+- Commands/results:
+Milestone 003 review round 1 at 93627c1de9a4bbd55715e0651aa3f3aa5121f339..8366ee99100fb8e89c619305a8148dacd66e97ee: CHANGES REQUESTED. F1 blocker: Limitations & blockers said no 003 work launched and 002 unchecked. Nits: F2 cap-state and administrative sections stale (planning 0 failing; 002 T1/T2/T3 text; 'no 003 spec ever launched'); F3 'T1 gate and review intent' entry lacked the gate result; F4 COMPATIBILITY.md opt-in rule vs new verbose Cache line needs a human decision (no code change requested); F5 test provider string silently defaults to Anthropic. Fixes: F1 Limitations/Blockers rewritten to current state; F2 cap-state lists 003 planning (1 failing), T1, T2, milestone review (1 failing) and marks 002 text historical; administrative line marked historical with 003 base 93627c1de9a4bbd55715e0651aa3f3aa5121f339; F3 recorded here: gate-test-d2a5066b8e60-20261125T183508Z poll exit 0, state 'exited 0', log sha d2a5066b8e60f5ddbdb4033ad0f97d118a3e656c, exit 0, 17 ok, no FAIL; F4 recorded as a non-blocking decision for Jaron in the parking file (Decision for Jaron — verbose stderr and the opt-in rule); COMPATIBILITY.md unchanged; F5 runVerboseCacheCase fails fast on unknown provider. Parking-file current status updated (002 complete; 003 in milestone review). Checks: gofmt clean; go test -count=1 -race ./pkg/runner ok; golangci-lint ./pkg/runner/... 0 issues; docs-lint --since 93627c1 PASS 0 findings.
+- HEAD commit SHA: `8366ee99100fb8e89c619305a8148dacd66e97ee`
+- Relevant work: `uncommitted` — stash ref `95537ff96d1db688f94e263c43801a3280d30cce` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+ M docs/plans/053_corrected_caching_parked.md
+ M pkg/runner/verbose_cache_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit fixes, gate, milestone 003 review round 2.
+
 ## Limitations & blockers
 
-- Limitations: no 003 planning, implementation, review, or verification launched.
-- Blockers: milestone 002 remains unchecked; its security and scope decisions were made and T1–T3 are checked, so 003 waits only on 002's final milestone review and completion gate.
-- Next action: Run milestone 003 review.
+- Limitations: `mdbook build docs/` cannot run locally (`mdbook` not installed); Docker smoke has no declared host gate; no credentialed live probe is authorized or run.
+- Blockers: none. 002 is complete. T1 and T2 are checked; the milestone review and completion gate remain. Open decision for Jaron, not blocking: whether to record the verbose-stderr reading of COMPATIBILITY.md's opt-in rule (see the parking file).
+- Next action: Commit fixes, gate, milestone 003 review round 2.

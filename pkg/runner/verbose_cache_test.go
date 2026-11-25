@@ -159,9 +159,14 @@ func TestRun_VerboseCacheCounts(t *testing.T) {
 
 func runVerboseCacheCase(t *testing.T, tc verboseCacheCase) {
 	t.Helper()
-	model, keyEnv, urlEnv := "anthropic/claude-sonnet-4-20250514", "ANTHROPIC_API_KEY", "AXE_ANTHROPIC_BASE_URL"
-	if tc.provider == "openai" {
+	var model, keyEnv, urlEnv string
+	switch tc.provider {
+	case "anthropic":
+		model, keyEnv, urlEnv = "anthropic/claude-sonnet-4-20250514", "ANTHROPIC_API_KEY", "AXE_ANTHROPIC_BASE_URL"
+	case "openai":
 		model, keyEnv, urlEnv = "openai/gpt-4o", "OPENAI_API_KEY", "AXE_OPENAI_BASE_URL"
+	default:
+		t.Fatalf("unknown fixture provider %q", tc.provider)
 	}
 	definition := fmt.Sprintf("name = \"verbose-cache\"\nmodel = %q\n", model)
 	if tc.tools {
