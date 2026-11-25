@@ -27,18 +27,18 @@ Absolute paths inside the repository root:
 ## State
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
-- Current phase: `execute`
-- Current task: Milestone 002 completion gate
+- Current phase: `complete`
+- Current task: none
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
-- Milestone checkbox: `unchecked`
-- Next safe action: Commit nit fixes, run milestone sync, then the completion gate.
+- Milestone checkbox: `checked`
+- Next safe action: Validate checkpoint, sync, then select milestone 003.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: Planning passed at P206 (A004 4/4, A005 2/2, no retries). T1, T2 and T3 are checked. T1 passed all axes by round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. T2 passed all axes after the four authorized decisions (region validation, credential-path redaction, tool-result role, Q4 split): Standards and Design risk APPROVED WITH NITS in round 2 at `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8`, and Spec APPROVED in round 3 at `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`. T3 passed its existing-GREEN preservation tests, source accounting, docs check and full lint at `698e3554306d5717a7cf109b640f6ebf1acc4e90` under the verification-only review exception. Milestone review round 1 at `c5f0a390716b833dd71bef9c9102692857afcc0c`: backend APPROVED WITH NITS; spec/records CHANGES REQUESTED for stale records, now being reconciled. Milestone 002 stays unchecked until milestone review and the completion gate pass; 003 is blocked by 002. No push or external communication is authorized.
-- Last completed phase/task/gate and timestamp: milestone review passed, 2026-11-25T18:19:34.779278+00:00
+- Last completed phase/task/gate and timestamp: 002 completion gate passed, 2026-11-25T18:25:08.554336+00:00
 
 ## Gate evidence
 
@@ -1971,8 +1971,29 @@ Milestone review round 2, spec/records slice, range 1e9e4c3064e3310da64ea62e3efe
 
 - Next action: Commit nit fixes, run milestone sync, then the completion gate.
 
+### 002 completion gate passed
+
+- Gate: 002 completion gate passed
+- Commands/results:
+Completion gate at 608e0730f988f750e1b3e7e9f5fe8474c4c0f323 after milestone sync (factory-sync --wip exit 0, base origin/master, ahead 64 behind 0, no conflicts, HEAD unchanged). (1) factory-gate test gate-test-608e0730f988-20261125T181940Z exit 0 (go test -race ./..., 17 ok, log sha matches); factory-gate lint gate-lint-608e0730f988-20261125T181942Z exit 0 (golangci-lint run, 0 issues); make check constituents: golangci-lint (gate), go test ./... exit 0 17 ok, make apidiff exit 0 (target exits 1 on incompatible pkg/runner changes vs v1.11.0); CONTRIBUTING: ci-check integrity exit 0 'all modules verified', ci-check vet exit 0, ci-check build exit 0, ci-check test exit 0 17 ok, python3 -B -m unittest discover -s .agents/scripts/tests exit 0, actionlint -shellcheck= -pyflakes= exit 0. Not run: Docker smoke (needs a declared host gate or human host step; none declared); credentialed live inference (not authorized or required). (2) Spec: R1-R4 confirmed by T1/T2 axis reviews and milestone review (backend and records slices APPROVED WITH NITS). (3) Git status clean; baseline pre-existing checkpoint change committed in a9b9543af68f22fa4834ff3ae4037f3dfb6036a8. (4) Milestone 002 checked.
+- HEAD commit SHA: `608e0730f988f750e1b3e7e9f5fe8474c4c0f323`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Validate checkpoint, sync, then select milestone 003.
+
 ## Limitations & blockers
 
 - Limitations: T1–T3 are checked; 002 remains unchecked pending milestone review and the completion gate. The latest whole-suite factory-gate test passed at `1ca425ccfc98cf6b6493377431b3e124f38fc277` (`/tmp/factory-gate-1001/gate-test-1ca425ccfc98-20261125T181237Z.log`); milestone review passed; full `golangci-lint run` reported 0 issues at `698e3554306d5717a7cf109b640f6ebf1acc4e90`. Completion-gate commands remain to run. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No task reviews remain pending; T1 and T2 passed all axes. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit nit fixes, run milestone sync, then the completion gate.
+- Next action: Validate checkpoint, sync, then select milestone 003.
