@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T2 defensive commit and round 2 gate
+- Current task: T2 round 2 whole-suite gate rerun
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit scoped T2 review fixes and run SHA-specific gates.
+- Next safe action: Rerun factory-gate test at the bookkeeping HEAD, then dispatch T2 round 2 reviews.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`. Four decisions are authorized: region validation, credential-path redaction, tool-result role correction, and the Q4 missing-file expectation split. Defensive T2 changes passed the unchanged focused RED-to-GREEN command and touched-package race; cross-run and omitted-shape checks pass. Independent verification, round 2 review, T3 and final gates remain pending. T2, T3 and 002 remain unchecked; 003 is blocked by 002. No push or external communication is authorized, and the defensive changes have not been published.
-- Last completed phase/task/gate and timestamp: independent GREEN passed and gate launch intent, 2026-11-24T16:52:49.561033+00:00
+- Last completed phase/task/gate and timestamp: T2 gate outcome resolution and rerun intent, 2026-11-25T17:42:06.257599+00:00
 
 ## Gate evidence
 
@@ -1677,8 +1677,50 @@ Independent VERIFY at 4ef51db5eec17f0185ea8776c90176f882a096f5 passed exact RED 
 
 - Next action: Commit scoped T2 review fixes and run SHA-specific gates.
 
+### round 2 gate launch and user handoff
+
+- Gate: round 2 gate launch and user handoff
+- Commands/results:
+Fix commit aa179c67621dd3fdffc23bcadcc9bd55ce9355ee. Clean launch. SHA-specific ci-check integrity using Go 1.26.11 and standard module resolution exit 0, all modules verified, no stderr. docs-lint --since 1eb3541d561f0bae8307b38092be279f43dadd11 exit 0 (docs-lint 1; 57 files, 0 findings); records-stale-check same base exit 0 (no hits for two removed/renamed terms). T2 full fixed-point range 16 files/1454 insertions/42 deletions; milestone range 19 files/3579 insertions/49 deletions before this append. factory-gate run --gate test exit 0 declared online gate-test-aa179c67621d-20261124T165259Z; first poll exit 1, empty stdout/stderr. Read-only inspection found .run.json at exact SHA, waiting marker and detached output `factory-gate: waiting for another gate run to release the lock`; no result file or expected /tmp/factory-gate-1001/gate-test-aa179c67621d-20261124T165259Z.log yet. Gate outcome UNKNOWN, not pass or failure. No round-2 review launched. Jaron invoked handoff; no further substantive work. No push, PR update, or external communication. Leave this bookkeeping append uncommitted to preserve reviewed/gate HEAD; recorded pending change only. Resume per RESTART: inspect/poll exact attempt; if result remains unavailable, mechanically recover/rerun at a clean HEAD with required write-ahead. No inherited test log accepted. No caps reset, no T3/final gate/003 launch.
+- HEAD commit SHA: `aa179c67621dd3fdffc23bcadcc9bd55ce9355ee`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Resolve exact T2 whole-suite gate evidence before round 2 reviews; keep no-push hold.
+
+### T2 gate outcome resolution and rerun intent
+
+- Gate: T2 gate outcome resolution and rerun intent
+- Commands/results:
+Restart via /factory --handoff /tmp/handoff-iss-83-caching-t2.latest.md on 2026-11-25. milestone-entries --handoff exit 0, RESOLVED_TARGET_JSON=/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_milestones.md (3 entries). Read RESTART.md. factory-gate poll gate-test-aa179c67621d-20261124T165259Z exit 3: state 'exited 1', online; log /tmp/factory-gate-1001/gate-test-aa179c67621d-20261124T165259Z.log sha aa179c67621dd3fdffc23bcadcc9bd55ce9355ee exit 1. Every package FAIL [setup failed]/[build failed] with toolchain errors only, e.g. 'package crypto/internal/fips140deps/godebug is not in std (/home/jaron/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.11.linux-amd64/src/crypto/internal/fips140deps/godebug)'; zero tests ran, zero 'ok' lines. Those std directories exist with sources (ls). In the worktree at the same code (only this checkpoint differs): go version go1.26.11, go build ./... OK, go list std OK, go test -race -run XXX_none ./... compiled and passed every package. Classification: environmental toolchain/cache failure in the gate run, not a code result; evidence invalid (neither pass nor code failure). Per Unknown outcomes (local, free gate): rerun factory-gate test at a clean HEAD. The tree must be clean, so this bookkeeping commit moves HEAD; the fresh log must match the resulting HEAD. Correction: 'Latest recorded state' saying independent verification pending is stale; 'independent GREEN passed and gate launch intent' records that it passed. Caps unchanged: T2 Standards/Spec/Design failing rounds 1 each, incompletes 0. No push, PR, or external communication (handoff hold). IN FLIGHT: factory-gate run --gate test at the new HEAD.
+- HEAD commit SHA: `aa179c67621dd3fdffc23bcadcc9bd55ce9355ee`
+- Relevant work: `committed` — stash ref `364c39d04f7f6cc52c873c1141f364f565b2987d` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Rerun factory-gate test at the bookkeeping HEAD, then dispatch T2 round 2 reviews.
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit scoped T2 review fixes and run SHA-specific gates.
+- Next action: Rerun factory-gate test at the bookkeeping HEAD, then dispatch T2 round 2 reviews.
