@@ -10,31 +10,32 @@
 
 ## Artifacts
 
-- Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_spec.md` (not created)
-- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_implement.md` (not created)
+- Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_spec.md` (approved at spec review round 2)
+- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_implement.md` (drafted; spec-lint PASS)
 - Checkpoint: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_checkpoint.md`
 - Parking: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_parked.md`
 
 ## State
 
-- Lane: `pending` — selection blocked by milestone 002.
-- Current phase: `blocked`
+- Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
+- Current phase: `execute`
 - Current task: none
 - Task states — checklist checkboxes render from this list:
-none
+- T1: `unchecked`
+- T2: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Wait for milestone 002's final milestone review and completion gate before starting 003.
-- Last completed phase/task/gate and timestamp: dependency parked, 2026-11-23T18:13:11.270214+00:00
+- Next safe action: Implement T1
+- Last completed phase/task/gate and timestamp: 003 checklist approved, 2026-11-25T18:32:56.183886+00:00
 
 ## Gate evidence
 
 ### Decision ledger
 
-- None for 003; the narrow Q3 assertion approval is retained in the 002 checkpoint and grants no action in this administrative task.
+- 003 inherits no procedure exceptions; the narrow Q3 assertion approval is retained in the 002 checkpoint and grants no action in this administrative task.
 
 ### Cap-state summary
 
-- None for 003: no review gate, scope, round, slices, dispatches, findings, incompletes, or round-four eligibility exist. Planning and implementation have not started.
+- Cap `003/planning`: failing rounds 0, incompletes 0 (before the first spec review).
 - The 002 planning history is recorded in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_002_checkpoint.md`; shared failing planning rounds `2` and historical consecutive same-scope/round incompletes `2` belong to 002, not 003. P206 approved the checklist and resolved P205's F5 and F6; A004 used all four calls and A005 used both calls, with no retries. A006 resolved the T1 scope question. T1 is checked: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`, and Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`; no T1 reviews remain pending. T2 and T3 remain unchecked. 003 remains blocked only on 002 completion.
 
 ### Administrative initialization
@@ -88,8 +89,113 @@ none
 
 - Next action: Wait for 002 security and scope decisions and actual milestone completion before starting 003.
 
+### 003 setup and spec draft
+
+- Gate: 003 setup and spec draft
+- Commands/results:
+Outer loop after 002 completion at 93627c1de9a4bbd55715e0651aa3f3aa5121f339 (milestones.md 002 [x]). Validated 002 checkpoint: phase complete, T1-T3 checked, milestone checked, matches milestones.md and implement.md checkboxes. Milestone sync: last run at 608e0730f988f750e1b3e7e9f5fe8474c4c0f323 (exit 0, behind 0); HEAD since moved only by the 002 completion bookkeeping commit; sync rerun before 003's completion gate. 003 needs 001 and 002, both checked; 003 is the only unchecked milestone. Lane full: verbose stderr default content changes; COMPATIBILITY.md 'Behavior changes are opt-in' makes the external-contract fast-lane condition doubtful. Context grounded: run.go:629-637 and :779-787 print Cache only with positive budget; stream drain run.go:884-970; Nested prints no token/cache counts (tool.go:340-376); no test asserts verbose Cache line. Spec drafted at docs/plans/053_corrected_caching_003_spec.md; spec-lint --root . exit 0, 9 citations, 0 findings. Decided for you (UX gap filled from the milestone's 'without inventing zero-count or status UX'): budget-free line shows only nonzero counts using the existing 'Cache:' label, e.g. 'Cache:    120 read'; budget path unchanged. IN FLIGHT: spec planning review round 1.
+- HEAD commit SHA: `93627c1de9a4bbd55715e0651aa3f3aa5121f339`
+- Relevant work: `uncommitted` — stash ref `f0a3bb18b204116804abece672bfe89c4d8b4502` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch 003 spec planning review round 1.
+
+### 003 spec review round 1 outcome and round 2 intent
+
+- Gate: 003 spec review round 1 outcome and round 2 intent
+- Commands/results:
+Spec review round 1: CHANGES REQUESTED. F1 blocker: no gate-results requirement (milestone acceptance 'applicable gate results or explicit reasons for omissions'; Verification policy gates). Nits: F2 OpenAI stream/tool-loop rows missing; F3 usage-absent path unspecified (normal and stream, final usage event missing); F4 Verbose:false test needs nonzero fixtures, stream-error test needs Verbose:true and no Tokens:/Cache:; F5 docs-lint invocation and mdbook build docs/ unspecified, compatibility rationale must cite 'Default runtime behavior' and 'Behavior changes are opt-in'. Optional: probe results must not include secrets. Fixes: all applied (new R4 gate results; table rows; R2 test strengthening; R3 docs-lint invocation and mdbook; compatibility bullet; probe secrets). spec-lint --root . exit 0, 10 citations, 0 findings. mdbook not installed locally (which mdbook: not found). Cap 003/planning: failing rounds 1, incompletes 0. IN FLIGHT: spec review round 2.
+- HEAD commit SHA: `93627c1de9a4bbd55715e0651aa3f3aa5121f339`
+- Relevant work: `uncommitted` — stash ref `49af328ef65df194fe3d532227c89986faabc0af` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch 003 spec planning review round 2.
+
+### 003 spec approved
+
+- Gate: 003 spec approved
+- Commands/results:
+Spec review round 2: APPROVED WITH NITS; F1-F5 RESOLVED. Nit N1 verbatim-in-substance: positive-budget test must use a nonzero cache count and assert budget used equals input+output only (budget: used/max and --json budget_used_tokens). Applied N1. spec-lint --root . exit 0. Spec approved. Cap 003/planning: failing rounds 1, incompletes 0.
+- HEAD commit SHA: `93627c1de9a4bbd55715e0651aa3f3aa5121f339`
+- Relevant work: `uncommitted` — stash ref `ead6bb82e94888397e93dcc7ca0754fb2b1235ab` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Write the 003 implementation checklist and run its planning review.
+
+### 003 checklist draft and review intent
+
+- Gate: 003 checklist draft and review intent
+- Commands/results:
+Checklist drafted at docs/plans/053_corrected_caching_003_implement.md (T1 standard R1/R2 in pkg/runner; T2 Markdown R3). First spec-lint run exit 1: '-run ^TestRun_VerboseCacheCounts$ selects no test in current files' (new test not yet written); reworded to construct the focused command at RED dispatch, as in the 002 checklist. Rerun spec-lint --root . exit 0, 1 -run pattern, 0 findings. Repository checklist-test-gate-audit script absent (.agents/scripts has only check-dry-skill, ci-check, release-check). IN FLIGHT: checklist planning review round 1 (shared 003 planning failing rounds 1 so far).
+- HEAD commit SHA: `93627c1de9a4bbd55715e0651aa3f3aa5121f339`
+- Relevant work: `uncommitted` — stash ref `31dc3a9722fd686dd567a6138f317c8f55f42cce` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch 003 checklist planning review round 1.
+
+### 003 checklist approved
+
+- Gate: 003 checklist approved
+- Commands/results:
+Checklist planning review round 1: APPROVED WITH NITS. Nits: F1 invalid sed probe syntax (use sed -n '629,637p'); F2 state sequential test, no t.Parallel, Bedrock row owns its parity fixture; F3 stream-error row must use Stream:true JSON:false with message_start, text_delta, event: error and assert partial stdout; F4 say stream rows set Options.Stream and tool rows reuse list_directory and TestRun_CacheUsageBoundaries shapes; F5 name docs-lint base 93627c1de9a4bbd55715e0651aa3f3aa5121f339 and resolve T2 'mechanical' label vs planned reviews. All applied; T2 relabelled standard (stricter: Standards and Spec reviews kept). spec-lint first rerun flagged stale-citation TestRun_CacheUsageBoundaries not in run_test.go:263-309; corrected citation to 250-309; spec-lint exit 0. Planning gate passed. Final 003/planning cap: failing rounds 1 (spec r1), incompletes 0.
+- HEAD commit SHA: `93627c1de9a4bbd55715e0651aa3f3aa5121f339`
+- Relevant work: `uncommitted` — stash ref `2b5579f0e00fbefd135dc9a7adf489d83e354796` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Implement T1
+
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
 - Blockers: milestone 002 remains unchecked; its security and scope decisions were made and T1–T3 are checked, so 003 waits only on 002's final milestone review and completion gate.
-- Next action: Wait for milestone 002's final milestone review and completion gate before starting 003.
+- Next action: Implement T1
