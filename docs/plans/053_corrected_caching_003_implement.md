@@ -39,7 +39,7 @@ The runner already keeps each Run's provider-reported cache counts and reports t
 
 ### Documentation and probe instructions
 
-- [ ] **T2 — Verbose cache documentation and optional probe** — standard (Markdown only); **R3**. Budget: 30 min.
+- [x] **T2 — Verbose cache documentation and optional probe** — standard (Markdown only); **R3**. Budget: 30 min.
   - `README.md` and `docs/src/cli/run-flags.md`: the `--verbose` row says it prints nonzero provider-reported cache counts, with or without a budget. Update `README.md`'s budget paragraph ("With `--verbose`, each turn logs cumulative usage…") only if it would otherwise contradict the new behavior.
   - `README.md` caching section and `docs/src/providers.md` caching section: verbose stderr and `--json` report the same own-Run cumulative counts; counts are provider reports, not proof of hits or savings; OpenAI Chat reports cache reads only.
   - Add optional probe instructions in the same caching sections: run the same agent twice with an identical static prefix and a changed task using `--verbose` or `--json`; the probe makes paid calls with the user's own credentials; results are point-in-time; zero does not prove caching is disabled or unsupported; recorded results must not include secrets.

@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Runcrate provider using the OpenAI-compatible Chat Completions API
 - Eden AI provider (`edenai/<vendor>/<model>`) using the OpenAI-compatible Chat Completions API, with `EDENAI_API_KEY`, streaming, and HTTPS custom endpoints (HTTP is restricted to localhost and loopback/private IP literals).
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
-- `--verbose` prints nonzero provider-reported cache counts without a token budget; with a budget the existing `Cache:` line is unchanged.
 
 ### Fixed
 - Validate resolved Bedrock regions before endpoint construction, keep Nested credential-file details out of parent-facing setup errors, and send Converse tool results with the user role.
@@ -27,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Document provider-reported cache usage and its per-Run JSON scope.
+- `--verbose` diagnostics on stderr now show nonzero provider-reported cache counts without a token budget, matching the counts already shown with a budget; with a budget the existing `Cache:` line is unchanged. Output without `--verbose`, `--json` fields and budget accounting are unchanged.
 
 ## [1.12.0] - 2026-11-16
 

@@ -19,13 +19,13 @@
 
 - Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
 - Current phase: `execute`
-- Current task: T2 reviews
+- Current task: Milestone 003 review
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
-- T2: `unchecked`
+- T2: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit T2, dispatch Standards and Spec reviews.
-- Last completed phase/task/gate and timestamp: T2 docs written and review intent, 2026-11-25T18:39:28.985208+00:00
+- Next safe action: Run milestone 003 review.
+- Last completed phase/task/gate and timestamp: T2 reviews passed; nits batched, 2026-11-25T18:41:02.981279+00:00
 
 ## Gate evidence
 
@@ -283,8 +283,32 @@ T2 docs: README.md --verbose row and new cache-count paragraph plus optional pro
 
 - Next action: Commit T2, dispatch Standards and Spec reviews.
 
+### T2 reviews passed; nits batched
+
+- Gate: T2 reviews passed; nits batched
+- Commands/results:
+T2 round 1 at 0beea82ced4314e93f788d5228a148c5f17e0a11..bbdc79182c07747f3a2608d74c01aef97f756f72 (Markdown only, test evidence not applicable): Spec APPROVED WITH NITS (N1 --verbose rows omit budget nuance; N2 'OpenAI Chat reports reads only' should say Axe maps reads only). Standards APPROVED WITH NITS (N1 CHANGELOG entry belongs under Changed; N2 compatibility framing in CHANGELOG; N3 providers.md repeats OpenAI-reads-only sentence; N4 'as before' time-relative; N5 use Agent Run / Nested Run terms; N6 bold run-in label vs headings; N7 'a paid provider call' should be plural calls). Batched all: --verbose rows note nonzero-only without budget; README/providers paragraphs use Agent Run/Nested Run, 'always shows both counts, including zeros', 'Axe reports ... only OpenAI Chat cache reads' (README; providers.md drops the repeat since its prior paragraph already says reads only); probe under '#### Optional cache probe' (README, under ### Parameters) and '### Optional cache probe' (providers.md); 'makes paid provider calls'; CHANGELOG entry moved to Changed and states it affects --verbose diagnostics only, with non-verbose output, --json and budget accounting unchanged. Standards N2 decision: no COMPATIBILITY.md recorded exception added (policy change for Jaron); approved spec already records verbose stderr is not a listed contract surface and the line is opt-in via --verbose. docs-lint --since 93627c1de9a4bbd55715e0651aa3f3aa5121f339 PASS 0 findings. Final T2 caps: Standards 0, Spec 0 failing; 0 incompletes. T2 checked.
+- HEAD commit SHA: `bbdc79182c07747f3a2608d74c01aef97f756f72`
+- Relevant work: `uncommitted` — stash ref `b0ec4dd7619e496f872427a8e4a5fbc44b009af2` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M docs/src/cli/run-flags.md
+ M docs/src/providers.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Run milestone 003 review.
+
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
 - Blockers: milestone 002 remains unchecked; its security and scope decisions were made and T1–T3 are checked, so 003 waits only on 002's final milestone review and completion gate.
-- Next action: Commit T2, dispatch Standards and Spec reviews.
+- Next action: Run milestone 003 review.
