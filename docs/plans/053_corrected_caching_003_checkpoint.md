@@ -11,7 +11,7 @@
 ## Artifacts
 
 - Spec: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_spec.md` (approved at spec review round 2)
-- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_implement.md` (drafted; spec-lint PASS)
+- Implementation checklist: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_implement.md` (approved at checklist review round 1)
 - Checkpoint: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_003_checkpoint.md`
 - Parking: `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_parked.md`
 
@@ -19,13 +19,13 @@
 
 - Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
 - Current phase: `execute`
-- Current task: Milestone 003 review round 2
+- Current task: Milestone 003 completion gate
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Rerun factory-gate test at db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd.
-- Last completed phase/task/gate and timestamp: gate environment failure and rerun intent, 2026-11-25T18:46:29.463742+00:00
+- Next safe action: Commit, milestone sync, completion gate.
+- Last completed phase/task/gate and timestamp: milestone 003 review passed, 2026-11-25T18:50:59.967974+00:00
 
 ## Gate evidence
 
@@ -376,8 +376,51 @@ gate-test-db012e94b01c-20261125T184531Z at db012e94b01c8a5242a3ec1c2d1558b5aa5a4
 
 - Next action: Rerun factory-gate test at db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd.
 
+### gate rerun passed and review round 2 intent
+
+- Gate: gate rerun passed and review round 2 intent
+- Commands/results:
+Rerun gate-test-8307c668cff1-20261125T184630Z at 8307c668cff1598b4335ccffdf20d5d6d3547f9b (bookkeeping commit on db012e9; code identical): poll exit 0, 'exited 0', log sha matches, go test -race ./..., exit 0, 17 ok, 0 FAIL. docs-lint --since 93627c1de9a4bbd55715e0651aa3f3aa5121f339 PASS 0 findings. IN FLIGHT: milestone 003 review round 2, range 93627c1de9a4bbd55715e0651aa3f3aa5121f339..8307c668cff1598b4335ccffdf20d5d6d3547f9b, fix range 8366ee99100fb8e89c619305a8148dacd66e97ee..8307c668cff1598b4335ccffdf20d5d6d3547f9b, F1-F5 carried verbatim.
+- HEAD commit SHA: `8307c668cff1598b4335ccffdf20d5d6d3547f9b`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record milestone 003 review round 2 verdict.
+
+### milestone 003 review passed
+
+- Gate: milestone 003 review passed
+- Commands/results:
+Milestone 003 review round 2 at 93627c1de9a4bbd55715e0651aa3f3aa5121f339..8307c668cff1598b4335ccffdf20d5d6d3547f9b: APPROVED WITH NITS; F1, F2, F3, F5 RESOLVED; F4 RESOLVED as recorded decision for Jaron. Nits: N1 Artifacts line said checklist 'drafted'; N2 'rerun on the same HEAD' text vs actual 8307c66 (already corrected by the 'gate rerun passed' entry); N3 two status sentences landed inside the parking decision's 'What the run did' bullet. Fixed N1 (approved at checklist review round 1) and N3 (sentences moved back to Current status). docs-lint --since 93627c1 PASS 0 findings. Milestone review passed. Final caps: milestone review 003 failing 1, incompletes 0.
+- HEAD commit SHA: `8307c668cff1598b4335ccffdf20d5d6d3547f9b`
+- Relevant work: `uncommitted` — stash ref `ffa872f297d96f683335c3abaab40e73325d20c2` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+ M docs/plans/053_corrected_caching_parked.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit, milestone sync, completion gate.
+
 ## Limitations & blockers
 
 - Limitations: `mdbook build docs/` cannot run locally (`mdbook` not installed); Docker smoke has no declared host gate; no credentialed live probe is authorized or run.
 - Blockers: none. 002 is complete. T1 and T2 are checked; the milestone review and completion gate remain. Open decision for Jaron, not blocking: whether to record the verbose-stderr reading of COMPATIBILITY.md's opt-in rule (see the parking file).
-- Next action: Rerun factory-gate test at db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd.
+- Next action: Commit, milestone sync, completion gate.

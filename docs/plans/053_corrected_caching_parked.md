@@ -2,14 +2,14 @@
 
 ## Current status (2026-11-25)
 
-Milestone 002 is complete: T1–T3 checked, milestone review passed and the completion gate passed at `608e0730f988f750e1b3e7e9f5fe8474c4c0f323` ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003's tasks T1 and T2 are checked; its milestone review and completion gate are in progress ([003 checkpoint](053_corrected_caching_003_checkpoint.md)). Nothing is parked.
+Milestone 002 is complete: T1–T3 checked, milestone review passed and the completion gate passed at `608e0730f988f750e1b3e7e9f5fe8474c4c0f323` ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003's tasks T1 and T2 are checked; its milestone review and completion gate are in progress ([003 checkpoint](053_corrected_caching_003_checkpoint.md)). Nothing is parked. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
 
 ### Decision for Jaron — verbose stderr and the opt-in rule (003, not blocking)
 
 - **Kind:** decision.
 - **Evidence:** `COMPATIBILITY.md:31-33` says new behavior is opt-in through a new TOML key or `Options` field. Milestone 003 makes `pkg/runner/run.go` (`writeReportedCacheCounts`, called from the two budget-free verbose summaries) print a `Cache:` line for callers that already set `Options.Verbose` with no budget, without a new key or field. The 003 spec records the reading that verbose stderr is not a listed contract surface and that `--verbose` / `Options.Verbose` is already the opt-in; milestone 003's acceptance requires this output. Raised as a nit by the T2 Standards review (N2) and the milestone review (F4); no code change was requested.
 - **Recommendation:** record that reading in `COMPATIBILITY.md` (verbose stderr diagnostics are outside the compatibility promise) or in a decision record.
-- **What the run did:** kept the behavior the milestone requires, described it in the CHANGELOG under Changed as a `--verbose` diagnostics change, and did not edit `COMPATIBILITY.md`, because changing the compatibility policy is your call. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
+- **What the run did:** kept the behavior the milestone requires, described it in the CHANGELOG under Changed as a `--verbose` diagnostics change, and did not edit `COMPATIBILITY.md`, because changing the compatibility policy is your call.
 
 ## Planning outcome and T1 review direction (historical)
 
