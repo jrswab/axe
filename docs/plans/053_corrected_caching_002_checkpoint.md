@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: T2 round 2 whole-suite gate rerun
+- Current task: T2 round 3 Spec re-review
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - T3: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Rerun factory-gate test at the bookkeeping HEAD, then dispatch T2 round 2 reviews.
+- Next safe action: Commit the fix batch, run factory-gate test and integrity at the new HEAD, then Spec round 3.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`. Four decisions are authorized: region validation, credential-path redaction, tool-result role correction, and the Q4 missing-file expectation split. Defensive T2 changes passed the unchanged focused RED-to-GREEN command and touched-package race; cross-run and omitted-shape checks pass. Independent verification, round 2 review, T3 and final gates remain pending. T2, T3 and 002 remain unchecked; 003 is blocked by 002. No push or external communication is authorized, and the defensive changes have not been published.
-- Last completed phase/task/gate and timestamp: T2 gate outcome resolution and rerun intent, 2026-11-25T17:42:06.257599+00:00
+- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`. Four decisions are authorized: region validation, credential-path redaction, tool-result role correction, and the Q4 missing-file expectation split. Defensive T2 changes passed the unchanged focused RED-to-GREEN command and touched-package race; cross-run and omitted-shape checks pass. Independent verification passed. T2 round 2: Standards and Design risk APPROVED WITH NITS; Spec CHANGES REQUESTED (Nested setup errors named the provider instead of the sub-agent), fixed with the nits in one batch; Spec round 3, T3 and final gates remain pending. T2, T3 and 002 remain unchecked; 003 is blocked by 002. No push or external communication is authorized, and the defensive changes have not been published.
+- Last completed phase/task/gate and timestamp: T2 round 2 fix batch outcome, 2026-11-25T17:59:57.868126+00:00
 
 ## Gate evidence
 
@@ -1719,8 +1719,78 @@ Restart via /factory --handoff /tmp/handoff-iss-83-caching-t2.latest.md on 2026-
 
 - Next action: Rerun factory-gate test at the bookkeeping HEAD, then dispatch T2 round 2 reviews.
 
+### T2 whole-suite pass and round 2 review intent
+
+- Gate: T2 whole-suite pass and round 2 review intent
+- Commands/results:
+factory-gate run --gate test at a9b9543af68f22fa4834ff3ae4037f3dfb6036a8 exit 0 -> gate-test-a9b9543af68f-20261125T174210Z (online; queued behind unrelated gate-test-be04f8843337-20261125T174020Z from another repository, inspected with fuser). Poll exit 0, state 'exited 0'. Log /tmp/factory-gate-1001/gate-test-a9b9543af68f-20261125T174210Z.log: sha a9b9543af68f22fa4834ff3ae4037f3dfb6036a8, command go test -race ./..., exit 0, 17 ok packages, no FAIL. Code is identical to aa179c67621dd3fdffc23bcadcc9bd55ce9355ee (a9b9543 changes only this checkpoint). docs-lint --since 1eb3541d561f0bae8307b38092be279f43dadd11: 'docs-lint 1', PASS 57 Markdown files, 0 findings, exit 0. IN FLIGHT: T2 round 2, three independent read-only reviews (Standards, Spec, Design risk), range 1eb3541d561f0bae8307b38092be279f43dadd11..a9b9543af68f22fa4834ff3ae4037f3dfb6036a8 plus fix diff 9fe4129510d4078e5aabfcd6f79bb68aed7cd05f..a9b9543af68f22fa4834ff3ae4037f3dfb6036a8, each carrying its round-1 findings verbatim from 'T2 round 1 outcomes and integrity rerun intent'. Caps before dispatch: each axis 1 failing round, 0 incomplete.
+- HEAD commit SHA: `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Dispatch T2 round 2 Standards, Spec and Design risk reviews.
+
+### T2 round 2 outcomes and fix intent
+
+- Gate: T2 round 2 outcomes and fix intent
+- Commands/results:
+T2 round 2 results at range 1eb3541d561f0bae8307b38092be279f43dadd11..a9b9543af68f22fa4834ff3ae4037f3dfb6036a8, all complete, no incompletes. STANDARDS: APPROVED WITH NITS (failing rounds stay 1). Prior: integrity RESOLVED (reviewer rerun ci-check integrity exit 0); stale Latest-state wording NOT RESOLVED but not a breach; ordinary lookup in non-Bedrock branch RESOLVED; indexed lost-response row RESOLVED. Nits verbatim-in-substance: S2-1 internal/tool/tool.go:229,244 pass "Bedrock" instead of agentName to errorResult; S2-2 region held in variable named apiKey (tool.go:224-230); S2-3 duplicated profile format string and guidance text (awscreds.go:25,34-37,42-50) and duplicated char-class loop; S2-4 no unit tests in internal/provider for validBedrockRegion, BedrockSetupDiagnostic/safeAWSProfileName, convertMessages tool->user. SPEC: CHANGES REQUESTED (failing rounds now 2 of 3). Blocker S2-1: tool.go:229 and :244 hard-code "Bedrock" as the sub-agent name; regression vs 9fe4129; outside approved scope. Nit S2-2: cross_run_static covers only one choice pair (Main omitted/Nested false). Prior: cross-run bytes RESOLVED; eight omitted shapes RESOLVED; integrity RESOLVED. DESIGN RISK: APPROVED WITH NITS (failing rounds stay 1). Nits: region validation has one malformed case, no internal/provider unit tests; BedrockSetupDiagnostic edge cases untested; hard-coded "Bedrock" agent name; validBedrockRegion accepts uppercase; Nested verbose stderr loses cause; inherited credential I/O no timeout (outside scope). Prior: tool-result role, region validation, Nested diagnostics, cross-run bytes RESOLVED; inherited I/O NOT RESOLVED (out of scope). DECISIONS: fix blocker (restore agentName at both sites, keep redacted diagnostic text and 'for agent %q' wording) with a RED assertion in paritySetupError for sub-agent "parity-nested" failed. Batch nits: region variable, profileErr.Error() reuse, table unit tests (region incl . / @ : # % whitespace, 63/64 length, hyphen edges, uppercase; diagnostic projection cases; tool role), second cross_run_static pair, lowercase-only region validation (within authorization 1, Decided for you: turns a remote SigV4 auth failure into a clear local error), Latest-state sentence correction. Not adopted: shared char-class helper and shared guidance constant (optional; line 78 text differs, reuse would change Main text); Nested verbose stderr cause (stricter redaction kept per authorization 2); inherited I/O timeout (outside T2). IN FLIGHT: RED for agent name.
+- HEAD commit SHA: `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8`
+- Relevant work: `committed` — stash ref `f8897848d2324c444e30819f7f2ac469ca2c5941` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Apply T2 round 2 fix batch with RED first, then rerun gates and Spec round 3.
+
+### T2 round 2 fix batch outcome
+
+- Gate: T2 round 2 fix batch outcome
+- Commands/results:
+Fix batch at base a9b9543af68f22fa4834ff3ae4037f3dfb6036a8 (uncommitted at record time). RED 1: added parityNestedFailureNamesAgent to paritySetupError and bedrockParityMalformedRegion Nested paths; go test -count=1 ./pkg/runner -run '^TestBedrock_AWSRunParity$' FAIL with exactly 5 new-assertion failures, e.g. 'Nested setup failure = "Error: sub-agent \"Bedrock\" failed - region for provider \"bedrock\" is not configured ..."; want it to name sub-agent "parity-nested"' (missing region, invalid region, missing file, nonexistent and broken profiles). RED 2: new internal/provider/bedrock_setup_test.go (table tests: region validation incl 63/64 length, hyphen edges, uppercase, _ . / @ : # % whitespace, option-supplied region; invalid region before credential loading; BedrockSetupDiagnostic projection incl basename-bearing, unsafe, non-ASCII, over-long, empty profiles, PathError missing/permission, scanner error, wrapped safe profile; convertMessages roles) FAIL only TestNewBedrock_RegionValidation/uppercase. FIX: internal/tool/tool.go Nested Bedrock errors pass agentName with 'region for provider %q is not configured ...' and 'failed to create provider for agent %q: <BedrockSetupDiagnostic>'; region held in 'region' variable; internal/provider/awscreds.go reuses profileErr.Error(); internal/provider/bedrock.go validBedrockRegion lowercase-only, error text 'single lowercase DNS label'; README.md:612 and docs/src/providers.md:119 say lowercase; cross_run_static loops pairs main_omitted/nested_false and main_false/nested_true; Latest recorded state sentence corrected. GREEN: go vet + go test -count=1 ./internal/provider ./internal/tool ./pkg/runner ok; -v focused parity+integer 106 PASS lines incl both cross_run_static pairs; per-task gate go test -race ./internal/provider ./internal/tool ./pkg/runner ok; gofmt -l empty; golangci-lint 0 issues. No pre-existing assertion changed (only additions). Caps: Standards 1, Spec 2, Design 1 failing rounds; 0 incomplete. Decided for you: lowercase-only region validation.
+- HEAD commit SHA: `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8`
+- Relevant work: `uncommitted` — stash ref `a490338c8262b929c54bb8220fb800b527d41f37` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M README.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/src/providers.md
+ M internal/provider/awscreds.go
+ M internal/provider/bedrock.go
+ M internal/tool/tool.go
+ M pkg/runner/bedrock_parity_test.go
+?? internal/provider/bedrock_setup_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+32de40ceff5378b37fa9a2ee61c45325ac09a0cb  "internal/provider/bedrock_setup_test.go"
+```
+
+- Next action: Commit the fix batch, run factory-gate test and integrity at the new HEAD, then Spec round 3.
+
 ## Limitations & blockers
 
 - Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Rerun factory-gate test at the bookkeeping HEAD, then dispatch T2 round 2 reviews.
+- Next action: Commit the fix batch, run factory-gate test and integrity at the new HEAD, then Spec round 3.

@@ -34,7 +34,7 @@ func BedrockSetupDiagnostic(err error) string {
 	const guidance = "AWS credentials not found: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or configure a credentials file and AWS_PROFILE"
 	var profileErr *awsProfileError
 	if errors.As(err, &profileErr) && safeAWSProfileName(profileErr.profile, profileErr.path) {
-		return guidance + ": " + fmt.Sprintf("profile %q not found or missing credentials", profileErr.profile)
+		return guidance + ": " + profileErr.Error()
 	}
 	return guidance
 }

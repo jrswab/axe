@@ -224,10 +224,11 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 	var apiKey, baseURL string
 	// @anchor:provider:configuration Match Main's Bedrock region and AWS credential setup for Nested Runs.
 	if provName == "bedrock" {
-		apiKey = globalCfg.ResolveRegion(provName)
-		if apiKey == "" {
-			return errorResult(call.ID, "Bedrock", "region for provider \"bedrock\" is not configured (set AWS_REGION or add to config.toml)", opts)
+		region := globalCfg.ResolveRegion(provName)
+		if region == "" {
+			return errorResult(call.ID, agentName, fmt.Sprintf("region for provider %q is not configured (set AWS_REGION or add to config.toml)", provName), opts)
 		}
+		apiKey = region // Bedrock's provider constructor takes the region in the key position.
 	} else {
 		apiKey = globalCfg.ResolveAPIKey(provName)
 		baseURL = globalCfg.ResolveBaseURL(provName)
@@ -241,7 +242,7 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 	prov, err := provider.New(provName, apiKey, baseURL)
 	if err != nil {
 		if provName == "bedrock" {
-			return errorResult(call.ID, "Bedrock", "failed to create provider: "+provider.BedrockSetupDiagnostic(err), opts)
+			return errorResult(call.ID, agentName, fmt.Sprintf("failed to create provider for agent %q: %s", agentName, provider.BedrockSetupDiagnostic(err)), opts)
 		}
 		return errorResult(call.ID, agentName, fmt.Sprintf("failed to create provider for agent %q: %s", agentName, err), opts)
 	}

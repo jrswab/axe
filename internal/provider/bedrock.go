@@ -39,7 +39,7 @@ type Bedrock struct {
 	client  *http.Client
 }
 
-var errInvalidBedrockRegion = errors.New("invalid Bedrock region: use a single DNS label")
+var errInvalidBedrockRegion = errors.New("invalid Bedrock region: use a single lowercase DNS label")
 
 // NewBedrock creates a new Bedrock provider.
 // @anchor:provider:configuration Validate the resolved Bedrock region before constructing an endpoint or loading credentials.
@@ -77,7 +77,7 @@ func validBedrockRegion(region string) bool {
 		return false
 	}
 	for _, c := range region {
-		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' {
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
 			return false
 		}
 	}

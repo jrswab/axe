@@ -609,7 +609,7 @@ The first directory containing a matching `<name>.toml` wins.
 
 Main and Nested Runs use the same AWS setup; neither uses an ordinary API key or base URL override.
 
-- Region: `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`. A region is required and must be a single DNS label (1–63 ASCII letters, digits or hyphens, without a leading or trailing hyphen).
+- Region: `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`. A region is required and must be a single lowercase DNS label (1–63 lowercase ASCII letters, digits or hyphens, without a leading or trailing hyphen).
 - Credentials: A complete `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment pair takes precedence, with optional `AWS_SESSION_TOKEN`. Otherwise, Axe reads `AWS_SHARED_CREDENTIALS_FILE` or `~/.aws/credentials`, selecting `AWS_PROFILE` or `default`; the profile must contain both keys. This is not the full AWS SDK credential chain. Nested setup failures provide guidance without revealing local credential-file paths to the parent.
 - Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`).
 

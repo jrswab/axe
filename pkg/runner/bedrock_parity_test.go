@@ -348,6 +348,7 @@ func bedrockParityMalformedRegion(t *testing.T, who string) {
 			t.Fatalf("Nested result = %+v, want error ToolResult", got)
 		}
 		diagnostic = got.Content
+		parityNestedFailureNamesAgent(t, diagnostic)
 	} else {
 		got, err := Run(ctx, parityMainOptions(io.Discard))
 		if got != nil || err == nil {
@@ -463,6 +464,14 @@ func paritySetupSuccess(t *testing.T, who, region string, creds parityCredential
 	parityAssertJSON(t, "messages", wire["messages"], "["+wantMessage+"]")
 }
 
+// parityNestedFailureNamesAgent requires Nested setup failures to name the delegated sub-agent, not the provider.
+func parityNestedFailureNamesAgent(t *testing.T, msg string) {
+	t.Helper()
+	if !strings.Contains(msg, `sub-agent "parity-nested" failed`) {
+		t.Errorf("Nested setup failure = %q; want it to name sub-agent \"parity-nested\"", msg)
+	}
+}
+
 func paritySetupError(t *testing.T, who string, parts []string, missingRegion bool, cause error) string {
 	t.Helper()
 	exchanges := parityIntercept(t, "", parityCredentials{}, nil)
@@ -474,6 +483,7 @@ func paritySetupError(t *testing.T, who string, parts []string, missingRegion bo
 			t.Fatalf("Nested setup result = %+v, want error ToolResult", got)
 		}
 		msg = got.Content
+		parityNestedFailureNamesAgent(t, msg)
 	} else {
 		opts := parityMainOptions(io.Discard)
 		opts.APIKey, opts.BaseURL = "options-not-aws", "https://options-override.invalid"
@@ -595,20 +605,28 @@ func bedrockParityDelegation(t *testing.T) {
 		}
 	})
 	t.Run("cross_run_static", func(t *testing.T) {
-		main, nested := parityCacheChoices[0], parityCacheChoices[2]
-		var first, second []parityExchange
-		if !t.Run("first", func(t *testing.T) {
-			first = bedrockParityDelegatedRun(t, main, nested, " / first run")
-		}) || !t.Run("second", func(t *testing.T) {
-			second = bedrockParityDelegatedRun(t, main, nested, " / second run")
-		}) {
-			return
-		}
-		for i, req := range first {
-			if bytes.Equal(req.wire["messages"], second[i].wire["messages"]) {
-				t.Errorf("%s request %d: conversation did not change across runs", req.who, i+1)
-			}
-			parityStable(t, req.wire, second[i].wire, fmt.Sprintf("across runs (%s request %d)", req.who, i+1))
+		// Each pair covers enabled and disabled static shapes, with the modes swapped between Main and Nested.
+		for _, pair := range [][2]parityChoice{
+			{parityCacheChoices[0], parityCacheChoices[2]},
+			{parityCacheChoices[2], parityCacheChoices[1]},
+		} {
+			main, nested := pair[0], pair[1]
+			t.Run("main_"+main.name+"/nested_"+nested.name, func(t *testing.T) {
+				var first, second []parityExchange
+				if !t.Run("first", func(t *testing.T) {
+					first = bedrockParityDelegatedRun(t, main, nested, " / first run")
+				}) || !t.Run("second", func(t *testing.T) {
+					second = bedrockParityDelegatedRun(t, main, nested, " / second run")
+				}) {
+					return
+				}
+				for i, req := range first {
+					if bytes.Equal(req.wire["messages"], second[i].wire["messages"]) {
+						t.Errorf("%s request %d: conversation did not change across runs", req.who, i+1)
+					}
+					parityStable(t, req.wire, second[i].wire, fmt.Sprintf("across runs (%s request %d)", req.who, i+1))
+				}
+			})
 		}
 	})
 }
