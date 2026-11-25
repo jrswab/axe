@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: Milestone 002 review round 2 (records slice)
+- Current task: Milestone 002 completion gate
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit records fixes, gate at new HEAD, then records-slice round 2.
+- Next safe action: Commit nit fixes, run milestone sync, then the completion gate.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
 - Latest recorded state: Planning passed at P206 (A004 4/4, A005 2/2, no retries). T1, T2 and T3 are checked. T1 passed all axes by round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. T2 passed all axes after the four authorized decisions (region validation, credential-path redaction, tool-result role, Q4 split): Standards and Design risk APPROVED WITH NITS in round 2 at `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8`, and Spec APPROVED in round 3 at `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`. T3 passed its existing-GREEN preservation tests, source accounting, docs check and full lint at `698e3554306d5717a7cf109b640f6ebf1acc4e90` under the verification-only review exception. Milestone review round 1 at `c5f0a390716b833dd71bef9c9102692857afcc0c`: backend APPROVED WITH NITS; spec/records CHANGES REQUESTED for stale records, now being reconciled. Milestone 002 stays unchecked until milestone review and the completion gate pass; 003 is blocked by 002. No push or external communication is authorized.
-- Last completed phase/task/gate and timestamp: milestone review round 1 fixes, 2026-11-25T18:12:36.358354+00:00
+- Last completed phase/task/gate and timestamp: milestone review passed, 2026-11-25T18:19:34.779278+00:00
 
 ## Gate evidence
 
@@ -1928,8 +1928,51 @@ Fixes for milestone review round 1: SR-1 rewrote 002 checkpoint Latest recorded 
 
 - Next action: Commit records fixes, gate at new HEAD, then records-slice round 2.
 
+### records fix gates and round 2 intent
+
+- Gate: records fix gates and round 2 intent
+- Commands/results:
+Fix commit 1ca425ccfc98cf6b6493377431b3e124f38fc277. factory-gate test gate-test-1ca425ccfc98-20261125T181237Z poll exit 0 'exited 0', log sha 1ca425ccfc98cf6b6493377431b3e124f38fc277, go test -race ./..., exit 0, 17 ok. docs-lint --since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676 PASS 0 findings. IN FLIGHT: milestone review round 2, spec/records slice only, range 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..1ca425ccfc98cf6b6493377431b3e124f38fc277, fix range c5f0a390716b833dd71bef9c9102692857afcc0c..1ca425ccfc98cf6b6493377431b3e124f38fc277, SR-1..SR-7 carried verbatim.
+- HEAD commit SHA: `1ca425ccfc98cf6b6493377431b3e124f38fc277`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record milestone review round 2 records-slice verdict.
+
+### milestone review passed
+
+- Gate: milestone review passed
+- Commands/results:
+Milestone review round 2, spec/records slice, range 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..1ca425ccfc98cf6b6493377431b3e124f38fc277: APPROVED WITH NITS; SR-1..SR-7 all RESOLVED. Nits verbatim-in-substance: SR2-1 parked.md:104 paragraph says T2 now checked yet 'T2 and 002 remain unchecked' and keeps present-tense imperatives; SR2-2 parked.md:76 'see the current follow-up below' points at a heading renamed historical, and :66 heading still says 'Current'; SR2-3 parked.md:5 implies all T2 axes passed at eea1f6e (Standards/Design were at a9b9543); SR2-4 checkpoint Next action/Limitations lag the 1ca425c commit (bookkeeping lag). Combined milestone review: backend APPROVED WITH NITS (round 1), spec/records APPROVED WITH NITS (round 2) -> PASS. Milestone review caps final: failing rounds 1, incompletes 0. Nits fixed in this batch: SR2-1 paragraph past tense, SR2-2 pointer and heading marked historical (no inbound anchors), SR2-3 SHAs separated; SR2-4 cleared by this bookkeeping write; backend N2 fixed earlier in 1ca425c; N1 and N3 not adopted (recorded reasons). docs-lint --since 1e9e4c3 PASS 0 findings. Latest whole-suite gate: gate-test-1ca425ccfc98-20261125T181237Z exit 0 at 1ca425ccfc98cf6b6493377431b3e124f38fc277.
+- HEAD commit SHA: `1ca425ccfc98cf6b6493377431b3e124f38fc277`
+- Relevant work: `uncommitted` — stash ref `294bb3727e1550c93cdeafe3054eb0a5728d3b23` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_parked.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit nit fixes, run milestone sync, then the completion gate.
+
 ## Limitations & blockers
 
-- Limitations: T1–T3 are checked; 002 remains unchecked pending milestone review and the completion gate. The latest whole-suite factory-gate test passed at `c5f0a390716b833dd71bef9c9102692857afcc0c` (`/tmp/factory-gate-1001/gate-test-c5f0a390716b-20261125T180520Z.log`); full `golangci-lint run` reported 0 issues at `698e3554306d5717a7cf109b640f6ebf1acc4e90`. Completion-gate commands remain to run. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
+- Limitations: T1–T3 are checked; 002 remains unchecked pending milestone review and the completion gate. The latest whole-suite factory-gate test passed at `1ca425ccfc98cf6b6493377431b3e124f38fc277` (`/tmp/factory-gate-1001/gate-test-1ca425ccfc98-20261125T181237Z.log`); milestone review passed; full `golangci-lint run` reported 0 issues at `698e3554306d5717a7cf109b640f6ebf1acc4e90`. Completion-gate commands remain to run. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
 - Blockers: No task reviews remain pending; T1 and T2 passed all axes. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Commit records fixes, gate at new HEAD, then records-slice round 2.
+- Next action: Commit nit fixes, run milestone sync, then the completion gate.

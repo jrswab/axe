@@ -2,7 +2,7 @@
 
 ## Current status (2026-11-25)
 
-Nothing in milestone 002 is parked. T1, T2 and T3 are checked: T2 passed Standards and Design risk in round 2 and Spec in round 3 at `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`, and T3 passed its verification-only checks. Milestone 002 stays unchecked until its final milestone review and completion gate pass ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003 is blocked only on 002 completion. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
+Nothing in milestone 002 is parked. T1, T2 and T3 are checked: T2 passed Standards and Design risk in round 2 at `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8` and Spec in round 3 at `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`, and T3 passed its verification-only checks. Milestone 002 stays unchecked until its final milestone review and completion gate pass ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003 is blocked only on 002 completion. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
 
 ## Planning outcome and T1 review direction (historical)
 
@@ -63,7 +63,7 @@ Already decided, not a live question: Jaron's `Q3 I approve` permits only the co
 
 The following handoff footer is historical; its unconsumed-call recommendation was superseded by P205 above.
 
-## 2026-11-20 — Current authorization and handoff interruption
+## 2026-11-20 — Authorization and handoff interruption (historical)
 
 The prior parking evidence above remains historical. The user subsequently explicitly approved A004: one additional batch of exactly four independent read-only source-review calls beyond the reached incomplete cap, for the original complete-checklist round 2. S1 covers records/research/AWS; S2 standards/docs; S3 provider/config; S4 execution/errors/retries/budget. Shared planning failures remain 1 and prior consecutive incompletes remain 2; no counters reset and no incomplete retries are authorized. All four complete passes are required before continuing 002 and then 003; any nonpass parks.
 
@@ -73,7 +73,7 @@ P205 recorded intent, but the user requested handoff before any review dispatch.
 
 This section records the historical parking direction, resolved by the authorized follow-up below. At that time milestone 002 was unchecked, T1 was checked, and T2 and T3 were unchecked. T2's RED and GREEN are committed; its independent Standards, Spec, and Design risk round-1 reviews each returned **CHANGES REQUESTED**, with no incomplete results. Integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; the earlier offline failure remains history. Review identified potential newly reachable Nested risks, confirmed by source triage; no actual exposure was observed ([002 checkpoint](053_corrected_caching_002_checkpoint.md), T2 round 1 and integrity retry entries).
 
-The following three questions and recommendations preserve the historical decision wording. They are no longer open: see the current follow-up below.
+The following three questions and recommendations preserve the historical decision wording. They are no longer open: see the historical follow-up below and Current status above.
 
 ### 1 — High stakes question: validate the resolved region?
 
@@ -101,4 +101,4 @@ Milestone 003 is blocked by 002, with no 003 spec, checklist, task, or review la
 
 Jaron authorized (1) provider-scope resolved-region validation before endpoint construction for Main and Nested, (2) protecting local credential-path details in parent-model-facing failures while retaining safe actionable guidance, and (3) the narrow Converse tool-result role correction, only the existing role assertion in `pkg/runner/large_integer_args_test.go` and tests preserving large-integer checks ([security disposition](053_corrected_caching_002_checkpoint.md#jaron-security-disposition-and-read-only-restart)). His exact `Q4 -  yes` separately authorized (4) splitting only the missing-file assertion: preserve Main filename/cause checks and require actionable Nested guidance without path or filename ([Q4](053_corrected_caching_002_checkpoint.md#q4-authorization-and-restart)). Original Q3 and all other acceptance and assertions remain intact. No other scope expansion, push or external communication is authorized.
 
-T2 then proceeded locally and is now checked (see Current status). The scoped RED, including cross-run static bytes and omitted shapes, is recorded in [the checkpoint](053_corrected_caching_002_checkpoint.md#authorized-red-and-fix-intent); preserve the two RED test blobs and rerun its exact command GREEN. Passing those checks does not waive the round-1 findings, required independent reviews, T3 or completion gates. T2 and 002 remain unchecked; 003 remains blocked.
+T2 then proceeded locally. The scoped RED, including cross-run static bytes and omitted shapes, was recorded in [the checkpoint](053_corrected_caching_002_checkpoint.md#authorized-red-and-fix-intent), and its exact command was rerun GREEN with the RED test blobs preserved. Passing those checks did not waive the round-1 findings, required independent reviews, T3 or completion gates; at that time T2 and 002 were unchecked and 003 was blocked. For the current state, see Current status above.
