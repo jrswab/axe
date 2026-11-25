@@ -19,13 +19,13 @@
 
 - Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
 - Current phase: `execute`
-- Current task: T1 reviews
+- Current task: T2
 - Task states — checklist checkboxes render from this list:
-- T1: `unchecked`
+- T1: `checked`
 - T2: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit T1, run whole-suite gate, dispatch Standards and Spec reviews.
-- Last completed phase/task/gate and timestamp: T1 RED, GREEN and per-task gate, 2026-11-25T18:35:07.644090+00:00
+- Next safe action: T2
+- Last completed phase/task/gate and timestamp: T1 reviews passed; nits batched, 2026-11-25T18:39:04.389040+00:00
 
 ## Gate evidence
 
@@ -216,8 +216,51 @@ f9160777fc04ba57a8cc0a29f3ce4a13f34d5833  "pkg/runner/verbose_cache_test.go"
 
 - Next action: Commit T1, run whole-suite gate, dispatch Standards and Spec reviews.
 
+### T1 gate and review intent
+
+- Gate: T1 gate and review intent
+- Commands/results:
+T1 commit d2a5066b8e60f5ddbdb4033ad0f97d118a3e656c. factory-gate test gate-test-d2a5066b8e60-20261125T183508Z: see poll above in this entry's command output; log /tmp/factory-gate-1001/gate-test-d2a5066b8e60-20261125T183508Z.log. IN FLIGHT: T1 round 1 Standards and Spec reviews (standard risk), range 3552e6e85b8ec99c9881bcb6eea71785166938ff..d2a5066b8e60f5ddbdb4033ad0f97d118a3e656c. Caps T1: Standards 0, Spec 0 failing; 0 incompletes.
+- HEAD commit SHA: `d2a5066b8e60f5ddbdb4033ad0f97d118a3e656c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record T1 Standards and Spec review verdicts.
+
+### T1 reviews passed; nits batched
+
+- Gate: T1 reviews passed; nits batched
+- Commands/results:
+T1 round 1 at 3552e6e85b8ec99c9881bcb6eea71785166938ff..d2a5066b8e60f5ddbdb4033ad0f97d118a3e656c: Standards APPROVED WITH NITS; Spec APPROVED WITH NITS (reviewer reproduced RED by reverting run.go: exactly the 9 recorded rows failed). Nits: Standards N1 negated flags noJSON/quiet; N2 indented SSE literals stripped at runtime; N3 opaque vc prefix; N4 one helper carries three modes (optional); N5 duplicated JSON decode and env setup; N6 Cache: label literal in three places (acceptable, budget branches must stay byte-identical). Spec S1 error row does not assert nil Result; S2 no tool-loop positive-budget row. Batched: N1 (jsonOff/verboseOff), N2 (unindented literals, no ReplaceAll), N3 (verboseCache prefix), N5 (verboseCacheServer, verboseCacheDecode), S1 (result nil on error), S2 (budget_loop_line_unchanged row). Not adopted: N4 (reviewer: readable at current size), N6 (would change byte-identical budget lines). Verification: gofmt, go vet ok; go test -count=1 -v ./pkg/runner -run '^TestRun_VerboseCacheCounts$' 18 PASS; go test -race ./pkg/runner ok; golangci-lint ./pkg/runner/... 0 issues. Final T1 caps: Standards 0, Spec 0 failing; 0 incompletes. T1 checked.
+- HEAD commit SHA: `d2a5066b8e60f5ddbdb4033ad0f97d118a3e656c`
+- Relevant work: `uncommitted` — stash ref `b10397c2fa334088768975e92ce4c118e95c8c8b` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+ M pkg/runner/verbose_cache_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: T2
+
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
 - Blockers: milestone 002 remains unchecked; its security and scope decisions were made and T1–T3 are checked, so 003 waits only on 002's final milestone review and completion gate.
-- Next action: Commit T1, run whole-suite gate, dispatch Standards and Spec reviews.
+- Next action: T2

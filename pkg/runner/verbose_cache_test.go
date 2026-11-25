@@ -20,133 +20,135 @@ import (
 // https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create.md
 // and its streaming usage chunk. Counts are provider reports, not cache hits.
 const (
-	vcAnthropicTool  = `{"id":"msg_tool","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"tool_use","id":"list-usage","name":"list_directory","input":{"path":"."}}],"stop_reason":"tool_use","usage":{"input_tokens":20,"output_tokens":10,"cache_read_input_tokens":150,"cache_creation_input_tokens":50}}`
-	vcAnthropicFinal = `{"id":"msg_final","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":4,"cache_read_input_tokens":30,"cache_creation_input_tokens":10}}`
+	verboseCacheAnthropicTool  = `{"id":"msg_tool","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"tool_use","id":"list-usage","name":"list_directory","input":{"path":"."}}],"stop_reason":"tool_use","usage":{"input_tokens":20,"output_tokens":10,"cache_read_input_tokens":150,"cache_creation_input_tokens":50}}`
+	verboseCacheAnthropicFinal = `{"id":"msg_final","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":4,"cache_read_input_tokens":30,"cache_creation_input_tokens":10}}`
 
-	vcStreamTool = `event: message_start
- data: {"type":"message_start","message":{"id":"msg_tool","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"usage":{"input_tokens":20,"output_tokens":0,"cache_read_input_tokens":150,"cache_creation_input_tokens":50}}}
+	verboseCacheStreamTool = `event: message_start
+data: {"type":"message_start","message":{"id":"msg_tool","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"usage":{"input_tokens":20,"output_tokens":0,"cache_read_input_tokens":150,"cache_creation_input_tokens":50}}}
 
- event: content_block_start
- data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"list-usage","name":"list_directory","input":{}}}
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"list-usage","name":"list_directory","input":{}}}
 
- event: content_block_delta
- data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\".\"}"}}
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\".\"}"}}
 
- event: content_block_stop
- data: {"type":"content_block_stop","index":0}
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
 
- event: message_delta
- data: {"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":10}}
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":10}}
 
- event: message_stop
- data: {"type":"message_stop"}
-
-`
-	vcStreamStart = `event: message_start
- data: {"type":"message_start","message":{"id":"msg_final","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"usage":{"input_tokens":8,"output_tokens":0,"cache_read_input_tokens":30,"cache_creation_input_tokens":10}}}
+event: message_stop
+data: {"type":"message_stop"}
 
 `
-	vcStreamZeroStart = `event: message_start
- data: {"type":"message_start","message":{"usage":{"input_tokens":0,"output_tokens":0,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}
+	verboseCacheStreamStart = `event: message_start
+data: {"type":"message_start","message":{"id":"msg_final","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"usage":{"input_tokens":8,"output_tokens":0,"cache_read_input_tokens":30,"cache_creation_input_tokens":10}}}
 
 `
-	vcStreamText = `event: content_block_start
- data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
-
- event: content_block_delta
- data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Done"}}
-
- event: content_block_stop
- data: {"type":"content_block_stop","index":0}
+	verboseCacheStreamZeroStart = `event: message_start
+data: {"type":"message_start","message":{"usage":{"input_tokens":0,"output_tokens":0,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}
 
 `
-	vcStreamDone = `event: message_delta
- data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":4}}
+	verboseCacheStreamText = `event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Done"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
 
 `
-	vcStreamZeroDone = `event: message_delta
- data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":0}}
+	verboseCacheStreamDone = `event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":4}}
 
 `
-	vcStreamStop = `event: message_stop
- data: {"type":"message_stop"}
+	verboseCacheStreamZeroDone = `event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":0}}
 
 `
-	vcStreamError = `event: error
- data: {"type":"error","error":{"type":"api_error","message":"verbose fixture interrupted"}}
+	verboseCacheStreamStop = `event: message_stop
+data: {"type":"message_stop"}
+
+`
+	verboseCacheStreamError = `event: error
+data: {"type":"error","error":{"type":"api_error","message":"verbose fixture interrupted"}}
 
 `
 
-	vcOpenAIFinal   = `{"model":"gpt-4o","choices":[{"message":{"content":"Done"},"finish_reason":"stop"}],"usage":{"prompt_tokens":40,"completion_tokens":5,"prompt_tokens_details":{"cached_tokens":32}}}`
-	vcOpenAITool    = `{"model":"gpt-4o","choices":[{"message":{"content":null,"tool_calls":[{"id":"list-usage","type":"function","function":{"name":"list_directory","arguments":"{\"path\":\".\"}"}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":30,"completion_tokens":6,"prompt_tokens_details":{"cached_tokens":16}}}`
-	vcOpenAILoopEnd = `{"model":"gpt-4o","choices":[{"message":{"content":"Done"},"finish_reason":"stop"}],"usage":{"prompt_tokens":50,"completion_tokens":7,"prompt_tokens_details":{"cached_tokens":24}}}`
+	verboseCacheOpenAIFinal   = `{"model":"gpt-4o","choices":[{"message":{"content":"Done"},"finish_reason":"stop"}],"usage":{"prompt_tokens":40,"completion_tokens":5,"prompt_tokens_details":{"cached_tokens":32}}}`
+	verboseCacheOpenAITool    = `{"model":"gpt-4o","choices":[{"message":{"content":null,"tool_calls":[{"id":"list-usage","type":"function","function":{"name":"list_directory","arguments":"{\"path\":\".\"}"}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":30,"completion_tokens":6,"prompt_tokens_details":{"cached_tokens":16}}}`
+	verboseCacheOpenAILoopEnd = `{"model":"gpt-4o","choices":[{"message":{"content":"Done"},"finish_reason":"stop"}],"usage":{"prompt_tokens":50,"completion_tokens":7,"prompt_tokens_details":{"cached_tokens":24}}}`
 
-	vcOpenAIStreamText = `data: {"model":"gpt-4o","choices":[{"delta":{"content":"Done"},"index":0}]}
+	verboseCacheOpenAIStreamText = `data: {"model":"gpt-4o","choices":[{"delta":{"content":"Done"},"index":0}]}
 
 data: {"model":"gpt-4o","choices":[{"delta":{},"index":0,"finish_reason":"stop"}]}
 
 `
-	vcOpenAIStreamUsage = `data: {"model":"gpt-4o","choices":[],"usage":{"prompt_tokens":40,"completion_tokens":5,"prompt_tokens_details":{"cached_tokens":32}}}
+	verboseCacheOpenAIStreamUsage = `data: {"model":"gpt-4o","choices":[],"usage":{"prompt_tokens":40,"completion_tokens":5,"prompt_tokens_details":{"cached_tokens":32}}}
 
 `
-	vcOpenAIStreamEnd = "data: [DONE]\n\n"
+	verboseCacheOpenAIStreamEnd = "data: [DONE]\n\n"
 )
 
-func vcNormal(body string) testutil.MockLLMResponse {
+func verboseCacheNormal(body string) testutil.MockLLMResponse {
 	return testutil.MockLLMResponse{StatusCode: 200, Body: body}
 }
 
-// vcSSE strips the literal indentation from SSE lines without synthesizing usage.
-func vcSSE(parts ...string) testutil.MockLLMResponse {
-	return testutil.MockLLMResponse{StatusCode: 200, ContentType: "text/event-stream", Body: strings.ReplaceAll(strings.Join(parts, ""), "\n ", "\n")}
+// verboseCacheSSE joins literal SSE frames without synthesizing usage.
+func verboseCacheSSE(parts ...string) testutil.MockLLMResponse {
+	return testutil.MockLLMResponse{StatusCode: 200, ContentType: "text/event-stream", Body: strings.Join(parts, "")}
 }
 
-func vcAnthropicNormal(read, write int) testutil.MockLLMResponse {
-	return vcNormal(fmt.Sprintf(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":4,"cache_read_input_tokens":%d,"cache_creation_input_tokens":%d}}`, read, write))
+func verboseCacheAnthropicNormal(read, write int) testutil.MockLLMResponse {
+	return verboseCacheNormal(fmt.Sprintf(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":4,"cache_read_input_tokens":%d,"cache_creation_input_tokens":%d}}`, read, write))
 }
 
 type verboseCacheCase struct {
-	name                  string
-	provider              string // "anthropic" or "openai"; Bedrock and delegation have their own rows
-	stream, tools, noJSON bool
-	quiet                 bool // Verbose: false
-	budget                int
-	responses             []testutil.MockLLMResponse
-	read, write           int
-	wantCache             string // exact Cache: line, or "" for none
-	wantError             bool
+	name                   string
+	provider               string // "anthropic" or "openai"; Bedrock and delegation have their own rows
+	stream, tools, jsonOff bool
+	verboseOff             bool
+	budget                 int
+	responses              []testutil.MockLLMResponse
+	read, write            int
+	wantCache              string // exact Cache: line, or "" for none
+	wantError              bool
 }
 
 func TestRun_VerboseCacheCounts(t *testing.T) {
 	// Subtests stay sequential: base URLs use t.Setenv, and the Bedrock row
 	// replaces the process-wide http.DefaultTransport through parityIntercept.
 	cases := []verboseCacheCase{
-		{name: "anthropic_single_normal", provider: "anthropic", responses: []testutil.MockLLMResponse{vcNormal(vcAnthropicFinal)},
+		{name: "anthropic_single_normal", provider: "anthropic", responses: []testutil.MockLLMResponse{verboseCacheNormal(verboseCacheAnthropicFinal)},
 			read: 30, write: 10, wantCache: "Cache:    30 read, 10 written\n"},
-		{name: "anthropic_single_stream", provider: "anthropic", stream: true, responses: []testutil.MockLLMResponse{vcSSE(vcStreamStart, vcStreamText, vcStreamDone, vcStreamStop)},
+		{name: "anthropic_single_stream", provider: "anthropic", stream: true, responses: []testutil.MockLLMResponse{verboseCacheSSE(verboseCacheStreamStart, verboseCacheStreamText, verboseCacheStreamDone, verboseCacheStreamStop)},
 			read: 30, write: 10, wantCache: "Cache:    30 read, 10 written\n"},
-		{name: "anthropic_loop_normal", provider: "anthropic", tools: true, responses: []testutil.MockLLMResponse{vcNormal(vcAnthropicTool), vcNormal(vcAnthropicFinal)},
+		{name: "anthropic_loop_normal", provider: "anthropic", tools: true, responses: []testutil.MockLLMResponse{verboseCacheNormal(verboseCacheAnthropicTool), verboseCacheNormal(verboseCacheAnthropicFinal)},
 			read: 180, write: 60, wantCache: "Cache:    180 read, 60 written\n"},
-		{name: "anthropic_loop_stream", provider: "anthropic", stream: true, tools: true, responses: []testutil.MockLLMResponse{vcSSE(vcStreamTool), vcSSE(vcStreamStart, vcStreamText, vcStreamDone, vcStreamStop)},
+		{name: "anthropic_loop_stream", provider: "anthropic", stream: true, tools: true, responses: []testutil.MockLLMResponse{verboseCacheSSE(verboseCacheStreamTool), verboseCacheSSE(verboseCacheStreamStart, verboseCacheStreamText, verboseCacheStreamDone, verboseCacheStreamStop)},
 			read: 180, write: 60, wantCache: "Cache:    180 read, 60 written\n"},
-		{name: "openai_single_normal_reads_only", provider: "openai", responses: []testutil.MockLLMResponse{vcNormal(vcOpenAIFinal)},
+		{name: "openai_single_normal_reads_only", provider: "openai", responses: []testutil.MockLLMResponse{verboseCacheNormal(verboseCacheOpenAIFinal)},
 			read: 32, wantCache: "Cache:    32 read\n"},
-		{name: "openai_single_stream_reads_only", provider: "openai", stream: true, responses: []testutil.MockLLMResponse{vcSSE(vcOpenAIStreamText, vcOpenAIStreamUsage, vcOpenAIStreamEnd)},
+		{name: "openai_single_stream_reads_only", provider: "openai", stream: true, responses: []testutil.MockLLMResponse{verboseCacheSSE(verboseCacheOpenAIStreamText, verboseCacheOpenAIStreamUsage, verboseCacheOpenAIStreamEnd)},
 			read: 32, wantCache: "Cache:    32 read\n"},
-		{name: "openai_loop_reads_only", provider: "openai", tools: true, responses: []testutil.MockLLMResponse{vcNormal(vcOpenAITool), vcNormal(vcOpenAILoopEnd)},
+		{name: "openai_loop_reads_only", provider: "openai", tools: true, responses: []testutil.MockLLMResponse{verboseCacheNormal(verboseCacheOpenAITool), verboseCacheNormal(verboseCacheOpenAILoopEnd)},
 			read: 40, wantCache: "Cache:    40 read\n"},
-		{name: "anthropic_write_only", provider: "anthropic", responses: []testutil.MockLLMResponse{vcAnthropicNormal(0, 10)},
+		{name: "anthropic_write_only", provider: "anthropic", responses: []testutil.MockLLMResponse{verboseCacheAnthropicNormal(0, 10)},
 			write: 10, wantCache: "Cache:    10 written\n"},
-		{name: "zero_normal", provider: "anthropic", responses: []testutil.MockLLMResponse{vcAnthropicNormal(0, 0)}},
-		{name: "zero_stream", provider: "anthropic", stream: true, responses: []testutil.MockLLMResponse{vcSSE(vcStreamZeroStart, vcStreamText, vcStreamZeroDone, vcStreamStop)}},
-		{name: "absent_normal", provider: "anthropic", responses: []testutil.MockLLMResponse{vcNormal(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn"}`)}},
-		{name: "absent_stream_without_usage_chunk", provider: "openai", stream: true, responses: []testutil.MockLLMResponse{vcSSE(vcOpenAIStreamText, vcOpenAIStreamEnd)}},
+		{name: "zero_normal", provider: "anthropic", responses: []testutil.MockLLMResponse{verboseCacheAnthropicNormal(0, 0)}},
+		{name: "zero_stream", provider: "anthropic", stream: true, responses: []testutil.MockLLMResponse{verboseCacheSSE(verboseCacheStreamZeroStart, verboseCacheStreamText, verboseCacheStreamZeroDone, verboseCacheStreamStop)}},
+		{name: "absent_normal", provider: "anthropic", responses: []testutil.MockLLMResponse{verboseCacheNormal(`{"content":[{"type":"text","text":"Done"}],"stop_reason":"end_turn"}`)}},
+		{name: "absent_stream_without_usage_chunk", provider: "openai", stream: true, responses: []testutil.MockLLMResponse{verboseCacheSSE(verboseCacheOpenAIStreamText, verboseCacheOpenAIStreamEnd)}},
 		// Preservation (spec R2).
-		{name: "budget_line_unchanged_with_zero", provider: "anthropic", budget: 100, responses: []testutil.MockLLMResponse{vcAnthropicNormal(30, 0)},
+		{name: "budget_line_unchanged_with_zero", provider: "anthropic", budget: 100, responses: []testutil.MockLLMResponse{verboseCacheAnthropicNormal(30, 0)},
 			read: 30, wantCache: "Cache:    30 read, 0 written\n"},
-		{name: "not_verbose", provider: "anthropic", quiet: true, responses: []testutil.MockLLMResponse{vcNormal(vcAnthropicFinal)}, read: 30, write: 10},
-		{name: "stream_error_after_partial_output", provider: "anthropic", stream: true, noJSON: true, wantError: true,
-			responses: []testutil.MockLLMResponse{vcSSE(vcStreamStart, vcStreamText, vcStreamError)}},
+		{name: "budget_loop_line_unchanged", provider: "anthropic", tools: true, budget: 1000, responses: []testutil.MockLLMResponse{verboseCacheNormal(verboseCacheAnthropicTool), verboseCacheNormal(verboseCacheAnthropicFinal)},
+			read: 180, write: 60, wantCache: "Cache:    180 read, 60 written\n"},
+		{name: "not_verbose", provider: "anthropic", verboseOff: true, responses: []testutil.MockLLMResponse{verboseCacheNormal(verboseCacheAnthropicFinal)}, read: 30, write: 10},
+		{name: "stream_error_after_partial_output", provider: "anthropic", stream: true, jsonOff: true, wantError: true,
+			responses: []testutil.MockLLMResponse{verboseCacheSSE(verboseCacheStreamStart, verboseCacheStreamText, verboseCacheStreamError)}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { runVerboseCacheCase(t, tc) })
@@ -169,11 +171,7 @@ func runVerboseCacheCase(t *testing.T, tc verboseCacheCase) {
 		definition += fmt.Sprintf("[budget]\nmax_tokens = %d\n", tc.budget)
 	}
 	setupTestEnv(t, "", "verbose-cache", definition)
-	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	t.Setenv(keyEnv, "local-test-key")
-	server := testutil.NewMockLLMServer(t, tc.responses)
-	t.Setenv(urlEnv, server.URL())
+	verboseCacheServer(t, keyEnv, urlEnv, tc.responses)
 	stdout, stderr := newMockStdoutStderr()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -181,12 +179,15 @@ func runVerboseCacheCase(t *testing.T, tc verboseCacheCase) {
 	result, err := Run(ctx, Options{
 		AgentName: "verbose-cache", Workdir: t.TempDir(), Prompt: "Inspect then finish.",
 		Stdin: strings.NewReader(""), Stdout: stdout, Stderr: stderr,
-		JSON: !tc.noJSON, Stream: tc.stream, Verbose: !tc.quiet,
+		JSON: !tc.jsonOff, Stream: tc.stream, Verbose: !tc.verboseOff,
 	})
 
 	if tc.wantError {
 		if err == nil || !strings.Contains(err.Error(), "verbose fixture interrupted") {
 			t.Fatalf("Run() error = %v, want the original stream error", err)
+		}
+		if result != nil {
+			t.Errorf("failed Run returned a result with usage: %+v", result)
 		}
 		if !strings.Contains(stdout.String(), "Done") {
 			t.Errorf("stdout = %q, want the partial streamed text", stdout)
@@ -204,7 +205,7 @@ func runVerboseCacheCase(t *testing.T, tc verboseCacheCase) {
 	}
 	verboseCacheJSON(t, stdout.Bytes(), tc.read, tc.write)
 
-	if tc.quiet {
+	if tc.verboseOff {
 		if strings.Contains(stderr.String(), "Cache:") {
 			t.Errorf("non-verbose stderr = %q, want no Cache: text", stderr)
 		}
@@ -217,9 +218,8 @@ func runVerboseCacheCase(t *testing.T, tc verboseCacheCase) {
 		if result.Budget.Used != used {
 			t.Errorf("budget used = %d, want input+output %d only", result.Budget.Used, used)
 		}
-		var output map[string]json.RawMessage
-		if err := json.Unmarshal(stdout.Bytes(), &output); err != nil || string(output["budget_used_tokens"]) != fmt.Sprint(used) {
-			t.Errorf("JSON budget_used_tokens = %s (%v), want %d", output["budget_used_tokens"], err, used)
+		if got := verboseCacheDecode(t, stdout.Bytes())["budget_used_tokens"]; string(got) != fmt.Sprint(used) {
+			t.Errorf("JSON budget_used_tokens = %s, want %d", got, used)
 		}
 		tokens = fmt.Sprintf("Tokens:   %d input, %d output (cumulative, budget: %d/%d)\n", result.InputTokens, result.OutputTokens, used, tc.budget)
 	case tc.tools:
@@ -242,10 +242,7 @@ func verboseCacheSummary(t *testing.T, stderr, tokens, cache string) {
 // verboseCacheJSON requires JSON cache fields to equal the verbose counts and stay omitted when zero.
 func verboseCacheJSON(t *testing.T, stdout []byte, read, write int) {
 	t.Helper()
-	var output map[string]json.RawMessage
-	if err := json.Unmarshal(stdout, &output); err != nil {
-		t.Fatalf("JSON stdout = %q: %v", stdout, err)
-	}
+	output := verboseCacheDecode(t, stdout)
 	for key, want := range map[string]int{"cache_read_tokens": read, "cache_write_tokens": write} {
 		raw, present := output[key]
 		if want == 0 {
@@ -256,6 +253,26 @@ func verboseCacheJSON(t *testing.T, stdout []byte, read, write int) {
 			t.Errorf("JSON %s = %s (present %t), want %d", key, raw, present, want)
 		}
 	}
+}
+
+// verboseCacheServer isolates XDG data and cache, sets a local API key and serves the literal responses.
+func verboseCacheServer(t *testing.T, keyEnv, urlEnv string, responses []testutil.MockLLMResponse) *testutil.MockLLMServer {
+	t.Helper()
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	t.Setenv(keyEnv, "local-test-key")
+	server := testutil.NewMockLLMServer(t, responses)
+	t.Setenv(urlEnv, server.URL())
+	return server
+}
+
+func verboseCacheDecode(t *testing.T, stdout []byte) map[string]json.RawMessage {
+	t.Helper()
+	var output map[string]json.RawMessage
+	if err := json.Unmarshal(stdout, &output); err != nil {
+		t.Fatalf("JSON stdout = %q: %v", stdout, err)
+	}
+	return output
 }
 
 func verboseCacheBedrock(t *testing.T) {
@@ -285,17 +302,13 @@ func verboseCacheNested(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(configDir, "axe", "agents", "verbose-nested.toml"), []byte(nested), 0600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	t.Setenv("ANTHROPIC_API_KEY", "local-test-key")
-	server := testutil.NewMockLLMServer(t, []testutil.MockLLMResponse{
+	server := verboseCacheServer(t, "ANTHROPIC_API_KEY", "AXE_ANTHROPIC_BASE_URL", []testutil.MockLLMResponse{
 		testutil.AnthropicToolUseResponse("Delegating.", []testutil.MockToolCall{
 			{ID: "delegate-1", Name: "call_agent", Input: map[string]string{"agent": "verbose-nested", "task": "Summarize."}},
 		}),
 		testutil.AnthropicResponseWithCacheTokens("Nested summary.", 7, 8, 90, 100),
 		testutil.AnthropicResponse("Main finished."),
 	})
-	t.Setenv("AXE_ANTHROPIC_BASE_URL", server.URL())
 	stdout, stderr := newMockStdoutStderr()
 
 	result, err := Run(context.Background(), Options{

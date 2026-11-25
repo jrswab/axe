@@ -18,7 +18,7 @@ The runner already keeps each Run's provider-reported cache counts and reports t
 
 ### Verbose cache counts without a budget
 
-- [ ] **T1 — Budget-free verbose cache line and preservation** — standard; **R1, R2**. Budget: 30 min per incremental cycle.
+- [x] **T1 — Budget-free verbose cache line and preservation** — standard; **R1, R2**. Budget: 30 min per incremental cycle.
   - **Files:** production `pkg/runner/run.go: run` (the single-response verbose summary and the tool-loop verbose summary, the `tracker.Max() > 0` else branches only). New test file `pkg/runner/verbose_cache_test.go: TestRun_VerboseCacheCounts`. Leave the positive-budget branches byte-identical.
   - **RED first:** write the table-driven contract with `Verbose: true`, no budget and `JSON: true`, asserting the exact `Cache:` line (or its absence) on stderr, its position after `Tokens:` and before `Stop:`, the unchanged budget-free `Tokens:` line, and that the counts equal `Result.CacheReadTokens`/`CacheWriteTokens` and the JSON `cache_read_tokens`/`cache_write_tokens` (omitted when zero). Rows from spec R1:
     - Anthropic single-response, normal and stream, read and write nonzero → `Cache:    <read> read, <written> written`.
