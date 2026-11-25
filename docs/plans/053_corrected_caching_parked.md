@@ -1,17 +1,19 @@
 # Corrected caching — parked
 
-Milestone 002's narrow A006 T1 fix was committed as `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; 002 and 003 remain unchecked, and 003 is blocked strictly on 002 completion. No external probes were authorized or run.
+## Current status (2026-11-25)
 
-## Current outcome and review direction
+Nothing in milestone 002 is parked. T1, T2 and T3 are checked: T2 passed Standards and Design risk in round 2 and Spec in round 3 at `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`, and T3 passed its verification-only checks. Milestone 002 stays unchecked until its final milestone review and completion gate pass ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003 is blocked only on 002 completion. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
 
-P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 is checked and all axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. The whole-suite factory-gate test passed at the round-3 SHA (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests remain pending. T2 and T3 remain unchecked; T2 is underway locally after the four scoped authorizations below, and 003 is blocked by 002. Publication remains on hold: no push or external communication.
+## Planning outcome and T1 review direction (historical)
+
+P206's two A005 reviews both APPROVED; F5 and F6 are resolved and the planning gate passed. The shared planning count is two failed rounds (P203 and combined P205); the two P204/P204b incomplete events remain historical. A004 exhausted 4/4 calls and A005 consumed 2/2; no retries are authorized. T1 is checked and all axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. The whole-suite factory-gate test passed at the round-3 SHA (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`). At that time T2 and T3 were unchecked; see Current status above.
 
 - **F5 — HISTORICAL P205, resolved P206 (S2/R4):** At P205, `docs/plans/053_corrected_caching_002_implement.md:37,39` checked `json-output.md` but neither assigned documentation edits nor named `run-flags.md`. Both `docs/src/cli/json-output.md:80` and `docs/src/cli/run-flags.md:46` then said `--stream` and `--json` always stream, contrary to `docs/src/providers.md:109` and `pkg/runner/run.go:529-533`. P205 recommended assigning T2 both documentation edits to explain fallback while retaining a single JSON envelope.
 - **F6 — HISTORICAL P205, resolved P206 (S4/R3–R4):** At P205, `docs/plans/053_corrected_caching_002_spec.md:52,60` versus `docs/plans/053_corrected_caching_002_implement.md:28,38,70` left omitted usage and independently zero cache usage untested through Bedrock Run. P205 recommended assigning T2 literal Converse fixtures that assert Result values and JSON omission for those cases, plus numerical nonzero counterparts, without changing accounting.
 
 ### Historical direction — handoff before T2
 
-This handoff is historical; see the [current local-only T2 follow-up](#current-follow-up--four-scoped-approvals-t2-underway).
+This handoff is historical; see the [T2 follow-up](#follow-up--four-scoped-approvals-historical) and Current status above.
 
 A006 in REC011 resolved the empty-description scope blocker. T1 passed all axes and is checked; no T1 review remains pending. The user interrupted this session for handoff. After restart, start T2 RED in the next session, without starting T2 now. Milestone 003 stays blocked only until 002 completes.
 
@@ -54,10 +56,10 @@ Already decided, not a live question: Jaron's `Q3 I approve` permits only the co
 
 ## Run evidence
 
-- Milestone 001 completed historically; its completion evidence is retained. Milestones 002 and 003 remain unchecked. T1 of 002 is checked; T2 and T3 remain unchecked. Partial T1 implementation and tests were committed as `4fa25a0` after RED and independent VERIFY, followed by the A006 fix at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`.
+- Milestone 001 completed historically; its completion evidence is retained. Milestones 002 and 003 remain unchecked. T1, T2 and T3 of 002 are checked. Partial T1 implementation and tests were committed as `4fa25a0` after RED and independent VERIFY, followed by the A006 fix at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`.
 - B008 failed, B009 passed with the writable module cache, E009 host preflight passed, and Y012 sync passed without moving HEAD. These are recorded historical outcomes, not checks rerun by this administrative task (`docs/plans/053_corrected_caching_002_checkpoint.md:63-73`).
 - No 003 spec, checklist, task, or review has ever been launched; there is no 003 implementation range. Its checkpoint identifies the historical administrative creation source, not an implementation review base.
-- No external probes were authorized or run. The recorded whole-suite gate `go test -race ./...` passed at `7b50c9651bde3395bb786aff3cb10b7247351380`; final lint and affected tests remain pending. The draft PR is not completion.
+- No external probes were authorized or run. The latest whole-suite gate `go test -race ./...` passed at `c5f0a390716b833dd71bef9c9102692857afcc0c`; completion-gate commands remain to run. The draft PR is not completion.
 
 The following handoff footer is historical; its unconsumed-call recommendation was superseded by P205 above.
 
@@ -69,7 +71,7 @@ P205 recorded intent, but the user requested handoff before any review dispatch.
 
 ## Local-only — pending security disposition
 
-This section records the historical parking direction; the authorized follow-up below is current. Milestone 002 remains unchecked. T1 is checked; T2 and T3 are unchecked. T2's RED and GREEN are committed; its independent Standards, Spec, and Design risk round-1 reviews each returned **CHANGES REQUESTED**, with no incomplete results. Integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; the earlier offline failure remains history. Review identified potential newly reachable Nested risks, confirmed by source triage; no actual exposure was observed ([002 checkpoint](053_corrected_caching_002_checkpoint.md), T2 round 1 and integrity retry entries).
+This section records the historical parking direction, resolved by the authorized follow-up below. At that time milestone 002 was unchecked, T1 was checked, and T2 and T3 were unchecked. T2's RED and GREEN are committed; its independent Standards, Spec, and Design risk round-1 reviews each returned **CHANGES REQUESTED**, with no incomplete results. Integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`; the earlier offline failure remains history. Review identified potential newly reachable Nested risks, confirmed by source triage; no actual exposure was observed ([002 checkpoint](053_corrected_caching_002_checkpoint.md), T2 round 1 and integrity retry entries).
 
 The following three questions and recommendations preserve the historical decision wording. They are no longer open: see the current follow-up below.
 
@@ -95,8 +97,8 @@ In-scope review coverage remains open: explicit comparison of serialized static 
 
 Milestone 003 is blocked by 002, with no 003 spec, checklist, task, or review launched. Existing draft #108 remains at verified `d18abf7a2bd50cd9f99112243482ba1b10974d4c`; no push of local commits has occurred. One-way doors, external communications, and all pushes remain on hold.
 
-### Current follow-up — four scoped approvals, T2 underway
+### Follow-up — four scoped approvals (historical)
 
 Jaron authorized (1) provider-scope resolved-region validation before endpoint construction for Main and Nested, (2) protecting local credential-path details in parent-model-facing failures while retaining safe actionable guidance, and (3) the narrow Converse tool-result role correction, only the existing role assertion in `pkg/runner/large_integer_args_test.go` and tests preserving large-integer checks ([security disposition](053_corrected_caching_002_checkpoint.md#jaron-security-disposition-and-read-only-restart)). His exact `Q4 -  yes` separately authorized (4) splitting only the missing-file assertion: preserve Main filename/cause checks and require actionable Nested guidance without path or filename ([Q4](053_corrected_caching_002_checkpoint.md#q4-authorization-and-restart)). Original Q3 and all other acceptance and assertions remain intact. No other scope expansion, push or external communication is authorized.
 
-T2 is underway locally. The scoped RED, including cross-run static bytes and omitted shapes, is recorded in [the checkpoint](053_corrected_caching_002_checkpoint.md#authorized-red-and-fix-intent); preserve the two RED test blobs and rerun its exact command GREEN. Passing those checks does not waive the round-1 findings, required independent reviews, T3 or completion gates. T2 and 002 remain unchecked; 003 remains blocked.
+T2 then proceeded locally and is now checked (see Current status). The scoped RED, including cross-run static bytes and omitted shapes, is recorded in [the checkpoint](053_corrected_caching_002_checkpoint.md#authorized-red-and-fix-intent); preserve the two RED test blobs and rerun its exact command GREEN. Passing those checks does not waive the round-1 findings, required independent reviews, T3 or completion gates. T2 and 002 remain unchecked; 003 remains blocked.

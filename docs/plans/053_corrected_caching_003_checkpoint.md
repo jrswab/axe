@@ -23,7 +23,7 @@
 - Task states — checklist checkboxes render from this list:
 none
 - Milestone checkbox: `unchecked`
-- Next safe action: Wait for 002 security and scope decisions and actual milestone completion before starting 003.
+- Next safe action: Wait for milestone 002's final milestone review and completion gate before starting 003.
 - Last completed phase/task/gate and timestamp: dependency parked, 2026-11-23T18:13:11.270214+00:00
 
 ## Gate evidence
@@ -91,5 +91,5 @@ none
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
-- Blockers: milestone 002 remains unchecked and parked; 003 awaits 002 completion. T1 passed all review axes, with no pending T1 reviews; T2 and T3 remain unchecked.
-- Next action: Wait for 002 security and scope decisions and actual milestone completion before starting 003.
+- Blockers: milestone 002 remains unchecked; its security and scope decisions were made and T1–T3 are checked, so 003 waits only on 002's final milestone review and completion gate.
+- Next action: Wait for milestone 002's final milestone review and completion gate before starting 003.

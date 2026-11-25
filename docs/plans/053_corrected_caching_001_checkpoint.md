@@ -20,15 +20,15 @@
 
 - Lane: `full` — changes provider request-wire behavior and run execution policy, so the fast-lane external-contract condition fails.
 - Current phase: `complete`
-- Current task: none (001 complete; 002 parked)
+- Current task: none (001 complete; see the 002 checkpoint for 002's current state)
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
 - T4: `checked`
 - Milestone checkbox: `checked`
-- Next safe action: Preserve 001 completion; refer to the 002 checkpoint and parking record for the incomplete-review cap and blocked 003.
-- Last completed phase/task/gate and timestamp: 001 completion PASS at A002; subsequent C003 creation completed, and 002 is parked after P204b INCOMPLETE, 2026-11-20T20:37:00.937005+00:00.
+- Next safe action: Preserve 001 completion; refer to the 002 checkpoint for 002's current state and 003's dependency.
+- Last completed phase/task/gate and timestamp: 001 completion PASS at A002; subsequent C003 creation completed, and 002 was then parked after P204b INCOMPLETE (historical; 002 later passed planning at P206), 2026-11-20T20:37:00.937005+00:00.
 
 ## Milestone acceptance
 
@@ -3296,5 +3296,5 @@ B009 actual launch env -u GOTOOLCHAIN XDG_CACHE_HOME=/tmp/axe-v006-cache.itoPgN 
 ## Limitations & blockers
 
 - Limitations: Initial evidence above is supplied prior-execution evidence, not rerun here. Before initial force-staging, untracked ignored plan artifacts were excluded from ordinary `git status --porcelain`, tracked-file stash snapshots, and the updater's untracked inventory. The planning artifacts are now tracked and are captured normally as tracked work. `docs/plans/*` remains ignored by `.gitignore:59`; `factory-commit` uses `git add` without force, so new untracked ignored artifacts need force staging if committed later. No tests, reviews, planning, synchronization, or gates run during checkpoint creation.
-- Blockers: 001 is complete; 002 is parked at its checklist review incomplete cap, blocking 003.
-- Next action: Preserve 001 completion and follow the 002 checkpoint and parking record; do not retry the capped review without explicit new direction.
+- Blockers: 001 is complete. 002's former checklist-review cap was resolved (planning passed at P206); see the 002 checkpoint for its current state. 003 is blocked by 002.
+- Next action: Preserve 001 completion and follow the 002 checkpoint for 002's current state.

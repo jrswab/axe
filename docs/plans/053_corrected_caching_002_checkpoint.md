@@ -28,17 +28,17 @@ Absolute paths inside the repository root:
 
 - Lane: `full` — the external Bedrock wire contract and AWS credential/setup boundary exceed fast-lane criteria.
 - Current phase: `execute`
-- Current task: Milestone 002 final review
+- Current task: Milestone 002 review round 2 (records slice)
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `checked`
 - T3: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Run the milestone 002 review over 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..HEAD.
+- Next safe action: Commit records fixes, gate at new HEAD, then records-slice round 2.
 
 The latest decision ledger and per-gate cap snapshots are in Gate evidence. Tasks, when planned, use complete checklist IDs and follow checklist order.
-- Latest recorded state: P206 passed the planning gate, resolving F5 and F6; A004 exhausted 4/4 calls and A005 consumed 2/2, with no retries authorized. T1 is checked and all review axes passed: Design risk APPROVED in round 2 at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec APPROVED WITH NITS in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. No T1 reviews remain pending. T2 RED and GREEN are committed; its three independent round-1 reviews all returned CHANGES REQUESTED, with no incompletes. The integrity retry passed at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`. Four decisions are authorized: region validation, credential-path redaction, tool-result role correction, and the Q4 missing-file expectation split. Defensive T2 changes passed the unchanged focused RED-to-GREEN command and touched-package race; cross-run and omitted-shape checks pass. Independent verification passed. T2 round 2: Standards and Design risk APPROVED WITH NITS; Spec CHANGES REQUESTED (Nested setup errors named the provider instead of the sub-agent), fixed with the nits in one batch; Spec round 3, T3 and final gates remain pending. T2, T3 and 002 remain unchecked; 003 is blocked by 002. No push or external communication is authorized, and the defensive changes have not been published.
-- Last completed phase/task/gate and timestamp: T3 verification and accounting passed, 2026-11-25T18:05:09.899291+00:00
+- Latest recorded state: Planning passed at P206 (A004 4/4, A005 2/2, no retries). T1, T2 and T3 are checked. T1 passed all axes by round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`. T2 passed all axes after the four authorized decisions (region validation, credential-path redaction, tool-result role, Q4 split): Standards and Design risk APPROVED WITH NITS in round 2 at `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8`, and Spec APPROVED in round 3 at `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`. T3 passed its existing-GREEN preservation tests, source accounting, docs check and full lint at `698e3554306d5717a7cf109b640f6ebf1acc4e90` under the verification-only review exception. Milestone review round 1 at `c5f0a390716b833dd71bef9c9102692857afcc0c`: backend APPROVED WITH NITS; spec/records CHANGES REQUESTED for stale records, now being reconciled. Milestone 002 stays unchecked until milestone review and the completion gate pass; 003 is blocked by 002. No push or external communication is authorized.
+- Last completed phase/task/gate and timestamp: milestone review round 1 fixes, 2026-11-25T18:12:36.358354+00:00
 
 ## Gate evidence
 
@@ -47,14 +47,22 @@ The latest decision ledger and per-gate cap snapshots are in Gate evidence. Task
 - Decision Q3: Jaron's exact approval was `Q3 I approve`. It authorizes only replacing the contradicted assertions in `TestBedrock_Send_Cache` in `internal/provider/bedrock_test.go`: the combined system text/cache-point expectation becomes separate text and default cache-point-only union entries, and the top-level `ToolConfig.CachePoint` expectation becomes a separate default cache-point-only entry in `toolConfig.tools` while retaining the tool specification. Preserve ToolConfig existence, cache read/write usage, and all unrelated assertions/tests; independently cover raw-wire `inputSchema.json` and cache-disabled requests. No other assertion or acceptance change is approved. Original source: `/home/jaron/.pi/agent/sessions/--home-jaron-dev-axe-iss-83-finish-caching--/2026-11-19T15-47-50-732Z_01a1f47e-274c-748d-88b3-337965f93f71.jsonl:106`; durable scope and user message also appear in the 001 checkpoint's Q3 and REC009 entries. Action: future implementation only, not performed here; report: recorded in 001; intended gate: later implementation and applicable tests.
 - Decision D009: use `GOMODCACHE=/tmp/axe-v006-cache.itoPgN/go-mod` for the existing Go preflight after B008's read-only module-cache failure. Scope: reversible local cache selection for 002 setup; reason: `XDG_CACHE_HOME` does not redirect Go module downloads. Eligibility: existing full check including vulnerability scan retained, no code/assertion/criterion change, no review or cap bypass, no human-only boundary crossed; stricter reviewer instruction: not applicable. B009 subsequently passed; B008 remains failed history. Intended gate: full existing Go preflight; action: completed; report: retained in 001 and this checkpoint. Evidence: REC009c and B009 in 001, B002-001 below.
 - Decision A004: explicit user approval for exactly one additional batch of four independent read-only source reviews beyond the reached cap, preserving original round 2 and all counters; no incomplete retries. Approval: `/home/jaron/.pi/agent/sessions/--home-jaron-dev-axe-iss-83-finish-caching--/2026-11-20T19-56-16-550Z_01a1fa87-f525-75f1-a143-b33079ea9dda.jsonl:197-198` (proposal and `I approve`). After the historical interruption, P205 dispatched and completed all four calls: 4 used, 0 left, no retries. Evidence and slice scopes are retained below.
-- Other new 002 procedure exceptions: `none`. The 001 decision ledger D1–D14 and its historical outcomes remain in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md`; they are not reset by this checkpoint.
+- Decision A006: Jaron approved omitting only empty Bedrock tool descriptions, preserving nonempty descriptions and existing assertions, with a test covering both cache modes, in scope for 002. Exact quote and evidence: entry `REC011 approved T1 scope and RED intent`.
+- Decision S1–S3 (security disposition): Jaron authorized (1) provider-scope validation of the resolved region before endpoint construction for Main and Nested, (2) keeping local credential-path details out of parent-model-facing failure output while retaining a safe actionable diagnostic, and (3) the narrow Converse tool-result role correction, touching only the existing role assertion at `pkg/runner/large_integer_args_test.go:474` plus tests preserving large-integer checks. No other scope expansion. Exact quote: entry `Jaron security disposition and read-only restart`. Applied in `aa179c67621dd3fdffc23bcadcc9bd55ce9355ee`; lowercase-only region validation in `eea1f6eb27189a2af97f119e187dd4f92cc02eb2` was decided for Jaron inside (1).
+- Decision Q4: Jaron's exact `Q4 -  yes` authorizes only splitting the missing-credential-file expectation: Main keeps filename/cause checks; Nested gives actionable guidance without path or filename. Evidence: entry `Q4 authorization and restart`.
+- Procedure exception X-T3: Factory's verification-only per-task review exception applied to T3. Scope: T3 only. Reason: T3 adds no source, test or assertion changes. Conditions: local, reversible, in scope, no acceptance or assertion change, no gate bypassed, final milestone review not skipped. Evidence: entry `T3 verification and accounting passed`. Next gate: milestone review and completion gate.
+- Procedure exception X-GATE: the whole-suite gate at `aa179c67621dd3fdffc23bcadcc9bd55ce9355ee` failed only with toolchain setup errors that did not reproduce locally, so it was rerun on a clean bookkeeping HEAD under Unknown outcomes. Evidence: entry `T2 gate outcome resolution and rerun intent`.
+- No other new 002 procedure exceptions. The 001 decision ledger D1–D14 and its historical outcomes remain in `/home/jaron/dev/axe/iss-83-finish-caching/docs/plans/053_corrected_caching_001_checkpoint.md`; they are not reset by this checkpoint.
 
 ### Cap-state summary
 
 - Cap `002/planning`: lane `full`; P202 spec review approved. P203 checklist round 1 failed with F1–F4; F204 repaired them and P205 verified them resolved. P204 and P204b were two historical consecutive incomplete reviews of the original complete-checklist round 2. P205 completed the A004 four-slice batch: S1 and S3 APPROVED, S2 and S4 CHANGES REQUESTED; A004 exhausted 4/4 calls. P206's two A005 reviews both APPROVED, resolving F5 and F6; A005 consumed 2/2 calls. No retries are authorized. The planning gate passed.
 - Planning: shared failing rounds `2` (P203 and combined P205); historical incomplete events `2` (P204 and P204b); P205 added none. The independent spec review approved without findings. These counts do not reset or replace the historical 001 counts.
 - Code review `002/T1`: Standards, Spec and Design risk all completed round 1 CHANGES REQUESTED, with no incompletes, at `cafdda4a362468ba9005db71dfd961ccfb664de3` against base `c67046be996a47b103e18b7ceca85657a09e0701`. Round 2 had no incompletes: Design risk APPROVED at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`; Standards and Spec requested records corrections. Both approved with nits in round 3 at `7b50c9651bde3395bb786aff3cb10b7247351380`, with all blockers resolved and no T1 reviews pending. Round-four eligibility and progress are not applicable.
-- Task T1 is `checked`; T2 and T3 are `unchecked`. T1 partial code was committed at `4fa25a0` after RED and independent VERIFY at `c67046b`; A006 resolved the scope blocker and its fix was committed at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`.
+- Code review `002/T2` (design-bearing): round 1 all three axes CHANGES REQUESTED at `9fe4129510d4078e5aabfcd6f79bb68aed7cd05f`, no incompletes. Round 2 at `a9b9543af68f22fa4834ff3ae4037f3dfb6036a8`: Standards and Design risk APPROVED WITH NITS; Spec CHANGES REQUESTED. Round 3 Spec APPROVED at `eea1f6eb27189a2af97f119e187dd4f92cc02eb2`. Final failing rounds: Standards 1, Spec 2, Design risk 1; incompletes 0. Round four not applicable.
+- `002/T3`: verification-only; per-task review skipped under X-T3; no review caps consumed.
+- Milestone review `002`: round 1 at `c5f0a390716b833dd71bef9c9102692857afcc0c` split into backend (APPROVED WITH NITS) and spec/records (CHANGES REQUESTED) slices; failing rounds 1, incompletes 0.
+- Tasks T1, T2 and T3 are `checked`; milestone 002 is `unchecked`. T1 partial code was committed at `4fa25a0` after RED and independent VERIFY at `c67046b`; A006 resolved the scope blocker and its fix was committed at `67fef1d41d9ac87ebddafe10f4db5943ad9c8ce2`.
 - Historical 001 snapshot: shared planning failures `2`, active consecutive incomplete `0`, Q2 replacement consumed; milestone review failures `1`, active incomplete `0`, R005 passed, no open review findings, no round four; T1–T4 checked and 001 complete. Preserve the 001 checkpoint's full evidence, including V006–V008 failures and B008; none is erased or reclassified as a 002 pass.
 
 ### Bootstrap evidence B002-001
@@ -1852,8 +1860,76 @@ At 698e3554306d5717a7cf109b640f6ebf1acc4e90 (code identical to eea1f6eb27189a2af
 
 - Next action: Run the milestone 002 review over 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..HEAD.
 
+### milestone review gates and dispatch intent
+
+- Gate: milestone review gates and dispatch intent
+- Commands/results:
+HEAD c5f0a390716b833dd71bef9c9102692857afcc0c clean. factory-gate run --gate test -> gate-test-c5f0a390716b-20261125T180520Z; see poll result in the following entry or the log /tmp/factory-gate-1001/gate-test-c5f0a390716b-20261125T180520Z.log. docs-lint --since 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676: docs-lint 1, PASS 57 Markdown files, 0 findings, exit 0. Milestone range 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..c5f0a390716b833dd71bef9c9102692857afcc0c: 35 commits, 20 files (> split threshold). Split per MILESTONE-REVIEW.md: backend = internal/provider/{awscreds.go,bedrock.go,bedrock_setup_test.go,bedrock_test.go,bedrock_wire_test.go}, internal/tool/tool.go, pkg/runner/{bedrock_parity_test.go,large_integer_args_test.go}, docs/src/{providers.md,cli/json-output.md,cli/run-flags.md} (docs/src not on the records list, so assigned to backend); spec/records = CHANGELOG.md, README.md, TAGS.md, docs/plans/053_corrected_caching_{001_checkpoint,002_checkpoint,002_implement,002_spec,003_checkpoint,parked}.md; UI empty. IN FLIGHT: milestone review round 1, two parallel read-only slices. Milestone review caps: round 1, 0 failing, 0 incomplete.
+- HEAD commit SHA: `c5f0a390716b833dd71bef9c9102692857afcc0c`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Record milestone 002 review slice verdicts.
+
+### milestone review round 1 outcomes and records fix intent
+
+- Gate: milestone review round 1 outcomes and records fix intent
+- Commands/results:
+Gate gate-test-c5f0a390716b-20261125T180520Z poll exit 0 'exited 0', log sha c5f0a390716b833dd71bef9c9102692857afcc0c, go test -race ./..., exit 0, 17 ok. Milestone review round 1, both slices complete with Verdict lines. BACKEND: APPROVED WITH NITS. Nits: N1 tool.go:224-238 vs run.go:393-400 duplicated Bedrock region resolution between Main and Nested (reviewer: acceptable as is); N2 bedrock_parity_test.go:161-163 parityIntercept swaps process-wide http.DefaultTransport, needs a must-stay-sequential comment; N3 awscreds.go:42-52 basename heuristic stricter than required (no change requested). SPEC/RECORDS: CHANGES REQUESTED. Blockers: SR-1 002 checkpoint:40 Latest recorded state says T2/T3 unchecked and Spec round 3/T3 pending; SR-2 checkpoint:57 cap-state summary and :1857 Limitations say T2/T3 unchecked, no T2 code-review caps, stale gate evidence; SR-3 checkpoint:50 decision ledger says no new procedure exceptions and omits A006, security authorizations (1)-(3), Q4 and the T3 verification-only exception; SR-4 parked.md:3,7,57,72,98-102 present T2 as underway and T2/T3 unchecked as current. Nits: SR-5 003 checkpoint:26,94-95 stale blocker; SR-6 001 checkpoint:23,31,3299 say 002 parked; SR-7 002 spec:11,15 'currently' describes pre-fix code. Combined verdict CHANGES REQUESTED: milestone review failing rounds 1, incompletes 0. Decisions: fix SR-1..SR-7 and N2 (comment only); N1 not adopted (refactor touches Main path run.go beyond 002 scope; reviewer accepted as is); N3 no change requested. IN FLIGHT: records reconciliation.
+- HEAD commit SHA: `c5f0a390716b833dd71bef9c9102692857afcc0c`
+- Relevant work: `committed` — stash ref `a34a1a6546ba85c32b4cd14e8698fb004d169c09` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Reconcile 002 records, then milestone review round 2 for the records slice.
+
+### milestone review round 1 fixes
+
+- Gate: milestone review round 1 fixes
+- Commands/results:
+Fixes for milestone review round 1: SR-1 rewrote 002 checkpoint Latest recorded state to current; SR-2 cap-state summary adds 002/T2 caps (Standards 1, Spec 2, Design 1, 0 incompletes), 002/T3 none, milestone review round 1 (failing 1, incompletes 0), tasks T1-T3 checked; Limitations/Blockers updated to c5f0a39 gate and full lint; SR-3 decision ledger adds A006, S1-S3, Q4, X-T3, X-GATE; SR-4 parked.md gains 'Current status (2026-11-25)' section, renames old current headings as historical, updates stale task states and gate claims, fixes anchor link; SR-5 003 checkpoint next action/blockers now wait only on 002 milestone review and completion gate; SR-6 001 checkpoint 002 references marked historical; SR-7 002 spec:11,15 'At spec time (base 1e9e4c3)' past tense; N2 comment in parityIntercept that parity tests must stay sequential. Checks: gofmt clean; go test -count=1 ./pkg/runner ok; golangci-lint ./pkg/runner/... 0 issues; spec-lint 002 spec and implement PASS 0 findings; docs-lint --since 1e9e4c3 PASS 0 findings. N2 is a backend nit batched with lint and affected tests per verdict rule; only the records slice is re-reviewed.
+- HEAD commit SHA: `c5f0a390716b833dd71bef9c9102692857afcc0c`
+- Relevant work: `uncommitted` — stash ref `d28b96d066481239b4254966f2cb164069b1f4b6` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M docs/plans/053_corrected_caching_001_checkpoint.md
+ M docs/plans/053_corrected_caching_002_checkpoint.md
+ M docs/plans/053_corrected_caching_002_spec.md
+ M docs/plans/053_corrected_caching_003_checkpoint.md
+ M docs/plans/053_corrected_caching_parked.md
+ M pkg/runner/bedrock_parity_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit records fixes, gate at new HEAD, then records-slice round 2.
+
 ## Limitations & blockers
 
-- Limitations: T1 is checked; T2, T3 and 002 remain unchecked. The whole-suite factory-gate test passed at `7b50c9651bde3395bb786aff3cb10b7247351380` (poll exit 0; `/tmp/factory-gate-1001/gate-test-7b50c9651bde-20261123T173358Z.log`); final lint and affected tests are pending. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
-- Blockers: No T1 reviews remain pending; all axes passed. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
-- Next action: Run the milestone 002 review over 1e9e4c3064e3310da64ea62e3efe25aa7ce7b676..HEAD.
+- Limitations: T1–T3 are checked; 002 remains unchecked pending milestone review and the completion gate. The latest whole-suite factory-gate test passed at `c5f0a390716b833dd71bef9c9102692857afcc0c` (`/tmp/factory-gate-1001/gate-test-c5f0a390716b-20261125T180520Z.log`); full `golangci-lint run` reported 0 issues at `698e3554306d5717a7cf109b640f6ebf1acc4e90`. Completion-gate commands remain to run. Historical preflight outcomes are not rerun here: B008 failed, B009 passed, E009 preflight passed, and Y012 sync passed. No external probes were authorized or run.
+- Blockers: No task reviews remain pending; T1 and T2 passed all axes. The planning gate passed, F5 and F6 are resolved, A004 is exhausted (4/4), A005 consumed 2/2, and no retries are authorized. 003 is blocked only on 002 completion. Q3 permits only its recorded narrow assertion replacements, not any other assertion or acceptance change.
+- Next action: Commit records fixes, gate at new HEAD, then records-slice round 2.

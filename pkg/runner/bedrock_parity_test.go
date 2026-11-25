@@ -156,6 +156,8 @@ func parityHTTP(status int, body string) parityReplyFunc {
 // unexpected destination, redirect or retry cannot reach AWS (or any network).
 func parityIntercept(t *testing.T, region string, creds parityCredentials, replies map[string][]parityReplyFunc) *[]parityExchange {
 	t.Helper()
+	// Swapping the process-wide http.DefaultTransport is safe only while parity tests stay sequential;
+	// never add t.Parallel() to a test that calls parityIntercept.
 	var exchanges []parityExchange
 	used := map[string]int{}
 	previous := http.DefaultTransport
