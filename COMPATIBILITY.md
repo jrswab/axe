@@ -34,6 +34,12 @@ This file is the compatibility promise for axe v1 releases. It follows Go 1 styl
 - The zero value of every new key or field keeps today's behavior.
 - No GODEBUG-style switch is used in v1.
 
+## Diagnostic output
+
+- Human-readable stderr diagnostics, including `--verbose` output, are not part of the compatibility contract. Their wording, lines, and order may change in any v1 release.
+- Output enabled by `--verbose` (`Options.Verbose`) is already opt-in, so new verbose diagnostics need no new TOML key or `Options` field.
+- Scripts should read `--json` fields, not stderr text.
+
 ## Enforcement
 
 - `make apidiff` compares `pkg/runner` against the `v1.11.0` tag. It runs in `make check` and in the `apidiff` CI job in `.github/workflows/go.yml`.

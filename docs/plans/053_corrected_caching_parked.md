@@ -2,9 +2,11 @@
 
 ## Current status (2026-11-25)
 
-Milestone 002 is complete: T1–T3 checked, milestone review passed and the completion gate passed at `608e0730f988f750e1b3e7e9f5fe8474c4c0f323` ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003 is complete: T1 and T2 checked, milestone review passed in round 2, and the completion gate passed at `b2397a33ca364d4260b6f024b96e21f9506067f2` ([003 checkpoint](053_corrected_caching_003_checkpoint.md)). All three milestones are checked. Nothing is parked; one non-blocking decision for Jaron follows. No push, PR update or external communication is authorized; publication stays on hold. Every section below is history, kept for the audit trail.
+Milestone 002 is complete: T1–T3 checked, milestone review passed and the completion gate passed at `608e0730f988f750e1b3e7e9f5fe8474c4c0f323` ([002 checkpoint](053_corrected_caching_002_checkpoint.md)). Milestone 003 is complete: T1 and T2 checked, milestone review passed in round 2, and the completion gate passed at `b2397a33ca364d4260b6f024b96e21f9506067f2` ([003 checkpoint](053_corrected_caching_003_checkpoint.md)). All three milestones are checked. Nothing is parked. Jaron authorized the push and PR update, and on 2026-11-25 approved the fixes for the CodeRabbit review of PR #108, which resolves the decision below. Every section below is history, kept for the audit trail.
 
-### Decision for Jaron — verbose stderr and the opt-in rule (003, not blocking)
+### Decision for Jaron — verbose stderr and the opt-in rule (003, resolved)
+
+- **Resolution (2026-11-25):** Jaron approved the recommendation after CodeRabbit raised the same point on PR #108. `COMPATIBILITY.md` now has a "Diagnostic output" section: stderr diagnostics, including `--verbose` output, are outside the compatibility contract, and `--verbose` is already the opt-in.
 
 - **Kind:** decision.
 - **Evidence:** `COMPATIBILITY.md:31-33` says new behavior is opt-in through a new TOML key or `Options` field. Milestone 003 makes `pkg/runner/run.go` (`writeReportedCacheCounts`, called from the two budget-free verbose summaries) print a `Cache:` line for callers that already set `Options.Verbose` with no budget, without a new key or field. The 003 spec records the reading that verbose stderr is not a listed contract surface and that `--verbose` / `Options.Verbose` is already the opt-in; milestone 003's acceptance requires this output. Raised as a nit by the T2 Standards review (N2) and the milestone review (F4); no code change was requested.
