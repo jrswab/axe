@@ -62,7 +62,7 @@ func TestNewBedrock_InvalidRegionSkipsCredentialLoading(t *testing.T) {
 }
 
 func TestBedrockSetupDiagnostic(t *testing.T) {
-	const guidance = "AWS credentials not found: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or configure a credentials file and AWS_PROFILE"
+	const guidance = "AWS credentials not found: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or configure a credentials file and AWS_PROFILE; if AWS_SHARED_CREDENTIALS_FILE is set, correct or unset it"
 	const path = "/home/user/.aws/team-credentials"
 	tests := []struct {
 		name string

@@ -31,7 +31,7 @@ func BedrockSetupDiagnostic(err error) string {
 	if errors.Is(err, errInvalidBedrockRegion) {
 		return errInvalidBedrockRegion.Error()
 	}
-	const guidance = "AWS credentials not found: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or configure a credentials file and AWS_PROFILE"
+	const guidance = "AWS credentials not found: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or configure a credentials file and AWS_PROFILE; if AWS_SHARED_CREDENTIALS_FILE is set, correct or unset it"
 	var profileErr *awsProfileError
 	if errors.As(err, &profileErr) && safeAWSProfileName(profileErr.profile, profileErr.path) {
 		return guidance + ": " + profileErr.Error()
