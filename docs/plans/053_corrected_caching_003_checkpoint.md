@@ -19,13 +19,13 @@
 
 - Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
 - Current phase: `execute`
-- Current task: T2
+- Current task: T2 reviews
 - Task states — checklist checkboxes render from this list:
 - T1: `checked`
 - T2: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: T2
-- Last completed phase/task/gate and timestamp: T1 reviews passed; nits batched, 2026-11-25T18:39:04.389040+00:00
+- Next safe action: Commit T2, dispatch Standards and Spec reviews.
+- Last completed phase/task/gate and timestamp: T2 docs written and review intent, 2026-11-25T18:39:28.985208+00:00
 
 ## Gate evidence
 
@@ -259,8 +259,32 @@ T1 round 1 at 3552e6e85b8ec99c9881bcb6eea71785166938ff..d2a5066b8e60f5ddbdb4033a
 
 - Next action: T2
 
+### T2 docs written and review intent
+
+- Gate: T2 docs written and review intent
+- Commands/results:
+T2 docs: README.md --verbose row and new cache-count paragraph plus optional probe after the Bedrock caching paragraph; docs/src/cli/run-flags.md --verbose row; docs/src/providers.md same paragraph and probe after the OpenAI/compatible-adapter paragraph; CHANGELOG.md Unreleased Added entry. README budget paragraph ('With --verbose, each turn logs cumulative usage') left unchanged: it does not contradict. docs-lint --since 93627c1de9a4bbd55715e0651aa3f3aa5121f339 PASS 59 files 0 findings. mdbook build docs/ not run: mdbook not installed locally. IN FLIGHT after commit: T2 Standards and Spec reviews, test evidence not applicable (Markdown-only range).
+- HEAD commit SHA: `0beea82ced4314e93f788d5228a148c5f17e0a11`
+- Relevant work: `uncommitted` — stash ref `6bc1531059a3e98f2211fe83506b50180fcb7a19` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M CHANGELOG.md
+ M README.md
+ M docs/src/cli/run-flags.md
+ M docs/src/providers.md
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Commit T2, dispatch Standards and Spec reviews.
+
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
 - Blockers: milestone 002 remains unchecked; its security and scope decisions were made and T1–T3 are checked, so 003 waits only on 002's final milestone review and completion gate.
-- Next action: T2
+- Next action: Commit T2, dispatch Standards and Spec reviews.

@@ -8,7 +8,7 @@
 | `--timeout <seconds>` | 120 | Request timeout |
 | `--max-tokens <int>` | 0 (unlimited) | Cap cumulative token usage for the run (exit code 4 if exceeded) |
 | `--dry-run` | false | Show resolved context without calling the LLM |
-| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, retries) to stderr |
+| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, nonzero provider-reported cache counts, retries) to stderr |
 | `--json` | false | Wrap output in a JSON envelope with metadata |
 | `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |
 | `--agents-dir <path>` | (auto-discover) | Override agent search directory |

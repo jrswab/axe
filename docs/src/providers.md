@@ -28,6 +28,10 @@ For Bedrock Converse, enabled hints add separate default checkpoints after the s
 
 Anthropic reports cache-read and cache-write tokens when provided in usage. OpenAI Chat caching is provider-managed and automatic; `cache_enabled = false` does not disable it. Axe sends no explicit OpenAI cache request controls and maps reported cache-read tokens only, not cache-write tokens. Compatible adapters share request code but are not guaranteed to support first-party caching behavior.
 
+Cache counts are provider reports for this run only. With `--verbose` and no token budget, a `Cache:` line shows only the nonzero counts, for example `Cache:    120 read, 40 written` or `Cache:    120 read`; with a budget it shows both counts, as before; `--json` reports the same cumulative counts as `cache_read_tokens` and `cache_write_tokens`, omitted when zero. A sub-agent's counts stay inside its own run. Anthropic and Bedrock report reads and writes; OpenAI Chat reports reads only. Counts are not proof of hits or savings.
+
+**Optional probe.** To observe caching yourself, run the same agent twice with an identical system prompt and tools and a different task, using `--verbose` or `--json`, and compare the counts. Each run is a paid provider call made with your own credentials. Results are point-in-time and depend on model, region and provider limits; a zero count does not prove caching is disabled or unsupported. Do not include API keys or other secrets when you record results.
+
 ## Configuring Credentials
 
 For providers using ordinary API keys, keys are resolved in this order (Bedrock Runs use AWS credentials instead):

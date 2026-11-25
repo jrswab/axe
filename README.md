@@ -278,7 +278,7 @@ Config is read-write because `axe config init` and `axe agents init` write into 
 | `--timeout <seconds>` | 120 | Request timeout |
 | `--max-tokens <int>` | 0 (unlimited) | Cap cumulative token usage for the run (exit code 4 if exceeded) |
 | `--dry-run` | false | Show resolved context without calling the LLM |
-| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, retries) to stderr |
+| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, nonzero provider-reported cache counts, retries) to stderr |
 | `--json` | false | Wrap output in a JSON envelope with metadata |
 | `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |
 | `--agents-dir <path>` | (auto-discover) | Override agent search directory |
@@ -376,6 +376,10 @@ OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard
 For Anthropic Messages, an enabled hint marks the system prompt and preceding ordered tools as the static prefix. If the system is empty, it marks the last tool instead; if both are empty, Axe adds no breakpoint. Conversation messages, including tasks and sub-agent context, remain outside that breakpoint. Eligibility depends on provider and model constraints and cache availability; a hint does not guarantee a hit or savings.
 
 For Bedrock Converse, enabled hints add separate default checkpoints after the system text and after the ordered tool specifications when each is present; empty static inputs add no checkpoint. Tool schema required names have stable ordering, and changing conversation messages remain outside these static prefixes. AWS model, API, region and routing determine support, checkpoint limits, minimum prefix sizes and TTL; shorter prefixes may not be cached. Cache reads and writes are provider-reported counts, not proof of hits or savings. See the [AWS prompt caching guide](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html) for current eligibility.
+
+Cache counts are provider reports for this run only. With `--verbose` and no token budget, a `Cache:` line shows only the nonzero counts, for example `Cache:    120 read, 40 written` or `Cache:    120 read`; with a budget it shows both counts, as before; `--json` reports the same cumulative counts as `cache_read_tokens` and `cache_write_tokens`, omitted when zero. A sub-agent's counts stay inside its own run. Anthropic and Bedrock report reads and writes; OpenAI Chat reports reads only. Counts are not proof of hits or savings.
+
+**Optional probe.** To observe caching yourself, run the same agent twice with an identical system prompt and tools and a different task, using `--verbose` or `--json`, and compare the counts. Each run is a paid provider call made with your own credentials. Results are point-in-time and depend on model, region and provider limits; a zero count does not prove caching is disabled or unsupported. Do not include API keys or other secrets when you record results.
 
 ### Retry
 
