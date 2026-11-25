@@ -633,6 +633,7 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 				_, _ = fmt.Fprintf(stderr, "Cache:    %d read, %d written\n", resp.CacheReadTokens, resp.CacheWriteTokens)
 			} else {
 				_, _ = fmt.Fprintf(stderr, "Tokens:   %d input, %d output\n", resp.InputTokens, resp.OutputTokens)
+				writeReportedCacheCounts(stderr, resp.CacheReadTokens, resp.CacheWriteTokens)
 			}
 			_, _ = fmt.Fprintf(stderr, "Stop:     %s\n", resp.StopReason)
 		}
@@ -783,6 +784,7 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 				_, _ = fmt.Fprintf(stderr, "Cache:    %d read, %d written\n", totalCacheReadTokens, totalCacheWriteTokens)
 			} else {
 				_, _ = fmt.Fprintf(stderr, "Tokens:   %d input, %d output (cumulative)\n", totalInputTokens, totalOutputTokens)
+				writeReportedCacheCounts(stderr, totalCacheReadTokens, totalCacheWriteTokens)
 			}
 			_, _ = fmt.Fprintf(stderr, "Stop:     %s\n", resp.StopReason)
 		}
@@ -877,6 +879,22 @@ func callToolObserver(ctx context.Context, observer ToolObserver, ev ToolEvent, 
 		}
 	}()
 	observer(ctx, ev)
+}
+
+// writeReportedCacheCounts prints the Run's nonzero provider-reported cache counts
+// on the budget-free verbose summary. Zero counts are omitted rather than shown,
+// because a provider may not report a count at all (OpenAI Chat reports reads only).
+func writeReportedCacheCounts(w io.Writer, read, write int) {
+	var parts []string
+	if read > 0 {
+		parts = append(parts, fmt.Sprintf("%d read", read))
+	}
+	if write > 0 {
+		parts = append(parts, fmt.Sprintf("%d written", write))
+	}
+	if len(parts) > 0 {
+		_, _ = fmt.Fprintf(w, "Cache:    %s\n", strings.Join(parts, ", "))
+	}
 }
 
 // drainEventStream consumes all events from a stream and constructs a Response.

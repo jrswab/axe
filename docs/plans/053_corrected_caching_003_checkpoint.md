@@ -19,13 +19,13 @@
 
 - Lane: `full` — the change alters default `--verbose` stderr content, and COMPATIBILITY.md's opt-in rule makes the external-contract fast-lane condition doubtful, so full (when in doubt, full).
 - Current phase: `execute`
-- Current task: none
+- Current task: T1 reviews
 - Task states — checklist checkboxes render from this list:
 - T1: `unchecked`
 - T2: `unchecked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Implement T1
-- Last completed phase/task/gate and timestamp: 003 checklist approved, 2026-11-25T18:32:56.183886+00:00
+- Next safe action: Commit T1, run whole-suite gate, dispatch Standards and Spec reviews.
+- Last completed phase/task/gate and timestamp: T1 RED, GREEN and per-task gate, 2026-11-25T18:35:07.644090+00:00
 
 ## Gate evidence
 
@@ -194,8 +194,30 @@ Checklist planning review round 1: APPROVED WITH NITS. Nits: F1 invalid sed prob
 
 - Next action: Implement T1
 
+### T1 RED, GREEN and per-task gate
+
+- Gate: T1 RED, GREEN and per-task gate
+- Commands/results:
+Fixed point 3552e6e85b8ec99c9881bcb6eea71785166938ff. RED: new pkg/runner/verbose_cache_test.go TestRun_VerboseCacheCounts (blob f9160777fc04ba57a8cc0a29f3ce4a13f34d5833). Focused command: go test -count=1 ./pkg/runner -run '^TestRun_VerboseCacheCounts$' -> FAIL; exactly 9 rows fail, each 'want consecutive "Tokens:... Cache:... Stop:"' with stderr showing Tokens then Stop and no Cache line: anthropic_single_normal, anthropic_single_stream, anthropic_loop_normal, anthropic_loop_stream, openai_single_normal_reads_only, openai_single_stream_reads_only, openai_loop_reads_only, anthropic_write_only, bedrock_single_read_and_write. Passing pre-fix as planned: zero_normal, zero_stream, absent_normal, absent_stream_without_usage_chunk, budget_line_unchanged_with_zero, not_verbose, stream_error_after_partial_output, nested_counts_stay_opaque. go vet ok. FIX: pkg/runner/run.go writeReportedCacheCounts (nonzero-only 'Cache:    N read[, M written]') called in both budget-free verbose branches; budget branches unchanged. GREEN: same focused command ok; test blob unchanged f9160777fc04ba57a8cc0a29f3ce4a13f34d5833; unchanged go test -count=1 ./pkg/runner -run '^(TestRun_CacheUsageBoundaries|TestResultMarshalJSON_CacheTokens(OmittedWhenZero)?)$' ok. Per-task gate: go test -race ./pkg/runner ok; gofmt clean; golangci-lint ./pkg/runner/... 0 issues.
+- HEAD commit SHA: `3552e6e85b8ec99c9881bcb6eea71785166938ff`
+- Relevant work: `uncommitted` — stash ref `44929bca43b2cae9db34fe544dea91a4845d9228` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+ M pkg/runner/run.go
+?? pkg/runner/verbose_cache_test.go
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+f9160777fc04ba57a8cc0a29f3ce4a13f34d5833  "pkg/runner/verbose_cache_test.go"
+```
+
+- Next action: Commit T1, run whole-suite gate, dispatch Standards and Spec reviews.
+
 ## Limitations & blockers
 
 - Limitations: no 003 planning, implementation, review, or verification launched.
 - Blockers: milestone 002 remains unchecked; its security and scope decisions were made and T1–T3 are checked, so 003 waits only on 002's final milestone review and completion gate.
-- Next action: Implement T1
+- Next action: Commit T1, run whole-suite gate, dispatch Standards and Spec reviews.
