@@ -24,8 +24,8 @@
 - T1: `checked`
 - T2: `checked`
 - Milestone checkbox: `unchecked`
-- Next safe action: Commit fixes, gate, milestone 003 review round 2.
-- Last completed phase/task/gate and timestamp: milestone 003 review round 1 outcome and fixes, 2026-11-25T18:45:30.202379+00:00
+- Next safe action: Rerun factory-gate test at db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd.
+- Last completed phase/task/gate and timestamp: gate environment failure and rerun intent, 2026-11-25T18:46:29.463742+00:00
 
 ## Gate evidence
 
@@ -355,8 +355,29 @@ Milestone 003 review round 1 at 93627c1de9a4bbd55715e0651aa3f3aa5121f339..8366ee
 
 - Next action: Commit fixes, gate, milestone 003 review round 2.
 
+### gate environment failure and rerun intent
+
+- Gate: gate environment failure and rerun intent
+- Commands/results:
+gate-test-db012e94b01c-20261125T184531Z at db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd: poll exit 3, state 'exited 1'. 11 packages ok (cmd, agent, artifact, budget, config, envinterp, hostcheck, mcpclient, memory, ...); 7 '[build failed]' (resolve, testutil, tool, toolname, xdg, pkg/runner, ...) all with 'could not import <std pkg> (open /home/jaron/.cache/go-build/..-d: no such file or directory)': build-cache entries removed during the run, most likely a concurrent cache prune; no test assertion failed. Classified environmental, not a code result. Unknown-outcome rule for a local free gate: rerun on the same HEAD. IN FLIGHT: rerun. Note: this bookkeeping append is uncommitted, so the rerun launches after committing it.
+- HEAD commit SHA: `db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd`
+- Relevant work: `committed` — stash ref `none` (tracked files except intent-to-add; never applied)
+- `git status --porcelain` (before checkpoint/checkbox writes):
+
+```text
+
+```
+
+- Untracked file Git objects (including intent-to-add; stored with hash-object -w, never applied):
+
+```text
+
+```
+
+- Next action: Rerun factory-gate test at db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd.
+
 ## Limitations & blockers
 
 - Limitations: `mdbook build docs/` cannot run locally (`mdbook` not installed); Docker smoke has no declared host gate; no credentialed live probe is authorized or run.
 - Blockers: none. 002 is complete. T1 and T2 are checked; the milestone review and completion gate remain. Open decision for Jaron, not blocking: whether to record the verbose-stderr reading of COMPATIBILITY.md's opt-in rule (see the parking file).
-- Next action: Commit fixes, gate, milestone 003 review round 2.
+- Next action: Rerun factory-gate test at db012e94b01c8a5242a3ec1c2d1558b5aa5a46cd.
