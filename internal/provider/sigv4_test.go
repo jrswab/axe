@@ -2,6 +2,7 @@ package provider
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -78,5 +79,26 @@ func TestDeriveSigningKey(t *testing.T) {
 	key := deriveSigningKey("wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY", "20120215", "us-east-1", "iam")
 	if len(key) != 32 {
 		t.Errorf("expected 32-byte key, got %d", len(key))
+	}
+}
+
+func TestCanonicalURI(t *testing.T) {
+	tests := []struct{ name, url, want string }{
+		{"plain model ID unchanged", "https://bedrock-runtime.us-east-1.amazonaws.com/model/parity-main/converse", "/model/parity-main/converse"},
+		{"unreserved characters unchanged", "https://h.test/model/a.b-c_d~e/converse", "/model/a.b-c_d~e/converse"},
+		{"colon encoded", "https://h.test/model/anthropic.claude-3-5-sonnet-20241022-v2:0/converse", "/model/anthropic.claude-3-5-sonnet-20241022-v2%3A0/converse"},
+		{"sent escape encoded again", "https://h.test/model/a%3Ab/converse", "/model/a%253Ab/converse"},
+		{"empty path", "https://h.test", "/"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u, err := url.Parse(tt.url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := canonicalURI(u); got != tt.want {
+				t.Errorf("canonicalURI(%q) = %q, want %q", tt.url, got, tt.want)
+			}
+		})
 	}
 }

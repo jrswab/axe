@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
 
 ### Fixed
+- Sign Bedrock requests correctly for model IDs that contain `:` (such as `anthropic.claude-3-5-sonnet-20241022-v2:0`) by URI-encoding the SigV4 canonical path.
 - Validate resolved Bedrock regions before endpoint construction, keep Nested credential-file details out of parent-facing setup errors, and send Converse tool results with the user role.
 - Use the same AWS region and credential resolution for Nested Bedrock Runs as Main Runs, without an ordinary API key or base URL override.
 - Omit empty tool descriptions from Bedrock Converse requests while preserving nonempty descriptions.

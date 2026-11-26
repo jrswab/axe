@@ -37,6 +37,7 @@ func TestBedrock_AWSRunParity(t *testing.T) {
 	t.Run("independent_choices_and_outcome", bedrockParityDelegation)
 	t.Run("usage_and_stream_fallback", bedrockParityUsage)
 	t.Run("failure_boundaries", bedrockParityFailures)
+	t.Run("reserved_model_id", bedrockParityReservedModelID)
 }
 
 const (
@@ -100,12 +101,18 @@ func parityWrite(t *testing.T, path, content string) {
 
 func (f parityFixture) agent(t *testing.T, who, system, definition string) {
 	t.Helper()
+	f.agentModel(t, who, "parity-"+who, system, definition)
+}
+
+// agentModel writes agent parity-<who> with an explicit Bedrock model ID.
+func (f parityFixture) agentModel(t *testing.T, who, modelID, system, definition string) {
+	t.Helper()
 	parityWrite(t, filepath.Join(f.configDir, "agents", "parity-"+who+".toml"), fmt.Sprintf(`name = "parity-%s"
-model = "bedrock/parity-%s"
+model = "bedrock/%s"
 workdir = %q
 system_prompt = %q
 max_turns = 2
-%s`, who, who, f.work, system, definition))
+%s`, who, modelID, f.work, system, definition))
 }
 
 func (f parityFixture) config(t *testing.T, region string, decoys bool) {
@@ -197,7 +204,7 @@ func parityEndpoint(region, who string) string {
 	return "https://bedrock-runtime." + region + ".amazonaws.com/model/parity-" + who + "/converse"
 }
 
-// Fixed canonical fields for this JSON POST, with no query or escaped path.
+// Fixed canonical fields for this JSON POST, with no query.
 // Verify against the selected fixture secret, never Axe's signer or resolver.
 // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html
 func parityVerifySignature(t *testing.T, r *http.Request, body []byte, region string, creds parityCredentials) {
@@ -218,7 +225,7 @@ func parityVerifySignature(t *testing.T, r *http.Request, body []byte, region st
 		canonical += "x-amz-security-token:" + creds.token + "\n"
 		signed += ";x-amz-security-token"
 	}
-	request := fmt.Sprintf("POST\n%s\n\n%s\n%s\n%s", r.URL.EscapedPath(), canonical, signed, payload)
+	request := fmt.Sprintf("POST\n%s\n\n%s\n%s\n%s", parityCanonicalURI(r.URL.EscapedPath()), canonical, signed, payload)
 	day := date.Format("20060102")
 	scope := day + "/" + region + "/bedrock/aws4_request"
 	toSign := fmt.Sprintf("AWS4-HMAC-SHA256\n%s\n%s\n%x", stamp, scope, sha256.Sum256([]byte(request)))
@@ -231,6 +238,56 @@ func parityVerifySignature(t *testing.T, r *http.Request, body []byte, region st
 	want := fmt.Sprintf("AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%x", creds.access, scope, signed, key)
 	if r.Header.Get("Authorization") != want {
 		t.Errorf("Converse signature does not match fixture access ID %s, region %s, and selected secret", creds.access, region)
+	}
+}
+
+// parityCanonicalURI applies the SigV4 rule for services other than S3: URI-encode each
+// segment of the path as sent, keeping only A-Z, a-z, 0-9, '-', '.', '_' and '~'.
+// Written independently of Axe's signer.
+func parityCanonicalURI(sent string) string {
+	const hex = "0123456789ABCDEF"
+	var b strings.Builder
+	for i := 0; i < len(sent); i++ {
+		c := sent[i]
+		switch {
+		case c == '/', 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9', c == '-', c == '.', c == '_', c == '~':
+			b.WriteByte(c)
+		default:
+			b.WriteByte('%')
+			b.WriteByte(hex[c>>4])
+			b.WriteByte(hex[c&15])
+		}
+	}
+	return b.String()
+}
+
+// bedrockParityReservedModelID signs a documented Bedrock model ID that contains ':' for Main and Nested Runs.
+func bedrockParityReservedModelID(t *testing.T) {
+	// parityEndpoint prefixes "parity-"; the suffix is a documented Bedrock model ID.
+	const suffix = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+	if got, want := parityCanonicalURI("/model/"+suffix+"/converse"), "/model/anthropic.claude-3-5-sonnet-20241022-v2%3A0/converse"; got != want {
+		t.Fatalf("oracle canonical URI = %q, want %q", got, want)
+	}
+	for _, who := range []string{"main", "nested"} {
+		t.Run(who, func(t *testing.T) {
+			f := newParityFixture(t)
+			f.agentModel(t, who, "parity-"+suffix, "Static setup.", "")
+			exchanges := parityIntercept(t, parityRegion, parityEnvCredentials, map[string][]parityReplyFunc{suffix: {parityHTTP(200, parityReply+`}`)}})
+			ctx := context.Background()
+			if who == "nested" {
+				got := parityNested(t, ctx, "Nested task.", "")
+				parityCount(t, exchanges, 1, got)
+				if got != (provider.ToolResult{CallID: "direct-delegation", Content: "Complete."}) {
+					t.Errorf("Nested outcome = %+v, want final text only", got)
+				}
+				return
+			}
+			got, err := Run(ctx, parityMainOptions(io.Discard))
+			parityCount(t, exchanges, 1, err)
+			if err != nil || got == nil || got.Content != "Complete." {
+				t.Errorf("Main Run = %+v, %v, want final text", got, err)
+			}
+		})
 	}
 }
 
