@@ -472,6 +472,8 @@ func run(ctx context.Context, opts Options, newProvider func(string, string, str
 		}
 		req.Tools = append(req.Tools, resolvedTools...)
 	}
+	// Offering a tool is not enough: the model may name one it was not offered.
+	registry.Keep(effectiveTools)
 
 	// Step 17b: Sub-agent depth and call_agent injection
 	depth := 0
