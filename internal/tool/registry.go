@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/jrswab/axe/internal/artifact"
 	"github.com/jrswab/axe/internal/provider"
@@ -45,6 +46,16 @@ func NewRegistry() *Registry {
 // If a tool with the same name already exists, it is silently replaced.
 func (r *Registry) Register(name string, entry ToolEntry) {
 	r.entries[name] = entry
+}
+
+// Keep removes every tool not listed in names, so that Dispatch can only run
+// tools the agent declares.
+func (r *Registry) Keep(names []string) {
+	for name := range r.entries {
+		if !slices.Contains(names, name) {
+			delete(r.entries, name)
+		}
+	}
 }
 
 // Has returns true if a tool with the given name exists in the registry.

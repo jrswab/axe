@@ -293,6 +293,7 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		}
 		req.Tools = append(req.Tools, resolvedTools...)
 	}
+	registry.Keep(cfg.Tools)
 
 	var mcpRouter *mcpclient.Router
 	if len(cfg.MCPServers) > 0 {
