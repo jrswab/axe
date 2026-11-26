@@ -15,8 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
 
 ### Fixed
+- Sign Bedrock requests correctly for model IDs that contain `:` (such as `anthropic.claude-3-5-sonnet-20241022-v2:0`) by URI-encoding the SigV4 canonical path.
+- Validate resolved Bedrock regions before endpoint construction, keep Nested credential-file details out of parent-facing setup errors, and send Converse tool results with the user role.
+- Use the same AWS region and credential resolution for Nested Bedrock Runs as Main Runs, without an ordinary API key or base URL override.
+- Omit empty tool descriptions from Bedrock Converse requests while preserving nonempty descriptions.
+- Serialize Bedrock Converse static checkpoints as separate union entries, wrap tool schemas, and keep required names stable; cache eligibility remains subject to the [AWS prompt caching guide](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html).
+- Resolve each Nested Run's cache choice independently and mark the complete Anthropic static prefix, including tools-only requests.
+- Keep required tool-schema names in stable order for Anthropic Messages and OpenAI Chat.
 - Preserve all tool-call arguments, text, finish reasons, and usage when OpenAI-compatible streaming chunks combine them (#95).
 - Ignore malformed optional gateway cost metadata without breaking OpenAI-compatible streams or JSON results (#95).
+
+### Changed
+- Document provider-reported cache usage and its per-Run JSON scope.
+- `--verbose` diagnostics on stderr now show nonzero provider-reported cache counts without a token budget, matching the counts already shown with a budget; with a budget the existing `Cache:` line is unchanged. Output without `--verbose`, `--json` fields and budget accounting are unchanged.
 
 ## [1.12.0] - 2026-11-16
 

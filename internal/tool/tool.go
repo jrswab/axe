@@ -215,23 +215,35 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		}
 	}
 
-	// Step 9: Resolve API key and base URL
+	// Step 9: Resolve provider configuration
 	globalCfg := opts.GlobalConfig
 	if globalCfg == nil {
 		globalCfg = &config.GlobalConfig{}
 	}
 
-	apiKey := globalCfg.ResolveAPIKey(provName)
-	baseURL := globalCfg.ResolveBaseURL(provName)
-
-	if provider.Supported(provName) && provName != "ollama" && apiKey == "" {
-		envVar := config.APIKeyEnvVar(provName)
-		return errorResult(call.ID, agentName, fmt.Sprintf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar), opts)
+	var apiKey, baseURL string
+	// @anchor:provider:configuration Match Main's Bedrock region and AWS credential setup for Nested Runs.
+	if provName == "bedrock" {
+		region := globalCfg.ResolveRegion(provName)
+		if region == "" {
+			return errorResult(call.ID, agentName, fmt.Sprintf("region for provider %q is not configured (set AWS_REGION or add to config.toml)", provName), opts)
+		}
+		apiKey = region // Bedrock's provider constructor takes the region in the key position.
+	} else {
+		apiKey = globalCfg.ResolveAPIKey(provName)
+		baseURL = globalCfg.ResolveBaseURL(provName)
+		if provider.Supported(provName) && provName != "ollama" && apiKey == "" {
+			envVar := config.APIKeyEnvVar(provName)
+			return errorResult(call.ID, agentName, fmt.Sprintf("API key for provider %q is not configured (set %s or add to config.toml)", provName, envVar), opts)
+		}
 	}
 
 	// Step 10: Create provider
 	prov, err := provider.New(provName, apiKey, baseURL)
 	if err != nil {
+		if provName == "bedrock" {
+			return errorResult(call.ID, agentName, fmt.Sprintf("failed to create provider for agent %q: %s", agentName, provider.BedrockSetupDiagnostic(err)), opts)
+		}
 		return errorResult(call.ID, agentName, fmt.Sprintf("failed to create provider for agent %q: %s", agentName, err), opts)
 	}
 
@@ -244,6 +256,12 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 	}
 
 	// Step 12: Build request
+	// @anchor:provider:policy Resolve each Nested Run's own cache choice, defaulting to enabled.
+	cacheEnabled := true
+	if cfg.Params.CacheEnabled != nil {
+		cacheEnabled = *cfg.Params.CacheEnabled
+	}
+
 	req := &provider.Request{
 		Model:           modelName,
 		System:          systemPrompt,
@@ -252,6 +270,7 @@ func ExecuteCallAgent(ctx context.Context, call provider.ToolCall, opts ExecuteO
 		TemperatureSet:  cfg.Params.TemperatureSet,
 		MaxTokens:       cfg.Params.MaxTokens,
 		ReasoningEffort: cfg.Params.ReasoningEffort,
+		CacheConfig:     cacheEnabled,
 	}
 
 	// Inject tools if sub-agent has sub_agents and depth allows

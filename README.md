@@ -278,7 +278,7 @@ Config is read-write because `axe config init` and `axe agents init` write into 
 | `--timeout <seconds>` | 120 | Request timeout |
 | `--max-tokens <int>` | 0 (unlimited) | Cap cumulative token usage for the run (exit code 4 if exceeded) |
 | `--dry-run` | false | Show resolved context without calling the LLM |
-| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, retries) to stderr |
+| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, provider-reported cache counts, retries) to stderr; without a budget only nonzero cache counts are shown |
 | `--json` | false | Wrap output in a JSON envelope with metadata |
 | `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |
 | `--agents-dir <path>` | (auto-discover) | Override agent search directory |
@@ -370,6 +370,18 @@ All fields except `name` and `model` are optional.
 `reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
 OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
+
+`params.cache_enabled` defaults to `true` when omitted; set it to `true` or `false` explicitly to choose whether Axe uses applicable cache hints. Each run uses its own agent definition, so a sub-agent does not inherit its parent's choice. OpenAI Chat caching is provider-managed and automatic; setting this to `false` does not disable it.
+
+For Anthropic Messages, an enabled hint marks the system prompt and preceding ordered tools as the static prefix. If the system is empty, it marks the last tool instead; if both are empty, Axe adds no breakpoint. Conversation messages, including tasks and sub-agent context, remain outside that breakpoint. Eligibility depends on provider and model constraints and cache availability; a hint does not guarantee a hit or savings.
+
+For Bedrock Converse, enabled hints add separate default checkpoints after the system text and after the ordered tool specifications when each is present; empty static inputs add no checkpoint. Tool schema required names have stable ordering, and changing conversation messages remain outside these static prefixes. AWS model, API, region and routing determine support, checkpoint limits, minimum prefix sizes and TTL; shorter prefixes may not be cached. Cache reads and writes are provider-reported counts, not proof of hits or savings. See the [AWS prompt caching guide](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html) for current eligibility.
+
+Cache counts are provider reports for this Agent Run only. With `--verbose` and no token budget, a `Cache:` line shows only the nonzero counts, for example `Cache:    120 read, 40 written` or `Cache:    120 read`; with a budget it always shows both counts, including zeros. `--json` reports the same cumulative counts as `cache_read_tokens` and `cache_write_tokens`, omitted when zero. A Nested Run's counts stay inside that Nested Run and do not reach the parent. Axe reports Anthropic and Bedrock cache reads and writes, and only OpenAI Chat cache reads. Counts are not proof of hits or savings.
+
+#### Optional cache probe
+
+To observe caching yourself, run the same agent twice with an identical system prompt and tools and a different task, using `--verbose` or `--json`, and compare the counts. Each run makes paid provider calls with your own credentials. Results are point-in-time and depend on model, region and provider limits; a zero count does not prove caching is disabled or unsupported. Do not include API keys or other secrets when you record results.
 
 ### Retry
 
@@ -600,11 +612,14 @@ The first directory containing a matching `<name>.toml` wins.
 | AWS Bedrock | (uses AWS credentials) | Region-based |
 
 **AWS Bedrock Configuration:**
-- Region: Set via `AWS_REGION` environment variable or `[providers.bedrock] region = "us-east-1"` in config.toml
-- Credentials: Uses environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`) or `~/.aws/credentials` file (supports `AWS_PROFILE` and `AWS_SHARED_CREDENTIALS_FILE`)
-- Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`)
 
-Base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
+Main and Nested Runs use the same AWS setup; neither uses an ordinary API key or base URL override.
+
+- Region: `AWS_REGION` → `AWS_DEFAULT_REGION` → `AXE_BEDROCK_REGION` → `[providers.bedrock] region` in `config.toml`. A region is required and must be a single lowercase DNS label (1–63 lowercase ASCII letters, digits or hyphens, without a leading or trailing hyphen).
+- Credentials: A complete `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment pair takes precedence, with optional `AWS_SESSION_TOKEN`. Otherwise, Axe reads `AWS_SHARED_CREDENTIALS_FILE` or `~/.aws/credentials`, selecting `AWS_PROFILE` or `default`; the profile must contain both keys. This is not the full AWS SDK credential chain. Nested setup failures provide guidance without revealing local credential-file paths to the parent.
+- Model IDs: Use full Bedrock model IDs (e.g., `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0`).
+
+For providers other than Bedrock, base URLs can be overridden with `AXE_<PROVIDER>_BASE_URL` environment variables or in `config.toml`.
 
 For Atlas Cloud, use model names such as `atlascloud/qwen/qwen3.8-max` in agent TOML.
 

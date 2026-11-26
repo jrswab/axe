@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -37,7 +38,7 @@ func signRequest(req *http.Request, creds *awsCredentials, region, service strin
 	// Canonical request
 	canonicalReq := strings.Join([]string{
 		req.Method,
-		req.URL.Path,
+		canonicalURI(req.URL),
 		req.URL.RawQuery,
 		canonicalHeaders(req.Header, signedHeaders),
 		signedHeadersStr,
@@ -61,6 +62,29 @@ func signRequest(req *http.Request, creds *awsCredentials, region, service strin
 		"AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%s",
 		creds.AccessKeyID, scope, signedHeadersStr, signature,
 	))
+}
+
+// canonicalURI returns the SigV4 canonical URI for services other than S3: each
+// segment of the path as sent is URI-encoded, so a model ID's ':' becomes %3A.
+func canonicalURI(u *url.URL) string {
+	sent := u.EscapedPath()
+	if sent == "" {
+		return "/"
+	}
+	const hexDigits = "0123456789ABCDEF"
+	var b strings.Builder
+	for i := 0; i < len(sent); i++ {
+		c := sent[i]
+		if c == '/' || c == '-' || c == '.' || c == '_' || c == '~' ||
+			('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') {
+			b.WriteByte(c)
+			continue
+		}
+		b.WriteByte('%')
+		b.WriteByte(hexDigits[c>>4])
+		b.WriteByte(hexDigits[c&0x0F])
+	}
+	return b.String()
 }
 
 // deriveSigningKey computes the SigV4 signing key from the secret and scope components.

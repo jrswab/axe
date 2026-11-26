@@ -8,7 +8,7 @@
 | `--timeout <seconds>` | 120 | Request timeout |
 | `--max-tokens <int>` | 0 (unlimited) | Cap cumulative token usage for the run (exit code 4 if exceeded) |
 | `--dry-run` | false | Show resolved context without calling the LLM |
-| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, retries) to stderr |
+| `--verbose` / `-v` | false | Print debug info (model, timing, tokens, provider-reported cache counts, retries) to stderr; without a budget only nonzero cache counts are shown |
 | `--json` | false | Wrap output in a JSON envelope with metadata |
 | `-p` / `--prompt <string>` | (none) | Inline prompt used as the user message; takes precedence over stdin |
 | `--agents-dir <path>` | (auto-discover) | Override agent search directory |
@@ -43,4 +43,4 @@ The flag overrides the TOML `stream` field. If the provider does not support str
 
 ### Streaming with `--json`
 
-When `--stream` and `--json` are both enabled, streaming is used internally (potentially improving time-to-first-byte from the provider) but **no incremental text is printed to stdout**. The output is still delivered as a single JSON envelope once the response is complete. This keeps `--json` output safe to parse in scripts and pipelines.
+When `--stream` and `--json` are both enabled, streaming is used internally if the provider supports it (potentially improving time-to-first-byte from the provider); Bedrock falls back to non-streaming. In either case, **no incremental text is printed to stdout**. The output is delivered as a single JSON envelope once the response is complete. This keeps `--json` output safe to parse in scripts and pipelines.

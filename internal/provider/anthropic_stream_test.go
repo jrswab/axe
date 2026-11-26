@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -16,6 +18,120 @@ func writeSSE(w http.ResponseWriter, event, data string) {
 	_, _ = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
+	}
+}
+
+func TestAnthropic_StreamStaticPrefixWire(t *testing.T) {
+	turns := anthropicStaticPrefixTurns()
+	decode := anthropicStaticPrefixDecode()
+	// Root logs stay visible in the non-verbose RED run for passing rows too.
+	report := func(row, mode string, passed bool) {
+		t.Logf("%s/%s: pass=%t (two drained/closed streams, literal wire + static stability + caller nonmutation)", row, mode, passed)
+	}
+	for _, row := range anthropicStaticPrefixRows() {
+		t.Run(row.name, func(t *testing.T) {
+			req := anthropicStaticPrefixRequest(row)
+			capture := &cacheCompatibilityCapture{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("read local request: %v", err)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				capture.mu.Lock()
+				capture.bodies = append(capture.bodies, string(body))
+				capture.mu.Unlock()
+				w.Header().Set("Content-Type", "text/event-stream")
+				writeSSE(w, "message_start", `{"type":"message_start","message":{"usage":{"input_tokens":1}}}`)
+				writeSSE(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}`)
+				writeSSE(w, "message_stop", `{"type":"message_stop"}`)
+			}))
+			defer server.Close()
+			a, err := NewAnthropic("local-test-key", WithBaseURL(server.URL))
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Reuse request, tools and parameter maps enabled -> disabled to
+			// expose any mutation or hint leakage instead of using fresh inputs.
+			for _, mode := range anthropicStaticPrefixModes() {
+				passed := t.Run(mode.name, func(t *testing.T) {
+					req.CacheConfig = mode.enabled
+					var firstSystem, firstTools json.RawMessage
+					for i, turn := range turns {
+						t.Run(turn.name, func(t *testing.T) {
+							capture.mu.Lock()
+							previous := len(capture.bodies)
+							capture.mu.Unlock()
+							req.Messages = turn.messages
+							before, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+
+							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+							defer cancel()
+							stream, err := a.SendStream(ctx, req)
+							if err != nil {
+								t.Fatalf("SendStream: %v", err)
+							}
+							defer func() {
+								if err := stream.Close(); err != nil {
+									t.Errorf("close local stream: %v", err)
+								}
+							}()
+							for {
+								_, err := stream.Next()
+								if err == io.EOF {
+									break
+								}
+								if err != nil {
+									t.Fatalf("drain local stream: %v", err)
+								}
+							}
+
+							after, err := json.Marshal(req)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !bytes.Equal(before, after) {
+								t.Errorf("SendStream mutated caller request/tools/schema/history:\nbefore %s\nafter  %s", before, after)
+							}
+							capture.mu.Lock()
+							count := len(capture.bodies)
+							var body string
+							if count == previous+1 {
+								body = capture.bodies[previous]
+							}
+							capture.mu.Unlock()
+							if count != previous+1 {
+								t.Fatalf("requests captured this turn = %d, want 1", count-previous)
+							}
+							var got map[string]json.RawMessage
+							if err := json.Unmarshal([]byte(body), &got); err != nil {
+								t.Fatal(err)
+							}
+							if i == 0 {
+								firstSystem, firstTools = got["system"], got["tools"]
+							} else if !bytes.Equal(firstSystem, got["system"]) || !bytes.Equal(firstTools, got["tools"]) {
+								t.Error("static system/tool prefix changed when only dynamic conversation changed")
+							}
+							assertAnthropicStaticPrefixWire(t, got, row, mode, turn, decode)
+							// Exact metadata and literal field comparisons reject all
+							// synthetic hints, including hints hidden in messages/schema.
+							metadata, err := json.Marshal(got)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !reflect.DeepEqual(decode(t, metadata), decode(t, []byte(`{"model":"claude-sonnet-4-20250514","max_tokens":128,"stream":true}`))) {
+								t.Errorf("unexpected request metadata: %s", metadata)
+							}
+						})
+					}
+				})
+				report(row.name, mode.name, passed)
+			}
+		})
 	}
 }
 
