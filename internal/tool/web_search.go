@@ -49,9 +49,13 @@ func webSearchEntry() ToolEntry {
 }
 
 func webSearchDefinition() provider.Tool {
+	description := "Search the web using Tavily and return text results including titles, URLs, and snippets."
+	if name, err := webSearchProvider(); err == nil && name == webSearchProviderKeen {
+		description = "Search the web using Keenable and return text results including titles, URLs, and snippets."
+	}
 	return provider.Tool{
 		Name:        toolname.WebSearch,
-		Description: "Search the web using Tavily and return text results including titles, URLs, and snippets.",
+		Description: description,
 		Parameters: map[string]provider.ToolParameter{
 			"query": {
 				Type:        "string",
@@ -79,6 +83,14 @@ func webSearchExecute(ctx context.Context, call provider.ToolCall, ec ExecContex
 
 	if query == "" {
 		return provider.ToolResult{CallID: call.ID, Content: "query is required", IsError: true}
+	}
+
+	searchProvider, err := webSearchProvider()
+	if err != nil {
+		return provider.ToolResult{CallID: call.ID, Content: err.Error(), IsError: true}
+	}
+	if searchProvider == webSearchProviderKeen {
+		return keenableSearch(ctx, call, query)
 	}
 
 	apiKey := os.Getenv("TAVILY_API_KEY")
