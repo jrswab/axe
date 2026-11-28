@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Runcrate provider using the OpenAI-compatible Chat Completions API
 - Eden AI provider (`edenai/<vendor>/<model>`) using the OpenAI-compatible Chat Completions API, with `EDENAI_API_KEY`, streaming, and HTTPS custom endpoints (HTTP is restricted to localhost and loopback/private IP literals).
 - Standard Compute provider using the OpenAI-compatible Chat Completions API
+- LLMTR provider using the OpenAI-compatible Chat Completions API
 
 ### Fixed
 - Sign Bedrock requests correctly for model IDs that contain `:` (such as `anthropic.claude-3-5-sonnet-20241022-v2:0`) by URI-encoding the SigV4 canonical path.

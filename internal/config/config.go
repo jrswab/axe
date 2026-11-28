@@ -70,6 +70,7 @@ var knownAPIKeyEnvVars = map[string]string{
 	"edenai":           "EDENAI_API_KEY",
 	"runcrate":         "RUNCRATE_API_KEY",
 	"standardcompute":  "STANDARDCOMPUTE_API_KEY",
+	"llmtr":            "LLMTR_API_KEY",
 }
 
 // APIKeyEnvVar returns the environment variable name used to resolve the API key

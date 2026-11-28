@@ -14,6 +14,7 @@
 | OpenCode | `opencode` | `OPENCODE_API_KEY` | Configurable |
 | Runcrate | `runcrate` | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
 | Standard Compute | `standardcompute` | `STANDARDCOMPUTE_API_KEY` | `https://api.stdcmpt.com/v1` |
+| LLMTR | `llmtr` | `LLMTR_API_KEY` | `https://llmtr.com/v1` |
 | AWS Bedrock | `bedrock` | (uses AWS credentials) | Region-based |
 
 The "Provider Name" column is the value used in the `model` field of your agent TOML — e.g., `model = "google/gemini-2.0-flash"`.
@@ -71,6 +72,9 @@ api_key = "..."
 [providers.standardcompute]
 api_key = "..."
 
+[providers.llmtr]
+api_key = "..."
+
 [providers.openai]
 api_key = "sk-..."
 base_url = "https://your-openai-proxy.example.com"
@@ -93,6 +97,8 @@ Eden AI is a gateway, so one key reaches models from several upstream vendors. S
 Runcrate serves open-weight models through the OpenAI-compatible Chat Completions API. For example, set an agent model to `runcrate/deepseek-ai/DeepSeek-V4.1-Flash`.
 
 Standard Compute uses the OpenAI-compatible Chat Completions API. Set an agent model to `standardcompute/StandardCompute` to route each request to the cheapest enabled model that can handle it, with automatic fallback, or pin a model with any id from `GET https://api.stdcmpt.com/v1/models` (for example `standardcompute/<model-id>`). See https://standardcompute.com.
+
+LLMTR is a prepaid gateway with an OpenAI-compatible Chat Completions API. Set an agent model to `llmtr/<vendor>/<model>`, for example `llmtr/qwen/qwen3.8-flash`; the model ids are listed by `GET https://llmtr.com/v1/models`. A few newer models only accept the Responses API and will not work with Axe. See https://llmtr.com.
 
 ## LiteLLM
 

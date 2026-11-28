@@ -367,9 +367,9 @@ All fields except `name` and `model` are optional.
 
 ### Parameters
 
-`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, Standard Compute, and LLMTR send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
-OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
+OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, Standard Compute, and LLMTR send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
 `params.cache_enabled` defaults to `true` when omitted; set it to `true` or `false` explicitly to choose whether Axe uses applicable cache hints. Each run uses its own agent definition, so a sub-agent does not inherit its parent's choice. OpenAI Chat caching is provider-managed and automatic; setting this to `false` does not disable it.
 
@@ -439,7 +439,7 @@ With `--verbose`, each turn logs cumulative usage to stderr. With `--json`, the 
 
 ### Response Format
 
-Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Ollama, OpenRouter, Runcrate, and Standard Compute providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
+Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Ollama, OpenRouter, Runcrate, Standard Compute, and LLMTR providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
 
 ```toml
 # String shorthand
@@ -609,6 +609,7 @@ The first directory containing a matching `<name>.toml` wins.
 | OpenCode | `OPENCODE_API_KEY` | Configurable |
 | Runcrate | `RUNCRATE_API_KEY` | `https://api.runcrate.ai/v1` |
 | Standard Compute | `STANDARDCOMPUTE_API_KEY` | `https://api.stdcmpt.com/v1` |
+| LLMTR | `LLMTR_API_KEY` | `https://llmtr.com/v1` |
 | AWS Bedrock | (uses AWS credentials) | Region-based |
 
 **AWS Bedrock Configuration:**
@@ -630,6 +631,8 @@ For Eden AI, model ids carry the upstream vendor as a prefix, such as `edenai/op
 For Runcrate, use model names such as `runcrate/deepseek-ai/DeepSeek-V4.1-Flash` in agent TOML.
 
 Standard Compute uses the OpenAI-compatible Chat Completions API. Set an agent model to `standardcompute/StandardCompute` to route each request to the cheapest enabled model that can handle it, with automatic fallback, or pin a model with any id from `GET https://api.stdcmpt.com/v1/models` (for example `standardcompute/<model-id>`). See https://standardcompute.com.
+
+LLMTR is a prepaid gateway with an OpenAI-compatible Chat Completions API. Set an agent model to `llmtr/<vendor>/<model>`, for example `llmtr/qwen/qwen3.8-flash`; the model ids are listed by `GET https://llmtr.com/v1/models`. A few newer models only accept the Responses API and will not work with Axe. See https://llmtr.com.
 
 For a [LiteLLM](https://github.com/BerriAI/litellm) proxy, set `LITELLM_API_KEY` (or `[providers.litellm] api_key`) and optionally `AXE_LITELLM_BASE_URL` (or `[providers.litellm] base_url`). The default URL is `http://localhost:4000/v1`; URLs without `/v1` work too. Use the proxy's model names, e.g. `litellm/claude-sonnet`.
 

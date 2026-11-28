@@ -85,6 +85,7 @@ func cacheCompatibilityAdapters() []cacheCompatibilityAdapter {
 		{name: "LiteLLM", cost: true, path: "/v1/chat/completions", new: func(url string) (StreamProvider, error) { return NewLiteLLM("local-key", url) }},
 		{name: "Runcrate", path: "/chat/completions", new: func(url string) (StreamProvider, error) { return NewRuncrate("local-key", url) }},
 		{name: "StandardCompute", path: "/chat/completions", new: func(url string) (StreamProvider, error) { return NewStandardCompute("local-key", url) }},
+		{name: "LLMTR", path: "/chat/completions", new: func(url string) (StreamProvider, error) { return NewLLMTR("local-key", url) }},
 		{name: "OpenRouter", router: true, path: "/chat/completions", new: func(url string) (StreamProvider, error) {
 			return NewOpenRouter("local-key", WithOpenRouterBaseURL(url))
 		}},
