@@ -58,9 +58,9 @@ args = ["--root", "/home/user/projects"]
 
 ### Parameters
 
-`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
+`reasoning_effort` is an optional string. Axe passes it through unchanged without value validation. Empty or omitted values mean the key is not sent. Only OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, Standard Compute, and LLMTR send it as top-level `reasoning_effort`. Anthropic, MiniMax, Ollama, OpenCode, Gemini, Bedrock, and OpenRouter ignore it. Supported values depend on the model, for example `low`, `none`, `high`, or `max`.
 
-OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, and Standard Compute send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
+OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Runcrate, Standard Compute, and LLMTR send `temperature` when TOML explicitly sets it, including `"temperature": 0`. When TOML omits `temperature`, these providers omit the key. Other providers still omit zero temperatures.
 
 `params.cache_enabled` defaults to `true` when omitted; set it to `true` or `false` explicitly to choose whether Axe uses applicable cache hints. Each run uses its own agent definition, so a sub-agent does not inherit its parent's choice. OpenAI Chat caching is provider-managed and automatic; setting this to `false` does not disable it.
 
@@ -68,7 +68,7 @@ For Anthropic Messages, an enabled hint marks the system prompt and preceding or
 
 ### Response Format
 
-Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Ollama, OpenRouter, Runcrate, and Standard Compute providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
+Constrain LLM output to a specific format via the `[params]` section. Forwarded by OpenAI, Atlas Cloud, Cheaper Inference, Eden AI, LiteLLM, Ollama, OpenRouter, Runcrate, Standard Compute, and LLMTR providers; other providers ignore this setting. For gateways, support depends on the selected model and backend.
 
 ```toml
 # String shorthand

@@ -142,7 +142,7 @@ model = "fakeprovider/some-model"
 	if !strings.Contains(err.Error(), `unsupported provider "fakeprovider"`) {
 		t.Errorf("expected 'unsupported provider' error, got: %v", err)
 	}
-	if !strings.Contains(err.Error(), "anthropic, atlascloud, cheaperinference, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute") {
+	if !strings.Contains(err.Error(), "anthropic, atlascloud, cheaperinference, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute, llmtr") {
 		t.Errorf("expected supported providers list, got: %v", err)
 	}
 }

@@ -18,6 +18,7 @@ var supportedProviders = map[string]bool{
 	"edenai":           true,
 	"runcrate":         true,
 	"standardcompute":  true,
+	"llmtr":            true,
 }
 
 // Supported reports whether providerName is a known provider.
@@ -101,8 +102,11 @@ func New(providerName, apiKey, baseURL string) (Provider, error) {
 	case "standardcompute":
 		return NewStandardCompute(apiKey, baseURL)
 
+	case "llmtr":
+		return NewLLMTR(apiKey, baseURL)
+
 	default:
-		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, cheaperinference, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute", providerName)
+		return nil, fmt.Errorf("unsupported provider %q: supported providers are anthropic, atlascloud, cheaperinference, litellm, openai, ollama, opencode, google, minimax, bedrock, openrouter, runcrate, edenai, standardcompute, llmtr", providerName)
 	}
 }
 
